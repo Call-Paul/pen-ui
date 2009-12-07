@@ -133,6 +133,7 @@ public class OliveIDE extends JPanel {
     split.setDividerLocation(400);
     add(split, BorderLayout.CENTER);
     initSlippy();
+    resetJavaBindings();
     Debug.out("OliveIDE", "Initialized!");
   }
 
@@ -375,6 +376,7 @@ public class OliveIDE extends JPanel {
     } else {
       bug("Bummer. " + fqClassName + " is bogus.");
     }
+    
   }
 
   protected void save() throws IOException {

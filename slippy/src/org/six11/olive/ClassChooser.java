@@ -1,6 +1,11 @@
 package org.six11.olive;
 
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.Dialog;
+import java.awt.Frame;
+import java.awt.HeadlessException;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -23,7 +28,7 @@ import org.six11.slippy.SlippyUtils;
 import org.six11.util.Debug;
 import org.six11.util.data.DelayedData;
 import org.six11.util.gui.ApplicationFrame;
-import org.six11.util.gui.FileChooser;
+import org.six11.util.io.FileUtil;
 import org.six11.util.io.HttpUtil;
 
 /**
@@ -55,30 +60,59 @@ public class ClassChooser {
     Debug.out("ClassChooser", what);
   }
 
-  private static DelayedData makeDelayedOptions(final String url) {
-    return new DelayedData() {
-      public void fetch() {
-        Runnable r = new Runnable() {
-          public void run() {
-            HttpUtil web = new HttpUtil();
-            String response;
-            try {
-              response = web.downloadUrlToString(url);
-              StringTokenizer toks = new StringTokenizer(response, "\n");
-              String[] d = new String[toks.countTokens()];
-              int i = 0;
-              while (toks.hasMoreTokens()) {
-                d[i++] = toks.nextToken();
+  private static DelayedData makeDelayedOptions(final String spec) {
+    DelayedData ret = null;
+    if (spec.startsWith("http")) {
+      // The data we need is out there in the mind-bogglingly large vastness of the Internet
+      ret = new DelayedData() {
+        public void fetch() {
+          Runnable r = new Runnable() {
+            public void run() {
+              HttpUtil web = new HttpUtil();
+              String response;
+              try {
+                response = web.downloadUrlToString(spec);
+                StringTokenizer toks = new StringTokenizer(response, "\n");
+                String[] d = new String[toks.countTokens()];
+                int i = 0;
+                while (toks.hasMoreTokens()) {
+                  d[i++] = toks.nextToken();
+                }
+                setData(d);
+              } catch (IOException ex) {
+                ex.printStackTrace();
               }
-              setData(d);
-            } catch (IOException ex) {
-              ex.printStackTrace();
             }
-          }
-        };
-        new Thread(r).start();
-      }
-    };
+          };
+          new Thread(r).start();
+        }
+      };
+    } else {
+      // The data we need is local
+      ret = new DelayedData() {
+        public void fetch() {
+          Runnable r = new Runnable() {
+            public void run() {
+              File specFile = new File(spec);
+              List<File> matches = FileUtil.searchForSuffix(".slippy", specFile);
+              List<String> codesetStrings = new ArrayList<String>();
+              String absLoadPath = specFile.getAbsolutePath();
+              for (File m : matches) {
+                if (m.getAbsolutePath().startsWith(absLoadPath)) {
+                  codesetStrings.add(SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
+                      absLoadPath.length())));
+
+                }
+              }
+              String[] d = codesetStrings.toArray(new String[0]);
+              setData(d);
+            }
+          };
+          new Thread(r).start();
+        }
+      };
+    }
+    return ret;
   }
 
   /**
@@ -89,22 +123,14 @@ public class ClassChooser {
    * @param where
    *          the location to start looking. If this begins with 'http' it will treat this as a
    *          network lookup and act accordingly. Otherwise it treats this as a local filesystem
-   *          lookup and gives you a standard Java file chooser, which sucks but there's not much I
-   *          can do about that.
+   *          lookup.
    */
   public static String showClassChooser(Component parentComp, String where) {
     String ret = null;
-    if (where.startsWith("http")) {
-      ClassChooser chooser = new ClassChooser(parentComp, where + "list/");
-      chooser.go();
-      ret = chooser.getValue();
-    } else {
-      File baseDir = new File(where);
-      File result = FileChooser.chooseFile(where, ".slippy");
-      String rest = result.getAbsolutePath().substring(baseDir.getAbsolutePath().length());
-      ret = SlippyUtils.fileStrToCodestStr(rest);
-      System.out.println("I get the string: " + ret);
-    }
+    String whereStr = where.startsWith("http") ? where + "list/" : where;
+    ClassChooser chooser = new ClassChooser(parentComp, whereStr);
+    chooser.go();
+    ret = chooser.getValue();
     return ret;
   }
 

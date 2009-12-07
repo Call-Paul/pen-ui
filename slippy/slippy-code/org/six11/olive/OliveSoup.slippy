@@ -1,18 +1,11 @@
 codeset org.six11.olive
 
-; This is a sort of 'Blackboard' data structure. It holds all manner of
-; information useful to hypothesis testing, culling, as well as more
-; practical aspects such as rendering things to the screen.
 class OliveSoup
   activeListeners = { }
   active = { }
   inactive = { }
   currentSeq = []
   
-  define say(what)
-    print("Olive Soup sez: " + what)
-  done
-
   define addRawSequence()
     currentSeq = []
   done
@@ -39,7 +32,7 @@ class OliveSoup
     if (listeners)
       listeners.each(lambda (listener) listener.handle(obj) done)
     else
-      print("There aren't any listeners for type: " + obj.name)
+      print("There aren't any listeners for type: " + obj.name + ". (Use soup.addActiveListener)")
     done
   done
 

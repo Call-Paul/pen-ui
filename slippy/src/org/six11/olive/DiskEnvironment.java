@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import org.six11.slippy.Environment;
 import org.six11.slippy.SlippyUtils;
+import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
 
 /**
@@ -33,8 +34,13 @@ public class DiskEnvironment extends Environment {
 
   @Override
   public void save(String fqClassName, String programString) {
-    String fileName = SlippyUtils.codesetStrToFileStr(fqClassName);
-    FileUtil.writeStringToFile(fileName, programString, false);
+    String relativeFileName = SlippyUtils.codesetStrToFileStr(fqClassName);
+    File absFile = new File(getLoadPath(), relativeFileName);
+    FileUtil.writeStringToFile(absFile, programString, false);
+  }
+  
+  public static void bug(String what) {
+    Debug.out("DiskEnvironment", what);
   }
 
 }
