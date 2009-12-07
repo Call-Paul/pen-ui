@@ -4,7 +4,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
@@ -26,7 +25,9 @@ import org.six11.util.lev.NamedAction;
 import static java.awt.event.InputEvent.*;
 
 /**
- * 
+ * An IDE for the Slippy programming language. This is capable of working in a local disk
+ * environment as well as a remote web environment. The web environment is supported so programmers
+ * can use the IDE in an unsigned applet (and all code is stored on a server).
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
@@ -38,9 +39,7 @@ public class OliveIDE extends JPanel {
   private Map<String, NamedAction> actions;
   private JPanel buttons;
   private Map<String, JButton> slippyButtons;
-  private Map<String, JMenuItem> slippyMenuItems;
   private Map<String, String> slippySourceFiles; // records where button/menu actions are defined
-  private JMenu slippyMenu;
   private SlippyInterpreter interp;
   private ColoredTextPane stdout;
   private JTabbedPane editorTabs;
@@ -49,11 +48,24 @@ public class OliveIDE extends JPanel {
   private OliveDrawingSurface surface;
   private Environment env;
 
+  /**
+   * Make a new IDE that uses a local disk environment.
+   */
   public OliveIDE() {
     super();
     env = new DiskEnvironment();
   }
 
+  /**
+   * Make a new IDE using either a local or web environment using the specified source path.
+   * 
+   * @param inBrowser
+   *          if true, use the WebEnvironment; use DiskEnvironment otherwise.
+   * @param slippySourcePath
+   *          the load path. For disk environments this can be a relative or absolute path. For web
+   *          environments this is a full URL that points to a servlet (or something) that is
+   *          capable of doing certain magic things regarding files.
+   */
   public OliveIDE(boolean inBrowser, String slippySourcePath) {
     super();
     if (inBrowser) {
@@ -80,13 +92,19 @@ public class OliveIDE extends JPanel {
    */
   private SlippyEditor activeEditor;
 
+  /**
+   * A simple listener class that listens for text entry and gives that buffer an asterisk when it
+   * has unsaved modifactions, and removes it when the buffer is the same as the disk version.
+   */
   private WhackTabWhenDirty dirtyWhacker;
 
+  /**
+   * Initialize everything, including GUI, actions, and the Slippy interpreter.
+   */
   private void init() {
     setLayout(new BorderLayout());
     initActions();
     slippyButtons = new HashMap<String, JButton>();
-    slippyMenuItems = new HashMap<String, JMenuItem>();
     slippySourceFiles = new HashMap<String, String>();
     buffers = new HashMap<String, String>();
     editors = new HashMap<String, SlippyEditor>();
@@ -107,7 +125,6 @@ public class OliveIDE extends JPanel {
     Debug.useColor = false;
     Debug.useTime = false;
     Debug.outputStream = new PrintStream(new RedirectedOutputStream(stdout), true);
-    initMenu();
     buttons = new JPanel();
     initButtons(buttons);
     topLeft.add(buttons, BorderLayout.NORTH);
@@ -137,6 +154,9 @@ public class OliveIDE extends JPanel {
     Debug.out("OliveIDE", "Initialized!");
   }
 
+  /**
+   * Changes the editor tabs title to include an asterisk when its buffer has unsaved modifications.
+   */
   private class WhackTabWhenDirty implements PropertyChangeListener {
     public void propertyChange(PropertyChangeEvent ev) {
       SlippyEditor ed = (SlippyEditor) ev.getSource();
@@ -151,21 +171,10 @@ public class OliveIDE extends JPanel {
       }
     }
   }
-
-  public Dimension getPreferredSize() {
-    bug("Returning my preferred size: " + Debug.num(super.getPreferredSize()));
-    return super.getPreferredSize();
-  }
   
-  public Dimension getMinimumSize() {
-    bug("Returning my preferred size: " + Debug.num(super.getMinimumSize()));
-    return super.getMinimumSize();
-  }
-  public Dimension getMaximumSize() {
-    bug("Returning my preferred size: " + Debug.num(super.getMaximumSize()));
-    return super.getMaximumSize();
-  }
-  
+  /**
+   * Initialize the slippy interpreter.
+   */
   private final void initSlippy() {
     SlippyMachine.outputStream = Debug.outputStream;
     interp = new SlippyInterpreter();
@@ -177,6 +186,9 @@ public class OliveIDE extends JPanel {
     interp.getMachine().setMessageBus(new OliveIDEMessageBus(this));
   }
 
+  /**
+   * Initialize GUI actions such as 'interpret', 'open', and 'save'.
+   */
   private final void initActions() {
     int weirdMod = CTRL_MASK | SHIFT_MASK;
     int mod = CTRL_MASK;
@@ -220,6 +232,10 @@ public class OliveIDE extends JPanel {
     actions.put("New", newAction);
   }
 
+  /**
+   * Asks the given root pane to listen for keystroke actions associated with our actions (for those
+   * that have keyboard accellerators).
+   */
   public final void attachKeyListener(JRootPane rp) {
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
@@ -228,34 +244,28 @@ public class OliveIDE extends JPanel {
       }
     }
   }
+
+  /**
+   * Initialize the button bar.
+   */
   private final void initButtons(JPanel buttons) {
     buttons.setLayout(new GridLayout(0, 3));
-
     buttons.add(new JButton(actions.get("Run")));
-  }
-
-  private final void initMenu() {
-    JMenuBar bar = new JMenuBar();
-    JMenu fileMenu = new JMenu("File");
-    fileMenu.add(actions.get("New"));
-    fileMenu.add(actions.get("Open"));
-    fileMenu.add(actions.get("Save"));
-    fileMenu.add(actions.get("Save As"));
-    fileMenu.add(actions.get("Save Sketch"));
-    fileMenu.add(actions.get("Browse"));
-    bar.add(fileMenu);
-    // setJMenuBar(bar); // This got whacked when I moved to OliveIDE
   }
 
   private static void bug(String what) {
     Debug.out("OliveIDE", what);
   }
 
+  /**
+   * Create a new buffer, but do not save it immediately. To write the file to disk you have to save
+   * it.
+   */
   protected void newFile() {
     String fqClassName = JOptionPane
         .showInputDialog("What's the fully qualified class name?\n\ne.g. org.mypeople.MyThing");
     if (fqClassName != null && fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {
-      bug("Great, make a new file for " + fqClassName);
+      bug("Created a new buffer for " + fqClassName);
       makeNewBuffer(fqClassName, null, true);
       showBuffer(fqClassName);
     } else {
@@ -329,21 +339,15 @@ public class OliveIDE extends JPanel {
    * effect if the buffer has already been loaded.
    */
   protected void loadBuffer(String fqClassName) throws MalformedURLException, IOException {
-    bug("loadBuffer gets: " + fqClassName);
+    StringBuilder msg = new StringBuilder("Loading buffer " + fqClassName + "...");
     if (!buffers.containsKey(fqClassName)) {
       String programSource = env.loadStringFromFile(env.classNameToFileName(fqClassName));
-
-      // String where = interp.getMachine().getLoadPath();
-      // if (where.startsWith("http")) {
-      // String url = where + "request/" + fqClassName;
-      // programSource = interp.getMachine().getWebClassLoader().downloadUrlToString(url);
-      // } else {
-      // String fileName = where + File.separator + SlippyUtils.codesetStrToFileStr(fqClassName);
-      // bug("Attempting to load from file: " + fileName);
-      // programSource = FileUtil.loadStringFromFile(fileName);
-      // }
       buffers.put(fqClassName, programSource);
+      msg.append(" success!");
+    } else {
+      msg.append(" already loaded.");
     }
+    bug(msg.toString());
   }
 
   /**
@@ -356,13 +360,14 @@ public class OliveIDE extends JPanel {
     editorTabs.getSelectedComponent().requestFocus();
   }
 
+  /**
+   * Interactively open an existing class file source.
+   */
   protected void open() {
-    bug("The OliveIDE.open() function should use an environment method. Fix this.");
-    String where = interp.getMachine().getEnvironment().getLoadPath();
-    bug("Looking for files here: " + where);
-    String fqClassName = ClassChooser.showClassChooser(this, where);
-    bug("Class chooser replies with: " + fqClassName);
-    if (fqClassName != null && fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {
+    String fqClassName = ClassChooser.showClassChooser(this, env.getLoadPath());
+    if (fqClassName == null) {
+      return;
+    } else if (fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {
       try {
         loadBuffer(fqClassName);
         makeNewEditor(fqClassName);
@@ -376,9 +381,13 @@ public class OliveIDE extends JPanel {
     } else {
       bug("Bummer. " + fqClassName + " is bogus.");
     }
-    
+
   }
 
+  /**
+   * Save the currently active editor buffer. If it is the scratch buffer (meaning it has no name)
+   * it will prompt for a name.
+   */
   protected void save() throws IOException {
     // 1. if this is the scratch buffer, use saveAs()
     SlippyEditor active = (SlippyEditor) editorTabs.getSelectedComponent();
@@ -396,6 +405,10 @@ public class OliveIDE extends JPanel {
     active.setDirty(false);
   }
 
+  /**
+   * Interactively gets a fully-qualified class name for the new file, colorizes it, and saves the
+   * current buffer to the appropriate file.
+   */
   protected void saveAs() throws IOException {
     String fqClassName = JOptionPane
         .showInputDialog("What's the fully qualified class name?\n\ne.g. org.mypeople.MyThing");
@@ -414,6 +427,11 @@ public class OliveIDE extends JPanel {
     }
   }
 
+  /**
+   * Creates (or re-creates) the Java language bindings for special data types such as
+   * SlippyObjectType, Affine Transforms, and the BoundDrawingBuffer. It also resets the OliveSoup
+   * object, which acts as the central storage location for a fresh slippy program.
+   */
   private final void resetJavaBindings() {
     new Affine(interp);
     if (mouseThing != null) {
@@ -434,6 +452,9 @@ public class OliveIDE extends JPanel {
     new BoundDrawingBuffer(interp); // TODO: what is the point of this line?
   }
 
+  /**
+   * Causes the system to reset, and runs the slippy program in the current buffer.
+   */
   protected void interpret() {
     Debug.outputStream.println("------- (interpreting at " + new Date() + ") ---");
     interp.getMachine().resetRuntimeState();
@@ -451,11 +472,6 @@ public class OliveIDE extends JPanel {
       for (String s : buttonFunctionNames) {
         buttonize(s);
       }
-      List<String> menuFunctionNames = interp.getMachine().getGlobalTable().getNamesWithAnnotation(
-          "menu");
-      for (String s : menuFunctionNames) {
-        menuize(s);
-      }
       editor.colorize();
     } finally {
       interp.getMachine().popFileName(false); // the false allows future invocations
@@ -463,32 +479,9 @@ public class OliveIDE extends JPanel {
     surface.repaint();
   }
 
-  protected void interpretSelection() {
-    bug("interpretSelection() not implemented.");
-  }
-
-  protected void menuize(String name) {
-    NamedAction slippyAction = makeSlippyAction(name, "menu");
-    JMenuItem m = slippyMenuItems.get(slippyAction.getName());
-    if (m != null) {
-      getSlippyMenu().remove(m);
-    }
-    m = new JMenuItem(slippyAction);
-    slippyMenuItems.put(slippyAction.getName(), m);
-    getSlippyMenu().add(m);
-    getSlippyMenu().revalidate();
-    getSlippyMenu().repaint();
-  }
-
-  protected JMenu getSlippyMenu() {
-    if (slippyMenu == null) {
-      slippyMenu = new JMenu("Slippy Functions");
-      // TODO: when moving to non-Applet, the getJMenuBar() went MIA. Fix this.
-      // getJMenuBar().add(slippyMenu);
-    }
-    return slippyMenu;
-  }
-
+  /**
+   * Turns a function with the Slippy annotation 'button' into a clickable button in the Olive IDE.
+   */
   protected void buttonize(String name) {
     NamedAction slippyAction = makeSlippyAction(name, "button");
     JButton b = slippyButtons.get(slippyAction.getName());
@@ -502,18 +495,36 @@ public class OliveIDE extends JPanel {
     buttons.repaint();
   }
 
+  /**
+   * Makes an Action based on the named slippy function. The function must be a global.
+   * 
+   * @param name
+   *          the name of a global slippy function that was annotated with 'menu' or 'button'
+   * @param type
+   *          the type of annotation ('menu', 'button', etc.)
+   */
   protected NamedAction makeSlippyAction(String name, String type) {
     NamedAction ret = null;
     Thing.Annotation annotation = interp.getMachine().getGlobalTable().getAnnotation(name, type);
     List<Tree> expressions = annotation.getExpressions();
     if (expressions.size() > 0) {
-      Thing labelThing = interp.eval(expressions.get(0));
+      final Thing labelThing = interp.eval(expressions.get(0));
       bug("The label is: " + labelThing + " of type: " + labelThing.type);
       if (labelThing.type == Thing.Type.String) {
-        Thing maybeFunction = interp.getMachine().getGlobalTable().getThing(name);
+        final Thing maybeFunction = interp.getMachine().getGlobalTable().getThing(name);
         if (maybeFunction.type == Thing.Type.Function) {
-          NamedAction slippyAction = makeSlippyActionFromLabelAndFunction(labelThing.toString(),
-              (Thing.Function) maybeFunction);
+          NamedAction slippyAction = new NamedAction(labelThing.toString()) {
+            public void activate() {
+              String fn = slippySourceFiles.get(labelThing.toString());
+              bug("Invoking '" + labelThing.toString() + "', defined originally in " + fn);
+              interp.getMachine().pushFileName(fn);
+              try {
+                interp.invokeFunction((Thing.Function) maybeFunction, new ArrayList<Thing>(), null);
+              } finally {
+                interp.getMachine().popFileName(false);
+              }
+            }
+          };
           slippySourceFiles.put(labelThing.toString(), interp.getMachine().getCurrentFile());
           bug("Action " + labelThing.toString() + " was defined in "
               + slippySourceFiles.get(labelThing.toString()));
@@ -533,56 +544,18 @@ public class OliveIDE extends JPanel {
     return ret;
   }
 
-  private NamedAction makeSlippyActionFromLabelAndFunction(final String label,
-      final Thing.Function function) {
-    NamedAction ret = new NamedAction(label) {
-      public void activate() {
-        String fn = slippySourceFiles.get(label);
-        bug("Invoking '" + label + "', defined originally in " + fn);
-        interp.getMachine().pushFileName(fn);
-        try {
-          interp.invokeFunction(function, new ArrayList<Thing>(), null);
-        } finally {
-          interp.getMachine().popFileName(false);
-        }
-      }
-    };
-    return ret;
-  }
-
+  /**
+   * Gives access to the OliveSoup instance.
+   */
   public OliveSoup getSoup() {
     return soup;
   }
 
+  /**
+   * Gives access to the drawing surface.
+   */
   public OliveDrawingSurface getDrawingSurface() {
     return surface;
   }
 
-  private class RedirectedOutputStream extends ByteArrayOutputStream {
-
-    private String lineSeparator;
-    private ColoredTextPane text;
-
-    RedirectedOutputStream(ColoredTextPane text) {
-      super();
-      lineSeparator = System.getProperty("line.separator");
-      this.text = text;
-    }
-
-    public void flush() throws IOException {
-
-      String record;
-      synchronized (this) {
-        super.flush();
-        record = this.toString();
-        super.reset();
-
-        if (record.length() == 0 || record.equals(lineSeparator)) {
-          return;
-        }
-
-        text.append(Color.BLACK, record + "\n");
-      }
-    }
-  }
 }

@@ -124,6 +124,7 @@ public class ClassChooser {
    *          the location to start looking. If this begins with 'http' it will treat this as a
    *          network lookup and act accordingly. Otherwise it treats this as a local filesystem
    *          lookup.
+   * @return the fully qualified class name, e.g. "org.six11.foo.MyThing".
    */
   public static String showClassChooser(Component parentComp, String where) {
     String ret = null;
