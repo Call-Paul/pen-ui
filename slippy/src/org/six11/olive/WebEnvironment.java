@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URLEncoder;
 
 import org.six11.slippy.Environment;
 import org.six11.util.io.HttpUtil;
@@ -48,7 +49,8 @@ public class WebEnvironment extends Environment {
     try {
       w = getWebClassLoader();
       HttpURLConnection con = w.initPostConnection(getLoadPath() + "save/" + fqClassName);
-      StreamUtil.writeStringToOutputStream(programString, con.getOutputStream());
+      String encodedString = URLEncoder.encode(programString, "UTF-8");
+      StreamUtil.writeStringToOutputStream(encodedString, con.getOutputStream());
       con.getOutputStream().close();
       con.getInputStream(); // not sure why but this is necessary for the above to work.
     } catch (MalformedURLException ex) {

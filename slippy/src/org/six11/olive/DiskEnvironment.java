@@ -34,6 +34,7 @@ public class DiskEnvironment extends Environment {
 
   @Override
   public void save(String fqClassName, String programString) {
+    System.err.println("Writing program string:\n" + programString);
     String relativeFileName = SlippyUtils.codesetStrToFileStr(fqClassName);
     File absFile = new File(getLoadPath(), relativeFileName);
     FileUtil.writeStringToFile(absFile, programString, false);

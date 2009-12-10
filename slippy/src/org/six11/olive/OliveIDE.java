@@ -7,7 +7,6 @@ import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -396,7 +395,7 @@ public class OliveIDE extends JPanel {
     }
 
     // 2. Ask the environment to save the program string.
-    String programString = URLEncoder.encode(active.getTextPane().getText(), "UTF-8");
+    String programString = active.getTextPane().getText();
     buffers.put(active.getFQClassName(), programString);
     env.save(active.getFQClassName(), programString);
 
