@@ -3,6 +3,8 @@
 package org.six11.olive;
 
 import java.awt.BorderLayout;
+import java.io.IOException;
+import java.net.MalformedURLException;
 
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -24,6 +26,8 @@ public class Main {
         "Specifies the root load path for Slippy code.");
     args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows documentation.");
     args.addFlag("v", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Display version.");
+    args.addPositional(0, "fqClass", ValueType.VALUE_OPTIONAL,
+        "The fully qualified slippy class to load.");
     args.parseArguments(in);
     if (args.hasFlag("help")) {
       System.out.println(args.getDocumentation());
@@ -46,5 +50,14 @@ public class Main {
     ide.setBackground(java.awt.Color.RED);
     af.add(ide, BorderLayout.CENTER);
     af.setVisible(true);
+    if (args.hasValue("fqClass")) {
+      try {
+        ide.openBuffer(args.getValue("fqClass"));
+      } catch (MalformedURLException ex) {
+        ex.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 }

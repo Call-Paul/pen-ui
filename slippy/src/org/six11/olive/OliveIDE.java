@@ -170,7 +170,7 @@ public class OliveIDE extends JPanel {
       }
     }
   }
-  
+
   /**
    * Initialize the slippy interpreter.
    */
@@ -368,9 +368,7 @@ public class OliveIDE extends JPanel {
       return;
     } else if (fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {
       try {
-        loadBuffer(fqClassName);
-        makeNewEditor(fqClassName);
-        showBuffer(fqClassName);
+        openBuffer(fqClassName);
       } catch (MalformedURLException ex) {
         bug("Bummer. Couldn't open " + fqClassName + ". It might not exist.");
         ex.printStackTrace();
@@ -380,7 +378,18 @@ public class OliveIDE extends JPanel {
     } else {
       bug("Bummer. " + fqClassName + " is bogus.");
     }
+  }
 
+  /**
+   * Using the load path, finds the source file for the indicated class, loads it, creates an
+   * editor, and shows the editor.
+   * 
+   * @param fqClassName the fully qualified class name, e.g. "org.six11.game.BadGuy"
+   */
+  public void openBuffer(String fqClassName) throws MalformedURLException, IOException {
+    loadBuffer(fqClassName);
+    makeNewEditor(fqClassName);
+    showBuffer(fqClassName);
   }
 
   /**
