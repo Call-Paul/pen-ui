@@ -2,12 +2,16 @@ package org.six11.olive;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
+import org.six11.slippy.SlippyUtils;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.io.FileUtil;
+import org.six11.util.io.StreamUtil;
 import org.six11.util.io.SuffixFileFilter;
 
 /**
@@ -91,7 +95,7 @@ public class SlippyBundler {
         File target = bundler.getVersionedJar(args.getValue("module"), args.getValue("version"),
             args.getValue("who"));
         if (target != null && target.exists()) {
-          System.out.println(target.getAbsolutePath() + " exists (" + target.length() + " bytes");
+          System.out.println(target.getAbsolutePath() + " exists (" + target.length() + " bytes)");
         } else {
           File originalJar = new File(args.getValue("jar"));
           FileUtil.complainIfNotReadable(originalJar);
@@ -447,6 +451,22 @@ public class SlippyBundler {
     String lowerPath = getPathFragment(module, version, who);
     File path = new File(baseDir, lowerPath);
     FileUtil.complainIfNotReadable(path);
+    
+    File contents = new File(path, "contents.txt");
+    if (contents.exists()) { // overwrite existing contents file from a previous execution
+      contents.delete();
+    }
+    FileOutputStream contentOut = new FileOutputStream(contents);
+    String absLoadPath = path.getAbsolutePath();
+    List<File> matches = FileUtil.searchForSuffix(".slippy", path);
+    for (File m : matches) {
+      if (m.getAbsolutePath().startsWith(absLoadPath)) {
+        String fqClass = SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
+            absLoadPath.length()));
+        StreamUtil.writeStringToOutputStream(fqClass + "\n", contentOut);
+      }
+    }
+    contentOut.close();
 
     File targetJar = getVersionedJar(module, version, who);
     FileUtil.copy(jarFile, targetJar);
@@ -461,6 +481,7 @@ public class SlippyBundler {
     } catch (InterruptedException ex) {
       ex.printStackTrace();
     }
+
     return targetJar;
   }
 }

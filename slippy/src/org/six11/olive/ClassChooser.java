@@ -13,8 +13,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 import javax.swing.*;
@@ -24,12 +22,10 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
+import org.six11.slippy.Environment;
 import org.six11.slippy.SlippyUtils;
 import org.six11.util.Debug;
 import org.six11.util.data.DelayedData;
-import org.six11.util.gui.ApplicationFrame;
-import org.six11.util.io.FileUtil;
-import org.six11.util.io.HttpUtil;
 
 /**
  * A dialog box that downloads and shows a tree structure of Slippy classes. The files may be
@@ -40,78 +36,24 @@ import org.six11.util.io.HttpUtil;
  */
 public class ClassChooser {
 
-  public static void main(String[] args) {
-    final ApplicationFrame af = new ApplicationFrame("Test App");
-    JButton goButton = new JButton("Go!");
-    goButton.addActionListener(new ActionListener() {
-      public void actionPerformed(ActionEvent e) {
-        // String result = showClassChooser(af, "http://six11.org/olive/code/list/");
-        String result = showClassChooser(af, "somePathString");
-        bug("You chose: " + result);
-      }
-    });
-    af.setSize(600, 480);
-    af.center();
-    af.add(goButton);
-    af.setVisible(true);
-  }
-
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ClassChooser", what);
   }
 
-  private static DelayedData makeDelayedOptions(final String spec) {
+  private static DelayedData makeDelayedOptions(final Environment env) {
     DelayedData ret = null;
-    if (spec.startsWith("http")) {
-      // The data we need is out there in the mind-bogglingly large vastness of the Internet
-      ret = new DelayedData() {
-        public void fetch() {
-          Runnable r = new Runnable() {
-            public void run() {
-              HttpUtil web = new HttpUtil();
-              String response;
-              try {
-                response = web.downloadUrlToString(spec);
-                StringTokenizer toks = new StringTokenizer(response, "\n");
-                String[] d = new String[toks.countTokens()];
-                int i = 0;
-                while (toks.hasMoreTokens()) {
-                  d[i++] = toks.nextToken();
-                }
-                setData(d);
-              } catch (IOException ex) {
-                ex.printStackTrace();
-              }
-            }
-          };
-          new Thread(r).start();
-        }
-      };
-    } else {
-      // The data we need is local
-      ret = new DelayedData() {
-        public void fetch() {
-          Runnable r = new Runnable() {
-            public void run() {
-              File specFile = new File(spec);
-              List<File> matches = FileUtil.searchForSuffix(".slippy", specFile);
-              List<String> codesetStrings = new ArrayList<String>();
-              String absLoadPath = specFile.getAbsolutePath();
-              for (File m : matches) {
-                if (m.getAbsolutePath().startsWith(absLoadPath)) {
-                  codesetStrings.add(SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
-                      absLoadPath.length())));
+    ret = new DelayedData() {
+      public void fetch() {
+        Runnable r = new Runnable() {
+          public void run() {
+            setData(env.listClasses());
+          }
+        };
+        new Thread(r).start();
+      }
+    };
 
-                }
-              }
-              String[] d = codesetStrings.toArray(new String[0]);
-              setData(d);
-            }
-          };
-          new Thread(r).start();
-        }
-      };
-    }
     return ret;
   }
 
@@ -120,16 +62,13 @@ public class ClassChooser {
    * 
    * @param parentComp
    *          the parent location, used to center the dialog.
-   * @param where
-   *          the location to start looking. If this begins with 'http' it will treat this as a
-   *          network lookup and act accordingly. Otherwise it treats this as a local filesystem
-   *          lookup.
+   * @param env
+   *          the environment implementation that talks to whatever system we're on.
    * @return the fully qualified class name, e.g. "org.six11.foo.MyThing".
    */
-  public static String showClassChooser(Component parentComp, String where) {
+  public static String showClassChooser(Component parentComp, Environment env) {
     String ret = null;
-    String whereStr = where.startsWith("http") ? where + "list/" : where;
-    ClassChooser chooser = new ClassChooser(parentComp, whereStr);
+    ClassChooser chooser = new ClassChooser(parentComp, env);
     chooser.go();
     ret = chooser.getValue();
     return ret;
@@ -139,10 +78,10 @@ public class ClassChooser {
   private String result;
   private JTextField textEntry;
 
-  private ClassChooser(Component parentComp, String optionsUrl) {
+  private ClassChooser(Component parentComp, Environment env) {
     result = null;
 
-    DelayedData options = makeDelayedOptions(optionsUrl);
+    DelayedData options = makeDelayedOptions(env);
 
     Window window = getWindowForComponent(parentComp);
     if (window instanceof Frame) {

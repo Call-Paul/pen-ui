@@ -29,6 +29,22 @@ public abstract class Environment {
   }
 
   /**
+   * Returns the load path followed by a slash, UNLESS the load path is "", in which case " is
+   * returned.
+   * 
+   * @return
+   */
+  public String getLoadPathSlashed() {
+    String ret = null;
+    if (loadPath.equals("")) {
+      ret = "";
+    } else {
+      ret = loadPath + "/";
+    }
+    return ret;
+  }
+
+  /**
    * Loads a program source string from a fully-qualified file name.
    */
   public abstract String loadStringFromFile(String fullFileName) throws FileNotFoundException,
@@ -55,5 +71,17 @@ public abstract class Environment {
    * programString. The exact mechanism depends on the implementation, of course.
    */
   public abstract void save(String fqClassName, String programString);
+
+  /**
+   * Returns an unsorted array of all the fully-qualified class names available in the load path.
+   */
+  public abstract String[] listClasses();
+
+  /**
+   * Tells the environment that there is a new class file sitting around. This is necessary, for
+   * example, for the web environment since it must maintain a list of files on hand (because it
+   * can't hit the disk or inspect its jar).
+   */
+  public abstract void addFile(String fqClassName);
 
 }

@@ -236,10 +236,12 @@ public class OliveIDE extends JPanel {
    * that have keyboard accellerators).
    */
   public final void attachKeyListener(JRootPane rp) {
+    bug("Attaching key listener to " + rp);
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
       if (s != null) {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
+        bug("Registered " + s.getKeyChar());
       }
     }
   }
@@ -265,6 +267,7 @@ public class OliveIDE extends JPanel {
         .showInputDialog("What's the fully qualified class name?\n\ne.g. org.mypeople.MyThing");
     if (fqClassName != null && fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {
       bug("Created a new buffer for " + fqClassName);
+      env.addFile(fqClassName);
       makeNewBuffer(fqClassName, null, true);
       showBuffer(fqClassName);
     } else {
@@ -363,7 +366,7 @@ public class OliveIDE extends JPanel {
    * Interactively open an existing class file source.
    */
   protected void open() {
-    String fqClassName = ClassChooser.showClassChooser(this, env.getLoadPath());
+    String fqClassName = ClassChooser.showClassChooser(this, env);
     if (fqClassName == null) {
       return;
     } else if (fqClassName.length() > 0 && interp.isValidClassName(fqClassName)) {

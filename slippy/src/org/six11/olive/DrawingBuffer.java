@@ -9,20 +9,20 @@ import java.awt.geom.GeneralPath;
 import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
-import java.io.OutputStream;
+//import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.DefaultFontMapper;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfTemplate;
-import com.lowagie.text.pdf.PdfWriter;
+//import com.lowagie.text.Document;
+//import com.lowagie.text.DocumentException;
+//import com.lowagie.text.FontFactory;
+//import com.lowagie.text.Rectangle;
+//import com.lowagie.text.pdf.DefaultFontMapper;
+//import com.lowagie.text.pdf.PdfContentByte;
+//import com.lowagie.text.pdf.PdfTemplate;
+//import com.lowagie.text.pdf.PdfWriter;
 
-import org.six11.slippy.SlippyMachine;
+//import org.six11.slippy.SlippyMachine;
 import org.six11.util.Debug;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
@@ -163,35 +163,35 @@ public class DrawingBuffer {
     addOp(new TurtleOp(p));
   }
 
-  public void generatePdf(OutputStream out) {
-    if (bb == null) {
-      update();
-    }
-    int w = bb.getWidthInt();
-    int h = bb.getHeightInt();
-    Rectangle size = new Rectangle(w, h);
-    Document document = new Document(size, 0, 0, 0, 0);
-
-    try {
-      PdfWriter writer = PdfWriter.getInstance(document, out);
-      document.open();
-
-      DefaultFontMapper mapper = new DefaultFontMapper();
-      FontFactory.registerDirectories();
-
-      PdfContentByte cb = writer.getDirectContent();
-      PdfTemplate tp = cb.createTemplate(w, h);
-      Graphics2D g2 = tp.createGraphics(w, h, mapper);
-      tp.setWidth(w);
-      tp.setHeight(h);
-      paste(g2);
-      g2.dispose();
-      cb.addTemplate(tp, 0, 0);
-    } catch (DocumentException ex) {
-      SlippyMachine.outputStream.println(ex.getMessage());
-    }
-    document.close();
-  }
+//  public void generatePdf(OutputStream out) {
+//    if (bb == null) {
+//      update();
+//    }
+//    int w = bb.getWidthInt();
+//    int h = bb.getHeightInt();
+//    Rectangle size = new Rectangle(w, h);
+//    Document document = new Document(size, 0, 0, 0, 0);
+//
+//    try {
+//      PdfWriter writer = PdfWriter.getInstance(document, out);
+//      document.open();
+//
+//      DefaultFontMapper mapper = new DefaultFontMapper();
+//      FontFactory.registerDirectories();
+//
+//      PdfContentByte cb = writer.getDirectContent();
+//      PdfTemplate tp = cb.createTemplate(w, h);
+//      Graphics2D g2 = tp.createGraphics(w, h, mapper);
+//      tp.setWidth(w);
+//      tp.setHeight(h);
+//      paste(g2);
+//      g2.dispose();
+//      cb.addTemplate(tp, 0, 0);
+//    } catch (DocumentException ex) {
+//      SlippyMachine.outputStream.println(ex.getMessage());
+//    }
+//    document.close();
+//  }
 
   private static class TurtleOp {
 

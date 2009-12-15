@@ -1,14 +1,14 @@
 package org.six11.olive;
 
-import java.io.ByteArrayOutputStream;
+//import java.io.ByteArrayOutputStream;
 import java.util.List;
 
-import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+//import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
 
 import org.six11.olive.DrawingBuffer;
 import org.six11.slippy.SlippyInterpreter;
 import org.six11.slippy.SlippyJavaClass;
-import org.six11.slippy.SlippyMachine;
+//import org.six11.slippy.SlippyMachine;
 import org.six11.slippy.SlippyUtils;
 import org.six11.slippy.Thing;
 import org.six11.slippy.SymbolTable;
@@ -114,16 +114,16 @@ public class BoundDrawingBuffer extends SlippyJavaClass {
       }
     });
     
-    addSymbol(new Thing.Function("savePDF", SlippyUtils.mkList("filename"), "BoundDrawingBuffer.java") {
-      public Thing eval(List<Thing> paramValues, SymbolTable context) {
-        ByteArrayOutputStream byteOS = new ByteArrayOutputStream();
-        buffer(context).generatePdf(byteOS);
-        String asText = Base64.encode(byteOS.toByteArray());
-        SlippyMachine.outputStream.println("I have the following PDF, encoded in base 64...");
-        SlippyMachine.outputStream.println(asText);
-        return Thing.NIL;
-      }
-    });
+//    addSymbol(new Thing.Function("savePDF", SlippyUtils.mkList("filename"), "BoundDrawingBuffer.java") {
+//      public Thing eval(List<Thing> paramValues, SymbolTable context) {
+//        ByteArrayOutputStream byteOS = new ByteArrayOutputStream();
+//        buffer(context).generatePdf(byteOS);
+//        String asText = Base64.encode(byteOS.toByteArray());
+//        SlippyMachine.outputStream.println("I have the following PDF, encoded in base 64...");
+//        SlippyMachine.outputStream.println(asText);
+//        return Thing.NIL;
+//      }
+//    });
   }
 
   private DrawingBuffer buffer(SymbolTable context) {
