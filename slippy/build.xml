@@ -54,6 +54,8 @@
 
 		<taskdef classpathref="compile.classpath"
 		         resource="genjar.properties" />
+		<taskdef classpathref="compile.classpath"
+		         resource="org/apache/catalina/ant/catalina.tasks" />
 	</target>
 
 	<!-- ==================== Fail Target (for when no properties are found) == -->
@@ -72,9 +74,12 @@
 	        description="Makes a jar file suitable for standalone or applet execution.">
 		<echo message="Making ${jar.output} based on ${jar.topLevelClass}..." />
 		<genjar jarfile="${jar.output}">
-			<library jar="${lib.dir}/iText-2.1.4.jar" />
+			<resource>
+				<fileset dir="slippy-code">
+					<include name="**/*.slippy" />
+				</fileset>
+			</resource>
 			<class name="${jar.topLevelClass}" />
-			<!-- <class name="com.lowagie.text.pdf.collection.PdfCollection" /> -->
 			<classpath>
 				<fileset dir="${lib.dir}">
 					<include name="*.jar" />
@@ -85,27 +90,26 @@
 				<exclude name="org.bouncycastle." />
 			</classfilter>
 		</genjar>
-		<copy file="${jar.output}" todir="${webapp.dir}/content" />
+		<delete file="modules/hello-1.jar" failonerror="false" />
+		<java classname="org.six11.olive.SlippyBundler">
+			<classpath refid="compile.classpath" />
+			<classpath path="${compile.output.dir}" />
+			<arg value="bundle" />
+			<arg value="--baseDir=modules" />
+			<arg value="--jar=${jar.output}" />
+			<arg value="--module=hello" />
+			<arg value="--version=1" />
+			<arg value="--who=ant" />
+		</java>
+		<copy file="modules/hello-1.jar"
+		      tofile="${webapp.dir}/content/${shortName}.jar" />
 	</target>
+
+	<!-- ==================== Compile Target ================================== -->
 
 	<target name="compile" depends="prepare" description="Compile Java sources">
 		<mkdir dir="${compile.output.dir}" />
 		<javac srcdir="${compile.src.dir}"
-		       destdir="${compile.output.dir}"
-		       debug="${compile.debug}"
-		       deprecation="${compile.deprecation}"
-		       optimize="${compile.optimize}"
-		       source="1.5">
-			<classpath refid="compile.classpath" />
-			<include name="**/*.java" />
-		</javac>
-
-	</target>
-
-	<!-- The following is a temporary thing as I investigate CodeCover -->
-	<target name="compile-instrumented" depends="prepare">
-		<mkdir dir="${compile.output.dir}" />
-		<javac srcdir="instr"
 		       destdir="${compile.output.dir}"
 		       debug="${compile.debug}"
 		       deprecation="${compile.deprecation}"
@@ -139,7 +143,7 @@
 		     webxml="${webapp.dir}/config/web.xml">
 			<metainf file="${webapp.dir}/config/context.xml">
 			</metainf>
-			<classes dir="${compile.output.dir}" />
+			<!--			<classes dir="${compile.output.dir}" /> -->
 			<fileset dir="${webapp.dir}/content" />
 		</war>
 	</target>
