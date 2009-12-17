@@ -4,6 +4,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 import org.six11.slippy.SlippyUtils;
@@ -25,6 +29,49 @@ import org.six11.util.io.SuffixFileFilter;
 public class SlippyBundler {
 
   /**
+   * 
+   * 
+   * @author Gabe Johnson <johnsogg@cmu.edu>
+   */
+  public class Version {
+    public String module;
+    public String version;
+    public Date when;
+    public String who;
+
+    public String getModule() { // getters to placate JSTL
+      return module;
+    }
+
+    public String getVersion() {
+      return version;
+    }
+
+    public String getWho() {
+      return who;
+    }
+
+    public Version(String module, String version, Date when, String who) {
+      this.module = module;
+      this.version = version;
+      this.when = when;
+      this.who = who;
+    }
+  }
+
+  public static Comparator<Version> sortByModName = new Comparator<Version>() {
+    public int compare(Version o1, Version o2) {
+      return o1.module.compareTo(o2.module);
+    }
+  };
+
+  public static Comparator<Version> sortByModDate = new Comparator<Version>() {
+    public int compare(Version o1, Version o2) {
+      return o1.when.compareTo(o2.when);
+    }
+  };
+
+  /**
    * This is for building a jar file from the command line, also good for testing.
    */
   public static void main(String[] in) {
@@ -37,6 +84,7 @@ public class SlippyBundler {
       System.out.println("  delete");
       System.out.println("  recent");
       System.out.println("  work");
+      System.out.println("  versions");
       System.out.println("Generally you can get help like this: SlippyBundler [command] --help");
       System.exit(0);
     }
@@ -56,6 +104,8 @@ public class SlippyBundler {
       GetRecent.main(rest);
     } else if (in[0].equals("work")) {
       MakeWorking.main(rest);
+    } else if (in[0].equals("versions")) {
+      GetVersions.main(rest);
     } else {
       System.out.println("Where'd you go to school? Run without args to see help.");
     }
@@ -249,9 +299,9 @@ public class SlippyBundler {
 
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
-        int recent = bundler.getMostRecentVersion(args.getValue("module"));
+        Version recent = bundler.getMostRecentVersion(args.getValue("module"));
         System.out.println("Most recent version of module " + args.getValue("module") + " is "
-            + recent);
+            + recent.version);
       } catch (IOException ex) {
         System.out.println(ex.getMessage());
       }
@@ -293,6 +343,56 @@ public class SlippyBundler {
     }
   }
 
+  public static class GetVersions {
+    public static void main(String[] in) {
+      Arguments args = new Arguments();
+      args.setProgramName("versions");
+      args.setDocumentationProgram("Lists the modules, version numbers, and when they were made.");
+
+      args.addFlag("baseDir", ArgType.ARG_REQUIRED, ValueType.VALUE_REQUIRED,
+          "Where the root directory of the module should be placed.");
+      args.addFlag("module", ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED,
+          "List all versions of the given module, rather than only the most recent "
+              + "version of all modules.");
+
+      args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
+      args.parseArguments(in);
+      if (args.hasFlag("help")) {
+        System.out.println(args.getDocumentation());
+        System.exit(0);
+      }
+      try {
+        args.validate();
+      } catch (Exception ex) {
+        System.out.println(args.getUsage());
+        System.exit(0);
+      }
+      try {
+        SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
+        List<Version> v = null;
+        if (args.hasFlag("module")) {
+          bug("Showing versions for module " + args.getValue("module"));
+          v = bundler.getAllVersions(args.getValue("module"));
+        } else {
+          v = bundler.getAllVersions();
+        }
+        int longestVersionString = 0;
+        for (Version ver : v) {
+          longestVersionString = Math.max((ver.version + "").length(), longestVersionString);
+        }
+        for (Version ver : v) {
+          for (int i = ((ver.version + "").length()); i >= 0; i--) {
+            System.out.print(" ");
+          }
+          System.out.print(ver.version);
+          System.out.print("   " + ver.module + "\n");
+        }
+      } catch (IOException ex) {
+        System.out.println(ex.getMessage());
+      }
+    }
+  }
+
   /**
    * The base dir for modules.
    */
@@ -312,8 +412,8 @@ public class SlippyBundler {
     String fragment = getPathFragment(module, "working", who);
     File workingDir = new File(baseDir, fragment);
     if (workingDir.exists()) {
-      int mostRecent = getMostRecentVersion(module);
-      String newVersionFragment = getPathFragment(module, "" + (mostRecent + 1), who);
+      Version mostRecent = getMostRecentVersion(module);
+      String newVersionFragment = getPathFragment(module, "" + (mostRecent.version + 1), who);
       File newVersionDir = new File(baseDir, newVersionFragment);
       workingDir.renameTo(newVersionDir);
       mostRecent = getMostRecentVersion(module);
@@ -327,14 +427,17 @@ public class SlippyBundler {
     }
   }
 
-  public int getMostRecentVersion(String module) throws FileNotFoundException {
-    int ret = -1;
+  public Version getMostRecentVersion(String module) throws FileNotFoundException {
+    Version ret = new Version(module, "-1", null, null);
     File moduleDir = new File(baseDir, module + File.separator + "version");
     if (moduleDir.exists()) {
       for (File f : moduleDir.listFiles()) {
         if (f.isDirectory()) {
           try {
-            ret = Math.max(Integer.parseInt(f.getName()), ret);
+            if (Integer.parseInt(f.getName()) > Integer.parseInt(ret.version)) {
+              ret.version = f.getName();
+              ret.when = new Date(f.lastModified());
+            }
           } catch (NumberFormatException ignore) {
           }
         }
@@ -452,7 +555,7 @@ public class SlippyBundler {
    * 
    * @return a String representing a path. This does NOT begin nor end with the / character.
    */
-  private String getPathFragment(String module, String version, String who)
+  public String getPathFragment(String module, String version, String who)
       throws FileNotFoundException {
     String fragment = null;
     if (version.equals("working")) {
@@ -513,8 +616,50 @@ public class SlippyBundler {
 
     return targetJar;
   }
-  
+
   private static void bug(String what) {
     Debug.out("SlippyBundler", what);
+  }
+
+  public List<Version> getAllVersions(String module) {
+    List<Version> v = new ArrayList<Version>();
+    // Get numeric deployed versions
+    File moduleDir = new File(baseDir, module + File.separator + "version");
+    if (moduleDir.exists()) {
+      for (File f : moduleDir.listFiles()) {
+        if (f.isDirectory()) {
+          try {
+            v.add(new Version(module, f.getName(), new Date(f.lastModified()), null));
+          } catch (NumberFormatException ignore) {
+          }
+        }
+      }
+    }
+    // Get working versions
+    moduleDir = new File(baseDir, module + File.separator + "working");
+    if (moduleDir.exists()) {
+      for (File f : moduleDir.listFiles()) {
+        if (f.isDirectory()) {
+          v.add(new Version(module, "working", new Date(f.lastModified()), f.getName()));
+        }
+      }
+    }
+    Collections.sort(v, sortByModDate);
+    return v;
+  }
+
+  public List<Version> getAllVersions() {
+    List<Version> v = new ArrayList<Version>();
+    for (File modDir : baseDir.listFiles()) {
+      if (modDir.isDirectory()) {
+        try {
+          v.add(getMostRecentVersion(modDir.getName()));
+        } catch (Exception ex) {
+          bug("Found whacked out module directory: " + modDir.getAbsolutePath());
+        }
+      }
+    }
+    Collections.sort(v, sortByModName);
+    return v;
   }
 }

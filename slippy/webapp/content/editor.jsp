@@ -14,25 +14,12 @@ html,body {
 </head>
 <body>
 
-<p>You specified the following relevant params:</p>
-
-<ul>
-	<li>mainSlippyClass: <%=request.getParameter("mainSlippyClass")%></li>
-	<li>module: <%=request.getParameter("module")%></li>
-	<li>version: <%=request.getParameter("version")%></li>
-	<li>who: <%=request.getParameter("who")%></li>
-</ul>
-
-<p>Hopefully the following makes sense: <%=SlippyBundler.makeVersionedJarName(request.getParameter("module"), request
-              .getParameter("version"), request.getParameter("who"))%></p>
-
 <div style="width: 100%; height: 100%;"><applet
-	code="org.six11.olive.OliveApplet" archive="slippy.jar" width="98%"
-	height="98%" border="1"> Your browser is completely ignoring
-	the &lt;APPLET&gt; tag!
-	<param name="mainSlippyClass"
-		value="<%=request.getParameter("mainSlippyClass")%>" />
-	<param name="load-path" value="" />
+	code="org.six11.olive.OliveApplet"
+	archive="jar/<%=SlippyBundler.makeVersionedJarName(request.getParameter("module"), request
+              .getParameter("version"), request.getParameter("who"))%>"
+	width="98%" height="98%" border="1"> Your browser is
+	completely ignoring the &lt;APPLET&gt; tag!
 </applet></div>
 
 </body>

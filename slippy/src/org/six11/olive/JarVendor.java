@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.six11.olive.SlippyBundler.Version;
 import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
 import org.six11.util.io.StreamUtil;
@@ -107,14 +108,34 @@ public class JarVendor extends HttpServlet {
 
     // Conjure the jar to deliver, either from the cache, or by creating/caching it.
     String targetJarName = SlippyBundler.makeVersionedJarName(module, version, who);
-    File originalJarFile = getOriginalJarFile(this);
-    FileUtil.complainIfNotWriteable(originalJarFile);
     File jarFile = new File(cacheDir, targetJarName);
+    bug("Ideally I would like to return " + jarFile.getAbsolutePath() + ". Does it exist?");
     if (!jarFile.exists()) {
-      SlippyBundler bundler = new SlippyBundler(moduleDir);
-      File bundle = bundler.bundle(module, version, who, originalJarFile);
-      bundle.renameTo(jarFile);
-      bug("Produced bundle: " + bundle.getAbsolutePath());
+      try {
+        bug("No. Trying to bundle it up...");
+        File originalJarFile = getOriginalJarFile(this);
+        FileUtil.complainIfNotWriteable(originalJarFile);
+        bug("Looks like " + originalJarFile.getAbsolutePath() + " is OK.");
+
+        SlippyBundler bundler = new SlippyBundler(moduleDir);
+        String lowerPath = bundler.getPathFragment(module, version, who);
+        File path = new File(moduleDir, lowerPath);
+        if (!path.exists() && version.equals("working")) {
+          // The directory for the working code doesn't exist, so create it.
+          Version mostRecent = bundler.getMostRecentVersion(module);
+          bundler.makeWorking(module, "" + mostRecent.version, who);
+        } else if (!path.exists()) {
+          bundler.makeWorking(module, version, who);
+        }
+        File bundle = bundler.bundle(module, version, who, originalJarFile);
+        bundle.renameTo(jarFile);
+        bug("Produced bundle: " + bundle.getAbsolutePath());
+      } catch (Exception ex) {
+        bug("Got exception in there.");
+        ex.printStackTrace();
+      }
+    } else {
+      bug("Yes!");
     }
 
     // Write the file to output using the correct content type.

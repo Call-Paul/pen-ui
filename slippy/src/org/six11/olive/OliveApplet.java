@@ -19,11 +19,13 @@ public class OliveApplet extends JApplet {
     String fqClass = this.getParameter("mainSlippyClass");
     System.out.println("Got fqClass: " + fqClass);
     System.out.println("Trying absolute path approach...");
-    OliveIDE ide = new OliveIDE(true, getParameter("load-path"));
+    OliveIDE ide = new OliveIDE(true, "");
     ide.attachKeyListener(getRootPane());
     add(ide);
     try {
-      ide.openBuffer(fqClass);
+      if (fqClass != null) {
+        ide.openBuffer(fqClass);
+      }
     } catch (Exception ex) {
       bug("Applet got exception: " + ex.getMessage());
       ex.printStackTrace();
