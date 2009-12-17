@@ -42,7 +42,8 @@ function edit(version, module) {
 		<th></th>
 		<c:forEach items="${versions}" var="v" varStatus="s">
 			<tr>
-				<td><a href="javascript:edit(${v.version},${v.module})">${v.version}</a></td>
+				<td><a href="javascript:void(0)"
+					onclick="javascript:edit(${v.version},'${v.module}')">${v.version}</a></td>
 				<td><a href="bundler?mode=browse&module=${v.module}">${v.module}</a></td>
 				<td><c:if test="${!empty v.who}">${v.who}</c:if></td>
 				<td><a href="javascript:void(0)"
