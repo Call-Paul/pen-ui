@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.six11.slippy.SlippyUtils;
+import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
@@ -139,7 +140,7 @@ public class SlippyBundler {
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.create(args.getValue("module"), args.getValue("oliveCode"));
-      } catch (FileNotFoundException ex) {
+      } catch (IOException ex) {
         System.out.println(ex.getMessage());
       }
     }
@@ -216,7 +217,7 @@ public class SlippyBundler {
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.deleteWorking(args.getValue("module"), args.getValue("who"));
-      } catch (FileNotFoundException ex) {
+      } catch (IOException ex) {
         System.out.println(ex.getMessage());
       }
     }
@@ -251,7 +252,7 @@ public class SlippyBundler {
         int recent = bundler.getMostRecentVersion(args.getValue("module"));
         System.out.println("Most recent version of module " + args.getValue("module") + " is "
             + recent);
-      } catch (FileNotFoundException ex) {
+      } catch (IOException ex) {
         System.out.println(ex.getMessage());
       }
     }
@@ -283,29 +284,28 @@ public class SlippyBundler {
         System.out.println(args.getUsage());
         System.exit(0);
       }
-
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.deployVersion(args.getValue("module"), args.getValue("who"));
-      } catch (FileNotFoundException ex) {
+      } catch (IOException ex) {
         System.out.println(ex.getMessage());
       }
     }
   }
 
+  /**
+   * The base dir for modules.
+   */
   private File baseDir;
 
-  public SlippyBundler(String base) throws FileNotFoundException {
+  public SlippyBundler(String base) throws IOException {
     baseDir = new File(base);
-    if (!baseDir.exists()) {
-      throw new FileNotFoundException("Directory '" + base + "' does not seem to exist.");
-    }
-    if (!baseDir.canRead()) {
-      throw new FileNotFoundException("Directory '" + base + "' is not readable.");
-    }
-    if (!baseDir.canWrite()) {
-      throw new FileNotFoundException("Directory '" + base + "' is not writeable.");
-    }
+    FileUtil.complainIfNotWriteable(baseDir);
+  }
+
+  public SlippyBundler(File base) throws IOException {
+    baseDir = base;
+    FileUtil.complainIfNotWriteable(baseDir);
   }
 
   public void deployVersion(String module, String who) throws FileNotFoundException {
@@ -399,12 +399,41 @@ public class SlippyBundler {
         ex.printStackTrace();
         throw new IllegalArgumentException("Couldn't write some files (check permissions and such)");
       }
+    } else {
+      bug("Warning: The Olive slippy code directory does not exist: "
+          + oliveFiles.getAbsolutePath());
+      bug("++ Please manually create this and copy the org.six11.olive.* slippy files there.");
+      throw new FileNotFoundException("Olive Slippy files (org.six11.olive.*) not found.");
     }
     return modDir;
   }
 
-  private static String makeVersionedJarName(String module, String version, String who) {
+  /**
+   * Returns a String such as "hello-working-billy.jar" or "hello-7.jar".
+   * 
+   * @param module
+   *          the name of the module.
+   * @param version
+   *          the integer version number, or the string 'working'.
+   * @param who
+   *          the user who is editing a working copy. This is only used when version is 'working'.
+   */
+  public static String makeVersionedJarName(String module, String version, String who) {
     String ret = null;
+    if (module == null || module.length() == 0) {
+      throw new IllegalArgumentException("module is invalid (you provided " + module + ")");
+    }
+    if (version.equals("working") && (who == null || who.length() == 0)) {
+      throw new IllegalArgumentException("who is invalid for working version (you provided " + who
+          + ")");
+    } else if (!version.equals("working")) {
+      try {
+        Integer.parseInt(version);
+      } catch (NumberFormatException ex) {
+        throw new IllegalAccessError(
+            "version is not 'working' and it is not an integer (you provided " + version + ")");
+      }
+    }
     if (version.equals("working")) {
       ret = module + "-" + version + "-" + who + ".jar";
     } else {
@@ -451,7 +480,7 @@ public class SlippyBundler {
     String lowerPath = getPathFragment(module, version, who);
     File path = new File(baseDir, lowerPath);
     FileUtil.complainIfNotReadable(path);
-    
+
     File contents = new File(path, "contents.txt");
     if (contents.exists()) { // overwrite existing contents file from a previous execution
       contents.delete();
@@ -483,5 +512,9 @@ public class SlippyBundler {
     }
 
     return targetJar;
+  }
+  
+  private static void bug(String what) {
+    Debug.out("SlippyBundler", what);
   }
 }

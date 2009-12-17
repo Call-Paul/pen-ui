@@ -80,6 +80,9 @@
 				</fileset>
 			</resource>
 			<class name="${jar.topLevelClass}" />
+			<class name="org.six11.olive.SlippyBundler" />
+			<class name="org.six11.olive.JarVendor" />
+			<class name="org.six11.olive.SlippyBundlerServlet" />
 			<classpath>
 				<fileset dir="${lib.dir}">
 					<include name="*.jar" />
@@ -144,6 +147,18 @@
 			<metainf file="${webapp.dir}/config/context.xml">
 			</metainf>
 			<!--			<classes dir="${compile.output.dir}" /> -->
+			<lib dir="${lib.dir}">
+				<!-- This is kind of messy, but I can't find an elegant solution that isn't a pain
+				     in the ass. Just exclude all the jar files that the server either doesn't need 
+				     or already has a copy of in its lib dir. -->
+				<include name="*.jar" />
+				<exclude name="antlr-3.1.3.jar" />
+				<exclude name="catalina-ant.jar" />
+				<exclude name="jasper.jar" />
+				<exclude name="servlet-api.jar" />
+				<exclude name="tomcat-juli.jar" />
+			</lib>
+			<lib file="${build.dir}/${shortName}.jar" />
 			<fileset dir="${webapp.dir}/content" />
 		</war>
 	</target>
