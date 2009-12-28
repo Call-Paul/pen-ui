@@ -15,7 +15,12 @@ function edit(version, module) {
  	  location.href = "editor.jsp?module=" + module + "&version=working&who=" + who;
 	}
 }
+function deploy(module, who) {
+	location.href = "bundler?mode=deploy&module=" + module + "&who=" + who;
+}
+
 </script>
+
 </head>
 <body>
 
@@ -35,23 +40,39 @@ function edit(version, module) {
 </form>
 
 <a href="bundler?mode=browse">Browse All Existing Modules</a>
+<br />
+<br />
+
 
 <c:if test="${!empty versions}">
+	<c:if test="${empty module}">Showing most recent version of all modules</c:if>
+	<c:if test="${!empty module}">Showing all versions of ${module}</c:if>
+
 	<table>
 		<tr>
 			<th>Version</th>
 			<th>Module Name</th>
 			<th>User</th>
 			<th></th>
+			<th></th>
 		</tr>
 		<c:forEach items="${versions}" var="v" varStatus="s">
 			<tr>
-				<td><a href="javascript:void(0)"
-					onclick="javascript:edit('${v.version}','${v.module}')">${v.version}</a></td>
-				<td><a href="bundler?mode=browse&module=${v.module}">${v.module}</a></td>
-				<td><c:if test="${!empty v.who}">${v.who}</c:if></td>
-				<td><a href="javascript:void(0)"
+				<td align="left">${v.version}</td>
+				<td align="center"><a
+					href="bundler?mode=browse&module=${v.module}">${v.module}</a></td>
+				<td align="right"><c:if test="${!empty v.who}">${v.who}</c:if><c:if
+					test="${empty v.who}">(none)</c:if></td>
+				<td align="left"><a href="javascript:void(0)"
 					onclick="javascript:edit('${v.version}','${v.module}')">[Edit]</a></td>
+				<td align="right"><c:if test="${v.version != 'working'}">
+					<a href="bundler?mode=browse&module=${v.module}">List working
+					versions of ${v.module}...</a>
+				</c:if><c:if test="${v.version == 'working' }">
+					<a href="javascript:void(0)"
+						onclick="javascript:deploy('${v.module}', '${v.who}')">Deploy
+					as new version</a>
+				</c:if></td>
 			</tr>
 		</c:forEach>
 	</table>

@@ -32,7 +32,7 @@ public class SlippyBundler {
   public static final String MOD_INFO_PROPS = "module-info.properties";
   public static final String MAIN_FILE = "main.txt";
   public static final String CONTENTS_FILE = "contents.txt";
-  
+
   /**
    * 
    * 
@@ -62,17 +62,27 @@ public class SlippyBundler {
       this.when = when;
       this.who = who;
     }
+
+    public String toString() {
+      return who + "@" + module + "#" + version;
+    }
   }
 
-  public static Comparator<Version> sortByModName = new Comparator<Version>() {
+  public static Comparator<Version> sortByVersionThenName = new Comparator<Version>() {
     public int compare(Version o1, Version o2) {
-      return o1.module.compareTo(o2.module);
-    }
-  };
-
-  public static Comparator<Version> sortByModDate = new Comparator<Version>() {
-    public int compare(Version o1, Version o2) {
-      return o1.when.compareTo(o2.when);
+      int ret = 0;
+      try {
+        int v1 = Integer.parseInt(o1.version);
+        int v2 = Integer.parseInt(o2.version);
+        ret = (new Integer(v1).compareTo(new Integer(v2)));
+      } catch (NumberFormatException ex) {
+        if (o1.who != null && o2.who != null) {
+          ret = o1.who.compareTo(o2.who);
+        } else {
+          ret = o1.when.compareTo(o2.when);
+        }
+      }
+      return ret;
     }
   };
 
@@ -413,23 +423,29 @@ public class SlippyBundler {
     FileUtil.complainIfNotWriteable(baseDir);
   }
 
-  public void deployVersion(String module, String who) throws FileNotFoundException {
+  public String deployVersion(String module, String who) throws FileNotFoundException {
+    String ret = "Nothing :(";
     String fragment = getPathFragment(module, "working", who);
     File workingDir = new File(baseDir, fragment);
     if (workingDir.exists()) {
       Version mostRecent = getMostRecentVersion(module);
-      String newVersionFragment = getPathFragment(module, "" + (mostRecent.version + 1), who);
+      int nextVersion = Integer.parseInt(mostRecent.version) + 1;
+      String newVersionFragment = getPathFragment(module, "" + nextVersion, who);
       File newVersionDir = new File(baseDir, newVersionFragment);
+      File creatorFile = new File(workingDir, "creator.txt");
+      FileUtil.writeStringToFile(creatorFile, who, false);
       workingDir.renameTo(newVersionDir);
       mostRecent = getMostRecentVersion(module);
       if (newVersionDir.exists()) {
         System.out.println("Deployed " + module + " version " + mostRecent);
+        ret = newVersionFragment;
       } else {
         System.out.println("Unknown error! Go into an uncontrolled panic!");
       }
     } else {
       System.out.println("Could not find a working directory for " + module + " for " + who);
     }
+    return ret;
   }
 
   public Version getMostRecentVersion(String module) throws FileNotFoundException {
@@ -442,6 +458,7 @@ public class SlippyBundler {
             if (Integer.parseInt(f.getName()) > Integer.parseInt(ret.version)) {
               ret.version = f.getName();
               ret.when = new Date(f.lastModified());
+              ret.who = getCreator(f);
             }
           } catch (NumberFormatException ignore) {
           }
@@ -622,7 +639,7 @@ public class SlippyBundler {
       modInfoProps.setProperty("main", main);
     }
     modInfoProps.store(new FileOutputStream(modInfo), null);
-    
+
     File targetJar = getVersionedJar(module, version, who);
     FileUtil.copy(jarFile, targetJar);
     String cmd = "jar uf " + targetJar.getAbsolutePath() + " -C " + path.getAbsolutePath() + " .";
@@ -643,6 +660,15 @@ public class SlippyBundler {
   private static void bug(String what) {
     Debug.out("SlippyBundler", what);
   }
+  
+  private static String getCreator(File f) {
+    String ret = null;
+    File creatorFile = new File(f, "creator.txt");
+    if (creatorFile.exists() && creatorFile.canRead()) {
+      ret = FileUtil.loadStringFromFile(creatorFile).trim();
+    }
+    return ret;
+  }
 
   public List<Version> getAllVersions(String module) {
     List<Version> v = new ArrayList<Version>();
@@ -652,7 +678,8 @@ public class SlippyBundler {
       for (File f : moduleDir.listFiles()) {
         if (f.isDirectory()) {
           try {
-            v.add(new Version(module, f.getName(), new Date(f.lastModified()), null));
+            String who = getCreator(f);
+            v.add(new Version(module, f.getName(), new Date(f.lastModified()), who));
           } catch (NumberFormatException ignore) {
           }
         }
@@ -667,7 +694,7 @@ public class SlippyBundler {
         }
       }
     }
-    Collections.sort(v, sortByModDate);
+    Collections.sort(v, sortByVersionThenName);
     return v;
   }
 
@@ -682,7 +709,7 @@ public class SlippyBundler {
         }
       }
     }
-    Collections.sort(v, sortByModName);
+    Collections.sort(v, sortByVersionThenName);
     return v;
   }
 }

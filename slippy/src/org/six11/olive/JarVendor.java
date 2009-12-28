@@ -121,7 +121,7 @@ public class JarVendor extends HttpServlet {
         FileUtil.complainIfNotWriteable(originalJarFile);
 
         SlippyBundler bundler = new SlippyBundler(moduleDir);
-        String lowerPath = bundler.getPathFragment(module, version, who);
+        String lowerPath = SlippyBundler.getPathFragment(module, version, who);
         File path = new File(moduleDir, lowerPath);
         if (!path.exists() && version.equals("working")) {
           bug("Making working directory for user " + who + " based on most recent version.");

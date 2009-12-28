@@ -39,7 +39,20 @@ public class SlippyBundlerServlet extends HttpServlet {
       create(req, resp);
     } else if (mode.equals("browse")) {
       browse(req, resp);
+    } else if (mode.equals("deploy")) {
+      deploy(req, resp);
     }
+  }
+
+  private void deploy(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+      ServletException {
+    File moduleDir = JarVendor.getModuleDir(this);
+    SlippyBundler bundler = new SlippyBundler(moduleDir);
+    String module = req.getParameter("module");
+    String who = req.getParameter("who");
+    String result = bundler.deployVersion(module, who);
+    req.setAttribute("msg", "Successfully deployed new version: " + result);
+    forwardTo("/bundler?mode=browse&module=" + module, req, resp);
   }
 
   private void browse(HttpServletRequest req, HttpServletResponse resp) throws IOException,
@@ -51,8 +64,9 @@ public class SlippyBundlerServlet extends HttpServlet {
       req.setAttribute("versions", versions);
     } else {
       String mod = req.getParameter("module");
-      bug("Showing versions for module " + req.getParameter("module"));
-      List<SlippyBundler.Version> versions = bundler.getAllVersions(req.getParameter("module"));
+      req.setAttribute("module", mod);
+      bug("Showing versions for module " + mod);
+      List<SlippyBundler.Version> versions = bundler.getAllVersions(mod);
       req.setAttribute("versions", versions);
     }
     forwardTo("/manage.jsp", req, resp);
