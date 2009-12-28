@@ -109,23 +109,30 @@ public class JarVendor extends HttpServlet {
     // Conjure the jar to deliver, either from the cache, or by creating/caching it.
     String targetJarName = SlippyBundler.makeVersionedJarName(module, version, who);
     File jarFile = new File(cacheDir, targetJarName);
-    bug("Ideally I would like to return " + jarFile.getAbsolutePath() + ". Does it exist?");
-    if (!jarFile.exists()) {
+    if (version.equals("working")) {
+      bug("The user requested a working jar. Building it from disk without looking at the cache.");
+    } else {
+      bug("Ideally I would like to return " + jarFile.getAbsolutePath() + ". Does it exist? "
+          + jarFile.exists());
+    }
+    if (version.equals("working") || !jarFile.exists()) {
       try {
-        bug("No. Trying to bundle it up...");
         File originalJarFile = getOriginalJarFile(this);
         FileUtil.complainIfNotWriteable(originalJarFile);
-        bug("Looks like " + originalJarFile.getAbsolutePath() + " is OK.");
 
         SlippyBundler bundler = new SlippyBundler(moduleDir);
         String lowerPath = bundler.getPathFragment(module, version, who);
         File path = new File(moduleDir, lowerPath);
         if (!path.exists() && version.equals("working")) {
+          bug("Making working directory for user " + who + " based on most recent version.");
           // The directory for the working code doesn't exist, so create it.
           Version mostRecent = bundler.getMostRecentVersion(module);
           bundler.makeWorking(module, "" + mostRecent.version, who);
+          bug("Made working directory for " + path.getAbsolutePath());
         } else if (!path.exists()) {
+          bug("Making working directory for user " + who + " for version " + version);
           bundler.makeWorking(module, version, who);
+          bug("Made working directory for " + path.getAbsolutePath());
         }
         File bundle = bundler.bundle(module, version, who, originalJarFile);
         bundle.renameTo(jarFile);

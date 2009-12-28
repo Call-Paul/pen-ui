@@ -45,7 +45,8 @@ public class Main {
     }
 
     String loadPath = args.hasValue("load-path") ? args.getValue("load-path") : ".";
-    OliveIDE ide = new OliveIDE(false, loadPath);
+//    OliveIDE ide = new OliveIDE(false, loadPath);
+    OliveIDE ide = new OliveIDE(new DiskEnvironment(loadPath));
     ide.attachKeyListener(af.getRootPane());
     ide.setBackground(java.awt.Color.RED);
     af.add(ide, BorderLayout.CENTER);

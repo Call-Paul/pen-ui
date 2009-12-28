@@ -12,6 +12,10 @@ import java.io.IOException;
  */
 public abstract class Environment {
   private String loadPath;
+  
+  public Environment() {
+    this.loadPath = "";
+  }
 
   /**
    * Sets the load path for finding Slippy code. The interpretation of this is
@@ -29,7 +33,7 @@ public abstract class Environment {
   }
 
   /**
-   * Returns the load path followed by a slash, UNLESS the load path is "", in which case " is
+   * Returns the load path followed by a slash, UNLESS the load path is "", in which case "" is
    * returned.
    * 
    * @return
@@ -38,6 +42,8 @@ public abstract class Environment {
     String ret = null;
     if (loadPath.equals("")) {
       ret = "";
+    } else if (loadPath.endsWith("/")) {
+      ret = loadPath;
     } else {
       ret = loadPath + "/";
     }

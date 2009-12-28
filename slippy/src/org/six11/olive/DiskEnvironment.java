@@ -18,6 +18,11 @@ import org.six11.util.io.FileUtil;
  */
 public class DiskEnvironment extends Environment {
 
+  public DiskEnvironment(String loadPath) {
+    super();
+    setLoadPath(loadPath);
+  }
+  
   @Override
   public String loadStringFromFile(String fullFileName) throws FileNotFoundException, IOException {
     return FileUtil.loadStringFromFile(fullFileName);
@@ -36,7 +41,6 @@ public class DiskEnvironment extends Environment {
 
   @Override
   public void save(String fqClassName, String programString) {
-    System.err.println("Writing program string:\n" + programString);
     String relativeFileName = SlippyUtils.codesetStrToFileStr(fqClassName);
     File absFile = new File(getLoadPath(), relativeFileName);
     FileUtil.writeStringToFile(absFile, programString, false);

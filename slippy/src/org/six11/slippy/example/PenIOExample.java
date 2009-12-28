@@ -40,8 +40,7 @@ public class PenIOExample {
     String loadPath = args[0];
     SlippyInterpreter interp = new SlippyInterpreter();
     SlippyMachine machine = interp.getMachine();
-    Environment env = new DiskEnvironment();
-    env.setLoadPath(loadPath);
+    Environment env = new DiskEnvironment(loadPath);
     machine.setEnvironment(env);
 
     new org.six11.olive.BoundDrawingBuffer(interp);

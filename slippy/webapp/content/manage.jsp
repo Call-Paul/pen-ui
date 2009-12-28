@@ -10,8 +10,10 @@
 
 <script type="text/javascript">
 function edit(version, module) {
-	who = prompt("What is your name?");
- 	location.href = "editor.jsp?module=" + module + "&version=working&who=" + who;
+	who = prompt("Enter a username for this working copy. (one word, no spaces)");
+	if (who) {
+ 	  location.href = "editor.jsp?module=" + module + "&version=working&who=" + who;
+	}
 }
 </script>
 </head>
@@ -36,18 +38,20 @@ function edit(version, module) {
 
 <c:if test="${!empty versions}">
 	<table>
-		<th>Version</th>
-		<th>Module Name</th>
-		<th>User</th>
-		<th></th>
+		<tr>
+			<th>Version</th>
+			<th>Module Name</th>
+			<th>User</th>
+			<th></th>
+		</tr>
 		<c:forEach items="${versions}" var="v" varStatus="s">
 			<tr>
 				<td><a href="javascript:void(0)"
-					onclick="javascript:edit(${v.version},'${v.module}')">${v.version}</a></td>
+					onclick="javascript:edit('${v.version}','${v.module}')">${v.version}</a></td>
 				<td><a href="bundler?mode=browse&module=${v.module}">${v.module}</a></td>
 				<td><c:if test="${!empty v.who}">${v.who}</c:if></td>
 				<td><a href="javascript:void(0)"
-					onclick="javascript:edit(${v.version},'${v.module}')">[Edit]</a></td>
+					onclick="javascript:edit('${v.version}','${v.module}')">[Edit]</a></td>
 			</tr>
 		</c:forEach>
 	</table>

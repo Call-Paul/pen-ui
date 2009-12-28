@@ -4,6 +4,7 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
 <title>Olive: Sketch Recognition and Interaction Development
 Environment</title>
 <style type="text/css">
@@ -18,7 +19,8 @@ html,body {
 	code="org.six11.olive.OliveApplet"
 	archive="jar/<%=SlippyBundler.makeVersionedJarName(request.getParameter("module"), request
               .getParameter("version"), request.getParameter("who"))%>"
-	width="98%" height="98%" border="1"> Your browser is
+	width="98%" height="98%" border="1">
+	Your browser is
 	completely ignoring the &lt;APPLET&gt; tag!
 </applet></div>
 

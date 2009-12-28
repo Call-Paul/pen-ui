@@ -55,4 +55,39 @@
 		<url-pattern>/bundler/*</url-pattern>
 	</servlet-mapping>
 
+	<servlet>
+		<servlet-name>SlippySaveServlet</servlet-name>
+		<servlet-class>org.six11.olive.SlippySaveServlet</servlet-class>
+
+		<init-param>
+			<param-name>oliveSlippyCode</param-name>
+			<param-value>/var/olive-slippy-code</param-value>
+		</init-param>
+		<init-param>
+			<param-name>jarVendorCacheDir</param-name>
+			<param-value>/var/jarVendorCache</param-value>
+		</init-param>
+		<init-param>
+			<param-name>moduleDir</param-name>
+			<param-value>/var/slippy-modules</param-value>
+		</init-param>
+		<init-param>
+			<param-name>originalJar</param-name> <!-- Relative to context root. -->
+			<param-value>slippy.jar</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SlippySaveServlet</servlet-name>
+		<url-pattern>/save/*</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>SlippySaveServlet</servlet-name>
+		<url-pattern>/save/</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+		<servlet-name>SlippySaveServlet</servlet-name>
+		<url-pattern>/save</url-pattern>
+	</servlet-mapping>
+
+
 </web-app>

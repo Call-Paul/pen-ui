@@ -52,7 +52,7 @@ public class OliveIDE extends JPanel {
    */
   public OliveIDE() {
     super();
-    env = new DiskEnvironment();
+    env = new DiskEnvironment(".");
   }
 
   /**
@@ -65,14 +65,16 @@ public class OliveIDE extends JPanel {
    *          environments this is a full URL that points to a servlet (or something) that is
    *          capable of doing certain magic things regarding files.
    */
-  public OliveIDE(boolean inBrowser, String slippySourcePath) {
+//  public OliveIDE(boolean inBrowser, String slippySourcePath) {
+  public OliveIDE(Environment env) {
     super();
-    if (inBrowser) {
-      env = new WebEnvironment();
-    } else {
-      env = new DiskEnvironment();
-    }
-    env.setLoadPath(slippySourcePath);
+//    if (inBrowser) {
+//      env = new WebEnvironment();
+//    } else {
+//      env = new DiskEnvironment();
+//    }
+//    env.setLoadPath(slippySourcePath);
+    this.env = env;
     init();
   }
 
@@ -223,7 +225,7 @@ public class OliveIDE extends JPanel {
         open();
       }
     });
-    NamedAction newAction = new NamedAction("New", KeyStroke.getKeyStroke(KeyEvent.VK_N, CTRL_MASK)) {
+    NamedAction newAction = new NamedAction("New", KeyStroke.getKeyStroke(KeyEvent.VK_N, weirdMod)) {
       public void activate() {
         newFile();
       }

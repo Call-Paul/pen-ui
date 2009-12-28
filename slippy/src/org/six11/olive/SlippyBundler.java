@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import org.six11.slippy.SlippyUtils;
 import org.six11.util.Debug;
@@ -28,6 +29,10 @@ import org.six11.util.io.SuffixFileFilter;
  */
 public class SlippyBundler {
 
+  public static final String MOD_INFO_PROPS = "module-info.properties";
+  public static final String MAIN_FILE = "main.txt";
+  public static final String CONTENTS_FILE = "contents.txt";
+  
   /**
    * 
    * 
@@ -555,7 +560,7 @@ public class SlippyBundler {
    * 
    * @return a String representing a path. This does NOT begin nor end with the / character.
    */
-  public String getPathFragment(String module, String version, String who)
+  public static String getPathFragment(String module, String version, String who)
       throws FileNotFoundException {
     String fragment = null;
     if (version.equals("working")) {
@@ -584,7 +589,8 @@ public class SlippyBundler {
     File path = new File(baseDir, lowerPath);
     FileUtil.complainIfNotReadable(path);
 
-    File contents = new File(path, "contents.txt");
+    // Write a 'contents.txt' file that lists each fully-qualified class name, one per line.
+    File contents = new File(path, CONTENTS_FILE);
     if (contents.exists()) { // overwrite existing contents file from a previous execution
       contents.delete();
     }
@@ -600,6 +606,23 @@ public class SlippyBundler {
     }
     contentOut.close();
 
+    // Write 'module-info.properties', a Properties file that contains information about the
+    // jar file: module name, user name, version, and main slippy class.
+    File modInfo = new File(path, MOD_INFO_PROPS);
+    File mainFile = new File(path, MAIN_FILE); // this file might not exist
+    String main = null;
+    if (mainFile.exists() && mainFile.canRead()) {
+      main = FileUtil.loadStringFromFile(mainFile).trim();
+    }
+    Properties modInfoProps = new Properties();
+    modInfoProps.setProperty("module", module);
+    modInfoProps.setProperty("who", who);
+    modInfoProps.setProperty("version", version);
+    if (main != null) {
+      modInfoProps.setProperty("main", main);
+    }
+    modInfoProps.store(new FileOutputStream(modInfo), null);
+    
     File targetJar = getVersionedJar(module, version, who);
     FileUtil.copy(jarFile, targetJar);
     String cmd = "jar uf " + targetJar.getAbsolutePath() + " -C " + path.getAbsolutePath() + " .";

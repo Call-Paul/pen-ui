@@ -60,8 +60,7 @@ public class SlippyInterpreter {
   public void useArguments(Arguments args) throws Exception {
     String file = args.getValue("file");
     String cp = args.hasFlag("load-path") ? args.getValue("load-path") : FileUtil.getPath(file);
-    Environment env = new DiskEnvironment();
-    env.setLoadPath(cp);
+    Environment env = new DiskEnvironment(cp);
     machine.setEnvironment(env);
     String program = FileUtil.loadStringFromFile(file);
     if (args.hasFlag("tree")) {

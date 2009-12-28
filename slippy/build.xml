@@ -83,6 +83,7 @@
 			<class name="org.six11.olive.SlippyBundler" />
 			<class name="org.six11.olive.JarVendor" />
 			<class name="org.six11.olive.SlippyBundlerServlet" />
+			<class name="org.six11.olive.SlippySaveServlet" />
 			<classpath>
 				<fileset dir="${lib.dir}">
 					<include name="*.jar" />

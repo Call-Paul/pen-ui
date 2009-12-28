@@ -36,8 +36,7 @@ public class GraphicsExample {
     String className = args[1];
     SlippyInterpreter interp = new SlippyInterpreter();
     SlippyMachine machine = interp.getMachine();
-    Environment env = new DiskEnvironment();
-    env.setLoadPath(loadPath);
+    Environment env = new DiskEnvironment(loadPath);
     machine.setEnvironment(env);// machine.setLoadPath(loadPath);
     new BoundDrawingBuffer(interp);
     new GraphicsExample(interp, className).go();

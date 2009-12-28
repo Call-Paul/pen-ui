@@ -16,22 +16,14 @@ public class OliveApplet extends JApplet {
   }
 
   public void init() {
-    String fqClass = this.getParameter("mainSlippyClass");
-    System.out.println("Got fqClass: " + fqClass);
-    System.out.println("Trying absolute path approach...");
-    OliveIDE ide = new OliveIDE(true, "");
+
+    OliveIDE ide = new OliveIDE(new WebEnvironment(getCodeBase()));
     ide.attachKeyListener(getRootPane());
     add(ide);
-    try {
-      if (fqClass != null) {
-        ide.openBuffer(fqClass);
-      }
-    } catch (Exception ex) {
-      bug("Applet got exception: " + ex.getMessage());
-      ex.printStackTrace();
-    }
+
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("OliveApplet", what);
   }

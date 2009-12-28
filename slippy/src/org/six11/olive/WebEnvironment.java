@@ -5,12 +5,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.six11.slippy.Environment;
 import org.six11.util.Debug;
+import org.six11.util.io.HttpUtil;
 import org.six11.util.io.StreamUtil;
+import static org.six11.olive.SlippyBundler.MOD_INFO_PROPS;
 
 /**
  * 
@@ -20,6 +24,28 @@ import org.six11.util.io.StreamUtil;
 public class WebEnvironment extends Environment {
 
   List<String> classes = null;
+  String module;
+  String who;
+  String version;
+  String main;
+  URL url;
+
+  public WebEnvironment(URL codeBase) {
+    super();
+    this.url = codeBase;
+    InputStream in = getClass().getResourceAsStream("/" + MOD_INFO_PROPS);
+    Properties modProps = new Properties();
+    try {
+      modProps.load(in);
+      this.module = modProps.getProperty("module");
+      this.who = modProps.getProperty("who");
+      this.version = modProps.getProperty("version");
+      this.main = modProps.getProperty("main");
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      bug("Could not load /" + MOD_INFO_PROPS);
+    }
+  }
 
   @Override
   public String loadStringFromFile(String fullFileName) throws FileNotFoundException, IOException {
@@ -51,22 +77,25 @@ public class WebEnvironment extends Environment {
     return "/" + getLoadPathSlashed() + fqClass.replace('.', '/') + ".slippy";
   }
 
+  /**
+   * Save the given class along with the provided source code.
+   */
   @Override
   public void save(String fqClassName, String programString) {
-    bug("save is not implemented in WebEnvironment yet");
-    // HttpUtil w;
-    // try {
-    // w = getWebClassLoader();
-    // HttpURLConnection con = w.initPostConnection(getLoadPath() + "save/" + fqClassName);
-    // String encodedString = URLEncoder.encode(programString, "UTF-8");
-    // StreamUtil.writeStringToOutputStream(encodedString, con.getOutputStream());
-    // con.getOutputStream().close();
-    // con.getInputStream(); // not sure why but this is necessary for the above to work.
-    // } catch (MalformedURLException ex) {
-    // ex.printStackTrace();
-    // } catch (IOException ex) {
-    // ex.printStackTrace();
-    // }
+    HttpUtil w = new HttpUtil();
+    StringBuilder buffer = new StringBuilder();
+    w.setParam("module", module, buffer);
+    w.setParam("who", who, buffer);
+    w.setParam("fqClass", fqClassName, buffer);
+    w.setParam("source", programString, buffer);
+    bug("Posting params: " + buffer.toString());
+    try {
+      bug("Hitting URL: " + url + "save");
+      w.post(url + "save", buffer);
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      bug("Couldn't save!");
+    }
   }
 
   private static void bug(String what) {
@@ -101,7 +130,10 @@ public class WebEnvironment extends Environment {
   }
 
   /**
-   * Adds the given fully-qualified class name to our list.
+   * Adds the given fully-qualified class name to our list. This is necessary in a web environment
+   * because the initial list of available classes is included in the jar file, but we can't write
+   * to that list directly. Instead we have to cache the list when we first need it, and henceforth
+   * use that cached list for everything.
    */
   @Override
   public void addFile(String fqClassName) {
