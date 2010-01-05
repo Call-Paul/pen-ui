@@ -65,15 +65,15 @@ public class OliveIDE extends JPanel {
    *          environments this is a full URL that points to a servlet (or something) that is
    *          capable of doing certain magic things regarding files.
    */
-//  public OliveIDE(boolean inBrowser, String slippySourcePath) {
+  // public OliveIDE(boolean inBrowser, String slippySourcePath) {
   public OliveIDE(Environment env) {
     super();
-//    if (inBrowser) {
-//      env = new WebEnvironment();
-//    } else {
-//      env = new DiskEnvironment();
-//    }
-//    env.setLoadPath(slippySourcePath);
+    // if (inBrowser) {
+    // env = new WebEnvironment();
+    // } else {
+    // env = new DiskEnvironment();
+    // }
+    // env.setLoadPath(slippySourcePath);
     this.env = env;
     init();
   }
@@ -231,6 +231,13 @@ public class OliveIDE extends JPanel {
       }
     };
     actions.put("New", newAction);
+    NamedAction makeMainAction = new NamedAction("Make Main", KeyStroke.getKeyStroke(KeyEvent.VK_M,
+        mod)) {
+      public void activate() {
+        makeMain();
+      }
+    };
+    actions.put("Make Main", makeMainAction);
   }
 
   /**
@@ -254,6 +261,7 @@ public class OliveIDE extends JPanel {
   private final void initButtons(JPanel buttons) {
     buttons.setLayout(new GridLayout(0, 3));
     buttons.add(new JButton(actions.get("Run")));
+    buttons.add(new JButton(actions.get("Make Main")));
   }
 
   private static void bug(String what) {
@@ -274,6 +282,16 @@ public class OliveIDE extends JPanel {
       showBuffer(fqClassName);
     } else {
       bug("Bummer. " + fqClassName + " is bogus.");
+    }
+  }
+
+  protected void makeMain() {
+    SlippyEditor editor = (SlippyEditor) editorTabs.getSelectedComponent();
+    String fqClass = editor.getFQClassName();
+    int result = JOptionPane.showConfirmDialog(this, "Really make " + fqClass
+        + " the module main file?", "Make main file", JOptionPane.YES_NO_OPTION);
+    if (result == JOptionPane.YES_OPTION) {
+      env.makeMain(fqClass);
     }
   }
 
@@ -389,7 +407,8 @@ public class OliveIDE extends JPanel {
    * Using the load path, finds the source file for the indicated class, loads it, creates an
    * editor, and shows the editor.
    * 
-   * @param fqClassName the fully qualified class name, e.g. "org.six11.game.BadGuy"
+   * @param fqClassName
+   *          the fully qualified class name, e.g. "org.six11.game.BadGuy"
    */
   public void openBuffer(String fqClassName) throws MalformedURLException, IOException {
     loadBuffer(fqClassName);

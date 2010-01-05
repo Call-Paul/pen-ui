@@ -90,4 +90,9 @@ public abstract class Environment {
    */
   public abstract void addFile(String fqClassName);
 
+  /**
+   * Makes the given slippy class the 'main' one---it will be executed when this module is run.
+   */
+  public abstract void makeMain(String fqClassName);
+
 }

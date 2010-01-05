@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -17,10 +16,10 @@ import org.six11.util.io.FileUtil;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class SlippySaveServlet extends HttpServlet {
+public class SlippySaveServlet extends SlippyServlet {
   
-  public final static String CACHE_DIR_PARAM = "jarVendorCacheDir"; // must agree with web.xml
-  public final static String MODULE_DIR_PARAM = "moduleDir"; // must agree with web.xml
+//  public final static String CACHE_DIR_PARAM = "jarVendorCacheDir"; // must agree with web.xml
+//  public final static String MODULE_DIR_PARAM = "moduleDir"; // must agree with web.xml
 
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
@@ -39,15 +38,15 @@ public class SlippySaveServlet extends HttpServlet {
     bug("Saved " + who + "'s " + module + "/" + fqClass + " (" + src.length() + " bytes)");
   }
   
-  protected File getCacheDir() {
-    String dir = getServletContext().getInitParameter(CACHE_DIR_PARAM);
-    return new File(dir);
-  }
-
-  protected File getModuleDir() {
-    String dir = getServletContext().getInitParameter(MODULE_DIR_PARAM);
-    return new File(dir);
-  }
+//  protected File getCacheDir() {
+//    String dir = getServletContext().getInitParameter(CACHE_DIR_PARAM);
+//    return new File(dir);
+//  }
+//
+//  protected File getModuleDir() {
+//    String dir = getServletContext().getInitParameter(MODULE_DIR_PARAM);
+//    return new File(dir);
+//  }
   
   private static void bug(String what) {
     Debug.out("SlippySaveServlet", what);

@@ -31,7 +31,7 @@ public class SlippyBundlerServlet extends SlippyServlet {
       IOException {
     String mode = req.getParameter("mode");
     if (mode == null) {
-      mode = "browse";
+      mode = "browse"; // when in doubt, go into browse mode.
     }
     if (mode.equals("create")) {
       create(req, resp);
@@ -39,6 +39,8 @@ public class SlippyBundlerServlet extends SlippyServlet {
       browse(req, resp);
     } else if (mode.equals("deploy")) {
       deploy(req, resp);
+    } else if (mode.equals("main")) {
+      makeMain(req, resp);
     }
   }
 
@@ -87,6 +89,29 @@ public class SlippyBundlerServlet extends SlippyServlet {
     } catch (Exception ex) {
       StreamUtil.writeStringToOutputStream(ex.getMessage(), resp.getOutputStream());
     }
+  }
+
+  private void makeMain(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+      ServletException {
+    String module = req.getParameter("module");
+    String who = req.getParameter("who");
+    String fqClass = req.getParameter("fqClass");
+    if (module != null && module.length() > 0 && who != null && who.length() > 0 && fqClass != null
+        && fqClass.length() > 0) {
+      File moduleDir = getModuleDir();
+      SlippyBundler bundler = new SlippyBundler(moduleDir);
+      boolean result = bundler.makeMain(module, who, fqClass);
+      if (result) {
+        req.setAttribute("msg", "Module '" + module + "' will have the main class when deployed: "
+            + fqClass);
+      } else {
+        req.setAttribute("msg", "An unknown error happened when setting working copy by " + who
+            + ", module '" + module + "' to have the main class '" + fqClass + "'");
+      }
+    } else {
+      req.setAttribute("msg", "Missing parameter 'module', 'who' or 'fqClass'.");
+    }
+    forwardTo("/manage.jsp", req, resp);
   }
 
   private static void bug(String what) {

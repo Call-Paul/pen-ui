@@ -96,8 +96,9 @@ public class SlippyBundler {
       System.out.println("Possible commands are:");
       System.out.println("  bundle");
       System.out.println("  create");
-      System.out.println("  deploy");
       System.out.println("  delete");
+      System.out.println("  deploy");
+      System.out.println("  main");
       System.out.println("  recent");
       System.out.println("  work");
       System.out.println("  versions");
@@ -122,6 +123,8 @@ public class SlippyBundler {
       MakeWorking.main(rest);
     } else if (in[0].equals("versions")) {
       GetVersions.main(rest);
+    } else if (in[0].equals("main")) {
+      MakeMain.main(rest);
     } else {
       System.out.println("Where'd you go to school? Run without args to see help.");
     }
@@ -324,6 +327,43 @@ public class SlippyBundler {
     }
   }
 
+  public static class MakeMain {
+    public static void main(String[] in) {
+      Arguments args = new Arguments();
+      args.setProgramName("main");
+      args.setDocumentationProgram("Sets a new main class for a module working copy.");
+
+      args.addFlag("baseDir", ArgType.ARG_REQUIRED, ValueType.VALUE_REQUIRED,
+          "Where the root directory of the module should be placed.");
+      args.addFlag("module", ArgType.ARG_REQUIRED, ValueType.VALUE_REQUIRED,
+          "Name of the module to create.");
+      args.addFlag("who", ArgType.ARG_REQUIRED, ValueType.VALUE_REQUIRED,
+          "A user name to distinguish among many working copies");
+      args.addFlag("fqClass", ArgType.ARG_REQUIRED, ValueType.VALUE_REQUIRED,
+          "The fully qualified class name (e.g. com.foo.MyThing) that should execute when "
+              + "the module is run.");
+      args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
+      args.parseArguments(in);
+      if (args.hasFlag("help")) {
+        System.out.println(args.getDocumentation());
+        System.exit(0);
+      }
+      try {
+        args.validate();
+      } catch (Exception ex) {
+        System.out.println(args.getUsage());
+        System.exit(0);
+      }
+      try {
+        SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
+        bundler.makeMain(args.getValue("module"), args.getValue("who"), args.getValue("fqClass"));
+      } catch (IOException ex) {
+        System.out.println(ex.getMessage());
+      }
+
+    }
+  }
+
   public static class DeployVersion {
     public static void main(String[] in) {
       Arguments args = new Arguments();
@@ -419,6 +459,7 @@ public class SlippyBundler {
     FileUtil.complainIfNotWriteable(baseDir);
   }
 
+
   public SlippyBundler(File base) throws IOException {
     baseDir = base;
     FileUtil.complainIfNotWriteable(baseDir);
@@ -445,6 +486,23 @@ public class SlippyBundler {
       }
     } else {
       System.out.println("Could not find a working directory for " + module + " for " + who);
+    }
+    return ret;
+  }
+  
+  public boolean makeMain(String module, String who, String fqClass) throws FileNotFoundException {
+    boolean ret = false;
+    String frag = getPathFragment(module, "working", who);
+    File workingDir = new File(baseDir, frag);
+    File newMainFile = new File(workingDir, SlippyUtils.codesetStrToFileStr(fqClass));
+    if (newMainFile.exists() && newMainFile.canRead()) {
+      System.out.println("Found source file...");
+      File mainFile = new File(workingDir, MAIN_FILE);
+      FileUtil.writeStringToFile(mainFile, fqClass, false);
+      System.out.println("Established " + fqClass + " as the new main class for " + module);
+      ret = true;
+    } else {
+      System.out.println("Could not find source file.");
     }
     return ret;
   }
@@ -661,7 +719,7 @@ public class SlippyBundler {
   private static void bug(String what) {
     Debug.out("SlippyBundler", what);
   }
-  
+
   private static String getCreator(File f) {
     String ret = null;
     File creatorFile = new File(f, "creator.txt");

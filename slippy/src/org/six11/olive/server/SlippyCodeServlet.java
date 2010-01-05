@@ -44,6 +44,14 @@ public class SlippyCodeServlet extends SlippyServlet {
     if ("list".equals(mode)) {
       String pathFrag = SlippyBundler.getPathFragment(module, version, who);
       File moduleDir = new File(getModuleDir(), pathFrag);
+      File mainFile = new File(moduleDir, SlippyBundler.MAIN_FILE);
+      String mainClass = null;
+      if (mainFile.exists() && mainFile.canRead()) {
+        mainClass = FileUtil.loadStringFromFile(mainFile).trim();
+        bug("main.txt exists, and it contains the string: " + mainClass);
+      } else {
+        bug("main.txt is nowhere to be found :(");
+      }
       String absLoadPath = moduleDir.getAbsolutePath();
       List<File> matches = FileUtil.searchForSuffix(".slippy", moduleDir);
       OutputStream out = resp.getOutputStream();
@@ -51,7 +59,8 @@ public class SlippyCodeServlet extends SlippyServlet {
         if (m.getAbsolutePath().startsWith(absLoadPath)) {
           String slippyClass = SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
               absLoadPath.length()));
-          outputFqClass(slippyClass, html, out, module, version, who, frames ? "codeFrame" : null);
+          outputFqClass(slippyClass, html, out, module, version, who, frames ? "codeFrame" : null,
+              mainClass);
         }
       }
     } else if ("view".equals(mode)) {
@@ -95,12 +104,12 @@ public class SlippyCodeServlet extends SlippyServlet {
   }
 
   private void outputFqClass(String fqClass, boolean html, OutputStream out, String module,
-      String version, String who, String targetFrame) throws IOException {
+      String version, String who, String targetFrame, String mainClass) throws IOException {
     if (html) {
       StringBuilder line = new StringBuilder();
       String contextPath = getServletContext().getContextPath();
       String servletPath = "code";
-      line.append("<a href=\"" + contextPath + "/" + servletPath + "?mode=view&module=" + module);
+      line.append("<nobr><a href=\"" + contextPath + "/" + servletPath + "?mode=view&module=" + module);
       line.append("&version=" + version);
       if (version.equals("working")) {
         line.append("&who=" + who);
@@ -110,7 +119,11 @@ public class SlippyCodeServlet extends SlippyServlet {
       if (targetFrame != null && targetFrame.length() > 0) {
         line.append(" target=\"" + targetFrame + "\"");
       }
-      line.append(">" + fqClass + "</a><br />\n");
+      line.append(">" + fqClass + "</a>");
+      if (mainClass != null && mainClass.equals(fqClass)) {
+        line.append(" *main-class*");
+      }
+      line.append("</nobr><br />\n");
       StreamUtil.writeStringToOutputStream(line.toString(), out);
     } else {
       StreamUtil.writeStringToOutputStream(fqClass + "\n", out);

@@ -71,4 +71,9 @@ public class DiskEnvironment extends Environment {
     // changes, then addFile probably should be fleshed out.
   }
 
+  @Override
+  public void makeMain(String fqClassName) {
+    bug("makeMain() is not implemented for DiskEnvironment.");
+  }
+
 }

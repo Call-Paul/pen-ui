@@ -144,4 +144,25 @@ public class WebEnvironment extends Environment {
     classes.add(fqClassName);
   }
 
+  /**
+   * Uses the module info to issue a web request to make fqClassName the main executable for this
+   * working copy.
+   */
+  @Override
+  public void makeMain(String fqClassName) {
+    HttpUtil w = new HttpUtil();
+    StringBuilder buffer = new StringBuilder();
+    w.setParam("mode", "main", buffer);
+    w.setParam("module", module, buffer);
+    w.setParam("who", who, buffer);
+    w.setParam("fqClass", fqClassName, buffer);
+    try {
+      w.post(url + "bundler", buffer);
+      bug(fqClassName + " is now the main class for module " + who + "@" + module);
+    } catch (IOException ex) {
+      ex.printStackTrace();
+      bug("Failed to make " + fqClassName + " the main class for module " + who + "@" + module);
+    }
+  }
+
 }
