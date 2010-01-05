@@ -20,8 +20,6 @@ public class SlippySaveServlet extends HttpServlet {
   
   public final static String CACHE_DIR_PARAM = "jarVendorCacheDir"; // must agree with web.xml
   public final static String MODULE_DIR_PARAM = "moduleDir"; // must agree with web.xml
-//  public final static String ORIGINAL_JAR_PARAM = "originalJar"; // must agree with web.xml
-
 
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {

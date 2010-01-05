@@ -40,8 +40,6 @@ public class SlippyCodeServlet extends SlippyServlet {
     String fqClass = req.getParameter("fqClass");
     boolean html = "true".equals(req.getParameter("html"));
     boolean frames = "true".equals(req.getParameter("frames"));
-    bug("Got params: " + module + " " + mode + " " + version + " " + who + " " + html + " "
-        + fqClass);
 
     if ("list".equals(mode)) {
       String pathFrag = SlippyBundler.getPathFragment(module, version, who);
@@ -80,7 +78,8 @@ public class SlippyCodeServlet extends SlippyServlet {
         resp.setContentType("text/html");
         resp.setContentLength(htmlString.length());
         StreamUtil.writeStringToOutputStream(htmlString, resp.getOutputStream());
-        bug("Handled view request for " + slippyFileName + " (" + slippyFile.length() + " bytes)");
+        bug("Handled view request for " + pathFrag + " " + slippyFileName + " ("
+            + slippyFile.length() + " bytes)");
         success = true;
       } catch (FileNotFoundException ex) {
         bug("Warning: colorizer properties file does not exist: " + colorFile);
