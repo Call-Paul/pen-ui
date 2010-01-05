@@ -32,6 +32,7 @@ public class SlippyBundler {
   public static final String MOD_INFO_PROPS = "module-info.properties";
   public static final String MAIN_FILE = "main.txt";
   public static final String CONTENTS_FILE = "contents.txt";
+  public static final String CREATOR_FILE = "creator.txt";
 
   /**
    * 
@@ -432,7 +433,7 @@ public class SlippyBundler {
       int nextVersion = Integer.parseInt(mostRecent.version) + 1;
       String newVersionFragment = getPathFragment(module, "" + nextVersion, who);
       File newVersionDir = new File(baseDir, newVersionFragment);
-      File creatorFile = new File(workingDir, "creator.txt");
+      File creatorFile = new File(workingDir, CREATOR_FILE);
       FileUtil.writeStringToFile(creatorFile, who, false);
       workingDir.renameTo(newVersionDir);
       mostRecent = getMostRecentVersion(module);

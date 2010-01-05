@@ -8,21 +8,35 @@
 	<display-name>Olive IDE</display-name>
 	<description>Olive Calligraphic Interaction Prototype</description>
 
+	<!--
+		Context paramters are shared by all servlets. Use
+		getServletContext.getInitParameter(key) to access them.
+	-->
+	<context-param>
+		<param-name>jarVendorCacheDir</param-name>
+		<param-value>/var/slippy/jarVendorCache</param-value>
+	</context-param>
+	<context-param>
+		<param-name>moduleDir</param-name>
+		<param-value>/var/slippy/slippy-modules</param-value>
+	</context-param>
+	<context-param>
+		<param-name>originalJar</param-name> <!-- Relative to context root. -->
+		<param-value>slippy.jar</param-value>
+	</context-param>
+	<context-param>
+		<param-name>oliveSlippyCode</param-name>
+		<param-value>/var/slippy/olive-slippy-code</param-value>
+	</context-param>
+	<context-param>
+		<param-name>colors</param-name>
+		<param-value>/var/slippy/colors.properties</param-value>
+	</context-param>
+
+	<!-- Establish servlets and their URI path mappings. -->
 	<servlet>
 		<servlet-name>JarVendor</servlet-name>
 		<servlet-class>org.six11.olive.JarVendor</servlet-class>
-		<init-param>
-			<param-name>jarVendorCacheDir</param-name>
-			<param-value>/var/jarVendorCache</param-value>
-		</init-param>
-		<init-param>
-			<param-name>moduleDir</param-name>
-			<param-value>/var/slippy-modules</param-value>
-		</init-param>
-		<init-param>
-			<param-name>originalJar</param-name> <!-- Relative to context root. -->
-			<param-value>slippy.jar</param-value>
-		</init-param>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>JarVendor</servlet-name>
@@ -32,23 +46,6 @@
 	<servlet>
 		<servlet-name>SlippyBundlerServlet</servlet-name>
 		<servlet-class>org.six11.olive.SlippyBundlerServlet</servlet-class>
-
-		<init-param>
-			<param-name>oliveSlippyCode</param-name>
-			<param-value>/var/olive-slippy-code</param-value>
-		</init-param>
-		<init-param>
-			<param-name>jarVendorCacheDir</param-name>
-			<param-value>/var/jarVendorCache</param-value>
-		</init-param>
-		<init-param>
-			<param-name>moduleDir</param-name>
-			<param-value>/var/slippy-modules</param-value>
-		</init-param>
-		<init-param>
-			<param-name>originalJar</param-name> <!-- Relative to context root. -->
-			<param-value>slippy.jar</param-value>
-		</init-param>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SlippyBundlerServlet</servlet-name>
@@ -58,23 +55,6 @@
 	<servlet>
 		<servlet-name>SlippySaveServlet</servlet-name>
 		<servlet-class>org.six11.olive.SlippySaveServlet</servlet-class>
-
-		<init-param>
-			<param-name>oliveSlippyCode</param-name>
-			<param-value>/var/olive-slippy-code</param-value>
-		</init-param>
-		<init-param>
-			<param-name>jarVendorCacheDir</param-name>
-			<param-value>/var/jarVendorCache</param-value>
-		</init-param>
-		<init-param>
-			<param-name>moduleDir</param-name>
-			<param-value>/var/slippy-modules</param-value>
-		</init-param>
-		<init-param>
-			<param-name>originalJar</param-name> <!-- Relative to context root. -->
-			<param-value>slippy.jar</param-value>
-		</init-param>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SlippySaveServlet</servlet-name>
@@ -87,6 +67,15 @@
 	<servlet-mapping>
 		<servlet-name>SlippySaveServlet</servlet-name>
 		<url-pattern>/save</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>SlippyCodeServlet</servlet-name>
+		<servlet-class>org.six11.olive.SlippyCodeServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>SlippyCodeServlet</servlet-name>
+		<url-pattern>/code/*</url-pattern>
 	</servlet-mapping>
 
 

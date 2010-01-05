@@ -19,49 +19,10 @@ import org.six11.util.io.StreamUtil;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class JarVendor extends HttpServlet {
-
-  public final static String CACHE_DIR_PARAM = "jarVendorCacheDir"; // must agree with web.xml
-  public final static String MODULE_DIR_PARAM = "moduleDir"; // must agree with web.xml
-  public final static String ORIGINAL_JAR_PARAM = "originalJar"; // must agree with web.xml
-
-  // protected final static SessionFactory sessionFactory;
-  // static {
-  // sessionFactory = new AnnotationConfiguration().configure().buildSessionFactory();
-  // }
+public class JarVendor extends SlippyServlet {
 
   public JarVendor() {
     super();
-  }
-
-  /**
-   * Gives the root directory for cached jar files. Wonky staticness because SlippyBundlerServlet
-   * needs this as well, and I didn't want to duplicate code.
-   */
-  protected static File getCacheDir(HttpServlet serv) {
-    String dir = serv.getInitParameter(CACHE_DIR_PARAM);
-    return new File(dir);
-  }
-
-  /**
-   * Gives the root directory for slippy source files. Wonky staticness because SlippyBundlerServlet
-   * needs this as well, and I didn't want to duplicate code.
-   */
-  protected static File getModuleDir(HttpServlet serv) {
-    String dir = serv.getInitParameter(MODULE_DIR_PARAM);
-    return new File(dir);
-  }
-
-  /**
-   * Gives the original jar files that contains all the Java classes for Olive and Slippy to work.
-   * Wonky staticness because SlippyBundlerServlet needs this as well, and I didn't want to
-   * duplicate code.
-   */
-  protected static File getOriginalJarFile(HttpServlet serv) {
-    String f = serv.getServletContext().getRealPath("/")
-        + serv.getInitParameter(ORIGINAL_JAR_PARAM);
-    bug("original jar file: " + f);
-    return new File(f);
   }
 
   private boolean ensure(File dir) {
@@ -87,8 +48,8 @@ public class JarVendor extends HttpServlet {
   protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
     // Get the base directory for cached jars, and create it if necessary.
-    File cacheDir = getCacheDir(this);
-    File moduleDir = getModuleDir(this);
+    File cacheDir = getCacheDir();
+    File moduleDir = getModuleDir();
     if (!ensure(cacheDir) || !ensure(moduleDir)) {
       bug("One of the directories is whack");
       return;
@@ -117,7 +78,7 @@ public class JarVendor extends HttpServlet {
     }
     if (version.equals("working") || !jarFile.exists()) {
       try {
-        File originalJarFile = getOriginalJarFile(this);
+        File originalJarFile = getOriginalJarFile();
         FileUtil.complainIfNotWriteable(originalJarFile);
 
         SlippyBundler bundler = new SlippyBundler(moduleDir);

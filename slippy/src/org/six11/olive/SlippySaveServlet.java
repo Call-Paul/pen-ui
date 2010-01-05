@@ -41,12 +41,12 @@ public class SlippySaveServlet extends HttpServlet {
   }
   
   protected File getCacheDir() {
-    String dir = getInitParameter(CACHE_DIR_PARAM);
+    String dir = getServletContext().getInitParameter(CACHE_DIR_PARAM);
     return new File(dir);
   }
 
   protected File getModuleDir() {
-    String dir = getInitParameter(MODULE_DIR_PARAM);
+    String dir = getServletContext().getInitParameter(MODULE_DIR_PARAM);
     return new File(dir);
   }
   
