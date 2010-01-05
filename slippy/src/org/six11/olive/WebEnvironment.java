@@ -14,7 +14,8 @@ import org.six11.slippy.Environment;
 import org.six11.util.Debug;
 import org.six11.util.io.HttpUtil;
 import org.six11.util.io.StreamUtil;
-import static org.six11.olive.SlippyBundler.MOD_INFO_PROPS;
+
+import static org.six11.olive.server.SlippyBundler.MOD_INFO_PROPS;
 
 /**
  * 

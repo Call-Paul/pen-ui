@@ -1,4 +1,4 @@
-package org.six11.olive;
+package org.six11.olive.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.six11.olive.SlippyBundler.Version;
+import org.six11.olive.server.SlippyBundler.Version;
 import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
 import org.six11.util.io.StreamUtil;

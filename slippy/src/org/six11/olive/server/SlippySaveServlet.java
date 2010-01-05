@@ -1,4 +1,4 @@
-package org.six11.olive;
+package org.six11.olive.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.six11.olive.DiskEnvironment;
 import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
 

@@ -6,9 +6,13 @@
 <title>Slippy Code Repository</title>
 </head>
 
-<frameset cols="180,*">
+<frameset rows="60,*">
 	<frame
-		src="code?module=<%=request.getParameter("module")%>&version=<%=request.getParameter("version")%>&who=<%=request.getParameter("who")%>&mode=list&html=true&frames=true" />
-	<frame name="codeFrame" />
+		src="codeHeader.jsp?module=<%=request.getParameter("module")%>&version=<%=request.getParameter("version")%>&who=<%=request.getParameter("who")%>" />
+	<frameset cols="180,*">
+		<frame
+			src="code?module=<%=request.getParameter("module")%>&version=<%=request.getParameter("version")%>&who=<%=request.getParameter("who")%>&mode=list&html=true&frames=true" />
+		<frame name="codeFrame" />
+	</frameset>
 </frameset>
 </html>

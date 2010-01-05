@@ -1,4 +1,4 @@
-<%@ page import="org.six11.olive.SlippyBundler"%>
+<%@ page import="org.six11.olive.server.SlippyBundler"%>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>

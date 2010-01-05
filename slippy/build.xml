@@ -80,11 +80,11 @@
 				</fileset>
 			</resource>
 			<class name="${jar.topLevelClass}" />
-			<class name="org.six11.olive.SlippyBundler" />
+<!--			<class name="org.six11.olive.SlippyBundler" />
 			<class name="org.six11.olive.JarVendor" />
 			<class name="org.six11.olive.SlippyBundlerServlet" />
 			<class name="org.six11.olive.SlippySaveServlet" />
-			<class name="org.six11.olive.SlippyCodeServlet" />
+			<class name="org.six11.olive.SlippyCodeServlet" /> -->
 			<classpath>
 				<fileset dir="${lib.dir}">
 					<include name="*.jar" />
@@ -96,7 +96,7 @@
 			</classfilter>
 		</genjar>
 		<delete file="modules/hello-1.jar" failonerror="false" />
-		<java classname="org.six11.olive.SlippyBundler">
+		<java classname="org.six11.olive.server.SlippyBundler">
 			<classpath refid="compile.classpath" />
 			<classpath path="${compile.output.dir}" />
 			<arg value="bundle" />
@@ -160,7 +160,8 @@
 				<exclude name="servlet-api.jar" />
 				<exclude name="tomcat-juli.jar" />
 			</lib>
-			<lib file="${build.dir}/${shortName}.jar" />
+<!--			<lib file="${build.dir}/${shortName}.jar" /> -->
+			<classes dir="${compile.output.dir}" />
 			<fileset dir="${webapp.dir}/content" />
 		</war>
 	</target>

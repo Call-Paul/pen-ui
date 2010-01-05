@@ -1,4 +1,4 @@
-package org.six11.olive;
+package org.six11.olive.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +30,9 @@ public class SlippyBundlerServlet extends SlippyServlet {
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException,
       IOException {
     String mode = req.getParameter("mode");
-    bug("mode: " + mode);
+    if (mode == null) {
+      mode = "browse";
+    }
     if (mode.equals("create")) {
       create(req, resp);
     } else if (mode.equals("browse")) {

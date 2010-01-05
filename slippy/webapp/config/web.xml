@@ -36,7 +36,7 @@
 	<!-- Establish servlets and their URI path mappings. -->
 	<servlet>
 		<servlet-name>JarVendor</servlet-name>
-		<servlet-class>org.six11.olive.JarVendor</servlet-class>
+		<servlet-class>org.six11.olive.server.JarVendor</servlet-class>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>JarVendor</servlet-name>
@@ -45,7 +45,7 @@
 
 	<servlet>
 		<servlet-name>SlippyBundlerServlet</servlet-name>
-		<servlet-class>org.six11.olive.SlippyBundlerServlet</servlet-class>
+		<servlet-class>org.six11.olive.server.SlippyBundlerServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SlippyBundlerServlet</servlet-name>
@@ -54,7 +54,7 @@
 
 	<servlet>
 		<servlet-name>SlippySaveServlet</servlet-name>
-		<servlet-class>org.six11.olive.SlippySaveServlet</servlet-class>
+		<servlet-class>org.six11.olive.server.SlippySaveServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SlippySaveServlet</servlet-name>
@@ -71,7 +71,7 @@
 
 	<servlet>
 		<servlet-name>SlippyCodeServlet</servlet-name>
-		<servlet-class>org.six11.olive.SlippyCodeServlet</servlet-class>
+		<servlet-class>org.six11.olive.server.SlippyCodeServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
 		<servlet-name>SlippyCodeServlet</servlet-name>

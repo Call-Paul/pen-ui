@@ -1,5 +1,5 @@
-<%@ page import="org.six11.olive.SlippyBundler"%>
-<%@ page import="org.six11.olive.SlippyBundler.Version"%>
+<%@ page import="org.six11.olive.server.SlippyBundler"%>
+<%@ page import="org.six11.olive.server.SlippyBundler.Version"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -86,7 +86,8 @@ Modules</a></span></div>
 					<a href="javascript:void(0)"
 						onclick="javascript:deploy('${v.module}', '${v.who}')">Deploy
 					as new version</a>
-				</c:if></td>
+				</c:if>
+				<a href="listClassesFrames.jsp?mode=list&module=${v.module}&version=${v.version}&who=${v.who}&html=true">[View Code]</a></td>
 			</tr>
 		</c:forEach>
 	</table>

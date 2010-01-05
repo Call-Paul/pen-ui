@@ -1,4 +1,4 @@
-package org.six11.olive;
+package org.six11.olive.server;
 
 import java.io.File;
 import java.io.FileNotFoundException;
