@@ -24,7 +24,9 @@ import org.six11.util.data.TextUtil;
 import org.six11.util.gui.ColoredTextPane;
 
 /**
- * 
+ * This is the main editing component for Slippy source files. It consists of tabs, each of which
+ * holds a colored text pane. At bottom are some status labels that hold information about where the
+ * cursor is.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
@@ -70,7 +72,7 @@ public class SlippyEditor extends JComponent {
       public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
         if (str.equals("\t")) {
           str = "  "; // replace tabs with two spaces
-        }        
+        }
         setDirty(true);
         super.insertString(offs, str, green);
       }
@@ -85,7 +87,7 @@ public class SlippyEditor extends JComponent {
         setDirty(true);
         super.replace(offset, length, text, attrs);
       }
-      
+
     };
     editor.setDocument(doc);
     statusPanel = new JPanel();
@@ -134,13 +136,13 @@ public class SlippyEditor extends JComponent {
       firePCE(ev);
     }
   }
-  
+
   public void addDirtyListener(PropertyChangeListener lis) {
     if (!pcListeners.contains(lis)) {
       pcListeners.add(lis);
     }
   }
-  
+
   private void firePCE(PropertyChangeEvent ev) {
     for (PropertyChangeListener lis : pcListeners) {
       lis.propertyChange(ev);

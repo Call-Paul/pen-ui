@@ -12,7 +12,8 @@ import org.six11.util.Debug;
 import org.six11.util.io.StreamUtil;
 
 /**
- * 
+ * This is basically a servlet front-end for the SlippyBundler class, enabling web clients to work
+ * with Slippy modules.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */

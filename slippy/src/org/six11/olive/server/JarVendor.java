@@ -14,7 +14,8 @@ import org.six11.util.io.FileUtil;
 import org.six11.util.io.StreamUtil;
 
 /**
- * 
+ * This builds a jar file that contains all the slippy code necessary to run (or edit) a module.
+ * This includes the org.six11.olive code as well as any other code written by programmers.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */

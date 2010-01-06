@@ -19,6 +19,7 @@ import org.antlr.runtime.tree.Tree;
 import org.six11.slippy.*;
 import org.six11.util.Debug;
 import org.six11.util.gui.ColoredTextPane;
+import org.six11.util.gui.MenuButton;
 import org.six11.util.lev.NamedAction;
 
 import static java.awt.event.InputEvent.*;
@@ -65,15 +66,8 @@ public class OliveIDE extends JPanel {
    *          environments this is a full URL that points to a servlet (or something) that is
    *          capable of doing certain magic things regarding files.
    */
-  // public OliveIDE(boolean inBrowser, String slippySourcePath) {
   public OliveIDE(Environment env) {
     super();
-    // if (inBrowser) {
-    // env = new WebEnvironment();
-    // } else {
-    // env = new DiskEnvironment();
-    // }
-    // env.setLoadPath(slippySourcePath);
     this.env = env;
     init();
   }
@@ -125,7 +119,7 @@ public class OliveIDE extends JPanel {
 
     Debug.useColor = false;
     Debug.useTime = false;
-    Debug.outputStream = new PrintStream(new RedirectedOutputStream(stdout), true);
+    Debug.outputStream = new PrintStream(stdout.getOutputStream(), true);
     buttons = new JPanel();
     initButtons(buttons);
     topLeft.add(buttons, BorderLayout.NORTH);
@@ -245,12 +239,10 @@ public class OliveIDE extends JPanel {
    * that have keyboard accellerators).
    */
   public final void attachKeyListener(JRootPane rp) {
-    bug("Attaching key listener to " + rp);
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
       if (s != null) {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
-        bug("Registered " + s.getKeyChar());
       }
     }
   }
@@ -260,8 +252,18 @@ public class OliveIDE extends JPanel {
    */
   private final void initButtons(JPanel buttons) {
     buttons.setLayout(new GridLayout(0, 3));
-    buttons.add(new JButton(actions.get("Run")));
-    buttons.add(new JButton(actions.get("Make Main")));
+    MenuButton button = new MenuButton("Commands...");
+    JPopupMenu menu = new JPopupMenu();
+    
+    menu.add(actions.get("New"));
+    menu.add(actions.get("Open"));
+    menu.add(actions.get("Save"));
+    menu.add(actions.get("Save As"));
+    menu.addSeparator();
+    menu.add(actions.get("Run"));
+    menu.add(actions.get("Make Main"));
+    button.setMenu(menu);
+    buttons.add(button);
   }
 
   private static void bug(String what) {

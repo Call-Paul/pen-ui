@@ -18,7 +18,9 @@ import org.six11.util.io.StreamUtil;
 import static org.six11.olive.server.SlippyBundler.MOD_INFO_PROPS;
 
 /**
- * 
+ * Implementation of Environment that is appropriate for use in applets. This assumes the IDE is
+ * running in a web browser and has no special access to the local system. All source code is
+ * available on the server (and can be viewed using a fancy web UI).
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
@@ -50,10 +52,8 @@ public class WebEnvironment extends Environment {
 
   @Override
   public String loadStringFromFile(String fullFileName) throws FileNotFoundException, IOException {
-    bug("loadStringFromFile gets \"" + fullFileName + "\"");
     InputStream in = getClass().getResourceAsStream(fullFileName);
     String programSource = StreamUtil.inputStreamToString(in);
-    bug("loadStringFromFile found program source of length " + programSource.length());
     return programSource;
   }
 
@@ -89,9 +89,7 @@ public class WebEnvironment extends Environment {
     w.setParam("who", who, buffer);
     w.setParam("fqClass", fqClassName, buffer);
     w.setParam("source", programString, buffer);
-    bug("Posting params: " + buffer.toString());
     try {
-      bug("Hitting URL: " + url + "save");
       w.post(url + "save", buffer);
     } catch (IOException ex) {
       ex.printStackTrace();
@@ -112,7 +110,6 @@ public class WebEnvironment extends Environment {
   public String[] listClasses() {
     if (classes == null) {
       classes = new ArrayList<String>();
-      bug("Loading /contents.txt...");
       InputStream in = getClass().getResourceAsStream("/contents.txt");
       if (in == null) {
         bug("Couldn't load contents.txt file.");
@@ -158,7 +155,7 @@ public class WebEnvironment extends Environment {
     w.setParam("fqClass", fqClassName, buffer);
     try {
       w.post(url + "bundler", buffer);
-      bug(fqClassName + " is now the main class for module " + who + "@" + module);
+      System.out.println(fqClassName + " is now the main class for module " + who + "@" + module);
     } catch (IOException ex) {
       ex.printStackTrace();
       bug("Failed to make " + fqClassName + " the main class for module " + who + "@" + module);

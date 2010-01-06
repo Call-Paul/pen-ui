@@ -10,7 +10,7 @@ import org.six11.slippy.Thing;
 import org.six11.util.Debug;
 
 /**
- * 
+ * A simple bus for putting messages (Strings) that are routed to registered listeners.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */

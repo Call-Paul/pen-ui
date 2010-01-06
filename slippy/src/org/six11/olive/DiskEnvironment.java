@@ -12,7 +12,8 @@ import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
 
 /**
- * 
+ * Implementation of Environment for local-only disk environment. This assumes full permissions on
+ * the local filesystem.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
@@ -22,7 +23,7 @@ public class DiskEnvironment extends Environment {
     super();
     setLoadPath(loadPath);
   }
-  
+
   @Override
   public String loadStringFromFile(String fullFileName) throws FileNotFoundException, IOException {
     return FileUtil.loadStringFromFile(fullFileName);

@@ -5,7 +5,7 @@ import java.io.File;
 import javax.servlet.http.HttpServlet;
 
 /**
- * 
+ * Base class for several subclasses that need access to files and certain context parameters.
  *
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
