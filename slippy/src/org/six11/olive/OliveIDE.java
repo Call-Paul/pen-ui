@@ -232,6 +232,15 @@ public class OliveIDE extends JPanel {
       }
     };
     actions.put("Make Main", makeMainAction);
+    
+    if (env.isWeb()) { 
+      NamedAction quitAction = new NamedAction("Quit", KeyStroke.getKeyStroke(KeyEvent.VK_Q, mod)) {
+        public void activate() {
+          env.quit();
+        }
+      };
+      actions.put("Quit", quitAction);
+    }
   }
 
   /**
@@ -262,8 +271,13 @@ public class OliveIDE extends JPanel {
     menu.addSeparator();
     menu.add(actions.get("Run"));
     menu.add(actions.get("Make Main"));
+    if (env.isWeb()) {
+      menu.addSeparator();
+      menu.add(actions.get("Quit"));
+    }
     button.setMenu(menu);
     buttons.add(button);
+    
   }
 
   private static void bug(String what) {

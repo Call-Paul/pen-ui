@@ -10,7 +10,7 @@ import javax.swing.JApplet;
 public class OliveApplet extends JApplet {
 
   public void init() {
-    OliveIDE ide = new OliveIDE(new WebEnvironment(getCodeBase()));
+    OliveIDE ide = new OliveIDE(new WebEnvironment(this));
     ide.attachKeyListener(getRootPane());
     add(ide);
   }

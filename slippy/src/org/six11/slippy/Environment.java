@@ -95,4 +95,14 @@ public abstract class Environment {
    */
   public abstract void makeMain(String fqClassName);
 
+  public boolean isWeb() {
+    return false;
+  }
+
+  /**
+   * Instructs the program to quit, possibly cleaning up resources and saving files.
+   */
+  public abstract void quit();
+
+
 }

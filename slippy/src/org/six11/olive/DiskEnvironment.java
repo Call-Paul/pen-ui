@@ -76,5 +76,9 @@ public class DiskEnvironment extends Environment {
   public void makeMain(String fqClassName) {
     bug("makeMain() is not implemented for DiskEnvironment.");
   }
-
+  
+  public void quit() {
+    bug("Quitting. I am not yet polite enought to save your files.");
+    System.exit(0);
+  }
 }

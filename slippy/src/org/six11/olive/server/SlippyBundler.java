@@ -34,6 +34,8 @@ public class SlippyBundler {
   public static final String CONTENTS_FILE = "contents.txt";
   public static final String CREATOR_FILE = "creator.txt";
 
+  private static boolean outputEnabled = false;
+  
   /**
    * 
    * 
@@ -91,20 +93,22 @@ public class SlippyBundler {
    * This is for building a jar file from the command line, also good for testing.
    */
   public static void main(String[] in) {
+    outputEnabled = true;
     if (in.length == 0) {
-      System.out.println("Usage: SlippyBundler [command] [args...]");
-      System.out.println("Possible commands are:");
-      System.out.println("  bundle");
-      System.out.println("  create");
-      System.out.println("  delete");
-      System.out.println("  deploy");
-      System.out.println("  main");
-      System.out.println("  recent");
-      System.out.println("  work");
-      System.out.println("  versions");
-      System.out.println("Generally you can get help like this: SlippyBundler [command] --help");
+      out("Usage: SlippyBundler [command] [args...]");
+      out("Possible commands are:");
+      out("  bundle");
+      out("  create");
+      out("  delete");
+      out("  deploy");
+      out("  main");
+      out("  recent");
+      out("  work");
+      out("  versions");
+      out("Generally you can get help like this: SlippyBundler [command] --help");
       System.exit(0);
     }
+    
     String[] rest = new String[in.length - 1];
     for (int i = 1; i < in.length; i++) {
       rest[i - 1] = in[i];
@@ -126,7 +130,7 @@ public class SlippyBundler {
     } else if (in[0].equals("main")) {
       MakeMain.main(rest);
     } else {
-      System.out.println("Where'd you go to school? Run without args to see help.");
+      out("Where'd you go to school? Run without args to see help.");
     }
   }
 
@@ -150,14 +154,14 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
-        System.out.println("To create a new module, execute org.six11.olive.SlippyBunder$Create");
+        out(args.getUsage());
+        out("To create a new module, execute org.six11.olive.SlippyBunder$Create");
         System.exit(0);
       }
       try {
@@ -165,18 +169,18 @@ public class SlippyBundler {
         File target = bundler.getVersionedJar(args.getValue("module"), args.getValue("version"),
             args.getValue("who"));
         if (target != null && target.exists()) {
-          System.out.println(target.getAbsolutePath() + " exists (" + target.length() + " bytes)");
+          out(target.getAbsolutePath() + " exists (" + target.length() + " bytes)");
         } else {
           File originalJar = new File(args.getValue("jar"));
           FileUtil.complainIfNotReadable(originalJar);
           File jarFile = bundler.bundle(args.getValue("module"), args.getValue("version"), args
               .getValue("who"), originalJar);
-          System.out.println("I now have a nice jar file in: '" + jarFile.getAbsolutePath() + "'");
+          out("I now have a nice jar file in: '" + jarFile.getAbsolutePath() + "'");
         }
       } catch (FileNotFoundException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -196,13 +200,13 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
 
@@ -210,7 +214,7 @@ public class SlippyBundler {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.create(args.getValue("module"), args.getValue("oliveCode"));
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -234,13 +238,13 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
 
@@ -249,7 +253,7 @@ public class SlippyBundler {
         bundler
             .makeWorking(args.getValue("module"), args.getValue("version"), args.getValue("who"));
       } catch (FileNotFoundException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       } catch (IOException ex) {
         ex.printStackTrace();
       }
@@ -273,13 +277,13 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
 
@@ -287,7 +291,7 @@ public class SlippyBundler {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.deleteWorking(args.getValue("module"), args.getValue("who"));
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -306,23 +310,23 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
 
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         Version recent = bundler.getMostRecentVersion(args.getValue("module"));
-        System.out.println("Most recent version of module " + args.getValue("module") + " is "
+        out("Most recent version of module " + args.getValue("module") + " is "
             + recent.version);
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -345,20 +349,20 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.makeMain(args.getValue("module"), args.getValue("who"), args.getValue("fqClass"));
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
 
     }
@@ -381,20 +385,20 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
       try {
         SlippyBundler bundler = new SlippyBundler(args.getValue("baseDir"));
         bundler.deployVersion(args.getValue("module"), args.getValue("who"));
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -414,13 +418,13 @@ public class SlippyBundler {
       args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Shows useful help");
       args.parseArguments(in);
       if (args.hasFlag("help")) {
-        System.out.println(args.getDocumentation());
+        out(args.getDocumentation());
         System.exit(0);
       }
       try {
         args.validate();
       } catch (Exception ex) {
-        System.out.println(args.getUsage());
+        out(args.getUsage());
         System.exit(0);
       }
       try {
@@ -444,7 +448,7 @@ public class SlippyBundler {
           System.out.print("   " + ver.module + "\n");
         }
       } catch (IOException ex) {
-        System.out.println(ex.getMessage());
+        out(ex.getMessage());
       }
     }
   }
@@ -479,13 +483,13 @@ public class SlippyBundler {
       workingDir.renameTo(newVersionDir);
       mostRecent = getMostRecentVersion(module);
       if (newVersionDir.exists()) {
-        System.out.println("Deployed " + module + " version " + mostRecent);
+        out("Deployed " + module + " version " + mostRecent);
         ret = newVersionFragment;
       } else {
-        System.out.println("Unknown error! Go into an uncontrolled panic!");
+        out("Unknown error! Go into an uncontrolled panic!");
       }
     } else {
-      System.out.println("Could not find a working directory for " + module + " for " + who);
+      out("Could not find a working directory for " + module + " for " + who);
     }
     return ret;
   }
@@ -496,13 +500,13 @@ public class SlippyBundler {
     File workingDir = new File(baseDir, frag);
     File newMainFile = new File(workingDir, SlippyUtils.codesetStrToFileStr(fqClass));
     if (newMainFile.exists() && newMainFile.canRead()) {
-      System.out.println("Found source file...");
+      out("Found source file...");
       File mainFile = new File(workingDir, MAIN_FILE);
       FileUtil.writeStringToFile(mainFile, fqClass, false);
-      System.out.println("Established " + fqClass + " as the new main class for " + module);
+      out("Established " + fqClass + " as the new main class for " + module);
       ret = true;
     } else {
-      System.out.println("Could not find source file.");
+      out("Could not find source file.");
     }
     return ret;
   }
@@ -542,10 +546,10 @@ public class SlippyBundler {
     File sourceDir = new File(baseDir, getPathFragment(module, version, who));
     File workingDir = new File(baseDir, fragment);
     if (workingDir.exists()) {
-      System.out.println("Error: " + workingDir.getAbsolutePath()
+      out("Error: " + workingDir.getAbsolutePath()
           + " exists. I won't overwrite it.");
     } else {
-      System.out.println("Copying stuff...\n  source: " + sourceDir.getAbsolutePath()
+      out("Copying stuff...\n  source: " + sourceDir.getAbsolutePath()
           + "\n  dest:   " + workingDir.getAbsolutePath());
       FileUtil.copyTree(sourceDir, workingDir, null, null);
       System.out
@@ -707,13 +711,19 @@ public class SlippyBundler {
     try {
       result = process.waitFor();
       if (result == 0) {
-        System.out.println("Bundled module " + module + ": " + targetJar.getAbsolutePath());
+        out("Bundled module " + module + ": " + targetJar.getAbsolutePath());
       }
     } catch (InterruptedException ex) {
       ex.printStackTrace();
     }
 
     return targetJar;
+  }
+  
+  private static void out(String what) {
+    if (outputEnabled) {
+      System.out.println(what);
+    }
   }
 
   private static void bug(String what) {

@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import javax.swing.JApplet;
+
 import org.six11.slippy.Environment;
 import org.six11.util.Debug;
 import org.six11.util.io.HttpUtil;
@@ -31,11 +33,11 @@ public class WebEnvironment extends Environment {
   String who;
   String version;
   String main;
-  URL url;
+  JApplet applet;
 
-  public WebEnvironment(URL codeBase) {
+  public WebEnvironment(JApplet applet) {
     super();
-    this.url = codeBase;
+    this.applet = applet;
     InputStream in = getClass().getResourceAsStream("/" + MOD_INFO_PROPS);
     Properties modProps = new Properties();
     try {
@@ -90,7 +92,7 @@ public class WebEnvironment extends Environment {
     w.setParam("fqClass", fqClassName, buffer);
     w.setParam("source", programString, buffer);
     try {
-      w.post(url + "save", buffer);
+      w.post(applet.getCodeBase() + "save", buffer);
     } catch (IOException ex) {
       ex.printStackTrace();
       bug("Couldn't save!");
@@ -154,12 +156,19 @@ public class WebEnvironment extends Environment {
     w.setParam("who", who, buffer);
     w.setParam("fqClass", fqClassName, buffer);
     try {
-      w.post(url + "bundler", buffer);
+      w.post(applet.getCodeBase() + "bundler", buffer);
       System.out.println(fqClassName + " is now the main class for module " + who + "@" + module);
     } catch (IOException ex) {
       ex.printStackTrace();
       bug("Failed to make " + fqClassName + " the main class for module " + who + "@" + module);
     }
   }
+  
+  public boolean isWeb() {
+    return true;
+  }
 
+  public void quit() {
+    applet.getAppletContext().showDocument(applet.getCodeBase());
+  }
 }

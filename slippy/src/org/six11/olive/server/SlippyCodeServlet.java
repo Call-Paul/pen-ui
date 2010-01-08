@@ -48,13 +48,11 @@ public class SlippyCodeServlet extends SlippyServlet {
       String mainClass = null;
       if (mainFile.exists() && mainFile.canRead()) {
         mainClass = FileUtil.loadStringFromFile(mainFile).trim();
-        bug("main.txt exists, and it contains the string: " + mainClass);
-      } else {
-        bug("main.txt is nowhere to be found :(");
       }
       String absLoadPath = moduleDir.getAbsolutePath();
       List<File> matches = FileUtil.searchForSuffix(".slippy", moduleDir);
       OutputStream out = resp.getOutputStream();
+      resp.setContentType("text/html");
       for (File m : matches) {
         if (m.getAbsolutePath().startsWith(absLoadPath)) {
           String slippyClass = SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
@@ -87,7 +85,7 @@ public class SlippyCodeServlet extends SlippyServlet {
         resp.setContentType("text/html");
         resp.setContentLength(htmlString.length());
         StreamUtil.writeStringToOutputStream(htmlString, resp.getOutputStream());
-        bug("Handled view request for " + pathFrag + " " + slippyFileName + " ("
+        bug("View: " + pathFrag + " " + slippyFileName + " ("
             + slippyFile.length() + " bytes)");
         success = true;
       } catch (FileNotFoundException ex) {

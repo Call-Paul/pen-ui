@@ -10,11 +10,8 @@
 <title>Olive: Manage Slippy Modules</title>
 
 <script type="text/javascript">
-function edit(version, module, originalWho) {
-	who = originalWho;
-	if (!who) {
-	  who = prompt("Enter a username for this working copy. (one word, no spaces)");
-	}
+function edit(version, module) {
+	who = prompt("Enter a username for this working copy. (one word, no spaces)");
 	if (who) {
  	  location.href = "editor.jsp?module=" + module + "&version=working&who=" + who;
 	}
