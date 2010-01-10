@@ -1,0 +1,70 @@
+; Making a list
+stuff = ["a", "something", nil, (4*3)]
+print (stuff) ; [ a, something, nil, 12.0 ]
+
+; n()
+print ("The list has " + stuff.n() + " items") ; The list has 4.0 items
+
+; add(val)
+stuff.add(8)
+print (stuff) ; [ a, something, nil, 12.0, 8.0 ]
+
+; remove(val)
+stuff.remove(nil)
+print (stuff) ; [ a, something, 12.0, 8.0 ]
+
+; removeAtIndex(idx)
+stuff.removeAtIndex(0)
+print (stuff) ; [ something, 12.0, 8.0 ]
+
+; indexOf(val)
+print("12 is at index: " + stuff.indexOf(12)) ; 12 is at index: 1.0
+
+; resort(sortFunction)
+s = lambda (a, b)   ; sort functions work like in Java
+    if (a < b)
+      -1            ; -1 means first param is < second
+    else if (a > b)
+      1             ; 1 means first param is > second
+    else
+      0             ; 0 means params are equal
+    done
+  done
+jumble = [ 4, 2, 6, 3, 7, 5 ]
+print (jumble) ; [ 4.0, 2.0, 6.0, 3.0, 7.0, 5.0 ]
+ordered = jumble.resort(s)
+print (ordered) ; [ 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 ]
+
+; each
+squared = []
+go = lambda (v)
+    squared.add(v* v)
+  done
+jumble.each(go)
+print(squared) ; [ 16.0, 4.0, 36.0, 9.0, 49.0, 25.0 ]
+
+; filter
+is_odd = { (v) if (v % 2) v else nil done }
+odds = jumble.filter(is_odd)
+print(odds) ; [ 3.0, 7.0, 5.0 ]
+
+; sum, min, and max
+sumVal = jumble.sum()
+minVal = jumble.min()
+maxVal = jumble.max()
+print("sum is " + sumVal) ; sum is 27.0
+print("min is: " + minVal) ; min is: 2.0
+print("max is: " + maxVal) ; max is: 7.0
+
+; sort
+orderedSquares = []
+orderedSquares.sort = s
+squared.each( { (v) orderedSquares.add(v) } )
+print(orderedSquares) ; [ 4.0, 9.0, 16.0, 25.0, 36.0, 49.0 ]
+
+; copy
+osCopy = orderedSquares.copy()
+osCopy.removeAtIndex(osCopy.n() - 1)
+osCopy.removeAtIndex(0)
+print(osCopy) ; [ 9.0, 16.0, 25.0, 36.0 ]
+print(orderedSquares) ; [ 4.0, 9.0, 16.0, 25.0, 36.0, 49.0 ]

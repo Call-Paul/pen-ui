@@ -58,6 +58,43 @@ public class JarVendor extends SlippyServlet {
     // Parse the file string.
     String requestedFile = req.getPathInfo().substring(1);
     bug("Requested file: " + requestedFile);
+    if (requestedFile.endsWith(".jar")) {
+      giveJar(requestedFile, resp);
+    } else if (requestedFile.endsWith("-contents.txt")) {
+      giveContents(requestedFile, resp);
+    }
+  }
+  
+  /**
+   * @param requestedFile is in the format: someModule-working-billy-contents.txt
+   */
+  private void giveContents(String requestedFile, HttpServletResponse resp) throws IOException {
+    File moduleDir = getModuleDir();
+
+    requestedFile = requestedFile.replace("-contents.txt", "");
+    StringTokenizer tokens = new StringTokenizer(requestedFile, "-", false);
+    String module = tokens.nextToken();
+    String version = tokens.nextToken();
+    String who = tokens.nextToken();
+    if (tokens.hasMoreTokens()) {
+      who = tokens.nextToken();
+    }
+    bug("Giving contents for " + module + " " + version + " " + who);
+    SlippyBundler bundler = new SlippyBundler(moduleDir);
+    String contents = bundler.getContentsList(module, version, who);
+    
+    // Write contents to output using the correct content type.
+    String contentType = "text/plain";
+    resp.setContentType(contentType);
+    StreamUtil.writeStringToOutputStream(contents, resp.getOutputStream());
+    bug("Writing contents list to web request:\n" + contents);
+    resp.getOutputStream().close();
+  }
+
+  private void giveJar(String requestedFile, HttpServletResponse resp) throws IOException {
+    File cacheDir = getCacheDir();
+    File moduleDir = getModuleDir();
+
     requestedFile = requestedFile.replace(".jar", "");
     StringTokenizer tokens = new StringTokenizer(requestedFile, "-", false);
     String module = tokens.nextToken();

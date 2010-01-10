@@ -658,6 +658,23 @@ public class SlippyBundler {
     }
     return fragment;
   }
+  
+  public String getContentsList(String module, String version, String who) throws IOException {
+    String frag = getPathFragment(module, version, who);
+    File path = new File(baseDir, frag);
+    FileUtil.complainIfNotReadable(path);
+    StringBuffer buf = new StringBuffer();
+    String absLoadPath = path.getAbsolutePath();
+    List<File> matches = FileUtil.searchForSuffix(".slippy", path);
+    for (File m : matches) {
+      if (m.getAbsolutePath().startsWith(absLoadPath)) {
+        String fqClass = SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
+            absLoadPath.length()));
+        buf.append(fqClass + "\n");
+      }
+    }
+    return buf.toString();
+  }
 
   /**
    * Create a jar file that contains the versioned module slippy code. This does NOT look to see if
@@ -675,15 +692,7 @@ public class SlippyBundler {
       contents.delete();
     }
     FileOutputStream contentOut = new FileOutputStream(contents);
-    String absLoadPath = path.getAbsolutePath();
-    List<File> matches = FileUtil.searchForSuffix(".slippy", path);
-    for (File m : matches) {
-      if (m.getAbsolutePath().startsWith(absLoadPath)) {
-        String fqClass = SlippyUtils.fileStrToCodestStr(m.getAbsolutePath().substring(
-            absLoadPath.length()));
-        StreamUtil.writeStringToOutputStream(fqClass + "\n", contentOut);
-      }
-    }
+    StreamUtil.writeStringToOutputStream(getContentsList(module, version, who), contentOut);
     contentOut.close();
 
     // Write 'module-info.properties', a Properties file that contains information about the

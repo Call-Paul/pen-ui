@@ -1,0 +1,31 @@
+@CHARSET "UTF-8";
+
+#topic {
+	font-weight: bold;
+	font-size: xx-large;
+	margin-top: 48px;
+	margin-left: 24px;
+}
+
+#code {
+	font-family: monospace;
+	border-style: dotted;
+	border-width: 1px;
+	border-color: #900;
+	background-color: #ddd;
+	margin-top: 12px;
+	margin-bottom: 12px;
+	margin-right: 40px;
+	margin-left: 40px;
+	padding-top: 12px;
+	padding-left: 50px;
+	padding-right: 50px;
+	padding-bottom: 12px;
+}
+
+#description {
+	font-weight: normal;
+	font-size: medium;
+	max-width: 600px;
+	margin-left: 24px;
+}

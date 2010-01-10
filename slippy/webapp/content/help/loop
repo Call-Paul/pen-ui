@@ -1,0 +1,17 @@
+; Loop 3 times
+loop(3)
+  print("It works three times!")
+done
+
+; Loop while the condition is true
+boo = true
+loop(boo)
+  print("I should 'loop' one time.")
+  boo = false
+done
+
+; Loop through a list with a new 'x' value each time
+myList = ["John", "Paul", "George", "Ringo"]
+loop(x : myList)
+  print ("A Beatle:", x)
+done

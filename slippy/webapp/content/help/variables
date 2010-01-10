@@ -1,0 +1,8 @@
+x = 10
+y = x * x
+print (x, "*", x, "is", y) ; 10.0 * 10.0 is 100.0
+print ("z is undefined:", z) ; z is undefined: nil
+x = "Now I'm a string"
+print (x) ; Now I'm a string
+x = nil
+print ("The value of x is now", x) ; The value of x is now nil

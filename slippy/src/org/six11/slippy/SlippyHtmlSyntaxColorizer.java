@@ -1,5 +1,6 @@
 package org.six11.slippy;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -24,6 +25,7 @@ public class SlippyHtmlSyntaxColorizer {
   public Properties styles; // maps token names (e.g. "member lval") to css style strings
   public String outFile; // name of the output file
   public String programString; // the unmodified source string.
+  private File baseDir;
 
   enum FontStyle {
     plain, italic, bold, both
@@ -161,10 +163,31 @@ public class SlippyHtmlSyntaxColorizer {
   public void setOutFile(String outFile) {
     this.outFile = outFile;
   }
+  
+  public void setBaseDir(String path) {
+    setBaseDir(new File(path));
+  }
+  public void setBaseDir(File baseDir) {
+    this.baseDir = baseDir;
+  }
+  
+  public File getFile(String pathFragment) {
+    File ret = null;
+    if (baseDir == null) {
+      ret = new File(pathFragment);
+    } else {
+      ret = new File(baseDir, pathFragment);
+    }
+    return ret;
+  }
 
   @SuppressWarnings("unchecked")
   public String walk(String inFile, boolean preamble) throws Exception {
-    programString = FileUtil.loadStringFromFile(inFile);
+    File file = getFile(inFile);
+    if (!file.exists()) {
+      bug("Can't locate file: " + file.getAbsolutePath());
+    }
+    programString = FileUtil.loadStringFromFile(file);
     CharStream cs = new ANTLRStringStream(programString);
     SlippySyntaxLexer myLexer = new SlippySyntaxLexer(cs);
     CommonTokenStream tokens = new CommonTokenStream(myLexer);
@@ -189,7 +212,7 @@ public class SlippyHtmlSyntaxColorizer {
     if (preamble) {
       buf.append("<html><head><title>" + inFile + "</title></head><body>\n");
     }
-    buf.append("<pre style=\"color: #000\">\n");
+    buf.append("<pre style=\"color: #000\">");
     for (int i = 0; i < toks.size(); i++) {
       CommonToken t = toks.get(i);
       if (tokenTypes.containsKey(i)) {
@@ -204,7 +227,7 @@ public class SlippyHtmlSyntaxColorizer {
         buf.append(getColoredToken(t));
       }
     }
-    buf.append("\n</pre>");
+    buf.append("</pre>");
     if (preamble) {
       buf.append("\n</body></html>\n");
     }

@@ -1,0 +1,19 @@
+; the 'long' way to make a lambda
+square = lambda(x)
+    x * x
+  done
+
+; the 'short' way
+cube = { (x) x * x * x }
+
+; lambda params can be functions
+runNtimes = lambda(f, p, n)
+    loop (n)
+      print(f(p))
+    done
+  done
+
+print(square(3)) ; 9.0
+
+runNtimes(cube, 4, 2) ; 64.0 two times
+

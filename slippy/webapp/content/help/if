@@ -1,0 +1,16 @@
+t = true
+f = false
+
+if (t)
+  print("Good.") ; this always runs
+done
+
+if (f)
+  print("No...")
+else if (t and f)
+  print("No...")
+else if (t or f)
+  print("Yes.") ; This executes
+else
+  print("Hmm.") ; This won't execute because the 'Yes' one did.
+done

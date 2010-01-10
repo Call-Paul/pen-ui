@@ -1,0 +1,14 @@
+empty = {}
+print("Empty map: " + empty) ; Empty map: { }
+
+beatles = { 
+	"Lead guitar" : "George",
+	"Rythym guitar" : "John",
+	"Bass"	: "Paul",
+	"Drums" : "Ringo" }
+
+print("The Beatles are: " + beatles) ; The Beatles are: { Lead guitar : George, 
+                                     ; Rythym guitar : John, Drums : Ringo, 
+                                     ; Bass : Paul }
+print("The bass player was " + beatles["Bass"]) ; The bass player was Paul
+print("The cowbell player was " + beatles["Cowbell"]) ; The cowbell player was nil

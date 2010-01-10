@@ -1,0 +1,14 @@
+class ThingWithoutToString
+ ; nothing here :(
+done
+
+class ThingWithToString
+  define to_s()
+    "I am fancy"
+  done
+done
+
+t1 = new ThingWithoutToString()
+t2 = new ThingWithToString()
+print(t1) ; <ThingWithoutToString@796215886>
+print(t2) ; I am fancy

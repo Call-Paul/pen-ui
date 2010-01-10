@@ -1,18 +1,17 @@
 package org.six11.olive;
 
-import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import javax.swing.JApplet;
 
 import org.six11.slippy.Environment;
+import org.six11.slippy.SlippyUtils;
 import org.six11.util.Debug;
 import org.six11.util.io.HttpUtil;
 import org.six11.util.io.StreamUtil;
@@ -54,9 +53,28 @@ public class WebEnvironment extends Environment {
 
   @Override
   public String loadStringFromFile(String fullFileName) throws FileNotFoundException, IOException {
-    InputStream in = getClass().getResourceAsStream(fullFileName);
-    String programSource = StreamUtil.inputStreamToString(in);
-    return programSource;
+    String ret = "";
+    try {
+      InputStream in = getClass().getResourceAsStream(fullFileName);
+      if (in == null) {
+        String fqClass = SlippyUtils.fileStrToCodestStr(fullFileName);
+        HttpUtil ht = new HttpUtil();
+        StringBuilder buf = new StringBuilder();
+        ht.setParam("module", module, buf);
+        ht.setParam("version", version, buf);
+        ht.setParam("who", who, buf);
+        ht.setParam("fqClass", fqClass, buf);
+        ht.setParam("mode", "download", buf);
+        String u = applet.getCodeBase() + "code?" + buf.toString();
+        ret = ht.downloadUrlToString(u);
+      } else {
+        ret = StreamUtil.inputStreamToString(in);
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+    return ret;
+
   }
 
   /**
@@ -112,18 +130,17 @@ public class WebEnvironment extends Environment {
   public String[] listClasses() {
     if (classes == null) {
       classes = new ArrayList<String>();
-      InputStream in = getClass().getResourceAsStream("/contents.txt");
-      if (in == null) {
-        bug("Couldn't load contents.txt file.");
-      } else {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-        try {
-          while (reader.ready()) {
-            classes.add(reader.readLine());
-          }
-        } catch (IOException ex) {
-          ex.printStackTrace();
+      HttpUtil ht = new HttpUtil();
+      String contentsUriFragment = module + "-" + version + "-" + who + "-contents.txt";
+      try {
+        String contents = ht.downloadUrlToString(applet.getCodeBase() + "jar/"
+            + contentsUriFragment);
+        StringTokenizer toks = new StringTokenizer(contents, "\n");
+        while (toks.hasMoreTokens()) {
+          classes.add(toks.nextToken());
         }
+      } catch (IOException ex) {
+        ex.printStackTrace();
       }
     }
     return classes.toArray(new String[0]);
@@ -163,7 +180,7 @@ public class WebEnvironment extends Environment {
       bug("Failed to make " + fqClassName + " the main class for module " + who + "@" + module);
     }
   }
-  
+
   public boolean isWeb() {
     return true;
   }

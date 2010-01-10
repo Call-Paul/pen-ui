@@ -1,0 +1,4 @@
+print("This is a string") ; This is a string
+print("This", "is", "easy", "to", "read") ; This is easy to read
+print("this" + "is" + "hard" + "to" + "read") ; thisishardtoread
+print("Combining strings and numbers: " + 42) ; Combining strings and numbers: 42.0

@@ -1,0 +1,26 @@
+class Point
+  x ; horizontal dimension, larger is to the right
+  y ; vertical dimension, larger is down
+
+  define init(x_, y_) ; constructor is always called init
+    x = x_
+    y = y_
+  done
+
+  define translate(dx, dy)
+    x = x + dx
+    y = y + dy
+  done
+
+  define report()
+    print("Location: " + x + ", " + y)
+  done
+done
+
+p1 = new Point(0, 0)
+p2 = new Point(5, 5)
+p1.report() ; Location: 0.0, 0.0
+p2.report() ; Location: 5.0, 5.0
+p2.translate(10, -3)
+p2.report() ; Location: 15.0, 2.0
+

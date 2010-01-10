@@ -1,0 +1,28 @@
+Just a list of bugs:
+
+============================================================
+
+I'd like to be able to assign to an object's to_s function. You can
+assign to other mystery member functions, but not to to_s because it
+is special.
+
+The following works:   
+
+   obj = new Object()
+   print("An object is:", obj)
+
+   define f()
+     3
+   done
+   
+   obj.three = f
+   print(obj.three()) ; prints 3.0
+
+The following doesn't:
+
+  define s()
+    "Some object"
+  done
+  obj.to_s = s ; Causes Java exception
+
+============================================================

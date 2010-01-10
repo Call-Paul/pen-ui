@@ -1,7 +1,11 @@
 @CHARSET "UTF-8";
 
 body {
-	font-family: sans-serif;	
+  font-family: sans-serif;
+  font-padding: 6px;
+  color: black;
+  line-height: 120%;
+  max-width: 800px;
 }
 
 #msg {

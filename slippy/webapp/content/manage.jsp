@@ -42,14 +42,21 @@ function whackCreate(obj) {
 </c:if>
 
 <div class="sidebar">
-<form name="create" action="bundler" method="post"><input
-	type="hidden" name="mode" value="create" /> <span id="command"><a
-	href="javascript:void(0)" onclick="whackCreate('create_textbox')">Create
-a new module...</a> <span id="create_textbox" style="display: none;"><input
-	type="text" name="module" /><!--<input type="submit" value="Create!" />--></span></span></form>
-
-<span id="command"><a href="bundler?mode=browse">Browse All
-Modules</a></span></div>
+<form name="create" action="bundler" method="post">
+  <input type="hidden" name="mode" value="create" />
+  <span id="command">
+    <a href="javascript:void(0)" onclick="whackCreate('create_textbox')">Create
+a new module...</a>
+    <span id="create_textbox" style="display: none;">
+      <input type="text" name="module" />
+    </span>
+  </span>
+</form>
+<div id="command"><a href="bundler?mode=browse">Browse All
+Modules</a></div>
+<div id="command"><a href="index.jsp">Go To Home
+Page</a></div>
+</div>
 
 
 <c:if test="${!empty versions}">
@@ -83,8 +90,9 @@ Modules</a></span></div>
 					<a href="javascript:void(0)"
 						onclick="javascript:deploy('${v.module}', '${v.who}')">Deploy
 					as new version</a>
-				</c:if>
-				<a href="listClassesFrames.jsp?mode=list&module=${v.module}&version=${v.version}&who=${v.who}&html=true">[View Code]</a></td>
+				</c:if> <a
+					href="listClassesFrames.jsp?mode=list&module=${v.module}&version=${v.version}&who=${v.who}&html=true">[View
+				Code]</a></td>
 			</tr>
 		</c:forEach>
 	</table>

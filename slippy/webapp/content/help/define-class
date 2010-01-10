@@ -1,0 +1,12 @@
+; A sample class definition including a constructor.
+class SampleThingy
+
+  name ; Thingy's name. Members are declared like this.
+  num  ; A number
+
+  define init()
+    name = "Default Name"
+    num = 42
+  done
+
+done

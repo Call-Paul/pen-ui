@@ -63,6 +63,25 @@ public class SlippyCodeServlet extends SlippyServlet {
       }
     } else if ("view".equals(mode)) {
       doView(resp, module, version, who, fqClass);
+    } else if ("download".equals(mode)) {
+      doDownload(resp, module, version, who, fqClass);
+    }
+  }
+
+  private void doDownload(HttpServletResponse resp, String module, String version, String who,
+      String fqClass) throws IOException {
+    String pathFrag = SlippyBundler.getPathFragment(module, version, who);
+    File moduleDir = new File(getModuleDir(), pathFrag);
+    String slippyFileName = SlippyUtils.codesetStrToFileStr(fqClass);
+    File slippyFile = new File(moduleDir, slippyFileName);
+    try {
+      resp.setContentType("text/plain");
+      resp.setContentLength((int) slippyFile.length());
+      StreamUtil.writeFileToOutputStream(slippyFile, resp.getOutputStream());
+    } catch (Exception ex) {
+      resp.sendError(HttpServletResponse.SC_NOT_FOUND, "Couldn't retrieve slippy class " + fqClass
+          + " for module " + module + "#" + version
+          + ("working".equals(version) ? "(" + who + ")" : ""));
     }
   }
 
@@ -85,8 +104,7 @@ public class SlippyCodeServlet extends SlippyServlet {
         resp.setContentType("text/html");
         resp.setContentLength(htmlString.length());
         StreamUtil.writeStringToOutputStream(htmlString, resp.getOutputStream());
-        bug("View: " + pathFrag + " " + slippyFileName + " ("
-            + slippyFile.length() + " bytes)");
+        bug("View: " + pathFrag + " " + slippyFileName + " (" + slippyFile.length() + " bytes)");
         success = true;
       } catch (FileNotFoundException ex) {
         bug("Warning: colorizer properties file does not exist: " + colorFile);
@@ -107,7 +125,8 @@ public class SlippyCodeServlet extends SlippyServlet {
       StringBuilder line = new StringBuilder();
       String contextPath = getServletContext().getContextPath();
       String servletPath = "code";
-      line.append("<nobr><a href=\"" + contextPath + "/" + servletPath + "?mode=view&module=" + module);
+      line.append("<nobr><a href=\"" + contextPath + "/" + servletPath + "?mode=view&module="
+          + module);
       line.append("&version=" + version);
       if (version.equals("working")) {
         line.append("&who=" + who);

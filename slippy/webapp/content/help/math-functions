@@ -1,0 +1,38 @@
+; abs(v) - get absolute value of a number
+print(abs(-3)) ; 3.0
+
+; min(a,b) - return the minimum of two numbers
+print(min(-1, 2)) ; -1.0
+
+; max(a,b) - return the maximum of two numbers
+print(max(-1, 2)) ; 2.0
+
+; sqrt(v) - return the square root of a number
+print(sqrt(4.0)) ; 2.0
+
+; pow(a, b) - return a raised to the power of b
+print(pow(2,4)) ; 16.0
+
+; sin(x) - sine trig function
+print(sin(1)) ; 0.8414709848078965
+
+; cos(x) - cosine trig function
+print(cos(1)) ; 0.5403023058681398
+
+; tan(x) - tangent trig function
+print(tan(1)) ; 1.5574077246549023
+
+; arcsin(x) - inverse sine (arc sine) trig function
+print(arcsin(1)) ; 1.5707963267948966
+
+; arccos(x) - inverse cosine (arc cosine) trig function
+print(arccos(1)) ; 0.0
+
+; arctan(x) - inverse tangent (arc tangent) trig function
+print(arctan(1)) ; 0.7853981633974483
+
+; constant represeting PI
+print(PI) ; 3.141592653589793
+
+; constant representing E
+print(E) ; 2.718281828459045

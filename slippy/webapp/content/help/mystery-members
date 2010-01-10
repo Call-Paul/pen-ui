@@ -1,0 +1,16 @@
+; Make a plain 'untyped' object, a global function, and a global variable
+obj = new Object()
+define f()
+  3
+done
+six = 6
+
+; Assign 'mystery members' to this object
+obj.three = f      ; assign a function---note there are no parens!
+obj.four = "four"  ; assign a string
+obj.five = (2 + 3) ; assign the result of evaluating an expression
+obj.six = six      ; assign a copy of whatever is in variable 'six'
+
+print(obj.three(), obj.four, obj.five, obj.six) ; 3.0 four 5.0 6.0
+six = "error" ; changing original variable has no effect on obj.six
+print(obj.three(), obj.four, obj.five, obj.six) ; 3.0 four 5.0 6.0

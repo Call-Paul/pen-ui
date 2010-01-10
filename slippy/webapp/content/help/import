@@ -1,0 +1,11 @@
+codeset org.firstbunch
+
+; use 'import' to make the following class available
+import org.secondbunch.OtherThing
+
+; now you can use it
+ot = new OtherThing()
+
+; since SampleThing wasn't imported, Slippy assumes it
+; can be found in this codeset (org.firstbunch).
+st = new SampleThing()

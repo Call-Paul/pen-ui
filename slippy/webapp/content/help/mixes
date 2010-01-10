@@ -1,0 +1,36 @@
+class Named
+  name
+  define mix()
+    print("Mixing a named thing.")
+  done
+  define printName()
+    print("Hello my name is", name)
+  done
+done
+
+class CanFly
+  speed = 10
+  define mix()
+    print("Mixing a thing that can fly.")
+  done
+  define fly()
+    print("I am flying!")
+  done
+done
+
+class Bird mixes Named, CanFly
+  define init()
+    print("In Bird's constructor")
+  done
+done
+
+; The following will print:
+;   In Bird's constructor
+;   Mixing a named thing.
+;   Mixing a thing that can fly.
+b = new Bird()
+
+; Now test out the mixed in capabilities.
+b.name = "Mrs. Tweetypants"
+b.printName() ; Hello my name is Mrs. Tweetypants
+b.fly() ; I am flying!

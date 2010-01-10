@@ -1,0 +1,11 @@
+define f(x)
+  x * x ; a function's value is the last value it computes
+done
+
+; This shows passing funtions and invoking them
+define doSomething(aFunction, aValue)
+  aFunction(aValue)
+done
+
+print(f(3)) ; prints 9.0
+print(doSomething(f, 5)) ; prints 25.0

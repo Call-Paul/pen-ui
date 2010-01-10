@@ -1,0 +1,37 @@
+; now() - returns the current time in milliseconds
+start = now()
+doSomething()
+end = now()
+print( (end - start) + " ms elapsed") ; 56.0 ms elapsed
+
+; getType(t) - gives the type of any expression
+t = new SampleThingy()
+print(getType(t)) ; Instance
+print(getType(3)) ; Number
+print(getType("foo")) ; String
+print(getType(print)) ; Function
+print(getType( [1, 2, 3] )) ; Array
+print(getType( { "key" : "val" } )) ; Map
+
+; showStacktrace() - shows the line/column where execution is
+showStacktrace()
+  ; Prints a stacktrace such as the following:
+  ;  /org/sample/SampleThingy.slippy:saySomething:13:4
+  ;  /org/sample/SampleThingy.slippy:18:15
+
+; printMembers(obj)
+printMembers(mySampleThingy)
+  ; Prints symbol tables such as the following:
+  ; (Table for SampleThingy instance) (hash: 796215886) (parent: -2001183084)
+  ; +-------------------------------------------+  
+  ; | getClass         | getClass ()         |  |
+  ; | printSymbolTable | printSymbolTable () |  |
+  ; +-------------------------------------------+
+
+  ; (Symbol table for class SampleThingy) (hash: -2001183084)
+  ; +------------------------------------------+
+  ; | saySomething | saySomething (sumthin) |  |
+  ; | init         | init ()                |  |
+  ; +------------------------------------------+
+
+
