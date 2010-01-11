@@ -16,7 +16,12 @@
 	<tr>
 		<td>
 		<p>Olive is an IDE for writing programs in a language called
-		Slippy (short for Sketching Language In Progress).</p>
+		Slippy (short for Sketching Language In Progress). As you can see from
+		the screen shot, Olive lets you provide freehand sketched input. The
+		digital ink data provided there can serve as input to a Slippy
+		program. There is an API for working with raw digital ink, including
+		the ability to programmatically draw things to the screen. Of course,
+		you don't have to use the sketching stuff at all.</p>
 
 		<p>Often researches write interesting algorithms, but it can be
 		hard for others to read and play with the source code that implements
@@ -36,7 +41,7 @@
 		all manner of novel interaction techniques might be developed with
 		Olive.</p>
 		</td>
-		<td>
+		<td valign="top">
 		<div class="sidebar">
 		<div id="command"><a href="bundler?mode=browse">Start
 		OliveIDE</a></div>
@@ -44,8 +49,8 @@
 		</div>
 		<br />
 		<br />
-		<a href="bundler?mode=browse"><img style="margin-top: 24px;" border="0"
-			src="img/olive-screenshot.png" width="400" height="325" /></a></td>
+		<a href="bundler?mode=browse"><img style="margin-top: 24px;"
+			border="0" src="img/olive-screenshot.png" width="400" height="325" /></a></td>
 
 	</tr>
 </table>

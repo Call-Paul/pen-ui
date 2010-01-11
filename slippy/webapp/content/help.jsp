@@ -29,39 +29,65 @@
 
 <p>The Slippy Language is designed to be simple. While this might
 seem limiting, the lack of complexity is liberating because it allows
-you to focus on your problems, rather than figuring out how the language
-works, or fighting with arcane tool-oriented problems.</p>
+you to focus on prototyping, rather than fighting with arcane
+tool-oriented problems. This isn't for writing solid, bullet-proof code.
+Instead, prototype an idea with Slippy, and port it to a 'real' langauge
+later, once you've got the idea down.</p>
 
+<p>This documentation is mostly complete. It lacks coverage of some
+stranger things that I've not exactly nailed down, like item
+annotations, class (static) members, and Slippy-Java communication.
+Also, it is possible to run Olive in a local disk-based environment, and
+it is also possible to run Slippy commands from a command line, but for
+now those things are also undocumented.</p>
+
+<a name="top"></a>
+<div class="toc">
+<div id="toc_item"><a href="#codeset">codeset</a></div>
+<div id="toc_item"><a href="#import">import</a></div>
+<div id="toc_item"><a href="#variables">variables</a></div>
+<div id="toc_item"><a href="#strings">strings</a></div>
+<div id="toc_item"><a href="#arithmetic">arithmetic</a></div>
+<div id="toc_item"><a href="#if">if</a></div>
+<div id="toc_item"><a href="#while">while</a></div>
+<div id="toc_item"><a href="#loop">loop</a></div>
+<div id="toc_item"><a href="#functions">functions</a></div>
+<div id="toc_item"><a href="#shadow">shadow</a></div>
+<div id="toc_item"><a href="#lists">lists</a></div>
+<div id="toc_item"><a href="#maps">maps</a></div>
+<div id="toc_item"><a href="#lambda">lambda</a></div>
+<div id="toc_item"><a href="#define-class">define class</a></div>
+<div id="toc_item"><a href="#mixes">mixes</a></div>
+<div id="toc_item"><a href="#objects">objects</a></div>
+<div id="toc_item"><a href="#mystery-members">mystery members</a></div>
+<div id="toc_item"><a href="#math-functions">math-functions</a></div>
+<div id="toc_item"><a href="#non-math-functions">non-math-functions</a></div>
+<div id="toc_item"><a href="#to_s">to_s</a></div>
+<div id="toc_item"><a href="#end">(end)</a></div>
+
+</div>
+
+<a name="codeset"></a>
 <div id="topic">codeset</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("codeset", false)%></div>
 <div id="description">The codeset phrase appears at the top of a
 file and indicates which group of code this source file is in. It acts
 like Java's package keyword. Any classes defined below will be
 considered a member of the indicated codeset.</div>
 
-<div id="topic">define class</div>
-<div id="code"><%=c.walk("define-class", false)%></div>
-<div id="description">Define a class with 'class X', followed by a
-block of code, and close it off with a 'done' statement.</div>
+<a name="import"></a>
+<div id="topic">import</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("import", false)%></div>
+<div id="description">The 'import' keyword(s) appears just below
+the 'codeset' keyword. This tells Slippy where to look for other code
+that is referred to in the current file. There is no wildcard: you must
+specify class files by name.</div>
 
-<div id="topic">strings</div>
-<div id="code"><%=c.walk("strings", false)%></div>
-<div id="description">Strings are text surrounded by double
-quotes. You can concatenate them with the + operator (which doesn't
-introduce any extra spaces), or in the special case of the 'print'
-function, you can use commas to separate strings and it will insert
-spaces for you. In general you'll probably want to use + though.</div>
-
-<div id="topic">arithmetic</div>
-<div id="code"><%=c.walk("arithmetic", false)%></div>
-<div id="description">Arithmetic is straightforward, and supports
-addition (+), subtraction (-), multiplication (*), division (/), and
-modulus (%). Slippy uses the same precedence rules as languages like
-Java and Ruby. You can use parens to group terms together. The only
-nonstandard thing about numbers in Slippy is that they are all
-interpreted as floating point values.</div>
-
+<a name="variables"></a>
 <div id="topic">variables</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("variables", false)%></div>
 <div id="description">Variables are assigned with the = operator
 (that's one = character). The variable is on the left, and the value is
@@ -71,7 +97,30 @@ explicitly assign nil to a value if you like. Variables are typed, but
 you don't have to declare what type they are, and you can reuse the same
 variable for storing values of different types.</div>
 
+<a name="strings"></a>
+<div id="topic">strings</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("strings", false)%></div>
+<div id="description">Strings are text surrounded by double
+quotes. You can concatenate them with the + operator (which doesn't
+introduce any extra spaces), or in the special case of the 'print'
+function, you can use commas to separate strings and it will insert
+spaces for you. In general you'll probably want to use + though.</div>
+
+<a name="arithmetic"></a>
+<div id="topic">arithmetic</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("arithmetic", false)%></div>
+<div id="description">Arithmetic is straightforward, and supports
+addition (+), subtraction (-), multiplication (*), division (/), and
+modulus (%). Slippy uses the same precedence rules as languages like
+Java and Ruby. You can use parens to group terms together. The only
+nonstandard thing about numbers in Slippy is that they are all
+interpreted as floating point values.</div>
+
+<a name="if"></a>
 <div id="topic">if, else if, else</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("if", false)%></div>
 <div id="description">You can have conditional branching with the
 'if' construct. It will execute the first 'if' (or 'else if') clause
@@ -79,7 +128,9 @@ that evaluates to true. When no clause matches, it will execute the
 'else' clause, if it is present. The 'if' construct is closed with the
 'done' keyword.</div>
 
+<a name="while"></a>
 <div id="topic">while</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("while", false)%></div>
 <div id="description">While loops will execute a block of code as
 long as the statement at top evaluates to some form of true. End a while
@@ -88,7 +139,9 @@ construct. The difference is that while loops will always try to resolve
 the parenthetical statement as a boolean value, even if you give it a
 number, string, list, or object.</div>
 
+<a name="loop"></a>
 <div id="topic">loop</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("loop", false)%></div>
 <div id="description">There are three flavors of 'loop'. The first
 simply counts down a set number of times by giving it a scalar number.
@@ -97,7 +150,9 @@ as its boolean expression is true. The last type has slightly different
 syntax, and lets you iterate through lists. A loop is closed with the
 'done' keyword.</div>
 
+<a name="functions"></a>
 <div id="topic">functions</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("functions", false)%></div>
 <div id="description">A function in Slippy is made with the
 'define' keyword followed by the function's name, followed by a
@@ -108,7 +163,9 @@ it evaluates. Also notice you can treat functions as variables if you
 leave off the parens, so you can pass them into another function, and
 invoke them.</div>
 
+<a name="shadow"></a>
 <div id="topic">shadow variables</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("shadow", false)%></div>
 <div id="description">Variables declared at a high level (like x
 and y here) don't get overwritten when you assign to them inside
@@ -118,7 +175,47 @@ global variables that change when you don't expect them to. You can
 still read from global primitive values, but you can't write to them
 inside functions.</div>
 
+<a name="lists"></a>
+<div id="topic">list operations</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("lists", false)%></div>
+<div id="description">There are many operations built in to lists.
+The examples above should demonstrate them fairly well.</div>
+
+<a name="maps"></a>
+<div id="topic">maps</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("maps", false)%></div>
+<div id="description">Slippy has associative arrays, which are
+often called maps or hashes. This data type is a little deficient, as it
+doesn't have any fanciful features like lists do. To make a map, use the
+curly-brace syntax, with key-value pairs separated by colons, and
+mappings separated by commas. To use a map, use square brackets with the
+key value inside.</div>
+
+<a name="lambda"></a>
+<div id="topic">lambda</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("lambda", false)%></div>
+<div id="description">A lambda is an anonymous function that may
+be defined wherever you like, stored in variables and passed around, and
+executed. It does <i>not</i> guarantee that variables refered to within
+the closure will always work, so it wouldn't be quite right to call them
+closures. There are two ways to make a lambda, both of which are shown
+above. The long version is probably more legible, but sometimes the
+short version is more appropriate (even though its syntax involves lots
+of punctuation).</div>
+
+<a name="define-class"></a>
+<div id="topic">define class</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
+<div id="code"><%=c.walk("define-class", false)%></div>
+<div id="description">Define a class with 'class X', followed by a
+block of code, and close it off with a 'done' statement.</div>
+
+<a name="mixes"></a>
 <div id="topic">mixes</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("mixes", false)%></div>
 <div id="description">The 'mixes' keyword lets you get a sort of
 multiple-inheritance effect with your classes. A class may only extend
@@ -129,7 +226,9 @@ into the file. Further, if M has a function named 'mix', it is executed
 (after the constructor is called). The 'mix' function is provided as an
 alternative to a constructor.</div>
 
+<a name="objects"></a>
 <div id="topic">object instances</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("objects", false)%></div>
 <div id="description">You may instantiate a class any number of
 times and as you expect, the instances are separate. The constructor for
@@ -138,7 +237,9 @@ functions (those things defined inside a class) are publicly visible, so
 we could easily access p1.x or p1.y to get the first point's location
 components.</div>
 
+<a name="mystery-members"></a>
 <div id="topic">mystery members / generic objects</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("mystery-members", false)%></div>
 <div id="description">You can make a generic, 'untyped' object
 with 'new Object()', and arbitrarily assign values to 'mystery members'.
@@ -150,44 +251,16 @@ suboptimal workaround. When assigning mystery members, the object gets a
 <i>copy</i> of whatever you assign (refer the last two lines of the
 example).</div>
 
-<div id="topic">import</div>
-<div id="code"><%=c.walk("import", false)%></div>
-<div id="description">The 'import' keyword(s) appears just below
-the 'codeset' keyword. This tells Slippy where to look for other code
-that is referred to in the current file. There is no wildcard: you must
-specify class files by name.</div>
-
-<div id="topic">list operations</div>
-<div id="code"><%=c.walk("lists", false)%></div>
-<div id="description">There are many operations built in to lists.
-The examples above should demonstrate them fairly well.</div>
-
-<div id="topic">maps</div>
-<div id="code"><%=c.walk("maps", false)%></div>
-<div id="description">Slippy has associative arrays, which are
-often called maps or hashes. This data type is a little deficient, as it
-doesn't have any fanciful features like lists do. To make a map, use the
-curly-brace syntax, with key-value pairs separated by colons, and
-mappings separated by commas. To use a map, use square brackets with the
-key value inside.</div>
-
-<div id="topic">lambda</div>
-<div id="code"><%=c.walk("lambda", false)%></div>
-<div id="description">A lambda is an anonymous function that may
-be defined wherever you like, stored in variables and passed around, and
-executed. It does <i>not</i> guarantee that variables refered to within
-the closure will always work, so it wouldn't be quite right to call them
-closures. There are two ways to make a lambda, both of which are shown
-above. The long version is probably more legible, but sometimes the
-short version is more appropriate (even though its syntax involves lots
-of punctuation).</div>
-
+<a name="math-functions"></a>
 <div id="topic">built-in math functions</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("math-functions", false)%></div>
 <div id="description">There are many built-in math functions and
 scalar values. These are summarized above.</div>
 
+<a name="non-math-functions"></a>
 <div id="topic">built-in non-math functions</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("non-math-functions", false)%></div>
 <div id="description">Some non-math functions. These include 'now'
 (for getting the current system clock in milliseconds) and 'getType'
@@ -196,7 +269,9 @@ tell you which class an object instantiates, rather it will rather
 unhelpfully tell you it is an 'Instance'. There are two useful debugging
 functions: 'showStacktrace' and 'printMembers'.</div>
 
+<a name="to_s"></a>
 <div id="topic">to_s</div>
+<div id="to_top"><a href="#top">[Top]</a></div>
 <div id="code"><%=c.walk("to_s", false)%></div>
 <div id="description">If an object instance has a to_s function,
 that will be used whenever the object must be cast to a string.
