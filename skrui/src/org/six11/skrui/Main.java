@@ -93,31 +93,30 @@ public class Main {
   }
 
   public static Main makeInstance(Arguments args) {
-    try {
-      final Main inst = new Main(args);
-      instances.add(inst);
-      inst.af.addWindowListener(new WindowAdapter() {
-        @Override
-        public void windowClosing(WindowEvent e) {
-          instances.remove(inst);
-          if (instances.size() == 0) {
-            System.exit(0);
-          }
+    final Main inst = new Main(args);
+    instances.add(inst);
+    inst.af.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosing(WindowEvent e) {
+        instances.remove(inst);
+        if (instances.size() == 0) {
+          System.exit(0);
         }
-      });
-      return inst;
-    } catch (Exception ex) {
-      bug("Error creating Main instance. This probably has to do with the properties file.");
-      ex.printStackTrace();
-    }
-    return null;
+      }
+    });
+    return inst;
   }
 
-  private Main(Arguments args) throws IOException {
+  private Main(Arguments args) {
     af = new ApplicationFrame("Olive Test GUI");
     af.setNoQuitOnClose();
     ds = new OliveDrawingSurface();
-    prefs = Preferences.makePrefs("skrui");
+    try {
+      prefs = Preferences.makePrefs("skrui");
+    } catch (IOException ex) {
+      bug("Got IOException when making prefs object. This is going to ruin your day.");
+      ex.printStackTrace();
+    }
     if (args.hasFlag("load-sketch")) {
       open(new File(args.getValue("load-sketch")));
     }
@@ -231,7 +230,7 @@ public class Main {
           bug(ex.getMessage());
         }
         document.close();
-        bug("Wrote to " + outFile.getName());
+        bug("Wrote " + outFile.getName());
         prefs.setProperty(PROP_PDF_DIR, outFile.getParentFile().getAbsolutePath());
         prefs.save();
       } catch (FileNotFoundException ex1) {
