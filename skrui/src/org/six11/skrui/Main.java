@@ -2,6 +2,8 @@ package org.six11.skrui;
 
 import java.awt.BorderLayout;
 import java.awt.Graphics2D;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -10,8 +12,10 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.Action;
 import javax.swing.JFileChooser;
@@ -44,15 +48,17 @@ import org.six11.util.pen.SequenceIO;
  **/
 public class Main {
 
-  private static OliveDrawingSurface ds;
-  private static ApplicationFrame af;
-  private static File currentFile;
-  private static String batchModePdfFileName;
+  private OliveDrawingSurface ds;
+  private ApplicationFrame af;
+  private File currentFile;
+  private String batchModePdfFileName;
+  private static Set<Main> instances = new HashSet<Main>();
 
   private static final String ACTION_SAVE_AS = "save as";
   private static final String ACTION_SAVE = "save";
   private static final String ACTION_OPEN = "open";
   private static final String ACTION_SAVE_PDF = "save-pdf";
+  private static final String ACTION_NEW = "new";
 
   public static void main(String[] in) {
     Debug.useColor = false;
@@ -61,8 +67,6 @@ public class Main {
     args.setProgramName("Skrui Hacks!");
     args.setDocumentationProgram("Runs various demos of the Skrui Hacks project.");
 
-    args.addFlag("debug", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED,
-        "If present, enable some debugging.");
     args.addFlag("load-sketch", ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED,
         "Indicate a sketch file to load.");
     args.addFlag("help", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED, "Requests extended help.");
@@ -77,8 +81,32 @@ public class Main {
       System.exit(0);
     }
     args.validate();
+    makeInstance(args);
+  }
 
+  public static Main makeInstance() {
+    return makeInstance(new Arguments());
+  }
+  
+  public static Main makeInstance(Arguments args) {
+    final Main inst = new Main(args);
+    instances.add(inst);
+    inst.af.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosing(WindowEvent e) {
+        instances.remove(inst);
+        bug("There are " + instances.size() + " instances remaining.");
+        if (instances.size() == 0) {
+          System.exit(0);
+        }
+      }
+    });
+    return inst;
+  }
+  
+  private Main(Arguments args) {
     af = new ApplicationFrame("Olive Test GUI");
+    af.setNoQuitOnClose();
     ds = new OliveDrawingSurface();
 
     if (args.hasFlag("load-sketch")) {
@@ -100,7 +128,7 @@ public class Main {
     }
   }
 
-  private static JPopupMenu makePopup() {
+  private JPopupMenu makePopup() {
     JPopupMenu pop = new JPopupMenu("Skrui Hacks");
     Map<String, Action> actions = new HashMap<String, Action>();
 
@@ -136,10 +164,18 @@ public class Main {
     });
     pop.add(actions.get(ACTION_SAVE_PDF));
 
+    // New
+    actions.put(ACTION_NEW, new NamedAction("New Sketch") {
+      public void activate() {
+        newSketch();
+      }
+    });
+    pop.add(actions.get(ACTION_NEW));
+    
     return pop;
   }
 
-  protected static void savePdf() {
+  private void savePdf() {
     File outFile = null;
     if (batchModePdfFileName != null) {
       outFile = new File(batchModePdfFileName);
@@ -155,30 +191,38 @@ public class Main {
     }
 
     if (outFile != null) {
+      bug("Generating PDF file: " + outFile.getName());
       FileOutputStream out;
       try {
         out = new FileOutputStream(outFile);
         List<DrawingBuffer> layers = ds.getSoup().getDrawingBuffers();
+        bug("Got " + layers.size() + " layers.");
         BoundingBox bb = new BoundingBox();
         for (DrawingBuffer layer : layers) {
           layer.update();
           bb.add(layer.getBoundingBox());
         }
+        bug("Calculated bounding box.");
         int w = bb.getWidthInt();
         int h = bb.getHeightInt();
         Rectangle size = new Rectangle(w, h);
         Document document = new Document(size, 0, 0, 0, 0);
-
+        bug("Created a blank document.");
         try {
           PdfWriter writer = PdfWriter.getInstance(document, out);
+          bug("Made a PdfWriter");
           document.open();
+          bug("Opened the pdf document.");
 
           DefaultFontMapper mapper = new DefaultFontMapper();
-          FontFactory.registerDirectories();
+          bug("Made a font mapper.");
+          // FontFactory.registerDirectories();
+          // bug("Did the font registry thing.");
 
           PdfContentByte cb = writer.getDirectContent();
           PdfTemplate tp = cb.createTemplate(w, h);
           Graphics2D g2 = tp.createGraphics(w, h, mapper);
+          bug("Created the Pdf Graphics context.");
           tp.setWidth(w);
           tp.setHeight(h);
           bug("Painting content...");
@@ -198,7 +242,7 @@ public class Main {
     }
   }
 
-  private static void saveAs() {
+  private void saveAs() {
     JFileChooser chooser = FileUtil.makeFileChooser(null, "sketch", "Raw Sketch Files");
     int result = chooser.showSaveDialog(ds);
     if (result == JFileChooser.APPROVE_OPTION) {
@@ -206,12 +250,18 @@ public class Main {
       if (!outFile.getName().endsWith(".sketch")) {
         outFile = new File(outFile.getParentFile(), outFile.getName() + ".sketch");
       }
-      setCurrentFile(currentFile);
-      save(currentFile);
+      bug("You chose " + outFile.getAbsolutePath());
+      try {
+        FileUtil.createIfNecessary(outFile);
+        setCurrentFile(outFile);
+        save(currentFile);
+      } catch (IOException ex) {
+        bug("Error creating file: " + outFile.getAbsolutePath());
+      }
     }
   }
 
-  private static void save(File outFile) {
+  private void save(File outFile) {
     if (outFile == null) {
       saveAs();
     } else {
@@ -228,7 +278,7 @@ public class Main {
     }
   }
 
-  private static void open() {
+  private void open() {
     JFileChooser chooser = FileUtil.makeFileChooser(null, "sketch", "Raw Sketch Files");
     int result = chooser.showOpenDialog(ds);
     if (result == JFileChooser.APPROVE_OPTION) {
@@ -237,7 +287,7 @@ public class Main {
     }
   }
 
-  private static void open(File inFile) {
+  private void open(File inFile) {
     try {
       FileUtil.complainIfNotReadable(inFile);
       BufferedReader in = new BufferedReader(new FileReader(inFile));
@@ -255,11 +305,19 @@ public class Main {
     }
   }
 
-  public static void setCurrentFile(File f) {
+  private void setCurrentFile(File f) {
     if (f != null && f.exists()) {
       currentFile = f;
       af.setTitle(currentFile.getName());
+    } else if (f == null) {
+      bug("I won't null out the current file!");
+    } else if (!f.exists()) {
+      bug("I won't set the current file to something that doesn't exist!");
     }
+  }
+  
+  private void newSketch() {
+    makeInstance();
   }
 
   public static void bug(String what) {
