@@ -23,7 +23,6 @@ import javax.swing.JPopupMenu;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
-import com.lowagie.text.FontFactory;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.DefaultFontMapper;
 import com.lowagie.text.pdf.PdfContentByte;
@@ -37,6 +36,7 @@ import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.io.FileUtil;
+import org.six11.util.io.Preferences;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.OliveDrawingSurface;
@@ -53,6 +53,7 @@ public class Main {
   private File currentFile;
   private String batchModePdfFileName;
   private static Set<Main> instances = new HashSet<Main>();
+  private Preferences prefs;
 
   private static final String ACTION_SAVE_AS = "save as";
   private static final String ACTION_SAVE = "save";
@@ -60,7 +61,10 @@ public class Main {
   private static final String ACTION_SAVE_PDF = "save-pdf";
   private static final String ACTION_NEW = "new";
 
-  public static void main(String[] in) {
+  private static final String PROP_SKETCH_DIR = "sketchDir";
+  private static final String PROP_PDF_DIR = "pdfDir";
+
+  public static void main(String[] in) throws IOException {
     Debug.useColor = false;
 
     Arguments args = new Arguments();
@@ -87,28 +91,33 @@ public class Main {
   public static Main makeInstance() {
     return makeInstance(new Arguments());
   }
-  
+
   public static Main makeInstance(Arguments args) {
-    final Main inst = new Main(args);
-    instances.add(inst);
-    inst.af.addWindowListener(new WindowAdapter() {
-      @Override
-      public void windowClosing(WindowEvent e) {
-        instances.remove(inst);
-        bug("There are " + instances.size() + " instances remaining.");
-        if (instances.size() == 0) {
-          System.exit(0);
+    try {
+      final Main inst = new Main(args);
+      instances.add(inst);
+      inst.af.addWindowListener(new WindowAdapter() {
+        @Override
+        public void windowClosing(WindowEvent e) {
+          instances.remove(inst);
+          if (instances.size() == 0) {
+            System.exit(0);
+          }
         }
-      }
-    });
-    return inst;
+      });
+      return inst;
+    } catch (Exception ex) {
+      bug("Error creating Main instance. This probably has to do with the properties file.");
+      ex.printStackTrace();
+    }
+    return null;
   }
-  
-  private Main(Arguments args) {
+
+  private Main(Arguments args) throws IOException {
     af = new ApplicationFrame("Olive Test GUI");
     af.setNoQuitOnClose();
     ds = new OliveDrawingSurface();
-
+    prefs = Preferences.makePrefs("skrui");
     if (args.hasFlag("load-sketch")) {
       open(new File(args.getValue("load-sketch")));
     }
@@ -171,7 +180,7 @@ public class Main {
       }
     });
     pop.add(actions.get(ACTION_NEW));
-    
+
     return pop;
   }
 
@@ -180,7 +189,8 @@ public class Main {
     if (batchModePdfFileName != null) {
       outFile = new File(batchModePdfFileName);
     } else {
-      JFileChooser chooser = FileUtil.makeFileChooser(null, "sketch", "Raw Sketch Files");
+      File initialDir = maybeGetInitialDir(PROP_PDF_DIR);
+      JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "pdf", "PDF Files");
       int result = chooser.showSaveDialog(ds);
       if (result == JFileChooser.APPROVE_OPTION) {
         outFile = chooser.getSelectedFile();
@@ -191,44 +201,30 @@ public class Main {
     }
 
     if (outFile != null) {
-      bug("Generating PDF file: " + outFile.getName());
       FileOutputStream out;
       try {
         out = new FileOutputStream(outFile);
         List<DrawingBuffer> layers = ds.getSoup().getDrawingBuffers();
-        bug("Got " + layers.size() + " layers.");
         BoundingBox bb = new BoundingBox();
         for (DrawingBuffer layer : layers) {
           layer.update();
           bb.add(layer.getBoundingBox());
         }
-        bug("Calculated bounding box.");
         int w = bb.getWidthInt();
         int h = bb.getHeightInt();
         Rectangle size = new Rectangle(w, h);
         Document document = new Document(size, 0, 0, 0, 0);
-        bug("Created a blank document.");
         try {
           PdfWriter writer = PdfWriter.getInstance(document, out);
-          bug("Made a PdfWriter");
           document.open();
-          bug("Opened the pdf document.");
-
           DefaultFontMapper mapper = new DefaultFontMapper();
-          bug("Made a font mapper.");
-          // FontFactory.registerDirectories();
-          // bug("Did the font registry thing.");
-
           PdfContentByte cb = writer.getDirectContent();
           PdfTemplate tp = cb.createTemplate(w, h);
           Graphics2D g2 = tp.createGraphics(w, h, mapper);
-          bug("Created the Pdf Graphics context.");
           tp.setWidth(w);
           tp.setHeight(h);
-          bug("Painting content...");
           g2.translate(-bb.getX(), -bb.getY());
           ds.paintContent(g2, false);
-          bug("Content painted.");
           g2.dispose();
           cb.addTemplate(tp, 0, 0);
         } catch (DocumentException ex) {
@@ -236,14 +232,29 @@ public class Main {
         }
         document.close();
         bug("Wrote to " + outFile.getName());
+        prefs.setProperty(PROP_PDF_DIR, outFile.getParentFile().getAbsolutePath());
+        prefs.save();
       } catch (FileNotFoundException ex1) {
         ex1.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
       }
     }
   }
 
+  private File maybeGetInitialDir(String propKey) {
+    File ret = null;
+    String path = prefs.getProperty(propKey);
+    if (path != null) {
+      ret = new File(path);
+    }
+    bug("Initial dir for '" + propKey + "' is " + (ret == null ? "''" : ret.getAbsolutePath()));
+    return ret;
+  }
+
   private void saveAs() {
-    JFileChooser chooser = FileUtil.makeFileChooser(null, "sketch", "Raw Sketch Files");
+    File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
+    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
     int result = chooser.showSaveDialog(ds);
     if (result == JFileChooser.APPROVE_OPTION) {
       File outFile = chooser.getSelectedFile();
@@ -279,7 +290,8 @@ public class Main {
   }
 
   private void open() {
-    JFileChooser chooser = FileUtil.makeFileChooser(null, "sketch", "Raw Sketch Files");
+    File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
+    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
     int result = chooser.showOpenDialog(ds);
     if (result == JFileChooser.APPROVE_OPTION) {
       File inFile = chooser.getSelectedFile();
@@ -305,17 +317,19 @@ public class Main {
     }
   }
 
-  private void setCurrentFile(File f) {
+  private void setCurrentFile(File f) throws FileNotFoundException, IOException {
     if (f != null && f.exists()) {
-      currentFile = f;
+      currentFile = f.getAbsoluteFile();
       af.setTitle(currentFile.getName());
+      prefs.setProperty(PROP_SKETCH_DIR, currentFile.getParentFile().getAbsolutePath());
+      prefs.save();
     } else if (f == null) {
       bug("I won't null out the current file!");
     } else if (!f.exists()) {
       bug("I won't set the current file to something that doesn't exist!");
     }
   }
-  
+
   private void newSketch() {
     makeInstance();
   }
