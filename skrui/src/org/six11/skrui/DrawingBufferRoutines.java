@@ -92,14 +92,18 @@ public abstract class DrawingBufferRoutines {
     } else {
       CircleArc arc = seg.bestCircle;
       Pt s = seg.start;
+      Pt m = arc.mid;
       Pt e = seg.end;
-      Pt c = arc.center;
-      double startAngle = Math.toDegrees(-Math.atan2(s.y - c.y, s.x - c.x));
-      double endAngle   = Math.toDegrees(-Math.atan2(e.y - c.y, e.x - c.x));
-      double extent = endAngle - startAngle;
-      double topLeftX = c.x - arc.radius;
-      double topLeftY = c.y - arc.radius;
-      double d = arc.radius * 2.0;
+      bug("Adding circle turtle op: " + Debug.num(s) + " " + Debug.num(m) + " " + Debug.num(e));
+      db.down();
+      db.circleTo(s.x, s.y, m.x, m.y, e.x, e.y);
+//      
+//      double startAngle = Math.toDegrees(-Math.atan2(s.y - c.y, s.x - c.x));
+//      double endAngle   = Math.toDegrees(-Math.atan2(e.y - c.y, e.x - c.x));
+//      double extent = endAngle - startAngle;
+//      double topLeftX = c.x - arc.radius;
+//      double topLeftY = c.y - arc.radius;
+//      double d = arc.radius * 2.0;
 
     }
     db.up();

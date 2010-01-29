@@ -78,12 +78,17 @@ public class Main {
   private static final String PROP_SKETCH_DIR = "sketchDir";
   private static final String PROP_PDF_DIR = "pdfDir";
 
+  private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
+    "--corner-finder"
+  };
+
   public static void main(String[] in) throws IOException {
-    Debug.useColor = false;
-
     Arguments args = getArgumentSpec();
-    args.parseArguments(in);
-
+    if (in.length == 0) {
+      args.parseArguments(DEFAULT_COMMAND_LINE_ARGS);
+    } else {
+      args.parseArguments(in);
+    }
     if (args.hasFlag("help")) {
       if (args.hasValue("help")) {
         String who = args.getValue("help");
@@ -96,6 +101,8 @@ public class Main {
       System.exit(0);
     }
     args.validate();
+    Debug.enabled = args.hasFlag("debugging");
+    Debug.useColor = args.hasFlag("debug-color");
     makeInstance(args);
   }
 
@@ -115,6 +122,10 @@ public class Main {
         "Supresses the user interface, which is useful in batch mode.");
     args.addFlag("corner-finder", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
         "Enable the corner-finder.");
+    args.addFlag("debugging", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
+        "Enable semi-helpful console text output");
+    args.addFlag("debug-color", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
+        "If debugging, use ANSI colors for a trippy experience");
     return args;
   }
 
@@ -179,7 +190,7 @@ public class Main {
 
   private JPopupMenu makePopup() {
     JPopupMenu pop = new JPopupMenu("Skrui Hacks");
-    
+
     int mod = CTRL_MASK;
     int shiftMod = CTRL_MASK | SHIFT_MASK;
 
@@ -192,7 +203,8 @@ public class Main {
     pop.add(actions.get(ACTION_SAVE));
 
     // Save As Action
-    actions.put(ACTION_SAVE_AS, new NamedAction("Save As..", KeyStroke.getKeyStroke(KeyEvent.VK_S, shiftMod)) {
+    actions.put(ACTION_SAVE_AS, new NamedAction("Save As..", KeyStroke.getKeyStroke(KeyEvent.VK_S,
+        shiftMod)) {
       public void activate() {
         saveAs();
       }
@@ -200,15 +212,17 @@ public class Main {
     pop.add(actions.get(ACTION_SAVE_AS));
 
     // Open Action
-    actions.put(ACTION_OPEN, new NamedAction("Open...", KeyStroke.getKeyStroke(KeyEvent.VK_O, mod)) {
-      public void activate() {
-        open();
-      }
-    });
+    actions.put(ACTION_OPEN,
+        new NamedAction("Open...", KeyStroke.getKeyStroke(KeyEvent.VK_O, mod)) {
+          public void activate() {
+            open();
+          }
+        });
     pop.add(actions.get(ACTION_OPEN));
 
     // Save PDF
-    actions.put(ACTION_SAVE_PDF, new NamedAction("Save PDF...", KeyStroke.getKeyStroke(KeyEvent.VK_P, mod)) {
+    actions.put(ACTION_SAVE_PDF, new NamedAction("Save PDF...", KeyStroke.getKeyStroke(
+        KeyEvent.VK_P, mod)) {
       public void activate() {
         savePdf();
       }
@@ -216,7 +230,8 @@ public class Main {
     pop.add(actions.get(ACTION_SAVE_PDF));
 
     // New
-    actions.put(ACTION_NEW, new NamedAction("New Sketch", KeyStroke.getKeyStroke(KeyEvent.VK_N, mod)) {
+    actions.put(ACTION_NEW, new NamedAction("New Sketch", KeyStroke
+        .getKeyStroke(KeyEvent.VK_N, mod)) {
       public void activate() {
         newSketch();
       }
@@ -238,7 +253,7 @@ public class Main {
       }
     });
     graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE));
-    
+
     actions.put(ACTION_GRAPH_ANGLE, new NamedAction("Graph Angle") {
       public void activate() {
         graph("angle", true);
@@ -249,7 +264,7 @@ public class Main {
     pop.add(graphMenu);
     return pop;
   }
-  
+
   /**
    * Asks the given root pane to listen for keystroke actions associated with our actions (for those
    * that have keyboard accellerators).

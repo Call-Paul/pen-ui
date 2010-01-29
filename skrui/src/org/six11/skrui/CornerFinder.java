@@ -97,60 +97,68 @@ public class CornerFinder implements SequenceListener {
         corners = mergeCFModified(seqEvent.getSeq());
       }
       
-//      if (seqEvent.getSeq().getAttribute("segmentation") != null) {
-//        SortedSet<Segment> segs = (SortedSet<Segment>) seqEvent.getSeq().getAttribute(
-//            "segmentation");
-//        DrawingBuffer db = new DrawingBuffer();
-//        for (Segment seg : segs) {
-//          DrawingBufferRoutines.seg(db, seg, Color.BLACK);
-//        }
-//        main.getDrawingSurface().getSoup().addBuffer(db);
-//      }
-
-      if (corners != null && corners.size() > 0) {
+      if (seqEvent.getSeq().getAttribute("segmentation") != null) {
+        SortedSet<Segment> segs = (SortedSet<Segment>) seqEvent.getSeq().getAttribute(
+            "segmentation");
         DrawingBuffer db = new DrawingBuffer();
-        Color cornerColor = new Color(255, 0, 0, 127);
-        Color mergedColor = new Color(0, 0, 255, 127);
-        Color normalColor = new Color(255, 255, 255, 127);
-        Color curvyColor = Colors.makeAlpha(Color.GREEN, 0.6f);
-        Color slowColor = Colors.makeAlpha(Color.YELLOW, 0.6f);
-        Color slowAndCurvyColor = Colors.makeAlpha(Color.MAGENTA, 0.6f);
-        
-        for (Pt pt : seqEvent.getSeq()) {
-          boolean specialPoint = false;
-          Color c = cornerColor;
-          Color b = Color.BLACK;
-          if (pt.getBoolean("corner")) {
-            specialPoint = true;
-          } else if (pt.getBoolean("removed")) {
-            c = mergedColor;
-            specialPoint = true;
-          } else if (pt.getBoolean("slow") && pt.getBoolean("curvy")) {
-            c = slowAndCurvyColor;
-            b = c;
-          } else if (pt.getBoolean("curvy")) {
-            c = curvyColor;
-            b = c;
-          } else if (pt.getBoolean("slow")) {
-            c = slowColor;
-            b = c;
-          } else {
-            c = normalColor;
-          }
-
-          if (specialPoint) {
-            DrawingBufferRoutines.rect(db, pt, 9.0, 9.0, b, c, 1.0);
-          } else {
-            DrawingBufferRoutines.rect(db, pt, 3.0, 3.0, Color.BLACK, c, 0.3);
-          }
+        for (Segment seg : segs) {
+          DrawingBufferRoutines.seg(db, seg, Color.BLACK);
         }
-        main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seqEvent.getSeq())
-            .setVisible(false);
         main.getDrawingSurface().getSoup().addBuffer(db);
       }
+
+//      drawCorners(corners, seqEvent);
+      disableOriginalInput(seqEvent);
     }
   }
 
+  private void disableOriginalInput(SequenceEvent seqEvent) {
+    main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seqEvent.getSeq())
+    .setVisible(false);
+  }
+  
+  private void drawCorners(List<Pt> corners, SequenceEvent seqEvent) {
+    if (corners != null && corners.size() > 0) {
+      DrawingBuffer db = new DrawingBuffer();
+      Color cornerColor = new Color(255, 0, 0, 127);
+      Color mergedColor = new Color(0, 0, 255, 127);
+      Color normalColor = new Color(255, 255, 255, 127);
+      Color curvyColor = Colors.makeAlpha(Color.GREEN, 0.6f);
+      Color slowColor = Colors.makeAlpha(Color.YELLOW, 0.6f);
+      Color slowAndCurvyColor = Colors.makeAlpha(Color.MAGENTA, 0.6f);
+      
+      for (Pt pt : seqEvent.getSeq()) {
+        boolean specialPoint = false;
+        Color c = cornerColor;
+        Color b = Color.BLACK;
+        if (pt.getBoolean("corner")) {
+          specialPoint = true;
+        } else if (pt.getBoolean("removed")) {
+          c = mergedColor;
+          specialPoint = true;
+        } else if (pt.getBoolean("slow") && pt.getBoolean("curvy")) {
+          c = slowAndCurvyColor;
+          b = c;
+        } else if (pt.getBoolean("curvy")) {
+          c = curvyColor;
+          b = c;
+        } else if (pt.getBoolean("slow")) {
+          c = slowColor;
+          b = c;
+        } else {
+          c = normalColor;
+        }
+
+        if (specialPoint) {
+          DrawingBufferRoutines.rect(db, pt, 9.0, 9.0, b, c, 1.0);
+        } else {
+          DrawingBufferRoutines.rect(db, pt, 3.0, 3.0, Color.BLACK, c, 0.3);
+        }
+      }
+      main.getDrawingSurface().getSoup().addBuffer(db);
+    }
+
+  }
   public List<Pt> mergeCFModified(Sequence seq) {
     List<Pt> ret = new ArrayList<Pt>();
     seq.calculateCurvatureEuclideanWindowSize(24.0);
