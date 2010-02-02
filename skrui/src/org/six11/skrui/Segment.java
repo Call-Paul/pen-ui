@@ -38,16 +38,16 @@ public class Segment implements Comparable<Segment> {
     this.idxStart = seq.indexOf(start);
     this.idxEnd = seq.indexOf(end);
     this.errorLine = calculateLineError();
-    if (isProbablyLine()) {
-      this.errorCircle = Double.POSITIVE_INFINITY;
-    } else {
-      this.errorCircle = calculateCircleError();
-    }
+    // if (isProbablyLine()) {
+    // this.errorCircle = Double.POSITIVE_INFINITY;
+    // } else {
+    this.errorCircle = calculateCircleError();
+    // }
   }
 
-  public double getBestError() {
+  public double getBestError(double lineRatio) {
     double ret = Double.POSITIVE_INFINITY;
-    switch (getBestType()) {
+    switch (getBestType(lineRatio)) {
       case LINE:
         ret = errorLine;
         break;
@@ -58,7 +58,10 @@ public class Segment implements Comparable<Segment> {
     return ret;
   }
 
-  public Type getBestType() {
+  public Type getBestType(double lineRatio) {
+    if (isProbablyLine(lineRatio)) {
+      return Type.LINE;
+    }
     if (errorLine < errorCircle) {
       return Type.LINE;
     } else {
@@ -112,10 +115,10 @@ public class Segment implements Comparable<Segment> {
     }
   };
 
-  public boolean isProbablyLine() {
+  public boolean isProbablyLine(double threshold) {
     double euclideanDistance = end.distance(start);
     double curvilinearDistance = seq.getPathLength(idxStart, idxEnd);
-    return (euclideanDistance / curvilinearDistance) > CornerFinder.lineRatioThresh;
+    return (euclideanDistance / curvilinearDistance) > threshold;
   }
 
   private double calculateLineError() {

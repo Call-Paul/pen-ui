@@ -12,6 +12,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -79,7 +80,7 @@ public class Main {
   private static final String PROP_PDF_DIR = "pdfDir";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
-    "--corner-finder"
+    "CornerFinder"
   };
 
   public static void main(String[] in) throws IOException {
@@ -92,8 +93,18 @@ public class Main {
     if (args.hasFlag("help")) {
       if (args.hasValue("help")) {
         String who = args.getValue("help");
-        if (who.equals("corner-finder")) {
-          System.out.println(CornerFinder.getArgumentSpec().getDocumentation());
+        try {
+          Class<DrawingScript> clazz = loadScript(who);
+          Method mainMethod = clazz.getMethod("getArgumentSpec", new Class[] {});
+          Arguments sgra = (Arguments) mainMethod.invoke(null, (Object[]) null);
+          System.out.println(sgra.getDocumentation());
+        } catch (ClassNotFoundException ex) {
+          System.out.println(ex.getMessage());
+        } catch (NoSuchMethodException ex) {
+          System.out.println("Found script for '" + who + "' but no documentation is found:");
+          System.out.println(ex.getMessage());
+        } catch (Exception ex) {
+          ex.printStackTrace();
         }
       } else {
         System.out.println(args.getDocumentation());
@@ -104,6 +115,34 @@ public class Main {
     Debug.enabled = args.hasFlag("debugging");
     Debug.useColor = args.hasFlag("debug-color");
     makeInstance(args);
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Class<DrawingScript> loadScript(String name) throws ClassNotFoundException {
+    Class<DrawingScript> ret = null;
+    String thisPackage = Main.class.getPackage().getName();
+    String scriptPackage = thisPackage + ".script";
+
+    try {
+      ret = (Class<DrawingScript>) Class.forName(name);
+    } catch (ClassNotFoundException ignore) {
+    }
+    if (ret == null && !name.startsWith(scriptPackage)) {
+      try {
+        ret = (Class<DrawingScript>) Class.forName(scriptPackage + "." + name);
+      } catch (ClassNotFoundException ignore) {
+      }
+    }
+    if (ret == null && !name.startsWith(thisPackage)) {
+      try {
+        ret = (Class<DrawingScript>) Class.forName(thisPackage + "." + name);
+      } catch (ClassNotFoundException ignore) {
+      }
+    }
+    if (ret == null) {
+      throw new ClassNotFoundException("Unable to find a class for the script '" + name + "'");
+    }
+    return ret;
   }
 
   public static Arguments getArgumentSpec() {
@@ -159,11 +198,6 @@ public class Main {
       bug("Got IOException when making prefs object. This is going to ruin your day.");
       ex.printStackTrace();
     }
-
-    if (args.hasFlag("corner-finder")) {
-      new CornerFinder(this, args.getOriginalArgs());
-    }
-
     if (args.hasFlag("load-sketch")) {
       open(new File(args.getValue("load-sketch")));
     }
@@ -171,6 +205,22 @@ public class Main {
     if (args.hasFlag("pdf-output")) {
       batchModePdfFileName = args.getValue("pdf-output");
       savePdf();
+    }
+
+    for (int i = 0; i < args.getPositionCount(); i++) {
+      try {
+        Class<? extends DrawingScript> clazz = loadScript(args.getPosition(i));
+        if (clazz != null) {
+          DrawingScript.load(clazz, this);
+          bug("Loaded script: " + args.getPosition(i));
+        }
+      } catch (ClassNotFoundException ex) {
+        bug("Can't load drawing script: " + args.getPosition(i));
+      } catch (InstantiationException ex) {
+        ex.printStackTrace();
+      } catch (IllegalAccessException ex) {
+        ex.printStackTrace();
+      }
     }
 
     if (args.hasFlag("no-ui") == false) {
@@ -278,6 +328,15 @@ public class Main {
     }
   }
 
+  /**
+   * Writes numeric data to standard output suitable for graphing in GNUPlot.
+   * 
+   * @param attribute
+   *          the name of the attribute to graph. This must be set on each point in each sequence.
+   *          For example, "curvature" will give you the signed curvature at each point.
+   * @param useAbsValue
+   *          will cause the absolute value of each value to be output.
+   */
   protected void graph(String attribute, boolean useAbsValue) {
     int seqCount = 0;
     for (Sequence seq : ds.getSoup().getSequences()) {
@@ -443,6 +502,10 @@ public class Main {
 
   private void newSketch() {
     makeInstance(args);
+  }
+
+  public Arguments getArguments() {
+    return args;
   }
 
   public static void bug(String what) {

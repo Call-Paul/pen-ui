@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.util.List;
 
 import org.six11.util.Debug;
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
@@ -76,16 +77,26 @@ public abstract class DrawingBufferRoutines {
     }
     db.up();
   }
-  
+
   public static void bug(String what) {
     Debug.out("DrawwingBufferRoutines", what);
   }
 
-  public static void seg(DrawingBuffer db, Segment seg, Color color) {
+  public static void line(DrawingBuffer db, Pt start, Pt end, Color color) {
     db.up();
     db.setColor(color);
     db.setThickness(1.0);
-    if (seg.getBestType() == Segment.Type.LINE) {
+    db.moveTo(start.x, start.y);
+    db.down();
+    db.moveTo(end.x, end.y);
+    db.up();
+  }
+
+  public static void seg(DrawingBuffer db, Segment seg, Color color, double lineRatio) {
+    db.up();
+    db.setColor(color);
+    db.setThickness(1.0);
+    if (seg.getBestType(lineRatio) == Segment.Type.LINE) {
       db.moveTo(seg.start.x, seg.start.y);
       db.down();
       db.moveTo(seg.end.x, seg.end.y);
@@ -94,18 +105,26 @@ public abstract class DrawingBufferRoutines {
       Pt s = seg.start;
       Pt m = arc.mid;
       Pt e = seg.end;
-      bug("Adding circle turtle op: " + Debug.num(s) + " " + Debug.num(m) + " " + Debug.num(e));
       db.down();
       db.circleTo(s.x, s.y, m.x, m.y, e.x, e.y);
-//      
-//      double startAngle = Math.toDegrees(-Math.atan2(s.y - c.y, s.x - c.x));
-//      double endAngle   = Math.toDegrees(-Math.atan2(e.y - c.y, e.x - c.x));
-//      double extent = endAngle - startAngle;
-//      double topLeftX = c.x - arc.radius;
-//      double topLeftY = c.y - arc.radius;
-//      double d = arc.radius * 2.0;
-
     }
     db.up();
+  }
+
+  public static void dot(DrawingBuffer db, Pt center, double radius, double thickness, Color borderColor, Color fillColor) {
+    db.up();
+    if (fillColor != null) {
+      db.setFillColor(fillColor);
+      db.setFilling(true);
+    }
+    db.setColor(borderColor);
+    db.setThickness(thickness);
+    Circle circle = new Circle(center.x, center.y, radius);
+    db.down();
+    db.addShape(circle);
+    db.up();
+    if (fillColor != null) {
+      db.setFilling(false);
+    }
   }
 }
