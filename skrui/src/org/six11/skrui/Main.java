@@ -521,7 +521,7 @@ public class Main {
     if (orig != null) {
       for (String k : orig.keySet()) {
         params.put(k, orig.get(k).copy());
-        bug(k + " : " + Debug.num(params.get(k).getValue()));
+        bug(k + " : " + params.get(k).getValueStr());
       }
     }
   }

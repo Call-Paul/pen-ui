@@ -8,6 +8,9 @@ import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.DrawingScript;
 import org.six11.util.Debug;
+import org.six11.util.args.Arguments;
+import org.six11.util.args.Arguments.ArgType;
+import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
@@ -19,6 +22,34 @@ import org.six11.util.pen.SequenceListener;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class HelloScript extends DrawingScript implements SequenceListener {
+
+  
+  private static final String K_SOME_THING = "some-thing";
+  private static final String K_ANOTHER_THING = "another-thing";
+
+  public static Arguments getArgumentSpec() {
+    Arguments args = new Arguments();
+    args.setProgramName("A Nice Hello World");
+    args.setDocumentationProgram("This serves as a template for new scripts. Copy away!");
+
+    Map<String, BoundedParameter> defs = getDefaultParameters();
+    for (String k : defs.keySet()) {
+      BoundedParameter p = defs.get(k);
+      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
+          .getDocumentation()
+          + " Defaults to " + p.getValueStr() + ". ");
+    }
+    return args;
+  }
+
+  public static Map<String, BoundedParameter> getDefaultParameters() {
+    Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
+    defs.put(K_SOME_THING, new BoundedParameter.Double(K_SOME_THING, "Some Thing",
+        "This is some sort of double-precision floating point parameter.", 0, 1, 0.75));
+    defs.put(K_ANOTHER_THING, new BoundedParameter.Double(K_ANOTHER_THING, "Another Thing",
+        "This is another parameter.", 1, 5, 2.5));
+    return defs;
+  }
 
   @Override
   public void initialize() {
@@ -42,5 +73,17 @@ public class HelloScript extends DrawingScript implements SequenceListener {
 
   public Map<String, BoundedParameter> initializeParameters() {
     return new HashMap<String, BoundedParameter>();
+  }
+
+  public Map<String, BoundedParameter> initializeParameters(Arguments args) {
+    Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
+    for (String k : params.keySet()) {
+      if (args.hasValue(k)) {
+        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
+        bug("Set " + params.get(k).getHumanReadableName() + " to "
+            + Debug.num(params.get(k).getDouble()));
+      }
+    }
+    return params;
   }
 }

@@ -21,7 +21,7 @@ public abstract class DrawingScript {
     DrawingScript script = scriptClazz.newInstance();
     script.setMain(m);
     script.initialize();
-    m.addParameters(script.initializeParameters());
+    m.addParameters(script.initializeParameters(m.getArguments()));
     return script;
   }
 
@@ -57,7 +57,7 @@ public abstract class DrawingScript {
     return new HashMap<String, BoundedParameter>();
   }
 
-  public abstract Map<String, BoundedParameter> initializeParameters();
+  public abstract Map<String, BoundedParameter> initializeParameters(Arguments args);
 
   public static Map<String, BoundedParameter> copyParameters(Map<String, BoundedParameter> orig) {
     Map<String, BoundedParameter> ret = new HashMap<String, BoundedParameter>();

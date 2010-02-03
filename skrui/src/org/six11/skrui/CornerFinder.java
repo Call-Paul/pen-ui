@@ -40,36 +40,36 @@ public class CornerFinder extends DrawingScript implements SequenceListener {
     p = defs.get(K_SPEED_MULTIPLIER);
     args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
         .getDocumentation()
-        + " Defaults to " + Debug.num(p.getValue()) + ". ");
+        + " Defaults to " + p.getValueStr() + ". ");
     p = defs.get(K_CURVE_MEDIAN_MULTIPLIER);
     args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
         .getDocumentation()
-        + " Defaults to " + Debug.num(p.getValue()) + ". ");
+        + " Defaults to " + p.getValueStr() + ". ");
     p = defs.get(K_CORNER_SPACE);
     args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
         .getDocumentation()
-        + " Defaults to " + Debug.num(p.getValue()) + ". ");
+        + " Defaults to " + p.getValueStr() + ". ");
     p = defs.get(K_LINE_RATIO);
     args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
         .getDocumentation()
-        + " Defaults to " + Debug.num(p.getValue()) + ". ");
+        + " Defaults to " + p.getValueStr() + ". ");
     return args;
   }
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-    defs.put(K_SPEED_MULTIPLIER, new BoundedParameter(K_SPEED_MULTIPLIER, "Speed Multiplier",
+    defs.put(K_SPEED_MULTIPLIER, new BoundedParameter.Double(K_SPEED_MULTIPLIER, "Speed Multiplier",
         "the double value that serves as the threshold for determining what is slow. "
             + "Points with a speed below (stroke-average-speed * speed-thresh-multiplier) are "
             + "considered slow.", 0, 1, 0.75));
-    defs.put(K_CURVE_MEDIAN_MULTIPLIER, new BoundedParameter(K_CURVE_MEDIAN_MULTIPLIER,
+    defs.put(K_CURVE_MEDIAN_MULTIPLIER, new BoundedParameter.Double(K_CURVE_MEDIAN_MULTIPLIER,
         "Curve Median Multiplier",
         "how many multiples of the median a point's curvature must be in order to be "
             + "considered curvy. Larger numbers are more restrictive.", 1.5, 5, 2));
-    defs.put(K_CORNER_SPACE, new BoundedParameter(K_CORNER_SPACE, "Minimum Corner Space",
+    defs.put(K_CORNER_SPACE, new BoundedParameter.Double(K_CORNER_SPACE, "Minimum Corner Space",
         "the minimum Euclidean distance surrounding a corner in which a "
             + "curvilinearly-adjacent corner may not exist.", 1, 60, 15));
-    defs.put(K_LINE_RATIO, new BoundedParameter(K_LINE_RATIO, "Line Ratio",
+    defs.put(K_LINE_RATIO, new BoundedParameter.Double(K_LINE_RATIO, "Line Ratio",
         "the ratio between a segment's ideal length over its curvilinear path "
             + "length, above which it is considered a line. Lower values will yield "
             + "more arcs.", 0, 1, 0.95));
@@ -155,8 +155,8 @@ public class CornerFinder extends DrawingScript implements SequenceListener {
     }
     double medianCurve = stats.getMedian();
     double aveSpeed = seq.calculateSpeed() / (double) seq.size();
-    double threshSpeed = getParam(K_SPEED_MULTIPLIER).getValue() * aveSpeed;
-    double threshCurve = getParam(K_CURVE_MEDIAN_MULTIPLIER).getValue() * medianCurve;
+    double threshSpeed = getParam(K_SPEED_MULTIPLIER).getDouble() * aveSpeed;
+    double threshCurve = getParam(K_CURVE_MEDIAN_MULTIPLIER).getDouble() * medianCurve;
 
     SortedSet<Pt> candidates = new TreeSet<Pt>();
     candidates.add(seq.getFirst());
@@ -203,7 +203,7 @@ public class CornerFinder extends DrawingScript implements SequenceListener {
       int idxA = origin.indexOf(a);
       int idxB = origin.indexOf(b);
       double dist = origin.getPathLength(idxA, idxB);
-      if (dist < getParam(K_CORNER_SPACE).getValue()) {
+      if (dist < getParam(K_CORNER_SPACE).getDouble()) {
         if (i == 0) {
           working.remove(i + 1);
         } else if (i == (working.size() - 1)) {
@@ -251,15 +251,15 @@ public class CornerFinder extends DrawingScript implements SequenceListener {
           Segment nextSeg = findNextSegment(thisSeg, segs);
           Segment leftSeg = prevSeg == null ? null : new Segment(prevSeg.start, thisSeg.end, seq);
           Segment rightSeg = nextSeg == null ? null : new Segment(thisSeg.start, nextSeg.end, seq);
-          double errorThis = thisSeg.getBestError(getParam(K_LINE_RATIO).getValue());
+          double errorThis = thisSeg.getBestError(getParam(K_LINE_RATIO).getDouble());
           double errorPrev = prevSeg == null ? 0.0 : prevSeg.getBestError(getParam(K_LINE_RATIO)
-              .getValue());
+              .getDouble());
           double errorNext = nextSeg == null ? 0.0 : nextSeg.getBestError(getParam(K_LINE_RATIO)
-              .getValue());
+              .getDouble());
           double errorLeft = prevSeg == null ? Double.POSITIVE_INFINITY : leftSeg
-              .getBestError(getParam(K_LINE_RATIO).getValue());
+              .getBestError(getParam(K_LINE_RATIO).getDouble());
           double errorRight = nextSeg == null ? Double.POSITIVE_INFINITY : rightSeg
-              .getBestError(getParam(K_LINE_RATIO).getValue());
+              .getBestError(getParam(K_LINE_RATIO).getDouble());
           StringBuilder bugInfo = new StringBuilder();
           bugInfo.append("  errorThis: " + Debug.num(errorThis) + "\n");
           bugInfo.append("  errorPrev: " + Debug.num(errorPrev) + "\n");
@@ -322,14 +322,13 @@ public class CornerFinder extends DrawingScript implements SequenceListener {
     getSoup().addSequenceListener(this);
   }
 
-  @Override
-  public Map<String, BoundedParameter> initializeParameters() {
+  public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {
       if (args.hasValue(k)) {
-        params.get(k).setValue(Double.parseDouble(args.getValue(k)));
+        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
         bug("Set " + params.get(k).getHumanReadableName() + " to "
-            + Debug.num(params.get(K_SPEED_MULTIPLIER).getValue()));
+            + Debug.num(params.get(k).getDouble()));
       }
     }
     return params;

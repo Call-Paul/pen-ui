@@ -2,6 +2,7 @@ package org.six11.skrui;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,9 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import org.six11.util.Debug;
+import org.six11.util.args.Arguments;
+import org.six11.util.args.Arguments.ArgType;
+import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.gui.Colors;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.OliveSoupEvent;
@@ -23,9 +27,54 @@ import org.six11.util.pen.Sequence;
  */
 public class PrettyPrinterSegments extends DrawingScript {
 
-  @Override
-  public Map<String, BoundedParameter> initializeParameters() {
-    return null; // it is OK to return null.
+  private static final String K_SEGMENT_THICKNESS = "seg-thickness";
+  private static final String K_DRAW_CORNERS = "draw-corners";
+  private static final String K_CORNER_THICKNESS = "corner-thickness";
+  private static final String K_CORNER_SIZE = "corner-size";
+  private static final String K_CORNER_COLOR = "corner-color";
+
+  public static Arguments getArgumentSpec() {
+    Arguments args = new Arguments();
+    args.setProgramName("Pretty Printer for Segments");
+    args.setDocumentationProgram("Draws rectified segments.");
+
+    Map<String, BoundedParameter> defs = getDefaultParameters();
+    for (String k : defs.keySet()) {
+      BoundedParameter p = defs.get(k);
+      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
+          .getDocumentation()
+          + " Defaults to " + p.getValueStr() + ". ");
+    }
+    return args;
+  }
+
+  public static Map<String, BoundedParameter> getDefaultParameters() {
+    Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
+    defs.put(K_SEGMENT_THICKNESS, new BoundedParameter.Double(K_SEGMENT_THICKNESS,
+        "Segment line thickness", "The thickness of each segment line/arc.", 0.01, 100, 2.3));
+    defs.put(K_DRAW_CORNERS, new BoundedParameter.Boolean(K_DRAW_CORNERS, "Draw corners or not",
+        "Set to true to display the locations of segment junctions (aka corners)", false));
+    defs.put(K_CORNER_THICKNESS, new BoundedParameter.Double(K_CORNER_THICKNESS,
+        "Corner line thickness",
+        "The thickness of the corner lines (little dots optionally drawn at junctions)", 0.01, 2.0,
+        0.4));
+    defs.put(K_CORNER_SIZE, new BoundedParameter.Double(K_CORNER_SIZE, "Corner radius",
+        "How big to make the corner visuals, when drawn.", 0.05, 10, 4));
+    defs.put(K_CORNER_COLOR, new BoundedParameter.Paint(K_CORNER_COLOR, "Corner Color",
+        "Fill corner for corners, when drawn.", new java.awt.Color[] {}, Color.RED));
+    return defs;
+  }
+
+  public Map<String, BoundedParameter> initializeParameters(Arguments args) {
+    Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
+    for (String k : params.keySet()) {
+      if (args.hasValue(k)) {
+        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
+        bug("Set " + params.get(k).getHumanReadableName() + " to "
+            + Debug.num(params.get(k).getDouble()));
+      }
+    }
+    return params;
   }
 
   @Override
@@ -45,7 +94,7 @@ public class PrettyPrinterSegments extends DrawingScript {
 
       for (Segment seg : segs) {
         DrawingBufferRoutines.seg(db, seg, Color.BLACK, getParam(CornerFinder.K_LINE_RATIO)
-            .getValue());
+            .getDouble());
         involvedSequences.add(seg.seq);
       }
       main.getDrawingSurface().getSoup().addBuffer(db);
