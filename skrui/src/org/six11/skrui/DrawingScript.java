@@ -5,6 +5,8 @@ import java.util.Map;
 
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
+import org.six11.util.pen.OliveDrawingSurface;
+import org.six11.util.pen.OliveSoup;
 
 /**
  * 
@@ -19,6 +21,7 @@ public abstract class DrawingScript {
     DrawingScript script = scriptClazz.newInstance();
     script.setMain(m);
     script.initialize();
+    m.addParameters(script.initializeParameters());
     return script;
   }
 
@@ -33,6 +36,18 @@ public abstract class DrawingScript {
   protected DrawingScript() {
 
   }
+  
+  protected OliveDrawingSurface getDrawingSurface() {
+    return main.getDrawingSurface();
+  }
+  
+  protected OliveSoup getSoup() {
+    return getDrawingSurface().getSoup();
+  }
+  
+  protected BoundedParameter getParam(String key) {
+    return main.getParam(key);
+  }
 
   public static Arguments getArgumentSpec() {
     return new Arguments();
@@ -42,7 +57,7 @@ public abstract class DrawingScript {
     return new HashMap<String, BoundedParameter>();
   }
 
-  public abstract Map<String, BoundedParameter> getParameters();
+  public abstract Map<String, BoundedParameter> initializeParameters();
 
   public static Map<String, BoundedParameter> copyParameters(Map<String, BoundedParameter> orig) {
     Map<String, BoundedParameter> ret = new HashMap<String, BoundedParameter>();

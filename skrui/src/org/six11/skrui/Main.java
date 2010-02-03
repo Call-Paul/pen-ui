@@ -66,6 +66,7 @@ public class Main {
   private Preferences prefs;
   private Arguments args;
   private Map<String, Action> actions = new HashMap<String, Action>();
+  private Map<String, BoundedParameter> params = new HashMap<String, BoundedParameter>();
 
   private static final String ACTION_SAVE_AS = "save as";
   private static final String ACTION_SAVE = "save";
@@ -510,5 +511,18 @@ public class Main {
 
   public static void bug(String what) {
     Debug.out("Main", what);
+  }
+
+  public BoundedParameter getParam(String key) {
+    return params.get(key);
+  }
+
+  public void addParameters(Map<String, BoundedParameter> orig) {
+    if (orig != null) {
+      for (String k : orig.keySet()) {
+        params.put(k, orig.get(k).copy());
+        bug(k + " : " + Debug.num(params.get(k).getValue()));
+      }
+    }
   }
 }

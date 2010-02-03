@@ -40,7 +40,7 @@ public class HelloScript extends DrawingScript implements SequenceListener {
     }
   }
 
-  public Map<String, BoundedParameter> getParameters() {
+  public Map<String, BoundedParameter> initializeParameters() {
     return new HashMap<String, BoundedParameter>();
   }
 }

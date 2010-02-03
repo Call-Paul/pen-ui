@@ -38,11 +38,7 @@ public class Segment implements Comparable<Segment> {
     this.idxStart = seq.indexOf(start);
     this.idxEnd = seq.indexOf(end);
     this.errorLine = calculateLineError();
-    // if (isProbablyLine()) {
-    // this.errorCircle = Double.POSITIVE_INFINITY;
-    // } else {
     this.errorCircle = calculateCircleError();
-    // }
   }
 
   public double getBestError(double lineRatio) {
