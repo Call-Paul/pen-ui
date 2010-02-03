@@ -23,7 +23,7 @@ import org.six11.util.pen.SequenceListener;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class CornerFinder extends DrawingScript implements SequenceListener {
+public class CornerFinder extends SkruiScript implements SequenceListener {
 
   public static final String K_SPEED_MULTIPLIER = "speed-multiplier";
   public static final String K_CURVE_MEDIAN_MULTIPLIER = "curve-median-multiplier";

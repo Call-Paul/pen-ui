@@ -25,7 +25,7 @@ import org.six11.util.pen.Sequence;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class PrettyPrinterSegments extends DrawingScript {
+public class PrettyPrinterSegments extends SkruiScript {
 
   private static final String K_SEGMENT_THICKNESS = "seg-thickness";
   private static final String K_DRAW_CORNERS = "draw-corners";

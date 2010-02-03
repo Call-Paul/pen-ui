@@ -13,12 +13,12 @@ import org.six11.util.pen.OliveSoup;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public abstract class DrawingScript {
+public abstract class SkruiScript {
   protected Main main;
 
-  public static DrawingScript load(Class<? extends DrawingScript> scriptClazz, Main m)
+  public static SkruiScript load(Class<? extends SkruiScript> scriptClazz, Main m)
       throws InstantiationException, IllegalAccessException {
-    DrawingScript script = scriptClazz.newInstance();
+    SkruiScript script = scriptClazz.newInstance();
     script.setMain(m);
     script.initialize();
     m.addParameters(script.initializeParameters(m.getArguments()));
@@ -33,7 +33,7 @@ public abstract class DrawingScript {
   /**
    * Zero-arg constructor to make reflection easy.
    */
-  protected DrawingScript() {
+  protected SkruiScript() {
 
   }
   

@@ -6,7 +6,7 @@ import java.util.Map;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
-import org.six11.skrui.DrawingScript;
+import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -21,7 +21,7 @@ import org.six11.util.pen.SequenceListener;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class HelloScript extends DrawingScript implements SequenceListener {
+public class HelloScript extends SkruiScript implements SequenceListener {
 
   
   private static final String K_SOME_THING = "some-thing";

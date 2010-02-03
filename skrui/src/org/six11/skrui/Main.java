@@ -95,7 +95,7 @@ public class Main {
       if (args.hasValue("help")) {
         String who = args.getValue("help");
         try {
-          Class<DrawingScript> clazz = loadScript(who);
+          Class<SkruiScript> clazz = loadScript(who);
           Method mainMethod = clazz.getMethod("getArgumentSpec", new Class[] {});
           Arguments sgra = (Arguments) mainMethod.invoke(null, (Object[]) null);
           System.out.println(sgra.getDocumentation());
@@ -119,24 +119,24 @@ public class Main {
   }
 
   @SuppressWarnings("unchecked")
-  public static Class<DrawingScript> loadScript(String name) throws ClassNotFoundException {
-    Class<DrawingScript> ret = null;
+  public static Class<SkruiScript> loadScript(String name) throws ClassNotFoundException {
+    Class<SkruiScript> ret = null;
     String thisPackage = Main.class.getPackage().getName();
     String scriptPackage = thisPackage + ".script";
 
     try {
-      ret = (Class<DrawingScript>) Class.forName(name);
+      ret = (Class<SkruiScript>) Class.forName(name);
     } catch (ClassNotFoundException ignore) {
     }
     if (ret == null && !name.startsWith(scriptPackage)) {
       try {
-        ret = (Class<DrawingScript>) Class.forName(scriptPackage + "." + name);
+        ret = (Class<SkruiScript>) Class.forName(scriptPackage + "." + name);
       } catch (ClassNotFoundException ignore) {
       }
     }
     if (ret == null && !name.startsWith(thisPackage)) {
       try {
-        ret = (Class<DrawingScript>) Class.forName(thisPackage + "." + name);
+        ret = (Class<SkruiScript>) Class.forName(thisPackage + "." + name);
       } catch (ClassNotFoundException ignore) {
       }
     }
@@ -210,9 +210,9 @@ public class Main {
 
     for (int i = 0; i < args.getPositionCount(); i++) {
       try {
-        Class<? extends DrawingScript> clazz = loadScript(args.getPosition(i));
+        Class<? extends SkruiScript> clazz = loadScript(args.getPosition(i));
         if (clazz != null) {
-          DrawingScript.load(clazz, this);
+          SkruiScript.load(clazz, this);
           bug("Loaded script: " + args.getPosition(i));
         }
       } catch (ClassNotFoundException ex) {
