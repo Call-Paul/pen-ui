@@ -57,6 +57,11 @@
 		<genjar jarfile="${jar.output}">
 			<library jar="lib/iText-2.1.4.jar" />
 			<class name="org.six11.skrui.Main" />
+			<!-- The SkruiScripts are loaded via reflection (barf) so I have to include them explicitly. -->
+			<class name="org.six11.skrui.CornerFinder" />
+			<class name="org.six11.skrui.PrettyPrinterSegments" />
+			<class name="org.six11.skrui.script.HelloScript" />
+			
 			<classpath>
 				<fileset dir="lib">
 					<include name="*.jar" />
@@ -70,6 +75,7 @@
 				<!-- iText demands bouncycastle, but apparently I can get away without it -->
 				<exclude name="org.bouncycastle." />
 			</classfilter>
+
 		</genjar>
 	</target>
 
