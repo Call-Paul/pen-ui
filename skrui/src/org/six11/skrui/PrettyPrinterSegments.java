@@ -3,17 +3,14 @@ package org.six11.skrui;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
-import org.six11.util.gui.Colors;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.OliveSoupEvent;
 import org.six11.util.pen.OliveSoupListener;
@@ -29,9 +26,12 @@ public class PrettyPrinterSegments extends SkruiScript {
 
   private static final String K_SEGMENT_THICKNESS = "seg-thickness";
   private static final String K_DRAW_CORNERS = "draw-corners";
+  private static final String K_DRAW_CONTROL_POINTS = "draw-control-points";
   private static final String K_CORNER_THICKNESS = "corner-thickness";
   private static final String K_CORNER_SIZE = "corner-size";
   private static final String K_CORNER_COLOR = "corner-color";
+  private static final String K_SHOW_RAW_INK = "show-ink";
+  private static final String K_DRAW_SEGMENTS = "draw-segments";
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -54,6 +54,13 @@ public class PrettyPrinterSegments extends SkruiScript {
         "Segment line thickness", "The thickness of each segment line/arc.", 0.01, 100, 2.3));
     defs.put(K_DRAW_CORNERS, new BoundedParameter.Boolean(K_DRAW_CORNERS, "Draw corners or not",
         "Set to true to display the locations of segment junctions (aka corners)", false));
+    defs.put(K_DRAW_SEGMENTS, new BoundedParameter.Boolean(K_DRAW_SEGMENTS,
+        "Draw rectified segments or not", "Set to true to display the rectified segments", true));
+    defs.put(K_DRAW_CONTROL_POINTS, new BoundedParameter.Boolean(K_DRAW_CONTROL_POINTS,
+        "Draw control points or not",
+        "Set to true to display the locations of spline control points", false));
+    defs.put(K_SHOW_RAW_INK, new BoundedParameter.Boolean(K_SHOW_RAW_INK, "Hide raw ink or not",
+        "Tells the system to draw (or not) the original ink when pretty printing.", true));
     defs.put(K_CORNER_THICKNESS, new BoundedParameter.Double(K_CORNER_THICKNESS,
         "Corner line thickness",
         "The thickness of the corner lines (little dots optionally drawn at junctions)", 0.01, 2.0,
@@ -68,10 +75,14 @@ public class PrettyPrinterSegments extends SkruiScript {
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {
-      if (args.hasValue(k)) {
-        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
-        bug("Set " + params.get(k).getHumanReadableName() + " to "
-            + Debug.num(params.get(k).getDouble()));
+      if (args.hasFlag(k)) {
+        if (args.hasValue(k)) {
+          params.get(k).setValue(args.getValue(k));
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        } else {
+          params.get(k).setValue("true");
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        }
       }
     }
     return params;
@@ -89,28 +100,46 @@ public class PrettyPrinterSegments extends SkruiScript {
 
   private void prettyPrint(SortedSet<Segment> segs) {
     if (segs.size() > 0) {
-      DrawingBuffer db = new DrawingBuffer();
-      Set<Sequence> involvedSequences = new HashSet<Sequence>();
-
-      for (Segment seg : segs) {
-        DrawingBufferRoutines.seg(db, seg, Color.BLACK, getParam(CornerFinder.K_LINE_RATIO)
-            .getDouble());
-        involvedSequences.add(seg.seq);
+      if (getParam(K_DRAW_SEGMENTS).getBoolean()) {
+        DrawingBuffer db = new DrawingBuffer();
+        Map<Segment.Type, Color> colors = new HashMap<Segment.Type, Color>();
+        colors.put(Segment.Type.LINE, Color.CYAN);
+        colors.put(Segment.Type.ARC, Color.MAGENTA);
+        colors.put(Segment.Type.SPLINE, Color.GREEN);
+        for (Segment seg : segs) {
+          DrawingBufferRoutines.seg(db, seg, colors.get(seg.getBestType()));
+        }
+        main.getDrawingSurface().getSoup().addBuffer(db);
       }
-      main.getDrawingSurface().getSoup().addBuffer(db);
-
-      for (Sequence seq : involvedSequences) {
-        bug("Disabling visual for a sequence...");
-        disableOriginalInput(seq);
-        List<Pt> corners = new ArrayList<Pt>();
-        for (Pt pt : seq) {
-          if (pt.getBoolean("corner")) {
-            corners.add(pt);
+      if (getParam(K_SHOW_RAW_INK).getBoolean() == false) {
+        for (Segment seg : segs) {
+          disableOriginalInput(seg.seq);
+        }
+      }
+      if (getParam(K_DRAW_CONTROL_POINTS).getBoolean()) {
+        for (Segment seg : segs) {
+          if (seg.getBestType() == Segment.Type.SPLINE) {
+            if (seg.splineControlPoints != null && seg.splineControlPoints.size() > 0) {
+              drawDots(new ArrayList<Pt>(seg.splineControlPoints), Color.YELLOW);
+            }
           }
         }
-        drawCorners(corners, seq);
       }
+      if (getParam(K_DRAW_CORNERS).getBoolean()) {
+        List<Pt> corners = new ArrayList<Pt>();
+        for (Segment seg : segs) {          
+          if (!corners.contains(seg.start)) {
+            corners.add(seg.start);
+          }
+          if (!corners.contains(seg.end)) {
+            corners.add(seg.end);
+          }
+        }
+        if (corners.size() > 0) {
+          drawDots(corners, getParam(K_CORNER_COLOR).getPaint());
+        }
 
+      }
     }
   }
 
@@ -118,44 +147,15 @@ public class PrettyPrinterSegments extends SkruiScript {
     main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seq).setVisible(false);
   }
 
-  private void drawCorners(List<Pt> corners, Sequence seq) {
-    if (corners != null && corners.size() > 0) {
-      DrawingBuffer db = new DrawingBuffer();
-      Color cornerColor = new Color(255, 0, 0, 127);
-      Color mergedColor = new Color(0, 0, 255, 127);
-      Color normalColor = new Color(255, 255, 255, 127);
-      Color curvyColor = Colors.makeAlpha(Color.GREEN, 0.6f);
-      Color slowColor = Colors.makeAlpha(Color.YELLOW, 0.6f);
-      Color slowAndCurvyColor = Colors.makeAlpha(Color.MAGENTA, 0.6f);
-      boolean addedSomething = false;
-      for (Pt pt : seq) {
-        boolean specialPoint = false;
-        Color c = cornerColor;
-        if (pt.getBoolean("corner")) {
-          specialPoint = true;
-        } else if (pt.getBoolean("removed")) {
-          c = mergedColor;
-          specialPoint = true;
-        } else if (pt.getBoolean("slow") && pt.getBoolean("curvy")) {
-          c = slowAndCurvyColor;
-        } else if (pt.getBoolean("curvy")) {
-          c = curvyColor;
-        } else if (pt.getBoolean("slow")) {
-          c = slowColor;
-        } else {
-          c = normalColor;
-        }
-
-        if (specialPoint) {
-          DrawingBufferRoutines.dot(db, pt, 4.0, 0.4, Color.BLACK, c);
-          addedSomething = true;
-        } else {
-          // DrawingBufferRoutines.rect(db, pt, 3.0, 3.0, Color.BLACK, c, 0.3);
-        }
+  private void drawDots(List<Pt> dots, Color fill) {
+    DrawingBuffer db = new DrawingBuffer();
+    if (dots != null && dots.size() > 0) {
+      double size = getParam(K_CORNER_SIZE).getDouble();
+      double thk = getParam(K_CORNER_THICKNESS).getDouble();
+      for (Pt pt : dots) {
+        DrawingBufferRoutines.dot(db, pt, size, thk, Color.BLACK, fill);
       }
-      if (addedSomething) {
-        main.getDrawingSurface().getSoup().addBuffer(db);
-      }
+      main.getDrawingSurface().getSoup().addBuffer(db);
     }
   }
 

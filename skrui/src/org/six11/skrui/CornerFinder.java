@@ -29,6 +29,13 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
   public static final String K_CURVE_MEDIAN_MULTIPLIER = "curve-median-multiplier";
   public static final String K_CORNER_SPACE = "corner-space-thresh";
   public static final String K_LINE_RATIO = "line-ratio-thresh";
+  public static final String K_SPLINE_THRESH = "spline-thresh";
+  public static final String K_LINE_OK = "line";
+  public static final String K_ARC_OK = "arc";
+  public static final String K_SPLINE_OK = "spline";
+  public static final String K_LINE_ERROR_MULT = "line-error-mult";
+  public static final String K_ARC_ERROR_MULT = "arc-error-mult";
+  public static final String K_SPLINE_ERROR_MULT = "spline-error-mult";
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -36,29 +43,19 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
     args.setDocumentationProgram("Examines finished Sequences and identifies corners.");
 
     Map<String, BoundedParameter> defs = getDefaultParameters();
-    BoundedParameter p = null;
-    p = defs.get(K_SPEED_MULTIPLIER);
-    args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
-        .getDocumentation()
-        + " Defaults to " + p.getValueStr() + ". ");
-    p = defs.get(K_CURVE_MEDIAN_MULTIPLIER);
-    args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
-        .getDocumentation()
-        + " Defaults to " + p.getValueStr() + ". ");
-    p = defs.get(K_CORNER_SPACE);
-    args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
-        .getDocumentation()
-        + " Defaults to " + p.getValueStr() + ". ");
-    p = defs.get(K_LINE_RATIO);
-    args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
-        .getDocumentation()
-        + " Defaults to " + p.getValueStr() + ". ");
+    for (String k : defs.keySet()) {
+      BoundedParameter p = defs.get(k);
+      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
+          .getDocumentation()
+          + " Defaults to " + p.getValueStr() + ". ");
+    }
     return args;
   }
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-    defs.put(K_SPEED_MULTIPLIER, new BoundedParameter.Double(K_SPEED_MULTIPLIER, "Speed Multiplier",
+    defs.put(K_SPEED_MULTIPLIER, new BoundedParameter.Double(K_SPEED_MULTIPLIER,
+        "Speed Multiplier",
         "the double value that serves as the threshold for determining what is slow. "
             + "Points with a speed below (stroke-average-speed * speed-thresh-multiplier) are "
             + "considered slow.", 0, 1, 0.75));
@@ -73,6 +70,29 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
         "the ratio between a segment's ideal length over its curvilinear path "
             + "length, above which it is considered a line. Lower values will yield "
             + "more arcs.", 0, 1, 0.95));
+    defs.put(K_LINE_OK, new BoundedParameter.Boolean(K_LINE_OK, "Enable Line Finder",
+        "Enables line finding", true));
+    defs.put(K_ARC_OK, new BoundedParameter.Boolean(K_ARC_OK, "Enable Arc Finder",
+        "Enables arc finding (portions of circles)", true));
+    defs.put(K_SPLINE_OK, new BoundedParameter.Boolean(K_SPLINE_OK, "Enable Spline Finder",
+        "Enables cardinal spline fitting.", true));
+    defs.put(K_SPLINE_THRESH, new BoundedParameter.Double(K_SPLINE_THRESH,
+        "Spline Error Threshold", "The error threshold when fitting a spline.", 1, 100, 20));
+    defs.put(K_LINE_ERROR_MULT, new BoundedParameter.Double(K_LINE_ERROR_MULT,
+        "Line Error Multiplier",
+        "A multiplier applied to line error when deciding if a segment is a line, arc, "
+            + "or spline. Lines will generally have more error than arcs, which "
+            + "certainly have more error than splines. So to promote line finding, "
+            + "set the line error multiplier to be substantially lower than circles and splines.",
+        1, 100, 1));
+    defs.put(K_ARC_ERROR_MULT, new BoundedParameter.Double(K_ARC_ERROR_MULT,
+        "Arc Error Multiplier",
+        "A multiplier applied to arc error when deciding if a segment is a line, arc, "
+            + "or spline. See docs for line error for more info.", 1.5, 100, 1));
+    defs.put(K_SPLINE_ERROR_MULT, new BoundedParameter.Double(K_SPLINE_ERROR_MULT,
+        "Spline Error Multiplier",
+        "A multiplier applied to spline error when deciding if a segment is a line, arc, "
+            + "or spline. See docs for line error for more info.", 3, 100, 1));
     return defs;
   }
 
@@ -88,63 +108,9 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
         SortedSet<Segment> segs = (SortedSet<Segment>) seqEvent.getSeq().getAttribute(
             "segmentation");
         getSoup().addSoupData("segmentation", segs);
-        // DrawingBuffer db = new DrawingBuffer();
-        // for (Segment seg : segs) {
-        // DrawingBufferRoutines.seg(db, seg, Color.BLACK, params.get(K_LINE_RATIO).getValue());
-        // }
-        // main.getDrawingSurface().getSoup().addBuffer(db);
       }
-
-      // drawCorners(corners, seqEvent);
-      // disableOriginalInput(seqEvent);
     }
   }
-
-  // private void disableOriginalInput(SequenceEvent seqEvent) {
-  // main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seqEvent.getSeq()).setVisible(
-  // false);
-  // }
-  //
-  // private void drawCorners(List<Pt> corners, SequenceEvent seqEvent) {
-  // if (corners != null && corners.size() > 0) {
-  // DrawingBuffer db = new DrawingBuffer();
-  // Color cornerColor = new Color(255, 0, 0, 127);
-  // Color mergedColor = new Color(0, 0, 255, 127);
-  // Color normalColor = new Color(255, 255, 255, 127);
-  // Color curvyColor = Colors.makeAlpha(Color.GREEN, 0.6f);
-  // Color slowColor = Colors.makeAlpha(Color.YELLOW, 0.6f);
-  // Color slowAndCurvyColor = Colors.makeAlpha(Color.MAGENTA, 0.6f);
-  // boolean addedSomething = false;
-  // for (Pt pt : seqEvent.getSeq()) {
-  // boolean specialPoint = false;
-  // Color c = cornerColor;
-  // if (pt.getBoolean("corner")) {
-  // specialPoint = true;
-  // } else if (pt.getBoolean("removed")) {
-  // c = mergedColor;
-  // specialPoint = true;
-  // } else if (pt.getBoolean("slow") && pt.getBoolean("curvy")) {
-  // c = slowAndCurvyColor;
-  // } else if (pt.getBoolean("curvy")) {
-  // c = curvyColor;
-  // } else if (pt.getBoolean("slow")) {
-  // c = slowColor;
-  // } else {
-  // c = normalColor;
-  // }
-  //
-  // if (specialPoint) {
-  // DrawingBufferRoutines.dot(db, pt, 4.0, 0.4, Color.BLACK, c);
-  // addedSomething = true;
-  // } else {
-  // // DrawingBufferRoutines.rect(db, pt, 3.0, 3.0, Color.BLACK, c, 0.3);
-  // }
-  // }
-  // if (addedSomething) {
-  // main.getDrawingSurface().getSoup().addBuffer(db);
-  // }
-  // }
-  // }
 
   public List<Pt> mergeCFModified(Sequence seq) {
     List<Pt> ret = new ArrayList<Pt>();
@@ -226,11 +192,19 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
     boolean ret = true; // true means do it again. change to false when threshold is long enough
     SortedSet<Segment> segs = new TreeSet<Segment>();
     SortedSet<Segment> inTimeOrder = new TreeSet<Segment>(Segment.orderByPoints);
+    boolean doLine = getParam(K_LINE_OK).getBoolean();
+    boolean doArc = getParam(K_ARC_OK).getBoolean();
+    boolean doSpline = getParam(K_SPLINE_OK).getBoolean();
+    double splineThresh = getParam(K_SPLINE_THRESH).getDouble();
+    double lineMult = getParam(K_LINE_ERROR_MULT).getDouble();
+    double arcMult = getParam(K_ARC_ERROR_MULT).getDouble();
+    double splineMult = getParam(K_SPLINE_ERROR_MULT).getDouble();
     Pt prev = null;
     int segCounter = 1;
     for (Pt pt : candidates) {
       if (prev != null) {
-        Segment s = new Segment(prev, pt, seq);
+        Segment s = new Segment(prev, pt, seq, doLine, doArc, doSpline, splineThresh, lineMult,
+            arcMult, splineMult);
         s.label = "" + segCounter;
         segs.add(s);
         segCounter++;
@@ -239,8 +213,8 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
     }
 
     // threshold is average segment length multiplied by the iteration number. We will consider
-    // segments that are shorter than this threshold. This means it is
-    // easier for the threshold to be surpassed with each iteration.
+    // segments that are shorter than this threshold. This means it is easier for the threshold to
+    // be surpassed with each iteration.
     double threshold = (seq.length() / (double) segs.size()) * (double) iterationNumber;
     if (threshold > segs.last().length()) {
       ret = false;
@@ -249,17 +223,15 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
         if (thisSeg.length() < threshold) {
           Segment prevSeg = findPreviousSegment(thisSeg, segs);
           Segment nextSeg = findNextSegment(thisSeg, segs);
-          Segment leftSeg = prevSeg == null ? null : new Segment(prevSeg.start, thisSeg.end, seq);
-          Segment rightSeg = nextSeg == null ? null : new Segment(thisSeg.start, nextSeg.end, seq);
-          double errorThis = thisSeg.getBestError(getParam(K_LINE_RATIO).getDouble());
-          double errorPrev = prevSeg == null ? 0.0 : prevSeg.getBestError(getParam(K_LINE_RATIO)
-              .getDouble());
-          double errorNext = nextSeg == null ? 0.0 : nextSeg.getBestError(getParam(K_LINE_RATIO)
-              .getDouble());
-          double errorLeft = prevSeg == null ? Double.POSITIVE_INFINITY : leftSeg
-              .getBestError(getParam(K_LINE_RATIO).getDouble());
-          double errorRight = nextSeg == null ? Double.POSITIVE_INFINITY : rightSeg
-              .getBestError(getParam(K_LINE_RATIO).getDouble());
+          Segment leftSeg = prevSeg == null ? null : new Segment(prevSeg.start, thisSeg.end, seq,
+              doLine, doArc, doSpline, splineThresh, lineMult, arcMult, splineMult);
+          Segment rightSeg = nextSeg == null ? null : new Segment(thisSeg.start, nextSeg.end, seq,
+              doLine, doArc, doSpline, splineThresh, lineMult, arcMult, splineMult);
+          double errorThis = thisSeg.getBestError();
+          double errorPrev = prevSeg == null ? 0.0 : prevSeg.getBestError();
+          double errorNext = nextSeg == null ? 0.0 : nextSeg.getBestError();
+          double errorLeft = prevSeg == null ? Double.POSITIVE_INFINITY : leftSeg.getBestError();
+          double errorRight = nextSeg == null ? Double.POSITIVE_INFINITY : rightSeg.getBestError();
           StringBuilder bugInfo = new StringBuilder();
           bugInfo.append("  errorThis: " + Debug.num(errorThis) + "\n");
           bugInfo.append("  errorPrev: " + Debug.num(errorPrev) + "\n");
@@ -325,10 +297,14 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {
-      if (args.hasValue(k)) {
-        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
-        bug("Set " + params.get(k).getHumanReadableName() + " to "
-            + Debug.num(params.get(k).getDouble()));
+      if (args.hasFlag(k)) {
+        if (args.hasValue(k)) {
+          params.get(k).setValue(args.getValue(k));
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        } else {
+          params.get(k).setValue("true");
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        }
       }
     }
     return params;

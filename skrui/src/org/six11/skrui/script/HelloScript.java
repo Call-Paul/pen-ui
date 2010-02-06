@@ -71,17 +71,17 @@ public class HelloScript extends SkruiScript implements SequenceListener {
     }
   }
 
-  public Map<String, BoundedParameter> initializeParameters() {
-    return new HashMap<String, BoundedParameter>();
-  }
-
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {
-      if (args.hasValue(k)) {
-        params.get(k).setDouble(Double.parseDouble(args.getValue(k)));
-        bug("Set " + params.get(k).getHumanReadableName() + " to "
-            + Debug.num(params.get(k).getDouble()));
+      if (args.hasFlag(k)) {
+        if (args.hasValue(k)) {
+          params.get(k).setValue(args.getValue(k));
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        } else {
+          params.get(k).setValue("true");
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        }
       }
     }
     return params;

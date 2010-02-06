@@ -1,0 +1,7 @@
+#!/bin/bash
+
+./run \
+  --load-sketch=$1 \
+  --pdf-output=$2 \
+  --no-ui
+exit 0

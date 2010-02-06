@@ -1,6 +1,7 @@
 package org.six11.skrui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
@@ -74,11 +75,14 @@ public class Main {
   private static final String ACTION_SAVE_PDF = "save-pdf";
   private static final String ACTION_NEW = "new";
   private static final String ACTION_GRAPH_SPEED = "graph speed";
-  private static final String ACTION_GRAPH_CURVATURE = "graph curvature";
-  private static final String ACTION_GRAPH_ANGLE = "graph angle";
+  private static final String ACTION_GRAPH_CURVATURE_ABS = "graph curvature (absolute value)";
+  private static final String ACTION_GRAPH_ANGLE_ABS = "graph angle (absolute value)";
+  private static final String ACTION_GRAPH_CURVATURE_SIGNED = "graph curvature (signed value)";
+  private static final String ACTION_GRAPH_ANGLE_SIGNED = "graph angle (signed value)";
 
   private static final String PROP_SKETCH_DIR = "sketchDir";
   private static final String PROP_PDF_DIR = "pdfDir";
+  private static final String PROP_GRAPH_DIR = "graphDir";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
     "CornerFinder"
@@ -160,12 +164,14 @@ public class Main {
         "Specify a PDF file to automatically output. Only useful with --load-sketch.");
     args.addFlag("no-ui", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED,
         "Supresses the user interface, which is useful in batch mode.");
-    args.addFlag("corner-finder", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
-        "Enable the corner-finder.");
     args.addFlag("debugging", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
         "Enable semi-helpful console text output");
     args.addFlag("debug-color", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
         "If debugging, use ANSI colors for a trippy experience");
+    args.addFlag("show-arguments", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
+        "Shows the command line options onscreen (and/or the PDF), which is convenient for "
+            + "recreating this parameterization later on.");
+
     return args;
   }
 
@@ -199,15 +205,6 @@ public class Main {
       bug("Got IOException when making prefs object. This is going to ruin your day.");
       ex.printStackTrace();
     }
-    if (args.hasFlag("load-sketch")) {
-      open(new File(args.getValue("load-sketch")));
-    }
-
-    if (args.hasFlag("pdf-output")) {
-      batchModePdfFileName = args.getValue("pdf-output");
-      savePdf();
-    }
-
     for (int i = 0; i < args.getPositionCount(); i++) {
       try {
         Class<? extends SkruiScript> clazz = loadScript(args.getPosition(i));
@@ -224,6 +221,15 @@ public class Main {
       }
     }
 
+    if (args.hasFlag("load-sketch")) {
+      open(new File(args.getValue("load-sketch")));
+    }
+
+    if (args.hasFlag("pdf-output")) {
+      batchModePdfFileName = args.getValue("pdf-output");
+      savePdf();
+    }
+
     if (args.hasFlag("no-ui") == false) {
       ds.setComponentPopupMenu(makePopup());
       attachKeyboardAccelerators(af.getRootPane());
@@ -233,6 +239,7 @@ public class Main {
       af.center();
       af.setVisible(true);
     }
+
   }
 
   public OliveDrawingSurface getDrawingSurface() {
@@ -298,19 +305,33 @@ public class Main {
     });
     graphMenu.add(actions.get(ACTION_GRAPH_SPEED));
 
-    actions.put(ACTION_GRAPH_CURVATURE, new NamedAction("Graph Curvature") {
+    actions.put(ACTION_GRAPH_CURVATURE_ABS, new NamedAction("Graph Curvature (Absolute)") {
       public void activate() {
         graph("curvature", true);
       }
     });
-    graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE));
+    graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE_ABS));
 
-    actions.put(ACTION_GRAPH_ANGLE, new NamedAction("Graph Angle") {
+    actions.put(ACTION_GRAPH_CURVATURE_SIGNED, new NamedAction("Graph Curvature (Signed)") {
+      public void activate() {
+        graph("curvature", false);
+      }
+    });
+    graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE_SIGNED));
+
+    actions.put(ACTION_GRAPH_ANGLE_ABS, new NamedAction("Graph Angle") {
       public void activate() {
         graph("angle", true);
       }
     });
-    graphMenu.add(actions.get(ACTION_GRAPH_ANGLE));
+    graphMenu.add(actions.get(ACTION_GRAPH_ANGLE_ABS));
+
+    actions.put(ACTION_GRAPH_ANGLE_SIGNED, new NamedAction("Graph Angle (Signed)") {
+      public void activate() {
+        graph("angle", false);
+      }
+    });
+    graphMenu.add(actions.get(ACTION_GRAPH_ANGLE_SIGNED));
 
     pop.add(graphMenu);
     return pop;
@@ -340,19 +361,52 @@ public class Main {
    */
   protected void graph(String attribute, boolean useAbsValue) {
     int seqCount = 0;
-    for (Sequence seq : ds.getSoup().getSequences()) {
-      System.out.println("# Sequence " + seqCount);
-      int ptCount = 0;
-      for (Pt pt : seq) {
-        if (useAbsValue) {
-          System.out.println(ptCount + " " + Math.abs(pt.getDouble(attribute)));
-        } else {
-          System.out.println(ptCount + " " + pt.getDouble(attribute));
-        }
-        ptCount++;
-      }
-      seqCount++;
+    File outFile = null;
+    File initialDir = maybeGetInitialDir(PROP_GRAPH_DIR);
+    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "graph", "Graph Files");
+    if (currentFile != null) {
+      String suggestedFileName = removeSuffix(currentFile.getName()) + "-" + attribute + ".graph";
+      chooser.setSelectedFile(new File(initialDir, suggestedFileName));
     }
+    int result = chooser.showSaveDialog(ds);
+    if (result == JFileChooser.APPROVE_OPTION) {
+      outFile = chooser.getSelectedFile();
+      if (!outFile.getName().endsWith(".graph")) {
+        outFile = new File(outFile.getParentFile(), outFile.getName() + ".graph");
+      }
+    }
+    if (outFile != null) {
+      try {
+        FileWriter out = new FileWriter(outFile);
+        for (Sequence seq : ds.getSoup().getSequences()) {
+          out.write("# Sequence " + seqCount + "\n");
+          int ptCount = 0;
+          for (Pt pt : seq) {
+            if (useAbsValue) {
+              out.write(ptCount + " " + Math.abs(pt.getDouble(attribute)) + "\n");
+            } else {
+              out.write(ptCount + " " + pt.getDouble(attribute) + "\n");
+            }
+            ptCount++;
+          }
+          seqCount++;
+        }
+        out.close();
+        System.out.println("Wrote " + outFile.getAbsolutePath());
+        prefs.setProperty(PROP_GRAPH_DIR, outFile.getParentFile().getAbsolutePath());
+        prefs.save();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
+  private static String removeSuffix(String name) {
+    String ret = name;
+    if (name.lastIndexOf(".") > 0) {
+      ret = name.substring(0, name.lastIndexOf("."));
+    }
+    return ret;
   }
 
   private void savePdf() {
@@ -372,6 +426,7 @@ public class Main {
     }
 
     if (outFile != null) {
+      outFile = outFile.getAbsoluteFile(); // sidestep any 'abstract file name' silliness
       FileOutputStream out;
       try {
         out = new FileOutputStream(outFile);
@@ -381,6 +436,33 @@ public class Main {
           layer.update();
           bb.add(layer.getBoundingBox());
         }
+        if (args.hasFlag("show-arguments")) {
+          DrawingBuffer db = new DrawingBuffer();
+          double yCursor = bb.getHeight() + 80;
+          StringBuilder buf = new StringBuilder();
+          for (String s : args.getOriginalArgs()) {
+            int chars = buf.length() + s.length();
+            if (chars > 80) {
+              db.moveTo(20, yCursor);
+              db.down();
+              db.addText(buf.toString().trim(), Color.BLACK);
+              db.up();
+              yCursor = yCursor + 16;
+              buf.setLength(0);
+            }
+            buf.append(s + " ");
+          }
+          if (buf.length() > 0) {
+            db.moveTo(20, yCursor);
+            db.down();
+            db.addText(buf.toString().trim(), Color.BLACK);
+            db.up();
+          }
+          db.drawToGraphics(null);
+          bb.add(db.getBoundingBox());
+          ds.getSoup().addBuffer(db);
+        }
+
         int w = bb.getWidthInt();
         int h = bb.getHeightInt();
         Rectangle size = new Rectangle(w, h);
@@ -402,7 +484,7 @@ public class Main {
           bug(ex.getMessage());
         }
         document.close();
-        bug("Wrote " + outFile.getName());
+        System.out.println("Wrote " + outFile.getAbsolutePath());
         prefs.setProperty(PROP_PDF_DIR, outFile.getParentFile().getAbsolutePath());
         prefs.save();
       } catch (FileNotFoundException ex1) {
@@ -453,7 +535,7 @@ public class Main {
         FileWriter fw = new FileWriter(outFile);
         List<Sequence> sequences = ds.getSoup().getSequences();
         SequenceIO.writeAll(sequences, fw);
-        bug("Saved " + outFile.getName());
+        System.out.println("Saved " + outFile.getName());
       } catch (IOException ex) {
         ex.printStackTrace();
       }
@@ -482,6 +564,7 @@ public class Main {
       }
       setCurrentFile(inFile);
       bug("Reset drawing surface with new data.");
+      System.out.println("Opened " + inFile.getAbsolutePath());
     } catch (IOException ex) {
       bug("Can't read file: " + inFile.getAbsolutePath());
       ex.printStackTrace();

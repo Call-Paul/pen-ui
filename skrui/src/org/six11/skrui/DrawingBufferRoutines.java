@@ -92,23 +92,33 @@ public abstract class DrawingBufferRoutines {
     db.up();
   }
 
-  public static void seg(DrawingBuffer db, Segment seg, Color color, double lineRatio) {
+  public static void seg(DrawingBuffer db, Segment seg, Color color) {
     db.up();
     db.setColor(color);
     db.setThickness(1.0);
-    if (seg.getBestType(lineRatio) == Segment.Type.LINE) {
+    if (seg.getBestType() == Segment.Type.LINE) {
       db.moveTo(seg.start.x, seg.start.y);
       db.down();
       db.moveTo(seg.end.x, seg.end.y);
-    } else {
+    } else if (seg.getBestType() == Segment.Type.ARC) {
       CircleArc arc = seg.bestCircle;
       Pt s = seg.start;
       Pt m = arc.mid;
       Pt e = seg.end;
       db.down();
       db.circleTo(s.x, s.y, m.x, m.y, e.x, e.y);
+    } else if (seg.getBestType() == Segment.Type.SPLINE) {
+      boolean is_up = true;
+      for (Pt pt : seg.splinePoints) {
+        db.moveTo(pt.x, pt.y);
+        if (is_up) {
+          db.down();
+          is_up = false;
+        }
+      }
     }
     db.up();
+    bug(seg.toString());
   }
 
   public static void dot(DrawingBuffer db, Pt center, double radius, double thickness, Color borderColor, Color fillColor) {

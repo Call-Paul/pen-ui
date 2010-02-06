@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.util.Debug;
+import org.six11.util.gui.Colors;
 
 /**
  * 
@@ -40,6 +41,10 @@ public abstract class BoundedParameter {
     public void setBoolean(boolean v) {
       value = v;
     }
+
+    public void setValue(String v) {
+      setBoolean(java.lang.Boolean.parseBoolean(v));
+    }
   }
 
   public static class Paint extends BoundedParameter {
@@ -47,8 +52,8 @@ public abstract class BoundedParameter {
     Set<Color> allowedColors;
     Color value;
 
-    public Paint(String keyName, String humanReadableName, String documentation,
-        Color[] colors, Color v) {
+    public Paint(String keyName, String humanReadableName, String documentation, Color[] colors,
+        Color v) {
       super(keyName, humanReadableName, documentation);
       this.allowedColors = new HashSet<Color>();
       for (Color c : colors) {
@@ -68,7 +73,7 @@ public abstract class BoundedParameter {
     public Color getPaint() {
       return value;
     }
-    
+
     public BoundedParameter copy() {
       return new Paint(keyName, humanReadableName, documentation, allowedColors
           .toArray(new Color[] {}), value);
@@ -76,6 +81,11 @@ public abstract class BoundedParameter {
 
     public String getValueStr() {
       return value.toString();
+    }
+
+    @Override
+    public void setValue(String v) {
+      setPaint(Colors.decodeHtmlHexTriplet(v));
     }
 
   }
@@ -139,6 +149,11 @@ public abstract class BoundedParameter {
     public String getValueStr() {
       return Debug.num(getDouble());
     }
+
+    @Override
+    public void setValue(String v) {
+      setDouble(java.lang.Double.parseDouble(v));
+    }
   }
 
   protected BoundedParameter(String keyName, String humanReadableName, String documentation) {
@@ -188,12 +203,12 @@ public abstract class BoundedParameter {
   public void setBoolean(@SuppressWarnings("unused") boolean v) {
     warn("Boolean");
   }
-  
+
   public Color getPaint() {
     warn("Paint");
     return null;
   }
-  
+
   public void setPaint(@SuppressWarnings("unused") Color c) {
     warn("Paint");
   }
@@ -201,9 +216,12 @@ public abstract class BoundedParameter {
   private void warn(String as) {
     System.out.println("Warning: using parameter " + getKeyName() + " as " + as
         + ", but it is of type: " + getClass().getName());
+    new RuntimeException("ugh").printStackTrace();
   }
 
   public abstract String getValueStr();
 
   public abstract BoundedParameter copy();
+
+  public abstract void setValue(String v);
 }
