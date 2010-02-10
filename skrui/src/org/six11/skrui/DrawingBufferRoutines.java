@@ -121,7 +121,8 @@ public abstract class DrawingBufferRoutines {
     bug(seg.toString());
   }
 
-  public static void dot(DrawingBuffer db, Pt center, double radius, double thickness, Color borderColor, Color fillColor) {
+  public static void dot(DrawingBuffer db, Pt center, double radius, double thickness,
+      Color borderColor, Color fillColor) {
     db.up();
     if (fillColor != null) {
       db.setFillColor(fillColor);
@@ -135,6 +136,13 @@ public abstract class DrawingBufferRoutines {
     db.up();
     if (fillColor != null) {
       db.setFilling(false);
+    }
+  }
+
+  public static void dots(DrawingBuffer db, List<Pt> points, double radius, double thickness,
+      Color borderColor, Color fillColor) {
+    for (Pt pt : points) {
+      dot(db, pt, radius, thickness, borderColor, fillColor);
     }
   }
 }
