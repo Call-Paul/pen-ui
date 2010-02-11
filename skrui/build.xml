@@ -11,7 +11,7 @@
 	<property name="javadoc.output.dir" value="${build.dir}/docs" />
 	<property name="jar.output" value="${build.dir}/${shortName}.jar" />
 
-	<!-- ==================== Compilation Classpath =========================== -->
+	<!-- ==================== Compilation Classpath =========================== -->           
 
 	<path id="compile.classpath">
 		<fileset dir="lib">

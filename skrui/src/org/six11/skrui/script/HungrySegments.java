@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.Set;
+import java.util.HashSet;
+
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
@@ -89,26 +92,50 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       hungryRegions.add(new HungryRegion(seq, seq.indexOf(pt)));
     }
 
-    boolean done = false;
     int round = 0;
-    while (!done) {
+    boolean done = false;
+    while (!done) { // loop as long as one of the regions is not done
       done = true;
-      if (round > 10) {
-        bug("Inducing completion.");
-        done = false;
-      } else {
-        bug("Round " + round);
+      for (int i = 0; i < hungryRegions.size(); i++) {
+	HungryRegion r = hungryRegions.get(i);
+	if (!r.isFinished()) {
+	  int who = r.expand();
+	  resolveContention(hungryRegions, who);
+	  if (r.isFinished()) {
+	    bug("Region " + i + " is finished! (round " + round + ")");
+	  }
+	}
+	done = done && r.isFinished();
       }
       round++;
-
-      for (int i = 0; i < hungryRegions.size(); i++) {
-        HungryRegion r = hungryRegions.get(i);
-        int who = r.expand();
-        done = (who < 0) && done;
-        bug("After iteration " + i + ". Will I finish? " + done);
-      }
     }
     debugRegions(hungryRegions);
+  }
+
+  private void resolveContention(List<HungryRegion> regions, int idx) {
+
+    Set<HungryRegion> contenders = new HashSet<HungryRegion>();
+    for (HungryRegion r : regions) {
+      if (r.claims(idx)) {
+	contenders.add(r);
+      }
+    }
+    if (contenders.size() > 1) {
+      bug("point " + idx + " is contended!");
+      // more than one region claims the given index. resolve it in
+      // one of these ways:
+      
+      // * Give the index to one region and list it taboo to the
+      // * other. (based on error)
+      
+      // * Merge the two segments by giving all of one region's points
+      // * to the other and marking the depleted one as
+      // * finished. Remember the loaded-up region should inherit the
+      // * depleted's taboo list. The errors should be calculated as
+      // * well, but not in the same order they appear in the source
+      // * list. Rather they should be recalculated for each point
+      // * absorbed by the loaded-up region.
+    }
   }
 
   private void debugRegions(List<HungryRegion> hungryRegions) {
@@ -199,6 +226,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     List<Integer> taboo;
     List<Double> lineErrors;
     List<Double> arcErrors;
+    boolean finished;
 
     public HungryRegion(Sequence seq, int ptIdx) {
       this.seq = seq;
@@ -209,6 +237,11 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       this.arcErrors = new ArrayList<Double>();
       arcErrors.add(0.0);
       this.taboo = new ArrayList<Integer>();
+      finished = false;
+    }
+
+    public boolean claims(int idx) {
+      return pointIndices.contains(idx);
     }
 
     public int expand() {
@@ -217,39 +250,49 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       int end = getEndIdx();
       int prev = start - 1;
       int next = end + 1;
-      bug("prev, start, end, next: " + prev + ", " + start + ", " + end + ", " + next);
+
       double errorPrev = Double.POSITIVE_INFINITY;
       double errorNext = Double.POSITIVE_INFINITY;
       if (prev >= 0 && !taboo.contains(prev)) {
-        bug("Measure prev direction... " + prev + ", " + end);
         errorPrev = measureError(prev, end);
       }
       if (next < seq.size() && !taboo.contains(next)) {
-        bug("Measure next direction... " + start + ", " + next );
-        errorPrev = measureError(start, next);
+        errorNext = measureError(start, next);
       }
       if (errorPrev < errorNext) {
-        if (expandTo(prev, errorPrev)) {
+        if (expandTo(prev, errorPrev, seq)) {
           ret = prev;
-          bug("Expanding in the prev direction");
-        }
+        } else {
+	  taboo.add(prev);
+	}
       } else if (errorNext < errorPrev) {
-        if (expandTo(next, errorNext)) {
+        if (expandTo(next, errorNext, seq)) {
           ret = next;
-          bug("Expanding in the next direction");
-        }
+        } else {
+	  taboo.add(next);
+	}
       } else if (errorPrev < Double.POSITIVE_INFINITY && errorNext < Double.POSITIVE_INFINITY) {
-        pointIndices.add(next);
-        lineErrors.add(errorNext);
-        ret = next;
-        bug("Expanding in the next direction (chosen arbitrarily because it is the same as prev)");
+	if (expandTo(next, errorNext, seq)) {
+	  ret = next;
+	} else {
+	  taboo.add(next);
+	}
       } else {
-        bug("Not expanding.");
+	finished = true;
       }
       return ret;
     }
 
-    private boolean expandTo(int idx, double err) {
+    public boolean isFinished() {
+      return finished;
+    }
+
+    private boolean expandTo(int idx, double err, Sequence seq) {
+      if (idx < 0 || idx >= seq.size()) {
+	System.out.println("idx: " + idx + ", seq.size(): " + seq.size());
+	new RuntimeException("Can't expand past the edge of the sequence.").printStackTrace();
+	System.exit(0);
+      }
       boolean ret = false;
       if (err < getParam(K_ERROR_TOLERANCE).getDouble()) {
         pointIndices.add(idx);
@@ -260,7 +303,6 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     }
 
     private double measureError(int a, int b) {
-      bug("Measuring distance from " + a + " to " + b);
       Line line = new Line(seq.get(a), seq.get(b));
       double ret = 0;
       for (int i = a; i <= b; i++) {
