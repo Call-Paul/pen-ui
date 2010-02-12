@@ -46,5 +46,13 @@ public class CircleArc implements Comparable<CircleArc> {
     }
     return ret;
   }
+  
+  public Pt getCenter() {
+    return center;
+  }
+  
+  public double getRadius() {
+    return radius;
+  }
 
 }

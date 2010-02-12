@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cpmunge () {
-        if ! echo $CP | /bin/egrep -q "(^|:)$1($|:)" ; then
+        if ! echo $CP | /usr/bin/egrep -q "(^|:)$1($|:)" ; then
            if [ "$2" = "after" ] ; then
               CP=$CP:$1
            else
