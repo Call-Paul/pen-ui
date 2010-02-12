@@ -92,6 +92,17 @@ public abstract class DrawingBufferRoutines {
     db.up();
   }
 
+  public static void arc(DrawingBuffer db, CircleArc arc, Color color) {
+    db.up();
+    Pt s = arc.start;
+    Pt m = arc.mid;
+    Pt e = arc.end;
+    db.setColor(color);
+    db.down();
+    db.circleTo(s.x, s.y, m.x, m.y, e.x, e.y);
+    db.up();
+  }
+
   public static void seg(DrawingBuffer db, Segment seg, Color color) {
     db.up();
     db.setColor(color);

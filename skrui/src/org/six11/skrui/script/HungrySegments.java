@@ -6,21 +6,20 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.HashSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.CircleArc;
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.PrettyPrinterSegments;
+import org.six11.skrui.Segment;
 import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Lists;
-import org.six11.util.data.Statistics;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -38,7 +37,6 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
 
   @Override
   public void initialize() {
-    bug("HungrySegments is alive!");
     main.getDrawingSurface().getSoup().addSequenceListener(this);
   }
 
@@ -69,6 +67,9 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
         "Maximum error tolerance",
         "The maximum error the algorithm will tolerate before discontinuing its greedy expansion.",
         0, 100, 60));
+    defs.put(PrettyPrinterSegments.K_SHOW_RAW_INK, new BoundedParameter.Boolean(
+        PrettyPrinterSegments.K_SHOW_RAW_INK, "Hide raw ink or not",
+        "Tells the system to draw (or not) the original ink when pretty printing.", true));
     return defs;
   }
 
@@ -88,8 +89,6 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     List<Pt> slow = findSlow(seq);
     List<Pt> fast = findFast(seq, slow);
 
-    // debugPoints(slow, Color.RED);
-    // debugPoints(fast, Color.BLUE);
     List<HungryRegion> hungryRegions = new ArrayList<HungryRegion>();
     for (Pt pt : fast) {
       hungryRegions.add(new HungryRegion(seq, seq.indexOf(pt)));
@@ -101,7 +100,6 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
         r.expand();
         round++;
       }
-      bug("Region " + r + " is finished! (round " + round + ")");
     }
 
     SortedSet<ContendedRegion> contenders = new TreeSet<ContendedRegion>();
@@ -119,6 +117,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     for (ContendedRegion contender : contenders) {
       resolve(contender.r1, contender.r2, contender.overlap);
     }
+
     debugRegions(hungryRegions);
   }
 
@@ -127,69 +126,67 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       r1.retreat(removeMe);
       r2.retreat(removeMe);
     }
-    bug("Resolving regions fighting over " + Debug.num(overlap, " "));
-    bug("  " + r1);
-    bug("  " + r2);
     int r1s = r1.getStartIdx();
     int r1e = r1.getEndIdx();
     int r2s = r2.getStartIdx();
     int r2e = r2.getEndIdx();
 
     int bestIdx = -1;
-    HungryError bestError = new HungryError(Double.POSITIVE_INFINITY, null);
+    double bestError = Double.POSITIVE_INFINITY;
     for (int i = 0; i < overlap.size(); i++) {
       int idx = overlap.get(i);
-      HungryError err1 = HungrySegments.measureBestError(r1.seq, Math.min(r1s, idx), Math.max(r1e,
-          idx));
-      HungryError err2 = HungrySegments.measureBestError(r2.seq, Math.min(r2s, idx), Math.max(r2e,
-          idx));
-      bug("If region 1 goes from " + Math.min(r1s, idx) + " to " + Math.max(r1e, idx)
-          + " the error is: " + Debug.num(err1.error));
-      bug("If region 2 goes from " + Math.min(r2s, idx) + " to " + Math.max(r2e, idx)
-          + " the error is: " + Debug.num(err2.error));
-      if (bestError.error > (err1.error + err2.error)) {
-        bug("The total error is " + Debug.num(err1.error + err2.error)
-            + " and beats the previous error, so we'll roll with index" + idx);
+      HungryError err1 = measureBestError(r1.seq, Math.min(r1s, idx), Math.max(r1e, idx));
+      HungryError err2 = measureBestError(r2.seq, Math.min(r2s, idx), Math.max(r2e, idx));
+      if (bestError > (err1.error + err2.error)) {
         bestIdx = idx;
-        bestError.error = err1.error + err2.error;
-      } else {
-        bug("Sadly, the total error is " + Debug.num(err1.error + err2.error)
-            + " and does not beat the previous error.");
+        bestError = err1.error + err2.error;
       }
     }
     if (bestIdx < 0) {
       bug("I couldn't resolve this region! " + r1 + " " + r2 + " " + Debug.num(overlap, " "));
       System.exit(-1);
     } else {
-      bug("Best index is: " + bestIdx);
       HungryRegion lower = r1.getEndIdx() < r2.getEndIdx() ? r1 : r2;
       HungryRegion upper = lower == r1 ? r2 : r1;
       while (lower.getEndIdx() < bestIdx) {
-        lower.expandTo(lower.getEndIdx() + 1, new HungryError(Double.POSITIVE_INFINITY, null),
-            r1.seq);
+        HungryError error = measureBestError(lower.seq, lower.getStartIdx(), lower.getEndIdx() + 1);
+        lower.expandTo(lower.getEndIdx() + 1, error, r1.seq, false);
       }
       while (upper.getStartIdx() > bestIdx) {
-        upper.expandTo(upper.getStartIdx() - 1, new HungryError(Double.POSITIVE_INFINITY, null),
-            r2.seq);
+        HungryError error = measureBestError(upper.seq, upper.getStartIdx() - 1, upper.getEndIdx());
+        upper.expandTo(upper.getStartIdx() - 1, error, r2.seq, false);
       }
     }
   }
 
   private void debugRegions(List<HungryRegion> hungryRegions) {
+    for (HungryRegion r : hungryRegions) {
+      bug("Region: " + r.toString());
+    }
+
     DrawingBuffer db = new DrawingBuffer();
+    boolean disableInk = getParam(PrettyPrinterSegments.K_SHOW_RAW_INK).getBoolean() == false;
     for (HungryRegion r : hungryRegions) {
       Pt start = r.seq.get(r.getStartIdx());
       Pt end = r.seq.get(r.getEndIdx());
-      DrawingBufferRoutines.line(db, start, end, Color.BLUE);
+      HungryError error = r.getBestError();
+      if (error.isArc()) {
+        DrawingBufferRoutines.arc(db, error.arc, Color.RED);
+      } else {
+        DrawingBufferRoutines.line(db, start, end, Color.BLUE);
+      }
+      if (disableInk) {
+        main.getDrawingSurface().getSoup().getDrawingBufferForSequence(r.seq).setVisible(false);
+      }
     }
     main.getDrawingSurface().getSoup().addBuffer(db);
   }
 
-  private void debugPoints(List<Pt> points, Color fillColor) {
-    DrawingBuffer db = new DrawingBuffer();
-    DrawingBufferRoutines.dots(db, points, 4.0, 0.3, Color.BLACK, fillColor);
-    main.getDrawingSurface().getSoup().addBuffer(db);
-  }
+  // private void debugPoints(List<Pt> points, Color fillColor) {
+  // DrawingBuffer db = new DrawingBuffer();
+  // DrawingBufferRoutines.dots(db, points, 4.0, 0.3, Color.BLACK, fillColor);
+  // main.getDrawingSurface().getSoup().addBuffer(db);
+  // }
 
   private List<Pt> findFast(Sequence seq, List<Pt> slow) {
     List<Pt> fast = new ArrayList<Pt>();
@@ -256,36 +253,46 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     return params;
   }
 
-  private static HungryError measureBestError(Sequence seq, int min, int max) {
-    HungryError lineError = HungrySegments.measureLineError(seq, min, max);
-    HungryError arcError = HungrySegments.measureArcError(seq, min, max);
-
+  private HungryError measureBestError(Sequence seq, int min, int max) {
+    HungryError lineError = measureLineError(seq, min, max);
+    HungryError arcError = measureArcError(seq, min, max);
+    double length = seq.getPathLength(min, max);
+    bug("Error measurements for segement " + Debug.num(length) + " px long:");
+    bug("  " + lineError);
+    bug("  " + arcError);
     HungryError ret = null;
-    // TODO: The constants here should be parameters.
-    if (lineError.error < arcError.error * 1.5) {
-      // it is a line if the arcError is more than 50% more than lineError
+    if (lineError.isTolerant()) {
+      // If it can be construed as a line, it is a line, even if the circle error is 0.
       ret = lineError;
-    } else if (seq.getPathLength(min, max) > 50) {
-      // if the path length is long enough, we can say it is an arc.
-      ret = arcError;
+    } else if (length < 50) {
+      // Don't allow 'short' segments to be considered arcs
+      ret = lineError;
+    } else if (lineError.error < arcError.error) {
+      // Otherwise return the interpretation with the lower error.
+      ret = lineError;
     } else {
-      // path isn't long enough, so it's a line.
-      ret = lineError;
+      ret = arcError;
     }
     return ret;
   }
 
-  private static HungryError measureLineError(Sequence seq, int a, int b) {
+  private HungryError measureLineError(Sequence seq, int a, int b) {
     Line line = new Line(seq.get(a), seq.get(b));
     double ret = 0;
     for (int i = a; i <= b; i++) {
       double dist = Functions.getDistanceBetweenPointAndLine(seq.get(i), line);
       ret += dist * dist;
     }
+    if (Double.isNaN(ret / (b - a))) {
+      bug("About to die from NaNitis. Numerator: " + ret);
+      bug("Denominator: " + (b - a));
+      bug("b: " + b);
+      bug("a: " + a);
+    }
     return new HungryError(ret / (b - a), null);
   }
 
-  private static HungryError measureArcError(Sequence seq, int a, int b) {
+  private HungryError measureArcError(Sequence seq, int a, int b) {
     double errorSum = 0.0;
     List<CircleArc> arcs = new ArrayList<CircleArc>();
     for (int i = a + 1; i < b; i++) {
@@ -293,9 +300,12 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       arcs.add(ca);
     }
     Collections.sort(arcs, CircleArc.comparator); // sort based on radius
-    CircleArc bestCircle = arcs.get(arcs.size() / 2); // get the arc with median radius
+    CircleArc bestCircle = null;
+    if (arcs.size() > 0) {
+      bestCircle = arcs.get(arcs.size() / 2); // get the arc with median radius
+    }
 
-    if (bestCircle.getCenter() == null) {
+    if (bestCircle == null || bestCircle.getCenter() == null) {
       errorSum = Double.POSITIVE_INFINITY;
     } else {
       for (int i = a; i < b; i++) {
@@ -305,7 +315,8 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
         errorSum += d * d;
       }
     }
-    return new HungryError(errorSum / (b - a), bestCircle);
+    // TODO: The constants here should be parameters.
+    return new HungryError(1.5 * (errorSum / (b - a)), bestCircle);
   }
 
   class HungryRegion {
@@ -324,6 +335,14 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       errors.add(new HungryError(0.0, null));
       this.taboo = new ArrayList<Integer>();
       finished = false;
+    }
+
+    public HungryError getBestError() {
+      HungryError ret = new HungryError();
+      if (errors.size() > 0) {
+        ret = errors.get(errors.size() - 1);
+      }
+      return ret;
     }
 
     public void retreat(int removeMe) {
@@ -348,29 +367,29 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       int prev = start - 1;
       int next = end + 1;
 
-      HungryError errorPrev = new HungryError(Double.POSITIVE_INFINITY, null);
-      HungryError errorNext = new HungryError(Double.POSITIVE_INFINITY, null);
+      HungryError errorPrev = new HungryError();
+      HungryError errorNext = new HungryError();
       if (prev >= 0 && !taboo.contains(prev)) {
-        errorPrev = HungrySegments.measureBestError(seq, prev, end);
+        errorPrev = measureBestError(seq, prev, end);
       }
       if (next < seq.size() && !taboo.contains(next)) {
-        errorNext = HungrySegments.measureBestError(seq, start, next);
+        errorNext = measureBestError(seq, start, next);
       }
       if (errorPrev.error < errorNext.error) {
-        if (expandTo(prev, errorPrev, seq)) {
+        if (expandTo(prev, errorPrev, seq, true)) {
           ret = prev;
         } else {
           taboo.add(prev);
         }
       } else if (errorNext.error < errorPrev.error) {
-        if (expandTo(next, errorNext, seq)) {
+        if (expandTo(next, errorNext, seq, true)) {
           ret = next;
         } else {
           taboo.add(next);
         }
       } else if (errorPrev.error < Double.POSITIVE_INFINITY
           && errorNext.error < Double.POSITIVE_INFINITY) {
-        if (expandTo(next, errorNext, seq)) {
+        if (expandTo(next, errorNext, seq, true)) {
           ret = next;
         } else {
           taboo.add(next);
@@ -400,7 +419,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
           casualties++;
         }
         errors.clear(); // won't be needing these any longer.
-        errors.add(HungrySegments.measureBestError(seq, getStartIdx(), getEndIdx()));
+        errors.add(measureBestError(seq, getStartIdx(), getEndIdx()));
         bug("Expunged " + casualties + " points.");
       } else {
         bug("error: lineErrors and pointIndices are not of same size!");
@@ -412,14 +431,15 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       return finished;
     }
 
-    private boolean expandTo(int idx, HungryError err, Sequence seq) {
+    private boolean expandTo(int idx, HungryError err, Sequence seq, boolean toleranceTest) {
       if (idx < 0 || idx >= seq.size()) {
         System.out.println("idx: " + idx + ", seq.size(): " + seq.size());
         new RuntimeException("Can't expand past the edge of the sequence.").printStackTrace();
         System.exit(0);
       }
       boolean ret = false;
-      if (err.error < getParam(K_ERROR_TOLERANCE).getDouble()) {
+      if (!toleranceTest || err.isTolerant()) { // err.error <
+        // getParam(K_ERROR_TOLERANCE).getDouble()) {
         pointIndices.add(idx);
         errors.add(err);
         ret = true;
@@ -435,7 +455,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       HungryError el = errors.size() > 0 ? errors.get(errors.size() - 1) : new HungryError(0.0,
           null);
       return "HungrySegment[" + min + ", " + max + " (length: " + Debug.num(len) + ", points: " + n
-          + ", lineError: " + el.toString() + ")]";
+          + ", error: " + el.toString() + ")]";
     }
 
     private int getEndIdx() {
@@ -477,13 +497,37 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     }
   }
 
-  static class HungryError {
-    double error;
-    CircleArc arc;
+  class HungryError {
+    private double error;
+    private CircleArc arc;
 
     HungryError(double error, CircleArc arc) {
       this.error = error;
       this.arc = arc;
+      if (Double.isNaN(error)) {
+        System.out.println("NaN discovered. committing suicide.");
+        new RuntimeException().printStackTrace();
+        System.exit(0);
+      }
+    }
+
+    public boolean isTolerant() {
+      return (getParam(K_ERROR_TOLERANCE).getDouble() > error);
+    }
+
+    boolean isArc() {
+      return (arc != null);
+    }
+
+    /**
+     * 
+     */
+    HungryError() {
+      this(Double.POSITIVE_INFINITY, null);
+    }
+
+    public String toString() {
+      return "Error[" + Debug.num(error) + "/" + (isArc() ? "arc" : "line") + "]";
     }
   }
 

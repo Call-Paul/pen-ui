@@ -30,7 +30,7 @@ public class PrettyPrinterSegments extends SkruiScript {
   private static final String K_CORNER_THICKNESS = "corner-thickness";
   private static final String K_CORNER_SIZE = "corner-size";
   private static final String K_CORNER_COLOR = "corner-color";
-  private static final String K_SHOW_RAW_INK = "show-ink";
+  public static final String K_SHOW_RAW_INK = "show-ink";
   private static final String K_DRAW_SEGMENTS = "draw-segments";
 
   public static Arguments getArgumentSpec() {
