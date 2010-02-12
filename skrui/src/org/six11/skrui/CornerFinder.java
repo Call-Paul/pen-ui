@@ -205,7 +205,6 @@ public class CornerFinder extends SkruiScript implements SequenceListener {
       if (prev != null) {
         Segment s = new Segment(prev, pt, seq, doLine, doArc, doSpline, splineThresh, lineMult,
             arcMult, splineMult);
-        s.label = "" + segCounter;
         segs.add(s);
         segCounter++;
       }

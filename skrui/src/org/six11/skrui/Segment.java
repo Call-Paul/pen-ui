@@ -24,7 +24,7 @@ import org.six11.util.pen.Sequence;
 public class Segment implements Comparable<Segment> {
   private static int ID = 1;
   int id;
-  String label;
+//  String label;
   Pt start, end;
   int idxStart, idxEnd;
   double errorLine, errorCircle, errorSpline;
@@ -248,6 +248,54 @@ public class Segment implements Comparable<Segment> {
 
   public String toString() {
     return "Segment " + id + " [" + idxStart + ", " + idxEnd + ": " + getBestType() + "]";
+  }
+
+  public int getId() {
+    return id;
+  }
+
+  public Pt getStart() {
+    return start;
+  }
+
+  public Pt getEnd() {
+    return end;
+  }
+
+  public int getIdxStart() {
+    return idxStart;
+  }
+
+  public int getIdxEnd() {
+    return idxEnd;
+  }
+
+  public double getErrorLine() {
+    return errorLine;
+  }
+
+  public double getErrorCircle() {
+    return errorCircle;
+  }
+
+  public double getErrorSpline() {
+    return errorSpline;
+  }
+
+  public Sequence getSeq() {
+    return seq;
+  }
+
+  public CircleArc getBestCircle() {
+    return bestCircle;
+  }
+
+  public SortedSet<Pt> getSplineControlPoints() {
+    return splineControlPoints;
+  }
+
+  public List<Pt> getSplinePoints() {
+    return splinePoints;
   }
 
   @SuppressWarnings("unused")
