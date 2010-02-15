@@ -20,8 +20,8 @@ public abstract class SkruiScript {
       throws InstantiationException, IllegalAccessException {
     SkruiScript script = scriptClazz.newInstance();
     script.setMain(m);
-    script.initialize();
     m.addParameters(script.initializeParameters(m.getArguments()));
+    script.initialize();
     return script;
   }
 

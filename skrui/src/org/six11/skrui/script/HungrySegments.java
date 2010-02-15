@@ -89,6 +89,8 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     List<Pt> slow = findSlow(seq);
     List<Pt> fast = findFast(seq, slow);
 
+    debugPoints(fast);
+    
     List<HungryRegion> hungryRegions = new ArrayList<HungryRegion>();
     for (Pt pt : fast) {
       hungryRegions.add(new HungryRegion(seq, seq.indexOf(pt)));
@@ -115,48 +117,85 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     }
     // Resolve contended regions in order of most contentious to least.
     for (ContendedRegion contender : contenders) {
-      resolve(contender.r1, contender.r2, contender.overlap);
+      if (!contender.r1.isDead() && !contender.r2.isDead()) {
+        resolve(contender.r1, contender.r2, contender.overlap);
+      }
+    }
+    
+    for (int i=0; i < hungryRegions.size(); ) {
+      HungryRegion r = hungryRegions.get(i);
+      if (r.isDead()) {
+        bug("Removing corpse of a hungry region. He won't be hungry any longer, I suppose.");
+        hungryRegions.remove(i);
+      } else {
+        i++;
+      }
     }
 
     debugRegions(hungryRegions);
   }
 
-  private void resolve(HungryRegion r1, HungryRegion r2, List<Integer> overlap) {
-    for (int removeMe : overlap) {
-      r1.retreat(removeMe);
-      r2.retreat(removeMe);
+  private void debugPoints(List<Pt> points) {
+    DrawingBuffer db = new DrawingBuffer();
+    for (Pt pt : points) {
+      DrawingBufferRoutines.dot(db, pt, 5, 0.4, Color.BLACK, Color.RED);
     }
-    int r1s = r1.getStartIdx();
-    int r1e = r1.getEndIdx();
-    int r2s = r2.getStartIdx();
-    int r2e = r2.getEndIdx();
+    main.getDrawingSurface().getSoup().addBuffer(db);
+  }
 
-    int bestIdx = -1;
-    double bestError = Double.POSITIVE_INFINITY;
-    for (int i = 0; i < overlap.size(); i++) {
-      int idx = overlap.get(i);
-      HungryError err1 = measureBestError(r1.seq, Math.min(r1s, idx), Math.max(r1e, idx));
-      HungryError err2 = measureBestError(r2.seq, Math.min(r2s, idx), Math.max(r2e, idx));
-      if (bestError > (err1.error + err2.error)) {
-        bestIdx = idx;
-        bestError = err1.error + err2.error;
-      }
-    }
-    if (bestIdx < 0) {
-      bug("I couldn't resolve this region! " + r1 + " " + r2 + " " + Debug.num(overlap, " "));
-      System.exit(-1);
+  private void resolve(HungryRegion r1, HungryRegion r2, List<Integer> overlap) {
+    HungryError mergedError = measureBestError(r1.seq,
+        Math.min(r1.getStartIdx(), r2.getStartIdx()), Math.max(r1.getEndIdx(), r2.getEndIdx()));
+    if (mergedError.isTolerant()) {
+      r1.absorb(r2);
     } else {
-      HungryRegion lower = r1.getEndIdx() < r2.getEndIdx() ? r1 : r2;
-      HungryRegion upper = lower == r1 ? r2 : r1;
-      while (lower.getEndIdx() < bestIdx) {
-        HungryError error = measureBestError(lower.seq, lower.getStartIdx(), lower.getEndIdx() + 1);
-        lower.expandTo(lower.getEndIdx() + 1, error, r1.seq, false);
+      for (int removeMe : overlap) {
+        r1.retreat(removeMe);
+        r2.retreat(removeMe);
       }
-      while (upper.getStartIdx() > bestIdx) {
-        HungryError error = measureBestError(upper.seq, upper.getStartIdx() - 1, upper.getEndIdx());
-        upper.expandTo(upper.getStartIdx() - 1, error, r2.seq, false);
+      int r1s = r1.getStartIdx();
+      int r1e = r1.getEndIdx();
+      int r2s = r2.getStartIdx();
+      int r2e = r2.getEndIdx();
+
+      int bestIdx = -1;
+      double bestError = Double.POSITIVE_INFINITY;
+      for (int i = 0; i < overlap.size(); i++) {
+        int idx = overlap.get(i);
+        HungryError err1 = measureBestError(r1.seq, Math.min(r1s, idx), Math.max(r1e, idx));
+        HungryError err2 = measureBestError(r2.seq, Math.min(r2s, idx), Math.max(r2e, idx));
+        if (bestError > (err1.error + err2.error)) {
+          bestIdx = idx;
+          bestError = err1.error + err2.error;
+        }
+      }
+      if (bestIdx < 0) {
+        bug("I couldn't resolve this region! " + r1 + " " + r2 + " " + Debug.num(overlap, " "));
+        System.exit(-1);
+      } else {
+        HungryRegion lower = r1.getEndIdx() < r2.getEndIdx() ? r1 : r2;
+        HungryRegion upper = lower == r1 ? r2 : r1;
+        while (lower.getEndIdx() < bestIdx) {
+          HungryError error = measureBestError(lower.seq, lower.getStartIdx(),
+              lower.getEndIdx() + 1);
+          lower.expandTo(lower.getEndIdx() + 1, error, r1.seq, false);
+        }
+        while (upper.getStartIdx() > bestIdx) {
+          HungryError error = measureBestError(upper.seq, upper.getStartIdx() - 1, upper
+              .getEndIdx());
+          upper.expandTo(upper.getStartIdx() - 1, error, r2.seq, false);
+        }
       }
     }
+  }
+
+  /**
+   * Attempt to join the following regions into one. For this to work they must be of the same type.
+   */
+  private HungryRegion merge(HungryRegion r1, HungryRegion r2) {
+    HungryRegion combined = new HungryRegion(r1.seq, Math.min(r1.getStartIdx(), r2.getStartIdx()),
+        Math.max(r1.getEndIdx(), r2.getEndIdx()));
+    return combined;
   }
 
   private void debugRegions(List<HungryRegion> hungryRegions) {
@@ -254,24 +293,26 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
   }
 
   private HungryError measureBestError(Sequence seq, int min, int max) {
-    HungryError lineError = measureLineError(seq, min, max);
-    HungryError arcError = measureArcError(seq, min, max);
-    double length = seq.getPathLength(min, max);
-    bug("Error measurements for segement " + Debug.num(length) + " px long:");
-    bug("  " + lineError);
-    bug("  " + arcError);
     HungryError ret = null;
-    if (lineError.isTolerant()) {
-      // If it can be construed as a line, it is a line, even if the circle error is 0.
-      ret = lineError;
-    } else if (length < 50) {
-      // Don't allow 'short' segments to be considered arcs
-      ret = lineError;
-    } else if (lineError.error < arcError.error) {
-      // Otherwise return the interpretation with the lower error.
-      ret = lineError;
+    if (min >= max) {
+      ret = new HungryError();
     } else {
-      ret = arcError;
+      HungryError lineError = measureLineError(seq, min, max);
+      HungryError arcError = measureArcError(seq, min, max);
+      double length = seq.getPathLength(min, max);
+
+      if (lineError.isTolerant()) {
+        // If it can be construed as a line, it is a line, even if the circle error is 0.
+        ret = lineError;
+      } else if (length < 50) {
+        // Don't allow 'short' segments to be considered arcs
+        ret = lineError;
+      } else if (lineError.error < arcError.error) {
+        // Otherwise return the interpretation with the lower error.
+        ret = lineError;
+      } else {
+        ret = arcError;
+      }
     }
     return ret;
   }
@@ -316,7 +357,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
       }
     }
     // TODO: The constants here should be parameters.
-    return new HungryError(1.5 * (errorSum / (b - a)), bestCircle);
+    return new HungryError(errorSum / (b - a), bestCircle);
   }
 
   class HungryRegion {
@@ -327,14 +368,46 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
     List<HungryError> errors;
     boolean finished;
 
-    public HungryRegion(Sequence seq, int ptIdx) {
+    private HungryRegion(Sequence seq) {
       this.seq = seq;
       this.pointIndices = new ArrayList<Integer>();
-      pointIndices.add(ptIdx);
       this.errors = new ArrayList<HungryError>();
-      errors.add(new HungryError(0.0, null));
       this.taboo = new ArrayList<Integer>();
       finished = false;
+    }
+
+    public void absorb(HungryRegion other) {
+      for (int idx : other.pointIndices) {
+        pointIndices.add(idx);
+      }
+      errors.clear(); // won't be needing these any longer.
+      errors.add(measureBestError(seq, getStartIdx(), getEndIdx()));
+      other.die();
+    }
+
+    private void die() {
+      this.seq = null;
+      this.pointIndices = null;
+      this.errors = null;
+      this.taboo = null;
+    }
+
+    public boolean isDead() {
+      return (seq == null);
+    }
+
+    public HungryRegion(Sequence seq, int startIdx, int endIdx) {
+      this(seq);
+      for (int i = startIdx; i <= endIdx; i++) {
+        pointIndices.add(i);
+      }
+      errors.add(measureBestError(seq, startIdx, endIdx));
+    }
+
+    public HungryRegion(Sequence seq, int ptIdx) {
+      this(seq);
+      pointIndices.add(ptIdx);
+      errors.add(new HungryError(0.0, null));
     }
 
     public HungryError getBestError() {

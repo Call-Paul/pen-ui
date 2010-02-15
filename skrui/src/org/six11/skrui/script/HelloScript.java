@@ -51,14 +51,20 @@ public class HelloScript extends SkruiScript implements SequenceListener {
     return defs;
   }
 
+  private static void bug(String what) {
+    Debug.out("HelloScript", what);
+  }
+
+  /////
+  //
+  //   * Put member variable declarations here. *
+  //
+  ////
+  
   @Override
   public void initialize() {
     bug("HelloScript is alive!");
     main.getDrawingSurface().getSoup().addSequenceListener(this);
-  }
-
-  private static void bug(String what) {
-    Debug.out("HelloScript", what);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {

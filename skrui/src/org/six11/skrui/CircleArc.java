@@ -1,9 +1,15 @@
 package org.six11.skrui;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
+import org.six11.util.Debug;
+import org.six11.util.gui.shape.ShapeFactory.ArcData;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -46,13 +52,51 @@ public class CircleArc implements Comparable<CircleArc> {
     }
     return ret;
   }
-  
+
   public Pt getCenter() {
     return center;
   }
-  
+
   public double getRadius() {
     return radius;
   }
 
+  public double getArcLength() {
+    ArcData data = new ArcData(start, mid, end);
+    double ret = (2 * Math.PI) / Math.toRadians(Math.abs(data.extent));
+    bug("Arc extent is " + Debug.num(data.extent) + " degrees, radius is: "
+        + Debug.num(data.radius) + ", so arc length is " + Debug.num(ret));
+    return ret;
+  }
+
+  public static void bug(String what) {
+    Debug.out("CircleArc", what);
+  }
+  
+  public static CircleArc makeBestCircle(int start, int end, Sequence seq) {
+    CircleArc ret = null;
+    List<CircleArc> arcs = new ArrayList<CircleArc>();
+    for (int j = start + 1; j < end; j++) {
+      CircleArc ca = new CircleArc(seq.get(start), seq.get(j), seq.get(end));
+      if (!Double.isInfinite(ca.getRadius())) {
+        arcs.add(ca);
+      }
+    }
+//    Collections.sort(arcs, CircleArc.comparator); // sort based on radius
+//    if (arcs.size() > 0) {
+//      ret = arcs.get(arcs.size() / 2);
+//    }
+    double lowestError = Double.MAX_VALUE;
+    for (CircleArc arc : arcs) {
+      double error = 0;
+      for (int i = start; i <= end; i++) {
+        error += arc.center.distance(seq.get(i));
+      }
+      if (error < lowestError) {
+        lowestError = error;
+        ret = arc;
+      }
+    }
+    return ret;
+  }
 }
