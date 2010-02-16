@@ -1,13 +1,7 @@
 package org.six11.skrui.script;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.CircleArc;
@@ -119,10 +113,13 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         }
       }
 
+      // segments = negotiate(segments);
+
       long endTime = System.currentTimeMillis();
       bug("Performed complete analysis in " + (endTime - startTime) + " ms");
-      bug("... Showing segments in decending order of length:");
+      bug("... Showing " + segments.size() + " segments in decending order of length:");
       DrawingBuffer db = new DrawingBuffer();
+      Set<Pt> junctions = new HashSet<Pt>();
       for (HungrySegment2 seg : segments) {
         bug("  " + seg.toString());
         if (seg.type == Type.Line) {
@@ -131,9 +128,108 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         if (seg.type == Type.Arc) {
           DrawingBufferRoutines.arc(db, seg.getArc(), Color.RED);
         }
+        junctions.add(seg.seq.get(seg.start));
+        junctions.add(seg.seq.get(seg.end));
+      }
+      for (Pt pt : junctions) {
+        DrawingBufferRoutines.dot(db, pt, 5, 0.5, Color.BLACK, Color.GREEN);
       }
       main.getDrawingSurface().getSoup().addBuffer(db);
     }
+  }
+
+  private SortedSet<HungrySegment2> negotiate(Set<HungrySegment2> notInOrder) {
+    double improvement = 0;
+    List<HungrySegment2> segments = new ArrayList<HungrySegment2>(notInOrder);
+    Collections.sort(segments, new Comparator<HungrySegment2>() {
+      public int compare(HungrySegment2 o1, HungrySegment2 o2) {
+        int ret = 0;
+        if (o1.start < o2.start) {
+          ret = -1;
+        } else if (o1.start > o2.start) {
+          ret = 1;
+        }
+        return ret;
+      }
+    });
+    int round = 1;
+    do {
+      if (round > 10) {
+        System.exit(0);
+      }
+      bug("Negotiation round " + round++);
+      for (int i = 0; i < segments.size() - 1; i++) {
+        HungrySegment2 s1 = segments.get(i);
+        HungrySegment2 s2 = segments.get(i + 1);
+        if (s1.isOk() && s2.isOk()) {
+          improvement = improvement + negotiate(s1, s2);
+        }
+      }
+    } while (improvement > 0);
+    // TODO: make sure I return a legit list...
+    return new TreeSet<HungrySegment2>(segments);
+  }
+
+  private double negotiate(HungrySegment2 s1, HungrySegment2 s2) {
+    double improvement = 0;
+    HungrySegment2 left = s1.start < s2.start ? s1 : s2;
+    HungrySegment2 right = s1.start < s2.start ? s2 : s1;
+    // Consider three cases:
+    // 1. Do nothing.
+    // 2. Enlarge left at (possibly) the expense of right
+    // 3. Enlarge right at (possibly) the expense of left
+    double doNothingError = left.getStandardError() + right.getStandardError();
+    bug("  Doing nothing has error of: " + Debug.num(doNothingError));
+    double enlargeLeftError = Double.MAX_VALUE;
+    HungrySegment2 llBest = null;
+    HungrySegment2 rlBest = null;
+    for (int i = 1; i < Math.min(5, right.numPoints()); i++) {
+      HungrySegment2 ll = new HungrySegment2(left.seq, left.start, left.end + i, left.type);
+      HungrySegment2 rl = new HungrySegment2(right.seq, ll.end, right.end, right.type);
+      bug("  Enlarging left by " + i + ", left : " + ll);
+      bug("  Enlarging left by " + i + ", right: " + rl);
+      double e = ll.getStandardError() + rl.getStandardError();
+      if (e < enlargeLeftError) {
+        llBest = ll;
+        rlBest = rl;
+        enlargeLeftError = e;
+        bug("  Enlarging left by " + i + " leads to the best error of: "
+            + Debug.num(enlargeLeftError));
+      }
+    }
+    double enlargeRightError = Double.MAX_VALUE;
+    HungrySegment2 lrBest = null;
+    HungrySegment2 rrBest = null;
+    for (int i = 1; i < Math.min(5, left.numPoints()); i++) {
+      HungrySegment2 lr = new HungrySegment2(left.seq, left.start, left.end - i, left.type);
+      HungrySegment2 rr = new HungrySegment2(right.seq, lr.end, right.end, right.type);
+      bug("  Enlarging right by " + i + ", left : " + lr);
+      bug("  Enlarging right by " + i + ", right: " + rr);
+      double e = lr.getStandardError() + rr.getStandardError();
+      if (e < enlargeRightError) {
+        lrBest = lr;
+        rrBest = rr;
+        enlargeRightError = e;
+        bug("  Enlarging right by " + i + " leads to the best error of: "
+            + Debug.num(enlargeRightError));
+      }
+    }
+    if (doNothingError <= enlargeLeftError && doNothingError <= enlargeRightError) {
+      // nichts
+    } else if (enlargeLeftError <= enlargeRightError) {
+      // moving to the left some amount is the best.
+      left.imitate(llBest);
+      right.imitate(rlBest);
+      improvement = doNothingError - enlargeLeftError;
+      bug("  Enlarging left! Improved error by: " + Debug.num(improvement));
+    } else {
+      // moving to the right some amount is the best.
+      left.imitate(lrBest);
+      right.imitate(rrBest);
+      improvement = doNothingError - enlargeRightError;
+      bug("Enlarging right! Improved error by: " + Debug.num(improvement));
+    }
+    return improvement;
   }
 
   private HungrySegment2 makeHungrySegment2(Sequence seq, int i) {
@@ -193,8 +289,6 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         double e = envelope.eval(dist);
         ret.pain = Math.max(e, ret.pain);
       }
-    } else {
-      bug("couldn't make a circle to fit the region. Probably colinear.");
     }
 
     return ret;
@@ -255,7 +349,8 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     Type type;
 
     /**
-     * Create a segment beginning at index i of the given sequence.
+     * Create a segment beginning at index i of the given sequence. It will grow to be the maximum
+     * possible size while incurring no 'pain' (see code for details).
      */
     public HungrySegment2(Sequence seq, int i, Type type) {
       this.seq = seq;
@@ -274,18 +369,55 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         }
 
         if (e == 0) {
-          bug("Setting pleasantnewss window for " + type + " to " + k);
           pleasantWindow = k;
         }
         if (Double.isInfinite(e)) {
-          bug("Found a dud of an arc. Continuing the search...");
+          // do nothing
         } else if (e >= 1) {
           break;
         }
       }
       this.start = Math.max(0, i - pleasantWindow);
       this.end = Math.min(seq.size() - 1, i + pleasantWindow);
-      bug("Set this " + type + "'s start/end to " + start + "/" + end);
+    }
+
+    public int numPoints() {
+      return (end - start) + 1;
+    }
+
+    /**
+     * Make a HungrySegment with the explicit start/end points, type, and sequence.
+     */
+    public HungrySegment2(Sequence seq, int start, int end, Type type) {
+      this.seq = seq;
+      this.start = start;
+      this.end = end;
+      this.type = type;
+    }
+
+    public void imitate(HungrySegment2 other) {
+      this.seq = other.seq;
+      this.start = other.start;
+      this.end = other.end;
+      this.type = other.type;
+    }
+
+    public double getStandardError() {
+      double ret = 0;
+      if (type == Type.Line) {
+        Line line = new Line(seq.get(start), seq.get(end));
+        for (int i = start + 1; i < end; i++) {
+          double v = Functions.getDistanceBetweenPointAndLine(seq.get(i), line);
+          ret = ret + (v * v);
+        }
+      } else if (type == Type.Arc) {
+        CircleArc arc = getArc();
+        for (int i = start + 1; i < end; i++) {
+          double v = Math.abs(arc.getRadius() - arc.getCenter().distance(seq.get(i)));
+          ret = ret + (v * v);
+        }
+      }
+      return ret / (end - start);
     }
 
     public boolean isOk() {
@@ -297,7 +429,8 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     }
 
     public String toString() {
-      return type + "[" + start + " to " + end + ", length: " + Debug.num(getPathLength()) + "]";
+      return type + "[" + start + " to " + end + ", length: " + Debug.num(getPathLength())
+          + ", error: " + Debug.num(getStandardError()) + "]";
     }
 
     public int compareTo(HungrySegment2 o) {

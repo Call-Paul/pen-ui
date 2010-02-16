@@ -3,9 +3,11 @@ package org.six11.skrui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,6 +47,7 @@ import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.Components;
 import org.six11.util.io.FileUtil;
 import org.six11.util.io.Preferences;
 import org.six11.util.lev.NamedAction;
@@ -68,6 +71,7 @@ public class Main {
   private Arguments args;
   private Map<String, Action> actions = new HashMap<String, Action>();
   private Map<String, BoundedParameter> params = new HashMap<String, BoundedParameter>();
+  private Map<String, SkruiScript> scripts = new HashMap<String, SkruiScript>();
 
   private static final String ACTION_SAVE_AS = "save as";
   private static final String ACTION_SAVE = "save";
@@ -209,7 +213,8 @@ public class Main {
       try {
         Class<? extends SkruiScript> clazz = loadScript(args.getPosition(i));
         if (clazz != null) {
-          SkruiScript.load(clazz, this);
+          SkruiScript script = SkruiScript.load(clazz, this);
+          scripts.put(args.getPosition(i), script);
           bug("Loaded script: " + args.getPosition(i));
         }
       } catch (ClassNotFoundException ex) {
@@ -239,7 +244,14 @@ public class Main {
       af.center();
       af.setVisible(true);
     }
+  }
 
+  public SkruiScript getScript(String name) {
+    return scripts.get(name);
+  }
+
+  public boolean isScriptLoaded(String name) {
+    return scripts.containsKey(name);
   }
 
   public OliveDrawingSurface getDrawingSurface() {
@@ -401,6 +413,21 @@ public class Main {
     }
   }
 
+  public void setProperty(String key, String value) {
+    prefs.setProperty(key, value);
+    try {
+      prefs.save();
+    } catch (FileNotFoundException ex) {
+      ex.printStackTrace();
+    } catch (IOException ex) {
+      ex.printStackTrace();
+    }
+  }
+
+  public String getProperty(String key) {
+    return prefs.getProperty(key);
+  }
+
   private static String removeSuffix(String name) {
     String ret = name;
     if (name.lastIndexOf(".") > 0) {
@@ -493,6 +520,27 @@ public class Main {
         ex.printStackTrace();
       }
     }
+  }
+
+  public BufferedImage getContentImage() {
+    BufferedImage image = new BufferedImage(ds.getWidth(), ds.getHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = image.createGraphics();
+    Components.antialias(g);
+    ds.paintContent(g, false);
+    return image;
+  }
+  
+  public BufferedImage getRawInkImage() {
+    BufferedImage image = new BufferedImage(ds.getWidth(), ds.getHeight(),
+        BufferedImage.TYPE_INT_ARGB);
+    Graphics2D g = image.createGraphics();
+    Components.antialias(g);
+    List<DrawingBuffer> all = ds.getSoup().getDrawingBuffers();
+    for (DrawingBuffer buf : all) {
+      buf.paste(g);
+    }
+    return image;
   }
 
   private File maybeGetInitialDir(String propKey) {
