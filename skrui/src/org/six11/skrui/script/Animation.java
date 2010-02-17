@@ -1,6 +1,5 @@
 package org.six11.skrui.script;
 
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -13,12 +12,12 @@ import javax.imageio.ImageIO;
 import javax.swing.JFileChooser;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
+import org.six11.util.gui.Components;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
@@ -151,6 +150,7 @@ public class Animation extends SkruiScript implements SequenceListener {
     if (useRawInk) {
       BufferedImage raw = main.getRawInkImage();
       Graphics2D g = raw.createGraphics();
+      Components.antialias(g);
       buf.drawToGraphics(g);
       addFrame(raw);
     } else {

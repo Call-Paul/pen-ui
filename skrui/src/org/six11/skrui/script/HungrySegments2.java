@@ -30,6 +30,8 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
   private static final String K_ENV_MAX = "hs-env-max";
   private static final String K_ENV_EXP = "hs-env-exp";
 
+  static int SEGMENT_COUNTER = 0;
+
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
     args.setProgramName("HungrySegments 2 segment finder");
@@ -85,6 +87,16 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         HungrySegment2 seg = makeHungrySegment2(seq, i);
         segments.add(seg);
       }
+      Animation ani = (Animation) main.getScript("Animation");
+      if (ani != null) {
+        ani.startAnimation(main.getDrawingSurface().getBounds(), "png");
+        ani.addFrame();
+      }
+      // Show the initial fits (one huge jumble)
+      if (ani != null) {
+        animate(ani, segments, false, "Initial Fit");
+      }
+
       HungrySegment2[] original = new HungrySegment2[segments.size()];
       original = segments.toArray(original);
       for (int i = 0; i < original.length - 1; i++) {
@@ -108,12 +120,42 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
       for (HungrySegment2 seg : original) {
         if (seg.getPathLength() > 0) {
           if (seg.isOk()) {
+            seg.maybeChangeType();
             segments.add(seg);
           }
         }
       }
+      // show the longest segments that dominated the others.
+      if (ani != null) {
+        animate(ani, segments, true, "Longest Segments");
+      }
 
-      // segments = negotiate(segments);
+      // Locate the orphans and make new segments out of them.
+      int orphanStart = -1;
+      int orphanEnd = -1;
+      for (int i = 0; i < seq.size(); i++) {
+        if (isOrphan(i, segments)) {
+          if (orphanStart < 0) {
+            orphanStart = i;
+            orphanEnd = i;
+          } else {
+            orphanEnd = i;
+          }
+        } else if (orphanStart >= 0) {
+          HungrySegment2 seg = new HungrySegment2(seq, orphanStart, orphanEnd);
+          if (seg.isOk()) {
+            segments.add(seg);
+            if (ani != null) {
+              animate(ani, segments, true, "Found orphan segment from " + orphanStart + " to "
+                  + orphanEnd);
+            }
+          }
+          orphanStart = -1;
+          orphanEnd = -1;
+        }
+      }
+
+      segments = negotiate(segments);
 
       long endTime = System.currentTimeMillis();
       bug("Performed complete analysis in " + (endTime - startTime) + " ms");
@@ -138,6 +180,48 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     }
   }
 
+  private boolean isOrphan(int idx, Collection<HungrySegment2> segments) {
+    boolean ret = true;
+    for (HungrySegment2 seg : segments) {
+      if (seg.start <= idx && seg.end >= idx) {
+        ret = false;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  private void animate(Animation ani, Collection<HungrySegment2> segments, boolean drawEnds,
+      String msg) {
+    DrawingBuffer db = new DrawingBuffer();
+    Set<Pt> points = new HashSet<Pt>();
+    for (HungrySegment2 seg : segments) {
+      if (seg.type == Type.Line) {
+        DrawingBufferRoutines.line(db, seg.seq.get(seg.start), seg.seq.get(seg.end), Color.BLUE);
+      } else if (seg.type == Type.Arc) {
+        DrawingBufferRoutines.arc(db, seg.getArc(), Color.RED);
+      }
+      if (drawEnds) {
+        points.add(seg.seq.get(seg.start));
+        points.add(seg.seq.get(seg.end));
+      }
+    }
+    if (drawEnds) {
+      for (Pt pt : points) {
+        DrawingBufferRoutines.dot(db, pt, 7.0, 1.0, Color.BLACK, Color.GREEN);
+      }
+    }
+
+    if (msg != null) {
+      db.up();
+      db.moveTo(20, 20);
+      db.down();
+      db.addText(msg, Color.BLACK);
+      db.up();
+    }
+    ani.addFrame(db, true);
+  }
+
   private SortedSet<HungrySegment2> negotiate(Set<HungrySegment2> notInOrder) {
     double improvement = 0;
     List<HungrySegment2> segments = new ArrayList<HungrySegment2>(notInOrder);
@@ -157,8 +241,12 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
       if (round > 10) {
         System.exit(0);
       }
-      bug("Negotiation round " + round++);
+      if (main.getScript("Animation") != null) {
+        animate((Animation) main.getScript("Animation"), segments, true, "Negotiation Round "
+            + round);
+      }
       for (int i = 0; i < segments.size() - 1; i++) {
+        improvement = 0;
         HungrySegment2 s1 = segments.get(i);
         HungrySegment2 s2 = segments.get(i + 1);
         if (s1.isOk() && s2.isOk()) {
@@ -179,55 +267,44 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     // 2. Enlarge left at (possibly) the expense of right
     // 3. Enlarge right at (possibly) the expense of left
     double doNothingError = left.getStandardError() + right.getStandardError();
-    bug("  Doing nothing has error of: " + Debug.num(doNothingError));
     double enlargeLeftError = Double.MAX_VALUE;
     HungrySegment2 llBest = null;
     HungrySegment2 rlBest = null;
     for (int i = 1; i < Math.min(5, right.numPoints()); i++) {
-      HungrySegment2 ll = new HungrySegment2(left.seq, left.start, left.end + i, left.type);
-      HungrySegment2 rl = new HungrySegment2(right.seq, ll.end, right.end, right.type);
-      bug("  Enlarging left by " + i + ", left : " + ll);
-      bug("  Enlarging left by " + i + ", right: " + rl);
+      HungrySegment2 ll = new HungrySegment2(left.seq, left.start, left.end + i);
+      HungrySegment2 rl = new HungrySegment2(right.seq, Math.max(ll.end, right.start), right.end);
       double e = ll.getStandardError() + rl.getStandardError();
       if (e < enlargeLeftError) {
         llBest = ll;
         rlBest = rl;
         enlargeLeftError = e;
-        bug("  Enlarging left by " + i + " leads to the best error of: "
-            + Debug.num(enlargeLeftError));
       }
     }
     double enlargeRightError = Double.MAX_VALUE;
     HungrySegment2 lrBest = null;
     HungrySegment2 rrBest = null;
     for (int i = 1; i < Math.min(5, left.numPoints()); i++) {
-      HungrySegment2 lr = new HungrySegment2(left.seq, left.start, left.end - i, left.type);
-      HungrySegment2 rr = new HungrySegment2(right.seq, lr.end, right.end, right.type);
-      bug("  Enlarging right by " + i + ", left : " + lr);
-      bug("  Enlarging right by " + i + ", right: " + rr);
+      HungrySegment2 rr = new HungrySegment2(right.seq, right.start - i, right.end);
+      HungrySegment2 lr = new HungrySegment2(left.seq, left.start, Math.min(left.end, rr.start));
       double e = lr.getStandardError() + rr.getStandardError();
       if (e < enlargeRightError) {
         lrBest = lr;
         rrBest = rr;
         enlargeRightError = e;
-        bug("  Enlarging right by " + i + " leads to the best error of: "
-            + Debug.num(enlargeRightError));
       }
     }
     if (doNothingError <= enlargeLeftError && doNothingError <= enlargeRightError) {
-      // nichts
+      improvement = 0;
     } else if (enlargeLeftError <= enlargeRightError) {
       // moving to the left some amount is the best.
       left.imitate(llBest);
       right.imitate(rlBest);
       improvement = doNothingError - enlargeLeftError;
-      bug("  Enlarging left! Improved error by: " + Debug.num(improvement));
     } else {
       // moving to the right some amount is the best.
       left.imitate(lrBest);
       right.imitate(rrBest);
       improvement = doNothingError - enlargeRightError;
-      bug("Enlarging right! Improved error by: " + Debug.num(improvement));
     }
     return improvement;
   }
@@ -250,13 +327,18 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
    * starting at i with a window size of 2k for the provided sequence. A return value of 0 means all
    * points were less than the minimum pain threshold distance.
    */
-  private double measureLinePain(int i, int k, Sequence seq) {
-    double ret = 0;
+  private double measureLinePainInWindow(int i, int k, Sequence seq) {
     int lower = Math.max(0, i - k);
     int upper = Math.min(i + k, seq.size() - 1);
+    return measureLinePainInLimits(lower, upper, seq);
+  }
+
+  private double measureLinePainInLimits(int lower, int upper, Sequence seq) {
+    double ret = 0;
     Pt a = seq.get(lower);
     Pt b = seq.get(upper);
-    Pt m = seq.get(i);
+    Pt m = seq.get((lower + upper) / 2);
+
     Vec dir = new Vec(a, b);
     Line line = new Line(m, dir);
     for (int j = lower; j <= upper; j++) {
@@ -268,7 +350,7 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     return ret;
   }
 
-  private ArcPainResult measureArcPain(int i, int k, Sequence seq) {
+  private ArcPainResult measureArcPainInWindow(int i, int k, Sequence seq) {
     int lower = Math.max(0, i - k);
     int upper = Math.min(i + k, seq.size() - 1);
     return measureArcPainInLimits(lower, upper, seq);
@@ -344,6 +426,7 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
 
   class HungrySegment2 implements Comparable<HungrySegment2> {
 
+    int id = SEGMENT_COUNTER++;
     Sequence seq;
     int start, end;
     Type type;
@@ -362,9 +445,9 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         ArcPainResult arcResult = null;
         double e = 0;
         if (type == Type.Line) {
-          e = measureLinePain(i, k, seq);
+          e = measureLinePainInWindow(i, k, seq);
         } else {
-          arcResult = measureArcPain(i, k, seq);
+          arcResult = measureArcPainInWindow(i, k, seq);
           e = arcResult.pain;
         }
 
@@ -388,18 +471,34 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     /**
      * Make a HungrySegment with the explicit start/end points, type, and sequence.
      */
-    public HungrySegment2(Sequence seq, int start, int end, Type type) {
+    public HungrySegment2(Sequence seq, int start, int end) {
       this.seq = seq;
       this.start = start;
       this.end = end;
-      this.type = type;
+      this.type = Type.Line;
+      maybeChangeType();
     }
 
     public void imitate(HungrySegment2 other) {
       this.seq = other.seq;
       this.start = other.start;
       this.end = other.end;
-      this.type = other.type;
+      maybeChangeType();
+    }
+
+    private void maybeChangeType() {
+      Type origType = type;
+      double linePain = measureLinePainInWindow(start, end, seq);
+      if (linePain > 0) {
+        ArcPainResult apr = measureArcPainInLimits(start, end, seq);
+        if (linePain <= apr.pain) {
+          this.type = Type.Line;
+        } else {
+          this.type = Type.Arc;
+        }
+      } else {
+        this.type = Type.Line;
+      }
     }
 
     public double getStandardError() {
@@ -422,14 +521,14 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
 
     public boolean isOk() {
       boolean ret = (end - start) > 2;
-      if (ret) {
+      if (ret && type == Type.Arc) {
         ret = getArc() != null;
       }
       return ret;
     }
 
     public String toString() {
-      return type + "[" + start + " to " + end + ", length: " + Debug.num(getPathLength())
+      return type + "_" + id + "[" + start + " to " + end + ", length: " + Debug.num(getPathLength())
           + ", error: " + Debug.num(getStandardError()) + "]";
     }
 
