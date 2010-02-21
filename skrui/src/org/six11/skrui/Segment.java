@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.CardinalSpline;
+import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
@@ -24,7 +25,7 @@ import org.six11.util.pen.Sequence;
 public class Segment implements Comparable<Segment> {
   private static int ID = 1;
   int id;
-//  String label;
+  // String label;
   Pt start, end;
   int idxStart, idxEnd;
   double errorLine, errorCircle, errorSpline;
@@ -60,8 +61,8 @@ public class Segment implements Comparable<Segment> {
     splineControlPoints.add(end);
     ret = splinify(splineErrorThresh, seq.indexOf(start), seq.indexOf(end));
     List<Pt> ctrl = new ArrayList<Pt>(splineControlPoints);
-    CardinalSpline.calculateCardinalSlopeVectors(ctrl, 1.0);
-    splinePoints = CardinalSpline.interpolateCardinal(ctrl);
+    // CardinalSpline.calculateCardinalSlopeVectors(ctrl, 1.0);
+    splinePoints = CardinalSpline.interpolateCardinal(ctrl, 1.0, 2.0);
     return ret;
   }
 
@@ -239,7 +240,7 @@ public class Segment implements Comparable<Segment> {
       for (int i = idxStart; i < idxEnd; i++) {
         Pt pt = seq.get(i);
         double r1 = bestCircle.center.distance(pt);
-        double d = r1 - bestCircle.radius;
+        double d = r1 - bestCircle.getRadius();
         errorSum += d * d;
       }
     }

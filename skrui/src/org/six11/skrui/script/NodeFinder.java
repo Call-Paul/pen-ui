@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import org.six11.skrui.BoundedParameter;
+import org.six11.skrui.Delaunay;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.Segment;
 import org.six11.skrui.SkruiScript;
@@ -15,21 +16,20 @@ import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
-import org.six11.util.data.Statistics;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Functions;
 import org.six11.util.pen.OliveSoupEvent;
 import org.six11.util.pen.OliveSoupListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.SequenceEvent;
+import org.six11.util.pen.SequenceListener;
 
 /**
  * 
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class NodeFinder extends SkruiScript {
+public class NodeFinder extends SkruiScript implements SequenceListener {
 
   private static final String K_NODE_END_CLOSENESS_THRESHOLD = "node-closeness-thresh";
 
@@ -70,6 +70,7 @@ public class NodeFinder extends SkruiScript {
         findNodeSingleStroke((SortedSet<Segment>) ev.getData());
       }
     });
+    main.getDrawingSurface().getSoup().addSequenceListener(this);
   }
 
   protected void findNodeSingleStroke(SortedSet<Segment> data) {
@@ -77,31 +78,22 @@ public class NodeFinder extends SkruiScript {
     for (Segment seg : data) {
       inPoints.addAll(seg.getSeq().getPoints());
     }
+  }
+
+  private void drawConvexHull(List<Pt> inPoints) {
     ConvexHull ch = new ConvexHull(inPoints);
-    List<Pt> hullPoints = ch.getHull();
-    Statistics stats = Functions.getClosenessStatistics(inPoints, hullPoints);
-    bug("---------------");
-    bug("Mean distance: " + Debug.num(stats.getMean()));
-    bug("Median distance: " + Debug.num(stats.getMedian()));
-    bug("Max distance: " + Debug.num(stats.getMax()));
-    double wholeSpread = stats.getMax() - stats.getMin();
-    double medianSpread = stats.getMedian() - stats.getMin();
-    double medianFraction = medianSpread / wholeSpread;
-    bug("Median Fraction: " + Debug.num(medianFraction));
-    DrawingBuffer db = new DrawingBuffer();
-    db.setColor(Color.GREEN);
-    db.setThickness(2.2);
-    for (int i=0; i < hullPoints.size(); i++) {
-      Pt pt = hullPoints.get(i);
-      if (i == 0) {
-        db.moveTo(pt.x, pt.y);
-        db.down();
-      } else {
-        db.moveTo(pt.x, pt.y);
-      }
+    List<Pt> hullPoints = ch.getHullClosed();
+    if (hullPoints.get(0).equals(hullPoints.get(hullPoints.size() - 1))) {
+      bug("First and last hull points are the same (as they should be)");
+    } else {
+      bug("First and last hull points are not the same, and that makes baby Jesus cry:");
+      bug(Debug.num(hullPoints.get(0)) + " != " + Debug.num(hullPoints.get(hullPoints.size() - 1)));
     }
-    db.up();
-    main.getDrawingSurface().getSoup().addBuffer(db);    
+    DrawingBuffer db = new DrawingBuffer();
+    DrawingBufferRoutines.lines(db, hullPoints, Color.GREEN, 2.2);
+    DrawingBufferRoutines.dots(db, hullPoints, 3, 0.3, Color.GRAY, Color.GRAY);
+    DrawingBufferRoutines.dot(db, ch.getConvexCentroid(), 6.0, 1.0, Color.BLACK, Color.RED);
+    main.getDrawingSurface().getSoup().addBuffer(db);
   }
 
   private static void bug(String what) {
@@ -122,6 +114,14 @@ public class NodeFinder extends SkruiScript {
       }
     }
     return params;
+  }
+
+  public void handleSequenceEvent(SequenceEvent seqEvent) {
+    if (seqEvent.getType() == SequenceEvent.Type.END) {
+//      drawConvexHull(seqEvent.getSeq().getPoints());
+      Delaunay dl = new Delaunay(main);
+      dl.triangulate(seqEvent.getSeq());
+    }
   }
 
 }

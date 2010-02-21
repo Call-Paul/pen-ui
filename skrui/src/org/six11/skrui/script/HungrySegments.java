@@ -10,7 +10,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.CircleArc;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.PrettyPrinterSegments;
 import org.six11.skrui.Segment;
@@ -20,6 +19,7 @@ import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Lists;
+import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;

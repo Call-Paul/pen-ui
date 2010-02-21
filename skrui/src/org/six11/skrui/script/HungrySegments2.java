@@ -4,21 +4,13 @@ import java.awt.Color;
 import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.CircleArc;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
-import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
-import org.six11.util.pen.SequenceEvent;
-import org.six11.util.pen.SequenceListener;
-import org.six11.util.pen.Vec;
+import org.six11.util.pen.*;
 
 /**
  * 

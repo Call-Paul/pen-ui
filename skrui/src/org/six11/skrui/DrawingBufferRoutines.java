@@ -1,10 +1,13 @@
 package org.six11.skrui;
 
 import java.awt.Color;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
+import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
@@ -82,14 +85,32 @@ public abstract class DrawingBufferRoutines {
     Debug.out("DrawwingBufferRoutines", what);
   }
 
-  public static void line(DrawingBuffer db, Pt start, Pt end, Color color) {
+  public static void line(DrawingBuffer db, Pt start, Pt end, Color color, double thick) {
     db.up();
     db.setColor(color);
-    db.setThickness(1.0);
+    db.setThickness(thick);
     db.moveTo(start.x, start.y);
     db.down();
     db.moveTo(end.x, end.y);
     db.up();
+  }
+
+  public static void line(DrawingBuffer db, Pt start, Pt end, Color color) {
+    line(db, start, end, color, 1.0);
+  }
+
+  public static void lines(DrawingBuffer db, List<Pt> points, Color color, double thick) {
+    if (points.size() > 0) {
+      db.up();
+      db.setColor(color);
+      db.setThickness(thick);
+      db.moveTo(points.get(0).x, points.get(0).y);
+      db.down();
+      for (Pt pt : points) {
+        db.moveTo(pt.x, pt.y);
+      }
+      db.up();
+    }
   }
 
   public static void arc(DrawingBuffer db, CircleArc arc, Color color) {
@@ -155,5 +176,26 @@ public abstract class DrawingBufferRoutines {
     for (Pt pt : points) {
       dot(db, pt, radius, thickness, borderColor, fillColor);
     }
+  }
+
+  public static void fill(DrawingBuffer db, Collection<Pt> points, double thick, Color border,
+      Color fill) {
+    db.up();
+    db.setFillColor(fill);
+    db.setColor(border);
+    db.setThickness(thick);
+    boolean first = true;
+    Pt last = null;
+    for (Pt pt : points) {
+      last = pt;
+      db.moveTo(pt.x, pt.y);
+      if (first) {
+        first = false;
+        db.down();
+      }
+    }
+    db.moveTo(last.x, last.y);
+    db.up();
+    db.setFilling(false);
   }
 }

@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.CircleArc;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
@@ -12,6 +11,7 @@ import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Statistics;
+import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -31,6 +31,18 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
 
   // private static final String K_SOME_THING = "some-thing";
   // private static final String K_ANOTHER_THING = "another-thing";
+
+  public class CombinedErrorResult {
+    public double error;
+    public Pt intersection;
+    public int nearestSeqPoint;
+
+    public CombinedErrorResult() {
+      this.error = Double.MAX_VALUE;
+      this.intersection = null;
+      this.nearestSeqPoint = -1;
+    }
+  }
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -159,12 +171,18 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
         db.up();
       }
       for (HungrySegment3 seg : segments) {
-        Line ideal = seg.getIdealLine();
-        Pt start = ideal.getStart();
-        Pt end = ideal.getEnd();
-        DrawingBufferRoutines.line(db, start, end, Color.BLUE);
-        DrawingBufferRoutines.dot(db, start, 6.0, 0.5, Color.BLACK, Color.GREEN);
-        DrawingBufferRoutines.dot(db, end, 6.0, 0.5, Color.BLACK, Color.RED);
+        bug("Drawing segment of type " + seg.getType());
+        if (seg.getType() == Type.Line) {
+          Line ideal = seg.getIdealLine();
+          Pt start = ideal.getStart();
+          Pt end = ideal.getEnd();
+          DrawingBufferRoutines.line(db, start, end, Color.BLUE);
+          DrawingBufferRoutines.dot(db, start, 6.0, 0.5, Color.BLACK, Color.GREEN);
+          DrawingBufferRoutines.dot(db, end, 6.0, 0.5, Color.BLACK, Color.RED);
+        } else if (seg.getType() == Type.Arc) {
+          CircleArc arc = seg.getArc();
+          DrawingBufferRoutines.arc(db, arc, Color.CYAN);
+        }
       }
       ani.addFrame(db, true);
     }
@@ -298,8 +316,8 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
       }
       // Finally, run a relaxation algorithm to let adjacent segments move into better positions to
       // reduce overall error.
-      // TODO: do the relaxation thing here.
-      
+      negotiate(segments);
+
       animate(segments, "Segments for region " + this);
       return segments;
     }
@@ -323,6 +341,8 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
     Region r;
     int center, start, end;
     Type type;
+    public Pt endIntersection;
+    public Pt startIntersection;
 
     HungrySegment3(Region r, int center) {
       int pleasantWindow = 0;
@@ -345,6 +365,13 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
       this.end = Math.min(r.end, center + pleasantWindow);
     }
 
+    public HungrySegment3(int start, int end, Region r) {
+      this.start = start;
+      this.end = end;
+      this.r = r;
+      setType();
+    }
+
     public void setType() {
       getIdealLine(); // causes 'center' to be set.
       double linePain = measureLinePainInLimits(start, center, end, r.seq);
@@ -365,34 +392,47 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
     }
 
     public Line getIdealLine() {
-      // OK, time for some trickery. We have start/end indices, and we could just leave well enough
-      // alone and use those as the endpoints for our line. But no, we have to make things difficult
-      // by fitting a similar (but slightly different) line, all in the name of science and
-      // aesthetics. Use the vector from the segment start to end points, but find the line that
-      // minimizes standard error to the actual sequence points in that region.
-      double bestError = Double.MAX_VALUE;
-      Vec dir = new Vec(r.seq.get(start), r.seq.get(end)); // direction is start/end of this segment
-      Line bestLine = null;
-      for (int idx = start; idx <= end; idx++) {
-        Line line = new Line(r.seq.get(idx), dir);
-        double thisError = 0;
-        for (int i = start; i < end; i++) {
-          double v = Functions.getDistanceBetweenPointAndLine(r.seq.get(i), line);
-          thisError = thisError + (v * v);
+      Line ret = null;
+      if (startIntersection != null && endIntersection != null) {
+        ret = new Line(startIntersection, endIntersection);
+      } else {
+        // OK, time for some trickery. We have start/end indices, and we could just leave well
+        // enough alone and use those as the endpoints for our line. But no, we have to make things
+        // difficult by fitting a similar (but slightly different) line, all in the name of science
+        // and aesthetics. Use the vector from the segment start to end points, but find the line
+        // that minimizes standard error to the actual sequence points in that region.
+        double bestError = Double.MAX_VALUE;
+        Vec dir = new Vec(r.seq.get(start), r.seq.get(end)); // dir is start/end of this segment
+        Line bestLine = null;
+        for (int idx = start; idx <= end; idx++) {
+          Line line = new Line(r.seq.get(idx), dir);
+          double thisError = 0;
+          for (int i = start; i < end; i++) {
+            double v = Functions.getDistanceBetweenPointAndLine(r.seq.get(i), line);
+            thisError = thisError + (v * v);
+          }
+          if (thisError < bestError) {
+            bestError = thisError;
+            bestLine = line;
+            center = idx;
+          }
         }
-        if (thisError < bestError) {
-          bestError = thisError;
-          bestLine = line;
-          center = idx;
+
+        if (bestLine != null) {
+          Pt altStart = Functions.getNearestPointOnLine(r.seq.get(r.start), bestLine);
+          Pt altEnd = Functions.getNearestPointOnLine(r.seq.get(r.end), bestLine);
+          ret = new Line(altStart, altEnd);
         }
       }
-      Pt altStart = Functions.getNearestPointOnLine(r.seq.get(r.start), bestLine);
-      Pt altEnd = Functions.getNearestPointOnLine(r.seq.get(r.end), bestLine);
-      return new Line(altStart, altEnd);
+      return ret;
+    }
+
+    public CircleArc getArc() {
+      return measureArcPainInLimits(start, end, r.seq).arc;
     }
 
     public boolean isOk() {
-      return (end - start) > 1;
+      return (end - start) > 1 && (r.seq.get(start).distance(r.seq.get(end)) > 20);
     }
 
     public String toString() {
@@ -467,11 +507,250 @@ public class HungrySegments3 extends SkruiScript implements SequenceListener {
       }
       return ret;
     }
+
+    public int numPoints() {
+      return end - start;
+    }
+
+    public void imitate(HungrySegment3 copyMe) {
+      this.start = copyMe.start;
+      this.end = copyMe.end;
+      this.center = copyMe.center;
+      this.r = copyMe.r;
+      this.type = copyMe.type;
+    }
   }
 
   class ArcPainResult {
     CircleArc arc;
     double pain;
+  }
+
+  public List<HungrySegment3> negotiate(SortedSet<HungrySegment3> notInOrder) {
+    // incoming segments are in order of length, not position.
+
+    double improvement = 0;
+    List<HungrySegment3> segments = new ArrayList<HungrySegment3>(notInOrder);
+    Collections.sort(segments, new Comparator<HungrySegment3>() {
+      public int compare(HungrySegment3 o1, HungrySegment3 o2) {
+        int ret = 0;
+        if (o1.start < o2.start) {
+          ret = -1;
+        } else if (o1.start > o2.start) {
+          ret = 1;
+        }
+        return ret;
+      }
+    });
+    int round = 1;
+    do {
+      if (round > 10) {
+        System.exit(0);
+      }
+      animate(segments, "Negotiation Round " + round);
+      Collection<HungrySegment3> doomed = new HashSet<HungrySegment3>();
+      for (int i = 0; i < segments.size() - 1; i++) {
+        improvement = 0;
+        HungrySegment3 s1 = segments.get(i);
+        HungrySegment3 s2 = segments.get(i + 1);
+        if (s1.isOk() && s2.isOk()) {
+          bug("Negotiating segments:");
+          bug("  " + s1);
+          bug("  " + s2);
+          improvement = improvement + negotiate(s1, s2);
+          bug("  improvement: " + Debug.num(improvement));
+        }
+        if (!s1.isOk()) {
+          doomed.add(s1);
+        }
+        if (!s2.isOk()) {
+          doomed.add(s2);
+        }
+        if (doomed.size() > 0) {
+          bug("Removing " + doomed.size() + " doomed segments.");
+        }
+        segments.removeAll(doomed);
+      }
+    } while (improvement > 0);
+
+    List<HungrySegment3> ret = new ArrayList<HungrySegment3>();
+    for (HungrySegment3 seg : segments) {
+      if (seg.isOk()) {
+        ret.add(seg);
+      }
+    }
+    // set the segment intersection points.
+    for (int i = 0; i < ret.size(); i++) {
+      HungrySegment3 seg = ret.get(i);
+      if (i == 0) {
+        // the 'intersection' for the first point is on the ideal line/arc that is closest to the
+        // user's raw ink point.
+        if (seg.getType() == Type.Line) {
+          Pt where = Functions.getNearestPointOnLine(seg.r.seq.getFirst(), seg.getIdealLine());
+          seg.startIntersection = where;
+        } else if (seg.getType() == Type.Arc) {
+          // a bit trickier: cast a ray from the arc center to the sequence last point and
+          // get the intersecting point
+          CircleArc arc = seg.getArc();
+          Vec vec = new Vec(arc.getCenter(), seg.r.seq.getFirst()).getVectorOfMagnitude(arc
+              .getRadius());
+          Pt where = new Pt(arc.getCenter().x + vec.getX(), arc.getCenter().y + vec.getY());
+          seg.startIntersection = where;
+        }
+      }
+      if (i == (ret.size() - 1)) {
+        // on the very last segment I only need to set the endIntersection.
+        if (seg.getType() == Type.Line) {
+          Pt where = Functions.getNearestPointOnLine(seg.r.seq.getLast(), seg.getIdealLine());
+          seg.endIntersection = where;
+        } else if (seg.getType() == Type.Arc) {
+          // a bit trickier: cast a ray from the arc center to the sequence last point and
+          // get the intersecting point
+          CircleArc arc = seg.getArc();
+          Vec vec = new Vec(arc.getCenter(), seg.r.seq.getLast()).getVectorOfMagnitude(arc
+              .getRadius());
+          Pt where = new Pt(arc.getCenter().x + vec.getX(), arc.getCenter().y + vec.getY());
+          seg.endIntersection = where;
+        }
+      } else {
+        // on all other segments I set the end of this one and the start of the next.
+        HungrySegment3 next = ret.get(i + 1);
+        CombinedErrorResult errorData = getCombinedError(seg, next);
+        seg.endIntersection = errorData.intersection;
+        next.startIntersection = errorData.intersection;
+      }
+    }
+    return ret;
+  }
+
+  private CombinedErrorResult getCombinedError(HungrySegment3 s1, HungrySegment3 s2) {
+    CombinedErrorResult ret = new CombinedErrorResult();
+
+    // Calculate the error between the ideal line/arcs and the raw ink.
+
+    // First find the intersection of s1 and s2
+    Pt intersection = null;
+    if (s1.getType() == Type.Line && s2.getType() == Type.Line) {
+      intersection = Functions.getIntersectionPoint(s1.getIdealLine(), s2.getIdealLine());
+    } else if (s1.getType() == Type.Line && s2.getType() == Type.Arc) {
+      intersection = Functions.getIntersectionPoint(s2.getArc(), s1.getIdealLine());
+    } else if (s1.getType() == Type.Arc && s2.getType() == Type.Line) {
+      intersection = Functions.getIntersectionPoint(s1.getArc(), s2.getIdealLine());
+    } else if (s1.getType() == Type.Arc && s2.getType() == Type.Arc) {
+      intersection = Functions.getIntersectionPoint(s1.getArc(), s2.getArc());
+    }
+
+    if (intersection == null) {
+      bug("Intersection of " + s1.getType() + " and " + s2.getType() + " is null.");
+    } else {
+      bug("Intersection of " + s1.getType() + " and " + s2.getType() + " is ok: "
+          + Debug.num(intersection));
+      // Note which point on the sequence is closest to that intersection.
+      HungrySegment3 left = s1;
+      HungrySegment3 right = s2;
+      if (s1.start > s2.start) {
+        left = s2;
+        right = s1;
+      }
+      int closestIdx = -1;
+      double closestDist = Double.MAX_VALUE;
+      for (int i = left.start; i <= right.end; i++) {
+        Pt pt = left.r.seq.get(i);
+        double d = pt.distance(intersection);
+        if (d < closestDist) {
+          closestDist = d;
+          closestIdx = i;
+        }
+      }
+      bug("Closest index is " + closestIdx);
+      // calculate standard error between each point and the ideal line/arc as appropriate.
+      ret.error = measureStandardError(left, left.start, closestIdx)
+          + measureStandardError(right, closestIdx, right.end);
+      ret.nearestSeqPoint = closestIdx;
+      ret.intersection = intersection;
+    }
+    return ret;
+  }
+
+  private double measureStandardError(HungrySegment3 seg, int start, int end) {
+    double ret = 0;
+    Sequence seq = seg.r.seq;
+    if (seg.getType() == Type.Line) {
+      Line ideal = seg.getIdealLine();
+      for (int i = start; i <= end; i++) {
+        double v = Functions.getDistanceBetweenPointAndLine(seq.get(i), ideal);
+        ret = ret + (v * v);
+      }
+    } else if (seg.getType() == Type.Arc) {
+      CircleArc arc = seg.getArc();
+      for (int i = start; i <= end; i++) {
+        double v = seq.get(i).distance(arc.center) - arc.getRadius();
+        ret = ret + (v * v);
+      }
+    }
+    ret = ret / (end - start);
+    bug("measureStandardError for " + seg.getType() + " in range: " + start + ", " + end + ": "
+        + Debug.num(ret));
+    return ret;
+  }
+
+  private double negotiate(HungrySegment3 s1, HungrySegment3 s2) {
+    double improvement = 0;
+    HungrySegment3 left = s1.start < s2.start ? s1 : s2;
+    HungrySegment3 right = s1.start < s2.start ? s2 : s1;
+    // Consider three cases:
+    // 1. Do nothing.
+    // 2. Enlarge left at (possibly) the expense of right
+    // 3. Enlarge right at (possibly) the expense of left
+    CombinedErrorResult doNothingError = getCombinedError(left, right);
+    CombinedErrorResult enlargeLeftError = new CombinedErrorResult();
+    HungrySegment3 llBest = null;
+    HungrySegment3 rlBest = null;
+    for (int i = 1; i < Math.min(5, right.numPoints()); i++) {
+      HungrySegment3 ll = new HungrySegment3(left.start, left.end + i, left.r);
+      HungrySegment3 rl = new HungrySegment3(Math.max(ll.end, right.start), right.end, right.r);
+      if (ll.isOk() && rl.isOk()) {
+        CombinedErrorResult enLeft = getCombinedError(ll, rl);
+        if (enLeft.error < enlargeLeftError.error) {
+          llBest = ll;
+          rlBest = rl;
+          enlargeLeftError = enLeft;
+        }
+      }
+    }
+    CombinedErrorResult enlargeRightError = new CombinedErrorResult();
+    HungrySegment3 lrBest = null;
+    HungrySegment3 rrBest = null;
+    for (int i = 1; i < Math.min(5, left.numPoints()); i++) {
+      HungrySegment3 rr = new HungrySegment3(right.start - i, right.end, right.r);
+      HungrySegment3 lr = new HungrySegment3(left.start, Math.min(left.end, rr.start), left.r);
+      if (rr.isOk() && lr.isOk()) {
+        CombinedErrorResult enRight = getCombinedError(lr, rr);
+        if (enRight.error < enlargeRightError.error) {
+          lrBest = lr;
+          rrBest = rr;
+          enlargeRightError = enRight;
+        }
+      }
+    }
+    if (doNothingError.error <= enlargeLeftError.error
+        && doNothingError.error <= enlargeRightError.error) {
+      improvement = 0;
+      bug("  No improvement...");
+    } else if (enlargeLeftError.error <= enlargeRightError.error) {
+      // moving to the left some amount is the best.
+      left.imitate(llBest);
+      right.imitate(rlBest);
+      bug("  Enlarge left...");
+      improvement = doNothingError.error - enlargeLeftError.error;
+    } else {
+      // moving to the right some amount is the best.
+      left.imitate(lrBest);
+      right.imitate(rrBest);
+      bug("  Enlarge right...");
+      improvement = doNothingError.error - enlargeRightError.error;
+    }
+    return improvement;
   }
 
 }
