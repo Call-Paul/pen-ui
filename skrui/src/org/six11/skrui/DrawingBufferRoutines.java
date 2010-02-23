@@ -10,6 +10,7 @@ import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -194,8 +195,14 @@ public abstract class DrawingBufferRoutines {
         db.down();
       }
     }
-    db.moveTo(last.x, last.y);
+    if (last != null) {
+      db.moveTo(last.x, last.y);
+    }
     db.up();
     db.setFilling(false);
+  }
+
+  public static void line(DrawingBuffer db, Line top, Color color, double thick) {
+    line(db, top.getStart(), top.getEnd(), color, thick);
   }
 }

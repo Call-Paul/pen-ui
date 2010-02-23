@@ -21,6 +21,7 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.OliveSoupEvent;
 import org.six11.util.pen.OliveSoupListener;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
@@ -118,9 +119,10 @@ public class NodeFinder extends SkruiScript implements SequenceListener {
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     if (seqEvent.getType() == SequenceEvent.Type.END) {
-//      drawConvexHull(seqEvent.getSeq().getPoints());
+      Sequence seq = seqEvent.getSeq();
+      
       Delaunay dl = new Delaunay(main);
-      dl.triangulate(seqEvent.getSeq());
+      dl.triangulate(seq);
     }
   }
 
