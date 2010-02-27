@@ -3,8 +3,10 @@ package org.six11.skrui;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 
 import org.six11.util.Debug;
@@ -31,6 +33,7 @@ public class PrettyPrinterSegments extends SkruiScript {
   private static final String K_CORNER_SIZE = "corner-size";
   private static final String K_CORNER_COLOR = "corner-color";
   public static final String K_SHOW_RAW_INK = "show-ink";
+  public static final String K_SHOW_RAW_DOTS = "show-ink-dots";
   private static final String K_DRAW_SEGMENTS = "draw-segments";
 
   public static Arguments getArgumentSpec() {
@@ -61,6 +64,9 @@ public class PrettyPrinterSegments extends SkruiScript {
         "Set to true to display the locations of spline control points", false));
     defs.put(K_SHOW_RAW_INK, new BoundedParameter.Boolean(K_SHOW_RAW_INK, "Hide raw ink or not",
         "Tells the system to draw (or not) the original ink when pretty printing.", true));
+    defs.put(K_SHOW_RAW_DOTS, new BoundedParameter.Boolean(K_SHOW_RAW_DOTS,
+        "Hide dots for raw ink or not",
+        "Tells the system to draw (or not) dots at the original ink sample points.", false));
     defs.put(K_CORNER_THICKNESS, new BoundedParameter.Double(K_CORNER_THICKNESS,
         "Corner line thickness",
         "The thickness of the corner lines (little dots optionally drawn at junctions)", 0.01, 2.0,
@@ -103,8 +109,8 @@ public class PrettyPrinterSegments extends SkruiScript {
       if (getParam(K_DRAW_SEGMENTS).getBoolean()) {
         DrawingBuffer db = new DrawingBuffer();
         Map<Segment.Type, Color> colors = new HashMap<Segment.Type, Color>();
-        colors.put(Segment.Type.LINE, Color.CYAN);
-        colors.put(Segment.Type.ARC, Color.MAGENTA);
+        colors.put(Segment.Type.LINE, Color.BLACK);
+        colors.put(Segment.Type.ARC, Color.BLACK);
         colors.put(Segment.Type.SPLINE, Color.GREEN);
         for (Segment seg : segs) {
           DrawingBufferRoutines.seg(db, seg, colors.get(seg.getBestType()));
@@ -114,6 +120,15 @@ public class PrettyPrinterSegments extends SkruiScript {
       if (getParam(K_SHOW_RAW_INK).getBoolean() == false) {
         for (Segment seg : segs) {
           disableOriginalInput(seg.seq);
+        }
+      }
+      if (getParam(K_SHOW_RAW_DOTS).getBoolean() == true) {
+        Set<Sequence> seqs = new HashSet<Sequence>();
+        for (Segment seg : segs) {
+          seqs.add(seg.seq);
+        }
+        for (Sequence seq : seqs) {
+          drawDots(seq.getPoints(), Color.LIGHT_GRAY);
         }
       }
       if (getParam(K_DRAW_CONTROL_POINTS).getBoolean()) {
@@ -127,7 +142,7 @@ public class PrettyPrinterSegments extends SkruiScript {
       }
       if (getParam(K_DRAW_CORNERS).getBoolean()) {
         List<Pt> corners = new ArrayList<Pt>();
-        for (Segment seg : segs) {          
+        for (Segment seg : segs) {
           if (!corners.contains(seg.start)) {
             corners.add(seg.start);
           }

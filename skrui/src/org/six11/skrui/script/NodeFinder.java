@@ -8,10 +8,10 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.Delaunay;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.Segment;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.mesh.Delaunay;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -118,12 +118,34 @@ public class NodeFinder extends SkruiScript implements SequenceListener {
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
-    if (seqEvent.getType() == SequenceEvent.Type.END) {
-      Sequence seq = seqEvent.getSeq();
-      
-      Delaunay dl = new Delaunay(main);
-      dl.triangulate(seq);
+    SequenceEvent.Type type = seqEvent.getType();
+    Sequence seq = seqEvent.getSeq();
+    switch (type) {
+      case PROGRESS:
+        double howLong = updatePathLength(seq);
+        break;
+      case END:
+        Delaunay dl = new Delaunay(main);
+        dl.triangulate(seq);
+        break;
     }
   }
 
+  private double updatePathLength(Sequence seq) {
+    int cursor = seq.size() - 1;
+    // back up to the last point that has the 'path-length' value set, or to 0.
+    while (cursor > 0 && !seq.get(cursor).hasAttribute("path-length"))
+      cursor--;
+    // if we're at 0, set the path-length to 0.
+    if (cursor == 0) {
+      seq.get(cursor).setDouble("path-length", 0);
+    }
+    // now zip to the end and set the cumulative path lenth based on the last known value.
+    for (int i = cursor; i < seq.size() - 1; i++) {
+      double dist = seq.get(cursor).distance(seq.get(cursor + 1));
+      seq.get(cursor + 1).setDouble("path-length",
+          seq.get(cursor).getDouble("path-length") + dist);
+    }
+    return seq.get(seq.size() - 1).getDouble("path-length");
+  }
 }

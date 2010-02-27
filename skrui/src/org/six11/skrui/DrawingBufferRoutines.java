@@ -202,7 +202,15 @@ public abstract class DrawingBufferRoutines {
     db.setFilling(false);
   }
 
-  public static void line(DrawingBuffer db, Line top, Color color, double thick) {
-    line(db, top.getStart(), top.getEnd(), color, thick);
+  public static void line(DrawingBuffer db, Line l, Color color, double thick) {
+    line(db, l.getStart(), l.getEnd(), color, thick);
+  }
+
+  public static void text(DrawingBuffer db, Pt location, String msg, Color color) {
+    db.up();
+    db.moveTo(location.x, location.y);
+    db.down();
+    db.addText(msg, color);
+    db.up();
   }
 }

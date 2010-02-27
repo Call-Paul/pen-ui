@@ -72,25 +72,17 @@ public class Splinify extends SkruiScript implements SequenceListener {
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     if (seqEvent.getType() == SequenceEvent.Type.END) {
-      long start = System.currentTimeMillis();
       // List<Pt> ctrl = Functions.getNormalizedSequence(seqEvent.getSeq().getPoints(), 30.0);
       List<Pt> ctrl = Functions.getTimeNormalizedSequence(seqEvent.getSeq().getPoints(), 100);
-      long toCtrl = System.currentTimeMillis();
       List<Pt> interp = CardinalSpline.interpolateCardinal(ctrl, 1.0, 1.5);
-      if (interp.size() == 0) {
-        bug("I got an empty list of interpolated points based on the control list: "
-            + Debug.num(ctrl, " "));
-      }
-      long toInterp = System.currentTimeMillis();
       DrawingBuffer db = new DrawingBuffer();
       for (Pt pt : ctrl) {
         DrawingBufferRoutines.dot(db, pt, 6.0, 0.5, Color.BLACK, Color.RED);
       }
       DrawingBufferRoutines.lines(db, interp, Color.BLUE, 1.8);
-      long toDraw = System.currentTimeMillis();
-      main.getDrawingSurface().getSoup().addBuffer(db);
-      // main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seqEvent.getSeq()).setVisible(
-      // false);
+      // The following tests named access to drawing buffers.
+      main.getDrawingSurface().getSoup().removeBuffer("splines");
+      main.getDrawingSurface().getSoup().addBuffer("splines", db);
     }
   }
 
