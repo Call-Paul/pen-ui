@@ -1,6 +1,10 @@
 package org.six11.skrui.script;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,19 +78,16 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public void initialize() {
     bug("Neanderthal is alive!");
     main.getDrawingSurface().getSoup().addSequenceListener(this);
-    System.out.println("seq_id,n_points,area,aspect,density,area_div_aspect,class");
   }
 
   private double updatePathLength(Sequence seq) {
     int cursor = seq.size() - 1;
-    // back up to the last point that has the 'path-length' value set, or to 0.
-    while (cursor > 0 && !seq.get(cursor).hasAttribute("path-length"))
+    while (cursor > 0 && !seq.get(cursor).hasAttribute("path-length")) {
       cursor--;
-    // if we're at 0, set the path-length to 0.
+    }
     if (cursor == 0) {
       seq.get(cursor).setDouble("path-length", 0);
     }
-    // now zip to the end and set the cumulative path lenth based on the last known value.
     for (int i = cursor; i < seq.size() - 1; i++) {
       double dist = seq.get(cursor).distance(seq.get(cursor + 1));
       seq.get(cursor + 1).setDouble("path-length", seq.get(cursor).getDouble("path-length") + dist);
@@ -97,40 +98,114 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
-    Certainty dotCertainty;
+    Certainty dotCertainty = Certainty.Unknown;
+    Certainty ellipseCertainty = Certainty.Unknown;
     switch (type) {
       case PROGRESS:
-        double howLong = updatePathLength(seq);
+        updatePathLength(seq);
         break;
       case END:
         if (seq.getAttribute(SCRAP) == null) {
           dotCertainty = detectDot(seq);
+          ellipseCertainty = detectEllipse(seq);
+          DrawingBuffer db = new DrawingBuffer();
+          Pt cursor = seq.getLast();
+          cursor = new Pt(cursor.x + 20, cursor.y + 20);
+          cursor = maybeOutputDebugText(db, "Dot", dotCertainty, cursor);
+          cursor = maybeOutputDebugText(db, "Ellipse", ellipseCertainty, cursor);
+          main.getDrawingSurface().getSoup().addBuffer("debug", db);
         }
         break;
     }
+  }
 
+  private Pt maybeOutputDebugText(DrawingBuffer db, String msg, Certainty c, Pt endPoint) {
+    Pt where = new Pt(endPoint.x, endPoint.y);
+    if (c == Certainty.Maybe || c == Certainty.Yes) {
+
+      Color color = c == Certainty.Maybe ? Color.yellow.darker() : Color.green.darker();
+      DrawingBufferRoutines.text(db, where, msg + ": " + c, color);
+      where = new Pt(where.x, where.y + 20);
+    }
+    return where;
+  }
+
+  private Certainty detectEllipse(Sequence seq) {
+    Certainty ret = Certainty.Unknown;
+
+    // First determine if this is a closed shape.
+    Pt start = seq.getFirst();
+    double totalLength = seq.getLast().getDouble("path-length");
+    if (totalLength < 50) {
+      ret = Certainty.No;
+    } else {
+      double lengthThreshold = totalLength * 0.5;
+
+      double endpointDistThreshold = totalLength * 0.30;
+      double closestDist = Double.MAX_VALUE;
+      Pt closestPoint = null;
+      for (Pt pt : seq) {
+        double toThisPoint = pt.getDouble("path-length");
+        if (toThisPoint > lengthThreshold) {
+          double thisDist = start.distance(pt);
+          if (thisDist < endpointDistThreshold && thisDist < closestDist) {
+            closestPoint = pt;
+            closestDist = thisDist;
+          }
+        }
+      }
+
+      if (closestPoint != null) {
+        ConvexHull hull = new ConvexHull(seq.getPoints());
+        Antipodal antipodes = new Antipodal(hull.getHull());
+
+        Pt centroid = antipodes.getCentroid();
+        double angle = antipodes.getAngle();
+        double a = antipodes.getFirstDimension() / 2;
+        double b = antipodes.getSecondDimension() / 2;
+
+        double errorSum = 0;
+        for (Pt pt : seq) {
+          Pt intersect = getEllipticalIntersection(centroid, a, b, angle, pt);
+          double intersectDist = intersect.distance(pt);
+          errorSum += intersectDist * intersectDist;
+        }
+        double normalizedError = errorSum / totalLength;
+        double area = Math.PI * a * b;
+        double areaError = errorSum / area;
+        boolean punishLazyPen = closestDist > (endpointDistThreshold / 2);
+        if (areaError < 0.4) {
+          if (punishLazyPen) {
+            ret = Certainty.Maybe;
+          } else {
+            ret = Certainty.Yes;
+          }
+        } else if (normalizedError < 9) {
+          if (punishLazyPen) {
+            ret = Certainty.Maybe;
+          } else {
+            ret = Certainty.Yes;
+          }
+        } else if (areaError < 0.9) {
+          ret = Certainty.Maybe;
+        } else if (normalizedError < 20) {
+          ret = Certainty.Maybe;
+        } else {
+          ret = Certainty.No;
+        }
+      } else {
+        ret = Certainty.No;
+      }
+    }
+    return ret;
   }
 
   private Certainty detectDot(Sequence seq) {
 
     ConvexHull hull = new ConvexHull(seq.getPoints());
     Antipodal antipodes = new Antipodal(hull.getHull());
-    List<Pt> rect = antipodes.getMinimumBoundingRect();
-    rect.add(rect.get(0));
     double density = (double) seq.size() / antipodes.getArea();
     double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
-    String clz = "Unknown";
-    if (main.getArguments().hasValue("class")) {
-      clz = main.getArguments().getValue("class");
-    }
-    System.out.print("" + seq.getId());
-    System.out.print("," + seq.size());
-    System.out.print("," + Debug.num(antipodes.getArea()));
-    System.out.print("," + Debug.num(antipodes.getAspectRatio()));
-    System.out.print("," + Debug.num(density));
-    System.out.print("," + areaPerAspect);
-    System.out.print("," + clz);
-
     Certainty ret = Certainty.Unknown;
 
     if (areaPerAspect < 58) {
@@ -143,16 +218,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       ret = Certainty.No;
     }
 
-    DrawingBuffer db = new DrawingBuffer();
-    Pt centroid = antipodes.getCentroid();
-    DrawingBufferRoutines.text(db, new Pt(centroid.x + 10, centroid.y + 10), "(" + ret + ")",
-        Color.GREEN.darker());
-    main.getDrawingSurface().getSoup().addBuffer("dot", db);
-    if (main.getArguments().hasFlag("show-result")) {
-      System.out.print(" (" + ret + ")");
-    }
-    // System.out.print(" (" + ret + ")");
-    System.out.print("\n");
     return ret;
   }
 
@@ -170,5 +235,32 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       }
     }
     return params;
+  }
+
+  private Pt getEllipticalIntersection(Pt center, double a, double b, double ellipseRotation,
+      Pt target) {
+    double x0 = target.x - center.x;
+    double y0 = target.y - center.y;
+    double xRot = x0 * cos(-ellipseRotation) + y0 * sin(-ellipseRotation);
+    double yRot = -x0 * sin(-ellipseRotation) + y0 * cos(-ellipseRotation);
+    double denom = Math.sqrt((a * a * yRot * yRot) + (b * b * xRot * xRot));
+    double xTermRot = (a * b * xRot) / denom;
+    double yTermRot = (a * b * yRot) / denom;
+    double xTerm = xTermRot * cos(ellipseRotation) + yTermRot * sin(ellipseRotation);
+    double yTerm = -xTermRot * sin(ellipseRotation) + yTermRot * cos(ellipseRotation);
+    Pt xNeg = new Pt(-xTerm + center.x, -yTerm + center.y);
+    Pt xPos = new Pt(xTerm + center.x, yTerm + center.y);
+    double distNeg = xNeg.distance(target);
+    double distPos = xPos.distance(target);
+    Pt ret = distNeg < distPos ? xNeg : xPos;
+    return ret;
+  }
+
+  private Pt getEllipticalPoint(Pt center, double a, double b, double ellipseRotation, double t) {
+    double x = (a * cos(t));
+    double y = (b * sin(t));
+    double xRot = x * cos(ellipseRotation) + y * sin(ellipseRotation);
+    double yRot = -x * sin(ellipseRotation) + y * cos(ellipseRotation);
+    return new Pt(xRot + center.x, yRot + center.y);
   }
 }
