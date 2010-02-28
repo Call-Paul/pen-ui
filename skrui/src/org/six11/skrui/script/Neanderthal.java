@@ -1,12 +1,7 @@
 package org.six11.skrui.script;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-
 import java.awt.Color;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.six11.skrui.BoundedParameter;
@@ -20,6 +15,7 @@ import org.six11.util.pen.Antipodal;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
@@ -95,6 +91,18 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return seq.get(seq.size() - 1).getDouble("path-length");
   }
 
+  private int sumCertainty(Certainty... certainties) {
+    int sum = 0;
+    for (Certainty c : certainties) {
+      switch (c) {
+        case Maybe:
+        case Yes:
+          sum += 1;
+      }
+    }
+    return sum;
+  }
+
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
@@ -113,7 +121,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
           cursor = new Pt(cursor.x + 20, cursor.y + 20);
           cursor = maybeOutputDebugText(db, "Dot", dotCertainty, cursor);
           cursor = maybeOutputDebugText(db, "Ellipse", ellipseCertainty, cursor);
-          main.getDrawingSurface().getSoup().addBuffer("debug", db);
+          if (sumCertainty(dotCertainty, ellipseCertainty) > 0) {
+            main.getDrawingSurface().getSoup().addBuffer("debug", db);
+          } else {
+            main.getDrawingSurface().getSoup().removeBuffer("debug");
+          }
         }
         break;
     }
@@ -163,15 +175,15 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         double angle = antipodes.getAngle();
         double a = antipodes.getFirstDimension() / 2;
         double b = antipodes.getSecondDimension() / 2;
-
+        RotatedEllipse re = new RotatedEllipse(centroid, a, b, angle);
         double errorSum = 0;
         for (Pt pt : seq) {
-          Pt intersect = getEllipticalIntersection(centroid, a, b, angle, pt);
+          Pt intersect = re.getCentroidIntersect(pt);
           double intersectDist = intersect.distance(pt);
           errorSum += intersectDist * intersectDist;
         }
         double normalizedError = errorSum / totalLength;
-        double area = Math.PI * a * b;
+        double area = re.getArea();
         double areaError = errorSum / area;
         boolean punishLazyPen = closestDist > (endpointDistThreshold / 2);
         if (areaError < 0.4) {
@@ -237,30 +249,4 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return params;
   }
 
-  private Pt getEllipticalIntersection(Pt center, double a, double b, double ellipseRotation,
-      Pt target) {
-    double x0 = target.x - center.x;
-    double y0 = target.y - center.y;
-    double xRot = x0 * cos(-ellipseRotation) + y0 * sin(-ellipseRotation);
-    double yRot = -x0 * sin(-ellipseRotation) + y0 * cos(-ellipseRotation);
-    double denom = Math.sqrt((a * a * yRot * yRot) + (b * b * xRot * xRot));
-    double xTermRot = (a * b * xRot) / denom;
-    double yTermRot = (a * b * yRot) / denom;
-    double xTerm = xTermRot * cos(ellipseRotation) + yTermRot * sin(ellipseRotation);
-    double yTerm = -xTermRot * sin(ellipseRotation) + yTermRot * cos(ellipseRotation);
-    Pt xNeg = new Pt(-xTerm + center.x, -yTerm + center.y);
-    Pt xPos = new Pt(xTerm + center.x, yTerm + center.y);
-    double distNeg = xNeg.distance(target);
-    double distPos = xPos.distance(target);
-    Pt ret = distNeg < distPos ? xNeg : xPos;
-    return ret;
-  }
-
-  private Pt getEllipticalPoint(Pt center, double a, double b, double ellipseRotation, double t) {
-    double x = (a * cos(t));
-    double y = (b * sin(t));
-    double xRot = x * cos(ellipseRotation) + y * sin(ellipseRotation);
-    double yRot = -x * sin(ellipseRotation) + y * cos(ellipseRotation);
-    return new Pt(xRot + center.x, yRot + center.y);
-  }
 }
