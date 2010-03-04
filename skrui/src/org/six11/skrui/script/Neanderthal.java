@@ -2,11 +2,14 @@ package org.six11.skrui.script;
 
 import java.awt.Color;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.script.Polyline.Segment;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -21,13 +24,12 @@ import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
 /**
- * This is a 'hello world' implementation of DrawingScript. To use it, just mention it on the Main
- * command line.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class Neanderthal extends SkruiScript implements SequenceListener {
 
+  private static int SEG_ID = 1;
   private static final String K_SOME_THING = "some-thing";
   private static final String K_ANOTHER_THING = "another-thing";
   private static final String SCRAP = "Sequence already dealt with";
@@ -69,11 +71,28 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   // * Put member variable declarations here. *
   //
   // //
+  boolean animationInitialized = false;
 
   @Override
   public void initialize() {
     bug("Neanderthal is alive!");
+    output("id", "le", "les", "ae", "aes", "pathLength", "nPoints", "lesDivLength", "aesDivLength",
+        "lesDivNPoints", "aesDivNPoints", "aesDivNPointsSquared", "lesDivNPointsSquared");
+//    output("id", "lineLenDivCurviLen", "isProbablyLine");
     main.getDrawingSurface().getSoup().addSequenceListener(this);
+
+  }
+
+  private void output(String... stuff) {
+    boolean first = true;
+    for (String v : stuff) {
+      if (!first) {
+        System.out.print(", ");
+      }
+      first = false;
+      System.out.print(v);
+    }
+    System.out.print("\n");
   }
 
   private double updatePathLength(Sequence seq) {
@@ -85,8 +104,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       seq.get(cursor).setDouble("path-length", 0);
     }
     for (int i = cursor; i < seq.size() - 1; i++) {
-      double dist = seq.get(cursor).distance(seq.get(cursor + 1));
-      seq.get(cursor + 1).setDouble("path-length", seq.get(cursor).getDouble("path-length") + dist);
+      double dist = seq.get(i).distance(seq.get(i + 1));
+      double v = seq.get(i).getDouble("path-length") + dist;
+      seq.get(i + 1).setDouble("path-length", v);
     }
     return seq.get(seq.size() - 1).getDouble("path-length");
   }
@@ -104,10 +124,16 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
+    if (!animationInitialized && main.getScript("Animation") != null) {
+      Animation ani = (Animation) main.getScript("Animation");
+      ani.startAnimation(main.getDrawingSurface().getBounds(), "png");
+      animationInitialized = true;
+    }
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
     Certainty dotCertainty = Certainty.Unknown;
     Certainty ellipseCertainty = Certainty.Unknown;
+    Polyline polyline;
     switch (type) {
       case PROGRESS:
         updatePathLength(seq);
@@ -116,6 +142,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         if (seq.getAttribute(SCRAP) == null) {
           dotCertainty = detectDot(seq);
           ellipseCertainty = detectEllipse(seq);
+          polyline = detectPolyline(seq);
           DrawingBuffer db = new DrawingBuffer();
           Pt cursor = seq.getLast();
           cursor = new Pt(cursor.x + 20, cursor.y + 20);
@@ -131,10 +158,94 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
   }
 
-  private Pt maybeOutputDebugText(DrawingBuffer db, String msg, Certainty c, Pt endPoint) {
-    Pt where = new Pt(endPoint.x, endPoint.y);
-    if (c == Certainty.Maybe || c == Certainty.Yes) {
+  private Polyline detectPolyline(Sequence seq) {
+    Polyline ret = new Polyline(seq, (Animation) main.getScript("Animation"));
+    DrawingBuffer db = new DrawingBuffer();
+    Set<Segment> segs = ret.getSegments();
+    Set<Pt> junctions = new HashSet<Pt>();
+    // Establish line and arc certainties for each segment.
+    double LINE_OK_THRESH = 20; // lesDivLength
+    double LINE_MAYBE_THRESH = 30; // lesDivLength
+    double ARC_OK_THRESH = 4000;
+    double ARC_MAYBE_THRESH = 20000;
+    for (Segment seg : segs) {
+      int segID = SEG_ID++;
+      double le = seg.getLineError();
+      double les = seg.getLineErrorSum();
+      double ae = seg.getArcError();
+      double aes = seg.getArcErrorSum();
+      double pathLength = seg.getLength();
+      double nPoints = seg.getNumPoints();
+      double lesDivLength = les / pathLength;
+      double aesDivLength = aes / pathLength;
+      double lesDivNPoints = les / nPoints;
+      double aesDivNPoints = aes / nPoints;
+      double lesDivNPointsSquared = les / (nPoints * nPoints);
+      double aesDivNPointsSquared = aes / (nPoints * nPoints);
+      double lineLenDivCurviLen = seg.getPathLength() / seg.getLineLength();
+      output((double) segID, le, les, ae, aes, pathLength, nPoints, lesDivLength, aesDivLength,
+          lesDivNPoints, aesDivNPoints, aesDivNPointsSquared, lesDivNPointsSquared);
+//      output((double) segID, lineLenDivCurviLen, seg.isProbablyLine() ? 1 : 0);
+      int midIdx = (seg.start + seg.end) / 2;
+      Pt m = new Pt(seq.get(midIdx).x - 30, seq.get(midIdx).y);
+      DrawingBufferRoutines.text(db, m, "Segment " + segID, Color.RED.darker().darker());
+      if (lineLenDivCurviLen < 1.07) {
+        seg.lineCertainty = Certainty.Yes;
+        seg.arcCertainty = Certainty.Maybe;
+      } else if (lineLenDivCurviLen < 1.27) {
+        seg.lineCertainty = Certainty.Maybe;
+        seg.arcCertainty = Certainty.Maybe;
+      } else {
+        seg.lineCertainty = Certainty.No;
+        seg.arcCertainty = Certainty. Yes;
+      }
+//      if (lesDivLength < LINE_OK_THRESH) {
+//        seg.lineCertainty = Certainty.Yes;
+//      } else if (lesDivLength < LINE_MAYBE_THRESH) {
+//        seg.lineCertainty = Certainty.Maybe;
+//      } else {
+//        seg.lineCertainty = Certainty.No;
+//      }
+//      if (aesDivLength < ARC_OK_THRESH) {
+//        seg.arcCertainty = seg.isProbablyLine() ? Certainty.Maybe : Certainty.Yes;
+//      } else if (aesDivLength < ARC_MAYBE_THRESH) {
+//        seg.arcCertainty = Certainty.Maybe;
+//      } else {
+//        seg.arcCertainty = Certainty.No;
+//      }
+    }
+    for (Segment seg : segs) {
+      Pt a = seg.getStartPoint();
+      Pt b = seg.getEndPoint();
+      junctions.add(a);
+      junctions.add(b);
+      Pt m = seq.get((seg.end + seg.start) / 2);
+      m = new Pt(m.x, m.y + 20);
+      m = maybeOutputDebugText(db, "Line", seg.lineCertainty, m);
+      m = maybeOutputDebugText(db, "Arc", seg.arcCertainty, m);
+    }
+    for (Pt pt : junctions) {
+      DrawingBufferRoutines.dot(db, pt, 6.0, 0.6, Color.BLACK, Color.GREEN);
+    }
+    main.getDrawingSurface().getSoup().addBuffer(db);
+    return ret;
+  }
 
+  private void output(double... stuff) {
+    boolean first = true;
+    for (double v : stuff) {
+      if (!first) {
+        System.out.print(", ");
+      }
+      first = false;
+      System.out.print(Debug.num(v));
+    }
+    System.out.print("\n");
+  }
+
+  private Pt maybeOutputDebugText(DrawingBuffer db, String msg, Certainty c, Pt pt) {
+    Pt where = new Pt(pt.x, pt.y);
+    if (c == Certainty.Maybe || c == Certainty.Yes) {
       Color color = c == Certainty.Maybe ? Color.yellow.darker() : Color.green.darker();
       DrawingBufferRoutines.text(db, where, msg + ": " + c, color);
       where = new Pt(where.x, where.y + 20);
@@ -147,6 +258,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
 
     // First determine if this is a closed shape.
     Pt start = seq.getFirst();
+    updatePathLength(seq);
     double totalLength = seq.getLast().getDouble("path-length");
     if (totalLength < 50) {
       ret = Certainty.No;
