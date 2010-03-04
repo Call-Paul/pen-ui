@@ -15,22 +15,15 @@ public class Node {
   String name;
   List<Node> parents;
   List<Node> children;
-  private ConditionalProbabilityTable cpt;
-
-  public Node(String name) {
+  ConditionalProbabilityTable cpt;
+  
+  
+  public Node(String name, String... states) {
     this.name = name;
     parents = new ArrayList<Node>();
     children = new ArrayList<Node>();
-    cpt = new ConditionalProbabilityTable("My Thing", 2, 2, 3, 4);
-    cpt.setNames("q1", "q2", "a1", "a2", "b1", "b2", "b3", "c1", "c2", "c3", "c4");
-    for (int q = 0; q < 2; q++) {
-      for (int a = 0; a < 2; a++) {
-        for (int b = 0; b < 3; b++) {
-          cpt.setRow(BayesianNetwork.makeRandomDistribution(4), q, a, b);
-        }
-      }
-    }
-    bug("Here's the CPT:\n" + cpt);
+    cpt = new ConditionalProbabilityTable(name, states);
+    cpt.setRandomData();
   }
 
   private static void bug(String what) {
@@ -40,6 +33,7 @@ public class Node {
   public static void link(Node parent, Node child) {
     parent.children.add(child);
     child.parents.add(parent);
+    child.cpt.addVariable(parent.cpt.getNames());
   }
 
   public String toString() {
