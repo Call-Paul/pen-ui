@@ -168,6 +168,8 @@ public class Main {
         "Specify a PDF file to automatically output. Only useful with --load-sketch.");
     args.addFlag("no-ui", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED,
         "Supresses the user interface, which is useful in batch mode.");
+    args.addFlag("big", ArgType.ARG_OPTIONAL, ValueType.VALUE_IGNORED,
+        "Makes the user interface large.");
     args.addFlag("debugging", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
         "Enable semi-helpful console text output");
     args.addFlag("debug-color", ArgType.ARG_OPTIONAL, ValueType.VALUE_OPTIONAL,
@@ -240,7 +242,11 @@ public class Main {
       attachKeyboardAccelerators(af.getRootPane());
       af.setLayout(new BorderLayout());
       af.add(ds, BorderLayout.CENTER);
-      af.setSize(500, 400);
+      if (args.hasFlag("big")) {
+        af.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+      } else {
+        af.setSize(500, 400);
+      }
       af.center();
       af.setVisible(true);
     }
@@ -530,7 +536,7 @@ public class Main {
     ds.paintContent(g, false);
     return image;
   }
-  
+
   public BufferedImage getRawInkImage() {
     BufferedImage image = new BufferedImage(ds.getWidth(), ds.getHeight(),
         BufferedImage.TYPE_INT_ARGB);

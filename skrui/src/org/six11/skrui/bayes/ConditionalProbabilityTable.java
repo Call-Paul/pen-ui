@@ -141,12 +141,15 @@ public class ConditionalProbabilityTable {
   }
 
   public String toString() {
-    return getFormattedTable();
+    return getFormattedTable(null);
   }
 
-  public String getFormattedTable() {
+  public String getFormattedTable(String pad) {
+    if (pad == null) {
+      pad = "";
+    }
     StringBuilder buf = new StringBuilder();
-    buf.append(title + ":\n");
+    buf.append(pad + title + ":\n");
     int prod = 1;
     int extraDims = dimensions.length - 1;
     int mainDim = dimensions[extraDims];
@@ -187,7 +190,7 @@ public class ConditionalProbabilityTable {
     for (int i = 0; i < entries.length; i++) {
       for (int j = 0; j < entries[i].length; j++) {
         String l = entries[i][j];
-        buf.append(" " + getPadded(l, widths[j]));
+        buf.append(pad + " " + getPadded(l, widths[j]));
       }
       buf.append("\n");
     }
