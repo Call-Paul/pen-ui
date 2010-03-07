@@ -1,7 +1,9 @@
 package org.six11.skrui.bayes;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.util.Debug;
 
@@ -56,8 +58,6 @@ public class ConditionalProbabilityTable {
     System.arraycopy(data, slot, ret, 0, ret.length);
     return ret;
   }
-
-
 
   /**
    * Adds another variable (dimension) to the table, where each possible value has a name. This
@@ -128,11 +128,30 @@ public class ConditionalProbabilityTable {
     return ret;
   }
 
-  public SlotKey[][] getParentIndexCombinations() {
+  public SlotKey[][] getParentIndexCombinations(SlotKey... include) {
     int numRows = getNumRows();
-    SlotKey[][] ret = new SlotKey[numRows][size.length - 1];
+    Set<SlotKey> demand = new HashSet<SlotKey>();
+    List<SlotKey[]> retList = new ArrayList<SlotKey[]>();
+    if (include != null) {
+      for (int i = 0; i < include.length; i++) {
+        demand.add(include[i]);
+      }
+    }
     for (int i = 0; i < numRows; i++) {
-      ret[i] = getParentIndices(i);
+      List<SlotKey> combo = getParentIndices(i);
+      if (demand.size() > 0) {
+        if (combo.containsAll(demand)) {
+          retList.add(combo.toArray(new SlotKey[size.length - 1]));
+        }
+      } else {
+        retList.add(combo.toArray(new SlotKey[size.length - 1]));
+      }
+    }
+    SlotKey[][] ret = new SlotKey[retList.size()][size.length - 1];
+    for (int i = 0; i < retList.size(); i++) {
+      for (int j = 0; j < size.length - 1; j++) {
+        ret[i][j] = retList.get(i)[j];
+      }
     }
     return ret;
   }
@@ -145,13 +164,13 @@ public class ConditionalProbabilityTable {
     return prod;
   }
 
-  public SlotKey[] getParentIndices(int row) {
-    SlotKey[] ret = new SlotKey[size.length - 1];
+  public List<SlotKey> getParentIndices(int row) {
+    List<SlotKey> ret = new ArrayList<SlotKey>();
     int[] cf = getChangeFactors();
     for (int i = 0; i < cf.length; i++) {
       int d = row / cf[i];
       int m = d % size[i];
-      ret[i] = new SlotKey(variables.get(i), m);
+      ret.add(new SlotKey(variables.get(i), m));
     }
     // StringBuilder buf = new StringBuilder();
     // int[] bounds = getNameBoundaries();
@@ -171,11 +190,11 @@ public class ConditionalProbabilityTable {
     }
     return slot;
   }
-  
+
   private int getSlot(SlotKey[] keys) {
     int slot = 0;
     if (keys != null) {
-      for (int i=0; i < keys.length; i++) {
+      for (int i = 0; i < keys.length; i++) {
         slot = slot + (keys[i].index * size[variables.indexOf(keys[i].node)]);
       }
     }

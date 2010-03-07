@@ -29,6 +29,9 @@ public class BayesianNetwork {
     BayesianNetwork net = BayesianNetwork.makeNeapolitanExample310();
     // net.mondoDebug(true);
     net.initializeNetwork();
+    net.updateTree(net.nodes.get(2).slotKey(0));
+    net.updateTree(net.nodes.get(1).slotKey(0));
+    net.mondoDebug(false);
   }
 
   private void mondoDebug(boolean initializeNodes) {
@@ -69,25 +72,25 @@ public class BayesianNetwork {
 
   List<Node> nodes;
   List<Node> activatedNodes;
-//  Map<Node, Integer> activatedStates;
-  List<SlotKey> activatedStates;
+  // Map<Node, Integer> activatedStates;
+  Set<SlotKey> activatedStates;
 
   public BayesianNetwork() {
     nodes = new ArrayList<Node>();
     activatedNodes = new ArrayList<Node>();
-    activatedStates = new ArrayList<SlotKey>();
+    activatedStates = new HashSet<SlotKey>();
   }
 
   public void initializeNetwork() {
     System.out.println("Clearing activated nodes/states.");
     activatedNodes.clear();
     activatedStates.clear();
-    
+
     System.out.println("Initializing propagation slots.");
     for (Node n : nodes) {
       n.initializePropagationSlots();
     }
-    
+
     System.out.println("Initializing child val/msg and parent messages.");
     for (Node n : nodes) {
       for (int i = 0; i < n.getStateCount(); i++) {
@@ -104,21 +107,68 @@ public class BayesianNetwork {
         }
       }
     }
-    
+
     Set<Node> roots = getRoots(nodes);
     System.out.println("Setting parent values on " + roots.size() + " roots.");
     for (Node r : roots) {
+      System.out.println("Root: " + r);
       for (int i = 0; i < r.getStateCount(); i++) {
         r.setParentValue(i, r.getProbabilityVector()[i]); // Compute R's pi values.
       }
+      System.out.println("Sending parent message to " + r.children.size() + " children of " + r
+          + "...");
       for (Node x : r.children) {
         sendParentMessage(r, x);
       }
     }
-    mondoDebug(false);
+  }
+
+  public void updateTree(SlotKey obsSlotKey) {
+    String obsMessage = "Obverving node " + obsSlotKey.node + " = " + obsSlotKey;
+    System.out.println();
+    System.out.println(" +" + dashes(obsMessage.length() + 2) + "+");
+    System.out.println(" | " + obsMessage + " |");
+    System.out.println(" +" + dashes(obsMessage.length() + 2) + "+");
+    System.out.println();
+    activatedNodes.add(obsSlotKey.node);
+    activatedStates.add(obsSlotKey);
+
+    // Zero out other child/parent/belief values for observed node, EXCEPT observed slot becomes 1.
+    for (int i = 0; i < obsSlotKey.node.getStateCount(); i++) {
+      double newValue = (i == obsSlotKey.index) ? 1 : 0;
+      bug("Setting explict values for slot: " + new SlotKey(obsSlotKey.node, i) + " (to "
+          + newValue + ")");
+      obsSlotKey.node.setChildValue(i, newValue);
+      obsSlotKey.node.setParentValue(i, newValue);
+      obsSlotKey.node.setInferredBelief(i, activatedStates, newValue);
+    }
+    bug("Done setting explicit values.");
+
+    // second for loop
+    for (Node z : obsSlotKey.node.parents) {
+      if (!activatedNodes.contains(z)) {
+        sendChildMessage(obsSlotKey.node, z);
+      }
+    }
+
+    // last for loop
+    for (Node x : obsSlotKey.node.children) {
+      sendParentMessage(obsSlotKey.node, x);
+    }
+
+    // finished with updateTree
+  }
+
+  private String dashes(int n) {
+    StringBuilder buf = new StringBuilder();
+    for (int i = 0; i < n; i++) {
+      buf.append("-");
+    }
+    return buf.toString();
   }
 
   private void sendParentMessage(Node z, Node x) {
+    bug("Send Parent Message: " + z + " --> " + x);
     for (int i = 0; i < z.getStateCount(); i++) {
       double prod = 1;
       for (Node y : z.children) {
@@ -142,19 +192,19 @@ public class BayesianNetwork {
         // ```````` P(a1 | b2,f2) * Pi_A(b2) * Pi_A(f2) ; // line 3
         // 
         // ... and similarly for a2.
-        System.out.print("pi(" + x.cpt.getStateName(i) + ") = ");
+        // System.out.print("pi(" + x.cpt.getStateName(i) + ") = ");
         double[] lines = new double[combos.length];
         for (int j = 0; j < combos.length; j++) {
           SlotKey[] parentValueSlots = combos[j];
           double[] myCptData = x.cpt.getData(parentValueSlots);
           double term1 = myCptData[i];
-          System.out.print(" + (" + Debug.num(term1) + ") ");
+          // System.out.print(" + (" + Debug.num(term1) + ") ");
           double[] fromParents = new double[x.parents.size()];
           for (int k = 0; k < x.parents.size(); k++) {
             Node par = x.parents.get(k);
             int parIdx = parentValueSlots[k].index;
             fromParents[k] = par.getParentMessage(x)[parIdx];
-            System.out.print("(" + fromParents[k] + ") ");
+            // System.out.print("(" + fromParents[k] + ") ");
           }
           double prod = term1;
           for (int k = 0; k < fromParents.length; k++) {
@@ -166,14 +216,78 @@ public class BayesianNetwork {
         for (int j = 0; j < lines.length; j++) {
           sum = sum + lines[j];
         }
-        System.out.println(" = " + Debug.num(sum));
+        // System.out.println(" = " + Debug.num(sum));
         x.setParentValue(i, sum);
         x.setInferredBelief(i, activatedStates, x.getChildValue(i) * x.getParentValue(i));
       }
-      double[] norm = normalize(x.getInferredBelief(activatedStates));
-      x.setInferredBelief(activatedStates, norm);
+      // System.out.println("Normalizing informed beliefs of node " + x + " for states: "
+      // + Debug.num(activatedStates, ", "));
+      // double[] norm = normalize(x.getInferredBelief(activatedStates));
+      // x.setInferredBelief(activatedStates, norm);
+      x.normalizeInferredBelief(activatedStates);
     }
 
+    // If any of X's children are instantiated, pass on all child messages.
+    boolean ok = true;
+    bug("Checking OKness on node " + x + "'s lambda message values:");
+    for (int i = 0; i < x.getStateCount(); i++) {
+      ok = ok && x.getChildValue(i) == 1;
+      bug("  " + (new SlotKey(x, i)) + ": " + ok);
+    }
+    if (!ok) {
+      for (Node w : x.parents) {
+        if (w != z && !activatedNodes.contains(w)) {
+          sendChildMessage(x, w);
+        }
+      }
+    }
+
+  }
+
+  private void sendChildMessage(Node y, Node x) { // y is A, x is B
+    bug("Send Child Message: " + y + " --> " + x);
+    for (int ix = 0; ix < x.getStateCount(); ix++) {
+      SlotKey[][] combos = y.cpt.getParentIndexCombinations(x.slotKey(ix));
+      double collection = 0;
+      for (int iy = 0; iy < y.getStateCount(); iy++) {
+        double sum = 0;
+        double prob = 0;
+        double par;
+        for (SlotKey[] combo : combos) {
+          prob = y.getProbabilityVector(combo)[iy];
+          par = 1;
+          for (SlotKey sk : combo) {
+            if (!sk.node.equals(x)) {
+              par = par * sk.node.getParentMessage(y)[sk.index];
+            }
+          }
+          System.out.println(Debug.num(prob) + " * " + Debug.num(par));
+          sum = sum + (prob * par);
+        }
+        collection = collection + (sum * y.getChildValue(iy));
+      }
+      x.setChildMessage(y, ix, collection);
+
+      double childProduct = 1;
+      for (Node child : x.children) {
+        childProduct = childProduct * x.getChildMessage(child)[ix];
+      }
+      x.setChildValue(ix, childProduct);
+      double newBelief = x.getChildValue(ix) * x.getParentValue(ix);
+      bug("newBelief = " + Debug.num(x.getChildValue(ix)) + " * " + Debug.num(x.getParentValue(ix)));
+      x.setInferredBelief(ix, activatedStates, newBelief);
+    }
+    x.normalizeInferredBelief(activatedStates);
+    for (Node z : x.parents) {
+      if (!activatedNodes.contains(z)) {
+        sendChildMessage(x, z);
+      }
+    }
+    for (Node w : x.children) {
+      if (w != y) {
+        sendParentMessage(x, w);
+      }
+    }
   }
 
   private Set<Node> getRoots(List<Node> all) {

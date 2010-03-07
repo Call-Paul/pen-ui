@@ -6,8 +6,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.six11.util.Debug;
+import org.six11.util.adt.SetMap;
 
 /**
  * 
@@ -16,6 +18,8 @@ import org.six11.util.Debug;
  */
 public class Node {
 
+  private final static String LAMBDA = "´";
+  private final static String PI = "\u03C0";
   String name;
   List<Node> parents;
   List<Node> children;
@@ -25,7 +29,8 @@ public class Node {
   Map<Node, double[]> childMessages;
   Map<Node, double[]> parentMessages;
   String[] stateNames;
-  Map<Collection<SlotKey>, double[]> beliefs;
+  // Map<Set<SlotKey>, double[]> beliefs;
+  SetMap<SlotKey, double[]> beliefs2;
 
   public Node(String name, String... states) {
     this.name = name;
@@ -34,7 +39,8 @@ public class Node {
     stateNames = states;
     cpt = new ConditionalProbabilityTable(name, this);
     cpt.setRandomData();
-    beliefs = new HashMap<Collection<SlotKey>, double[]>();
+    // beliefs = new HashMap<Set<SlotKey>, double[]>();
+    beliefs2 = new SetMap<SlotKey, double[]>();
   }
 
   public void initializePropagationSlots() {
@@ -59,6 +65,7 @@ public class Node {
   }
 
   public void setChildValue(int which, double value) {
+    System.out.println(LAMBDA + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
     childValues[which] = value;
   }
 
@@ -67,6 +74,7 @@ public class Node {
   }
 
   public void setParentValue(int which, double value) {
+    System.out.println(PI + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
     parentValues[which] = value;
   }
 
@@ -89,9 +97,7 @@ public class Node {
   }
 
   public String toString() {
-    StringBuilder buf = new StringBuilder();
-    buf.append(name + ":\n");
-    return buf.toString();
+    return name;
   }
 
   private int getChildIndex(Node n) {
@@ -105,6 +111,8 @@ public class Node {
    * n is a child, stateIdx is the index of one of MY states (not the child states).
    */
   public void setChildMessage(Node n, int stateIdx, double value) {
+    System.out.println(LAMBDA + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
+        + Debug.num(value));
     childMessages.get(n)[stateIdx] = value;
   }
 
@@ -117,7 +125,7 @@ public class Node {
    */
   public void setParentMessage(Node n, int stateIdx, double value) {
     parentMessages.get(n)[stateIdx] = value;
-    System.out.println("Pi_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
+    System.out.println(PI + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
         + Debug.num(value));
   }
 
@@ -165,6 +173,16 @@ public class Node {
       buf.append("    " + getStateNames()[i] + ": " + Debug.num(childValues[i]) + "\n");
     }
 
+    buf.append("  informed beliefs:\n");
+    for (Set<SlotKey> observed : beliefs2.keySet()) {
+      if (observed.size() == 0) {
+        buf.append("    ¯: " + Debug.num(beliefs2.get(observed)) + "\n");
+      } else {
+        buf.append("    " + Debug.num(observed, " ") + ": " + Debug.num(beliefs2.get(observed))
+            + "\n");
+      }
+    }
+
     buf.append("  conditional probability table:\n");
     buf.append(cpt.getFormattedTable("    "));
     buf.append("------------------------------------------------------------------------\n\n");
@@ -189,23 +207,59 @@ public class Node {
     cpt.setRow(ds, slotKeys);
   }
 
-  public void setInferredBelief(List<SlotKey> slots, double[] value) {
-    if (!beliefs.containsKey(slots)) {
-      beliefs.put(slots, new double[getStateCount()]);
+  public void setInferredBelief(Set<SlotKey> slots, double[] values) {
+    if (!beliefs2.containsKey(slots)) {
+      bug("(1) Node " + name + " does not currently have inferred beliefs for keys: "
+          + Debug.num(slots, ", ") + ", hashCode=" + slots.hashCode() + ". It does have:");
+      for (Set<SlotKey> k : beliefs2.keySet()) {
+        bug("  " + Debug.num(k, ", ") + ", hashCode=" + k.hashCode() + ", equal(slots): "
+            + k.equals(slots));
+      }
+      beliefs2.put(slots, new double[getStateCount()]);
     }
-    beliefs.put(slots, value);
+    System.out.println("Setting inferred belief vector for " + name + ": ");
+    for (int i = 0; i < getStateCount(); i++) {
+      System.out.println("  P(" + slotKey(i) + " | " + Debug.num(slots, ", ") + ") = "
+          + Debug.num(values[i]));
+    }
+    beliefs2.put(slots, values);
   }
 
-
-  public void setInferredBelief(int slot, List<SlotKey> slots, double value) {
+  public void setInferredBelief(int slot, Set<SlotKey> slots, double value) {
     getInferredBelief(slots)[slot] = value;
+    String msg = "";
+    if (value > 1) {
+      msg = ". It is OK that this is greater than one. The algo will normalize it eventually.";
+    }
+    System.out.println("P(" + cpt.getStateName(slot) + " | " + Debug.num(slots, ", ") + ") = "
+        + value + msg);
   }
 
-  public double[] getInferredBelief(Collection<SlotKey> slots) {
-    if (!beliefs.containsKey(slots)) {
-      beliefs.put(slots, new double[getStateCount()]);
+  public double[] getInferredBelief(Set<SlotKey> slots) {
+    if (!beliefs2.containsKey(slots)) {
+      bug("(2) Node " + name + " does not currently have inferred beliefs for keys: "
+          + Debug.num(slots, ", ") + ", hashCode=" + slots.hashCode() + ". It does have:");
+      if (beliefs2.keySet().size() > 0) {
+        for (Set<SlotKey> k : beliefs2.keySet()) {
+          bug("  " + Debug.num(k, ", ") + ", hashCode=" + k.hashCode() + ", equal(slots): "
+              + k.equals(slots));
+        }
+      } else {
+        bug("(no evidence)");
+      }
+      beliefs2.put(slots, new double[getStateCount()]);
     }
-    return beliefs.get(slots);
+    if (!beliefs2.containsKey(slots)) {
+      beliefs2.put(slots, new double[getStateCount()]);
+    }
+    return beliefs2.get(slots);
+  }
+
+  public void normalizeInferredBelief(Set<SlotKey> activatedStates) {
+    System.out.println("Normalizing P(" + name + " | " + Debug.num(activatedStates, ", ") + ")...");
+    double[] currentValues = getInferredBelief(activatedStates);
+    double[] normValues = BayesianNetwork.normalize(currentValues);
+    setInferredBelief(activatedStates, normValues);
   }
 
 }
