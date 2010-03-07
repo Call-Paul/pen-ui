@@ -5,22 +5,33 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.util.Debug;
-
 /**
+ * This is something of an unholy hack. It is a probability table that can accommodate any number of
+ * related random variables. One of those RVs is the 'main' variable, which is the one given to the
+ * constructor.
  * 
+ * This is backed by a flat array of doubles. It figures out which cell to use based on the number
+ * of variables and how many states they have.
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class ConditionalProbabilityTable {
 
-  double[] data; // flat array of probabilities.
   String title;
-  int[] dimensions;
-  int[] size;
-  String[] names;
-  List<Node> variables;
+  double[] data; // flat array of probabilities.
+  int[] dimensions; // dimensions and size arrays tell me how to find data. dimensions stores the
+  int[] size; // number of states in each RV. size[i] stores the product of dimensions[i+1..n].
 
+  String[] names; // used for debugging, and is highly useful.
+  List<Node> variables; // references the original random variables.
+
+  /**
+   * Make a new probability table with the given name. Initially it is only for the single given
+   * variable (this tables 'main' variable), but you can add as many as you like.
+   * 
+   * @param title
+   * @param variable
+   */
   public ConditionalProbabilityTable(String title, Node variable) {
     this.title = title;
     dimensions = new int[0];
@@ -42,8 +53,8 @@ public class ConditionalProbabilityTable {
    * Returns the number of values this probability table is primarily responsible for. It is NOT the
    * number of cells in the table. It is the number of elements in each row of the table. So if this
    * is a table for a binary random variable, this returns 2; for trinaries, it returns 3. Etc.
-   * random variable, it returns an array with three. Etc. This is the same value as the LAST
-   * element of getDimensions().
+   * random variable, it returns an array with three. This is the same value as the LAST element of
+   * getDimensions().
    */
   public int getNumValues() {
     return dimensions[dimensions.length - 1];
@@ -91,10 +102,6 @@ public class ConditionalProbabilityTable {
     System.arraycopy(oldNames, 0, names, varNames.length, oldNames.length);
   }
 
-  private void bug(String what) {
-    Debug.out("CPT", what);
-  }
-
   private int[] getChangeFactors() {
     int extraDims = dimensions.length - 1;
     int[] ret = new int[extraDims];
@@ -106,7 +113,7 @@ public class ConditionalProbabilityTable {
     return ret;
   }
 
-  private String getName(int dim, int cell) {
+  String getName(int dim, int cell) {
     int extraDims = dimensions.length - 1;
     int row = cell / dimensions[extraDims];
     int[] changeFactor = getChangeFactors();
@@ -117,7 +124,7 @@ public class ConditionalProbabilityTable {
     return names[idx];
   }
 
-  public int[] getNameBoundaries() {
+  int[] getNameBoundaries() {
     int extraDims = dimensions.length - 1;
     int[] ret = new int[extraDims + 1];
     int sum = 0;
@@ -128,7 +135,7 @@ public class ConditionalProbabilityTable {
     return ret;
   }
 
-  public SlotKey[][] getParentIndexCombinations(SlotKey... include) {
+  SlotKey[][] getParentIndexCombinations(SlotKey... include) {
     int numRows = getNumRows();
     Set<SlotKey> demand = new HashSet<SlotKey>();
     List<SlotKey[]> retList = new ArrayList<SlotKey[]>();
@@ -164,7 +171,7 @@ public class ConditionalProbabilityTable {
     return prod;
   }
 
-  public List<SlotKey> getParentIndices(int row) {
+  List<SlotKey> getParentIndices(int row) {
     List<SlotKey> ret = new ArrayList<SlotKey>();
     int[] cf = getChangeFactors();
     for (int i = 0; i < cf.length; i++) {
@@ -172,12 +179,6 @@ public class ConditionalProbabilityTable {
       int m = d % size[i];
       ret.add(new SlotKey(variables.get(i), m));
     }
-    // StringBuilder buf = new StringBuilder();
-    // int[] bounds = getNameBoundaries();
-    // for (int i=0; i < ret.length; i++) {
-    // buf.append(ret[i] + "=" + (names[bounds[i] + ret[i]]) + "  ");
-    // }
-    // bug("getParentIndices for row " + row + ": " + buf.toString());
     return ret;
   }
 
@@ -201,6 +202,9 @@ public class ConditionalProbabilityTable {
     return slot;
   }
 
+  /**
+   * Sets the probability values for a given row. This does NOT ensure the data are normalized.
+   */
   public void setRow(double[] values, SlotKey... keys) {
     int slot = getSlot(keys);
     for (int i = 0; i < values.length; i++) {
@@ -208,10 +212,16 @@ public class ConditionalProbabilityTable {
     }
   }
 
+  /**
+   * Sets a particular cell's value, using the cryptic int-indexing approach.
+   */
   public void setCell(double value, int... where) {
     data[getSlot(where)] = value;
   }
 
+  /**
+   * Sets the names for the RV states. Not strictly needed but for debugging this is basically rad.
+   */
   public void setNames(String... namen) {
     if (namen.length <= names.length) {
       for (int i = 0; i < namen.length; i++) {
@@ -220,6 +230,9 @@ public class ConditionalProbabilityTable {
     }
   }
 
+  /**
+   * Gives the names of the RV states.
+   */
   public String[] getNames() {
     return names;
   }
@@ -235,80 +248,27 @@ public class ConditionalProbabilityTable {
     return names[start + idx];
   }
 
+  /**
+   * Makes a nicely formatted text table. A sure hit at parties.
+   */
   public String toString() {
-    return getFormattedTable(null);
+    return Support.getFormattedTable(this, null);
   }
 
-  public String getFormattedTable(String pad) {
-    if (pad == null) {
-      pad = "";
-    }
-    StringBuilder buf = new StringBuilder();
-    buf.append(pad + title + ":\n");
-    int prod = 1;
-    int extraDims = dimensions.length - 1;
-    int mainDim = dimensions[extraDims];
-    for (int i = 0; i < dimensions.length - 1; i++) {
-      prod = prod * dimensions[i];
-    }
-    // first number is height, second is width
-    String[][] entries = new String[prod + 1][dimensions[dimensions.length - 1]
-        + (dimensions.length - 1)];
-    for (int i = 0; i < extraDims; i++) {
-      entries[0][i] = "--";
-    }
-    for (int i = 0; i < mainDim; i++) {
-      entries[0][extraDims + i] = names[(names.length - mainDim) + i];
-    }
-    int row = 1;
-    for (int cursor = 0; cursor < data.length; cursor = cursor + mainDim) {
-      for (int i = 0; i < extraDims; i++) {
-        entries[row][i] = getName(i, cursor);
-      }
-      for (int i = 0; i < mainDim; i++) {
-        int col = extraDims + ((i + cursor) % mainDim);
-        entries[row][col] = Debug.num(data[i + cursor]);
-      }
-      row = row + 1;
-    }
-    int[] widths = new int[entries[0].length];
-    for (int i = 0; i < widths.length; i++) {
-      widths[i] = 6;
-    }
-    for (int i = 0; i < entries.length; i++) {
-      for (int j = 0; j < entries[i].length; j++) {
-        widths[j] = Math.max(widths[j], entries[i][j].length());
-      }
-    }
-
-    // Now put the table into the buffer in nicely aligned columns/rows
-    for (int i = 0; i < entries.length; i++) {
-      for (int j = 0; j < entries[i].length; j++) {
-        String l = entries[i][j];
-        buf.append(pad + " " + getPadded(l, widths[j]));
-      }
-      buf.append("\n");
-    }
-    buf.append("\n");
-    return buf.toString();
-  }
-
-  private String getPadded(String s, int totalWidth) {
-    StringBuilder buf = new StringBuilder();
-    for (int i = 0; i < totalWidth - s.length(); i++) {
-      buf.append(" ");
-    }
-    buf.append(s);
-    return buf.toString();
-  }
-
+  /**
+   * Don't want to bother setting data in your table? Leave it to chance. This generates and sets a
+   * normalized vector for each row in the table.
+   */
   public void setRandomData() {
     for (int i = 0; i < data.length; i = i + getNumValues()) {
-      double[] newData = BayesianNetwork.makeRandomDistribution(getNumValues());
+      double[] newData = Support.makeRandomDistribution(getNumValues());
       System.arraycopy(newData, 0, data, i, newData.length);
     }
   }
 
+  /**
+   * Returns the variable that was used to construct this table.
+   */
   public Node getMainVariable() {
     return variables.get(variables.size() - 1);
   }

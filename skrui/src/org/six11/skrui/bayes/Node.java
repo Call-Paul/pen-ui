@@ -1,9 +1,7 @@
 package org.six11.skrui.bayes;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +41,7 @@ public class Node {
     beliefs2 = new SetMap<SlotKey, double[]>();
   }
 
-  public void initializePropagationSlots() {
+  void initializePropagationSlots() {
     childValues = new double[getStateCount()];
     parentValues = new double[getStateCount()];
     childMessages = new HashMap<Node, double[]>();
@@ -64,189 +62,105 @@ public class Node {
     return cpt.getNumValues();
   }
 
-  public void setChildValue(int which, double value) {
-    System.out.println(LAMBDA + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
+  void setChildValue(int which, double value) {
+    Support.out(LAMBDA + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
     childValues[which] = value;
   }
 
-  public double getChildValue(int which) {
+  double getChildValue(int which) {
     return childValues[which];
   }
 
-  public void setParentValue(int which, double value) {
-    System.out.println(PI + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
+  void setParentValue(int which, double value) {
+    Support.out(PI + "(" + cpt.getStateName(which) + ") = " + Debug.num(value));
     parentValues[which] = value;
   }
 
-  public double getParentValue(int which) {
+  double getParentValue(int which) {
     return parentValues[which];
   }
 
-  private static void bug(String what) {
-    Debug.out("Node", what);
-  }
-
-  private static void warn(String what) {
-    Debug.out("Node", "**** " + what);
-  }
-
+  /**
+   * Establishes a parent/child relationship. This adds the child to the parent's kid list, and the
+   * parent the the child's parent list. It also adds the parent to the child's conditional
+   * probability table.
+   */
   public static void link(Node parent, Node child) {
     parent.children.add(0, child);
     child.parents.add(0, parent);
     child.cpt.addVariable(parent.cpt.getMainVariable());
   }
 
+  /**
+   * Just report this node's name.
+   */
   public String toString() {
     return name;
   }
 
-  private int getChildIndex(Node n) {
-    if (!children.contains(n)) {
-      warn("Warning: you are asking for the child index for node " + n + " but I don't have it.");
-    }
-    return children.indexOf(n);
-  }
-
-  /**
-   * n is a child, stateIdx is the index of one of MY states (not the child states).
-   */
-  public void setChildMessage(Node n, int stateIdx, double value) {
-    System.out.println(LAMBDA + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
+  void setChildMessage(Node n, int stateIdx, double value) {
+    Support.out(LAMBDA + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
         + Debug.num(value));
     childMessages.get(n)[stateIdx] = value;
   }
 
-  public double[] getChildMessage(Node n) {
+  double[] getChildMessage(Node n) {
     return childMessages.get(n);
   }
 
-  /**
-   * n is a child, stateIdx is the index of one of MY states (not the child states).
-   */
-  public void setParentMessage(Node n, int stateIdx, double value) {
+  void setParentMessage(Node n, int stateIdx, double value) {
     parentMessages.get(n)[stateIdx] = value;
-    System.out.println(PI + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = "
-        + Debug.num(value));
+    Support.out(PI + "_" + n.name + "(" + cpt.getStateName(stateIdx) + ") = " + Debug.num(value));
   }
 
-  public double[] getParentMessage(Node n) {
+  double[] getParentMessage(Node n) {
     return parentMessages.get(n);
   }
 
-  public void mondoDebug() {
-    StringBuilder buf = new StringBuilder();
-    buf.append("Mondo Debug for node \"" + name + "\"\n");
-    buf.append("  parents: (" + parents.size() + ")\n");
-
-    for (Node n : parents) {
-      buf.append("    " + n.name + "\n");
-    }
-
-    buf.append("  children: (" + children.size() + ")\n");
-    for (Node n : children) {
-      buf.append("    " + n.name + "\n");
-    }
-
-    buf.append("  childMessages:\n");
-    for (Node k : childMessages.keySet()) {
-
-      buf.append("    " + k.name + ": ");
-      double[] msgs = childMessages.get(k);
-      for (int i = 0; i < msgs.length; i++) {
-        buf.append(getStateNames()[i] + "=" + msgs[i] + " ");
-      }
-      buf.append("\n");
-    }
-
-    buf.append("  parentMessages:\n");
-    for (Node k : parentMessages.keySet()) {
-      buf.append("    " + k.name + ": ");
-      double[] msgs = parentMessages.get(k);
-      for (int i = 0; i < msgs.length; i++) {
-        buf.append(getStateNames()[i] + "=" + msgs[i] + " ");
-      }
-      buf.append("\n");
-    }
-
-    buf.append("  child message values:\n");
-    for (int i = 0; i < childValues.length; i++) {
-      buf.append("    " + getStateNames()[i] + ": " + Debug.num(childValues[i]) + "\n");
-    }
-
-    buf.append("  informed beliefs:\n");
-    for (Set<SlotKey> observed : beliefs2.keySet()) {
-      if (observed.size() == 0) {
-        buf.append("    ¯: " + Debug.num(beliefs2.get(observed)) + "\n");
-      } else {
-        buf.append("    " + Debug.num(observed, " ") + ": " + Debug.num(beliefs2.get(observed))
-            + "\n");
-      }
-    }
-
-    buf.append("  conditional probability table:\n");
-    buf.append(cpt.getFormattedTable("    "));
-    buf.append("------------------------------------------------------------------------\n\n");
-
-    System.out.println(buf.toString());
-  }
-
-  public double[] getProbabilityVector(SlotKey... slotKeys) {
+  double[] getProbabilityVector(SlotKey... slotKeys) {
     return cpt.getData(slotKeys);
   }
 
-  public SlotKey slotKey(int i) {
+  SlotKey slotKey(int i) {
     return new SlotKey(this, i);
   }
 
+  /**
+   * Sets the probability values for the given parent states. This does not ensure the input is
+   * normalized. (Use Support.normalize(double[]) to do that.)
+   */
   public void setProbabilityDistribution(double[] ds, SlotKey... slotKeys) {
-    // int[] where = new int[slotKeys.length];
-    // for (int i=0; i < slotKeys.length; i++) {
-    // int idx = cpt.variables.indexOf(slotKeys[i].node);
-    // where[idx] = slotKeys[i].index;
-    // }
     cpt.setRow(ds, slotKeys);
   }
 
-  public void setInferredBelief(Set<SlotKey> slots, double[] values) {
+  void setInferredBelief(Set<SlotKey> slots, double[] values) {
     if (!beliefs2.containsKey(slots)) {
-      bug("(1) Node " + name + " does not currently have inferred beliefs for keys: "
-          + Debug.num(slots, ", ") + ", hashCode=" + slots.hashCode() + ". It does have:");
-      for (Set<SlotKey> k : beliefs2.keySet()) {
-        bug("  " + Debug.num(k, ", ") + ", hashCode=" + k.hashCode() + ", equal(slots): "
-            + k.equals(slots));
-      }
       beliefs2.put(slots, new double[getStateCount()]);
     }
-    System.out.println("Setting inferred belief vector for " + name + ": ");
+    Support.out("Setting inferred belief vector for " + name + ": ");
     for (int i = 0; i < getStateCount(); i++) {
-      System.out.println("  P(" + slotKey(i) + " | " + Debug.num(slots, ", ") + ") = "
+      Support.out("  P(" + slotKey(i) + " | " + Debug.num(slots, ", ") + ") = "
           + Debug.num(values[i]));
     }
     beliefs2.put(slots, values);
   }
 
-  public void setInferredBelief(int slot, Set<SlotKey> slots, double value) {
+  void setInferredBelief(int slot, Set<SlotKey> slots, double value) {
     getInferredBelief(slots)[slot] = value;
     String msg = "";
     if (value > 1) {
       msg = ". It is OK that this is greater than one. The algo will normalize it eventually.";
     }
-    System.out.println("P(" + cpt.getStateName(slot) + " | " + Debug.num(slots, ", ") + ") = "
-        + value + msg);
+    Support.out("P(" + cpt.getStateName(slot) + " | " + Debug.num(slots, ", ") + ") = " + value
+        + msg);
   }
 
+  /**
+   * This tells you what the node believes (if anything) when it has seen some evidence. This will
+   * return an array of zeros if it has no clue.
+   */
   public double[] getInferredBelief(Set<SlotKey> slots) {
     if (!beliefs2.containsKey(slots)) {
-      bug("(2) Node " + name + " does not currently have inferred beliefs for keys: "
-          + Debug.num(slots, ", ") + ", hashCode=" + slots.hashCode() + ". It does have:");
-      if (beliefs2.keySet().size() > 0) {
-        for (Set<SlotKey> k : beliefs2.keySet()) {
-          bug("  " + Debug.num(k, ", ") + ", hashCode=" + k.hashCode() + ", equal(slots): "
-              + k.equals(slots));
-        }
-      } else {
-        bug("(no evidence)");
-      }
       beliefs2.put(slots, new double[getStateCount()]);
     }
     if (!beliefs2.containsKey(slots)) {
@@ -255,10 +169,10 @@ public class Node {
     return beliefs2.get(slots);
   }
 
-  public void normalizeInferredBelief(Set<SlotKey> activatedStates) {
-    System.out.println("Normalizing P(" + name + " | " + Debug.num(activatedStates, ", ") + ")...");
+  void normalizeInferredBelief(Set<SlotKey> activatedStates) {
+    Support.out("Normalizing P(" + name + " | " + Debug.num(activatedStates, ", ") + ")...");
     double[] currentValues = getInferredBelief(activatedStates);
-    double[] normValues = BayesianNetwork.normalize(currentValues);
+    double[] normValues = Support.normalize(currentValues);
     setInferredBelief(activatedStates, normValues);
   }
 
