@@ -79,12 +79,12 @@ public abstract class Support {
     }
 
     buf.append("  informed beliefs:\n");
-    for (Set<SlotKey> observed : node.beliefs2.keySet()) {
+    for (Set<SlotKey> observed : node.beliefs.keySet()) {
       if (observed.size() == 0) {
-        buf.append("    ¯: " + Debug.num(node.beliefs2.get(observed)) + "\n");
+        buf.append("    ¯: " + Debug.num(node.beliefs.get(observed)) + "\n");
       } else {
         buf.append("    " + Debug.num(observed, " ") + ": "
-            + Debug.num(node.beliefs2.get(observed)) + "\n");
+            + Debug.num(node.beliefs.get(observed)) + "\n");
       }
     }
 

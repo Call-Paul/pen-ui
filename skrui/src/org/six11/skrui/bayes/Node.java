@@ -27,8 +27,7 @@ public class Node {
   Map<Node, double[]> childMessages;
   Map<Node, double[]> parentMessages;
   String[] stateNames;
-  // Map<Set<SlotKey>, double[]> beliefs;
-  SetMap<SlotKey, double[]> beliefs2;
+  SetMap<SlotKey, double[]> beliefs;
 
   public Node(String name, String... states) {
     this.name = name;
@@ -37,8 +36,7 @@ public class Node {
     stateNames = states;
     cpt = new ConditionalProbabilityTable(name, this);
     cpt.setRandomData();
-    // beliefs = new HashMap<Set<SlotKey>, double[]>();
-    beliefs2 = new SetMap<SlotKey, double[]>();
+    beliefs = new SetMap<SlotKey, double[]>();
   }
 
   void initializePropagationSlots() {
@@ -134,15 +132,15 @@ public class Node {
   }
 
   void setInferredBelief(Set<SlotKey> slots, double[] values) {
-    if (!beliefs2.containsKey(slots)) {
-      beliefs2.put(slots, new double[getStateCount()]);
+    if (!beliefs.containsKey(slots)) {
+      beliefs.put(slots, new double[getStateCount()]);
     }
     Support.out("Setting inferred belief vector for " + name + ": ");
     for (int i = 0; i < getStateCount(); i++) {
       Support.out("  P(" + slotKey(i) + " | " + Debug.num(slots, ", ") + ") = "
           + Debug.num(values[i]));
     }
-    beliefs2.put(slots, values);
+    beliefs.put(slots, values);
   }
 
   void setInferredBelief(int slot, Set<SlotKey> slots, double value) {
@@ -160,13 +158,13 @@ public class Node {
    * return an array of zeros if it has no clue.
    */
   public double[] getInferredBelief(Set<SlotKey> slots) {
-    if (!beliefs2.containsKey(slots)) {
-      beliefs2.put(slots, new double[getStateCount()]);
+    if (!beliefs.containsKey(slots)) {
+      beliefs.put(slots, new double[getStateCount()]);
     }
-    if (!beliefs2.containsKey(slots)) {
-      beliefs2.put(slots, new double[getStateCount()]);
+    if (!beliefs.containsKey(slots)) {
+      beliefs.put(slots, new double[getStateCount()]);
     }
-    return beliefs2.get(slots);
+    return beliefs.get(slots);
   }
 
   void normalizeInferredBelief(Set<SlotKey> activatedStates) {
