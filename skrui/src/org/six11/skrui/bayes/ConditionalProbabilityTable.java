@@ -34,10 +34,14 @@ public class ConditionalProbabilityTable {
    */
   public ConditionalProbabilityTable(String title, Node variable) {
     this.title = title;
+    clear();
+    addVariable(variable);
+  }
+  
+  public void clear() {
     dimensions = new int[0];
     names = new String[0];
     variables = new ArrayList<Node>();
-    addVariable(variable);
   }
 
   /**
@@ -135,7 +139,7 @@ public class ConditionalProbabilityTable {
     return ret;
   }
 
-  SlotKey[][] getParentIndexCombinations(SlotKey... include) {
+  public SlotKey[][] getParentIndexCombinations(SlotKey... include) {
     int numRows = getNumRows();
     Set<SlotKey> demand = new HashSet<SlotKey>();
     List<SlotKey[]> retList = new ArrayList<SlotKey[]>();

@@ -34,4 +34,16 @@ public class SlotKey {
     }
     return ret;
   }
+  
+  public Node getNode() {
+    return node;
+  }
+  
+  public int getIndex() {
+    return index;
+  }
+  
+  public String getStateName() {
+    return node.getStateNames()[index];
+  }
 }

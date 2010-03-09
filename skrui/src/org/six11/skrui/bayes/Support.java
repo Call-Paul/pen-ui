@@ -14,6 +14,10 @@ public abstract class Support {
 
   static Random rand = new Random(System.currentTimeMillis());
 
+  public static boolean showOutput = true;
+  public static boolean showLocation = true;
+  public static boolean showImportant = true;
+
   public static void main(String[] args) {
     Debug.useColor = false;
     Debug.useTime = false;
@@ -27,7 +31,7 @@ public abstract class Support {
     mondoDebug(net, false);
   }
 
-  static void mondoDebug(BayesianNetwork net, boolean initializeNodes) {
+  public static void mondoDebug(BayesianNetwork net, boolean initializeNodes) {
     if (initializeNodes) {
       for (Node n : net.nodes) {
         n.initializePropagationSlots();
@@ -83,8 +87,8 @@ public abstract class Support {
       if (observed.size() == 0) {
         buf.append("    ¯: " + Debug.num(node.beliefs.get(observed)) + "\n");
       } else {
-        buf.append("    " + Debug.num(observed, " ") + ": "
-            + Debug.num(node.beliefs.get(observed)) + "\n");
+        buf.append("    " + Debug.num(observed, " ") + ": " + Debug.num(node.beliefs.get(observed))
+            + "\n");
       }
     }
 
@@ -121,12 +125,12 @@ public abstract class Support {
   }
 
   static void printObserveBox(SlotKey obsSlotKey) {
-    String obsMessage = "Obverving node " + obsSlotKey.node + " = " + obsSlotKey;
-    System.out.println();
-    System.out.println(" +" + dashes(obsMessage.length() + 2) + "+");
-    System.out.println(" | " + obsMessage + " |");
-    System.out.println(" +" + dashes(obsMessage.length() + 2) + "+");
-    System.out.println();
+    String obsMessage = "Observing node " + obsSlotKey.node + " = " + obsSlotKey;
+    Support.important("");
+    Support.important(" +" + dashes(obsMessage.length() + 2) + "+");
+    Support.important(" | " + obsMessage + " |");
+    Support.important(" +" + dashes(obsMessage.length() + 2) + "+");
+    Support.important("");
   }
 
   static String dashes(int n) {
@@ -138,7 +142,15 @@ public abstract class Support {
   }
 
   static void out(String what) {
-    System.out.println(what);
+    if (showOutput) {
+      System.out.println(what);
+    }
+  }
+
+  static void where(String where) {
+    if (showLocation) {
+      System.out.println(where);
+    }
   }
 
   static String getFormattedTable(ConditionalProbabilityTable cpt, String pad) {
@@ -202,6 +214,12 @@ public abstract class Support {
     }
     buf.append(s);
     return buf.toString();
+  }
+
+  public static void important(String what) {
+    if (showImportant) {
+      System.out.println(what);
+    }
   }
 
 }
