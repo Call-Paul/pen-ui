@@ -22,8 +22,8 @@ public abstract class Support {
     Debug.useColor = false;
     Debug.useTime = false;
     Debug.setDecimalOutputFormat("0.000");
-    // BayesianNetwork net = BayesianNetwork.makeSimpleNetwork();
-    BayesianNetwork net = BayesianNetwork.makeNeapolitanExample310();
+//     BayesianNetwork net = Support.makeSimpleNetwork();
+    BayesianNetwork net = Support.makeNeapolitanExample310();
     // net.mondoDebug(true);
     net.initializeNetwork();
     net.updateTree(net.nodes.get(2).slotKey(0));
@@ -220,6 +220,70 @@ public abstract class Support {
     if (showImportant) {
       System.out.println(what);
     }
+  }
+  
+
+  public static BayesianNetwork makeSimpleNetwork() {
+    Node clouds = new Node("Cloudy", "Sunny", "Cloudy");
+    Node rain = new Node("Rain", "Yes", "No");
+    Node.link(clouds, rain);
+    clouds.cpt.setRow(new double[] {
+        0.6, 0.4
+    }); // No qualifier necessary because clouds has no parent.
+    rain.cpt.setRow(new double[] {
+        0.01, 0.99
+    }, clouds.slotKey(0)); // Qualifier 0 refers to parent's slot-0 variable: Sunny
+    rain.cpt.setRow(new double[] {
+        0.3, 0.7
+    }, clouds.slotKey(1)); // Qualifier 1 refers to parent's slot-1 variable: Cloudy
+    BayesianNetwork net = new BayesianNetwork();
+    net.addNode(clouds);
+    net.addNode(rain);
+    for (Node n : net.getNodes()) {
+      System.out.print(n.cpt.toString());
+    }
+    return net;
+  }
+
+  /**
+   * Creates the bayesian network shown in figure 3.10 of Neapolitan's book
+   * "Learning Bayesian Networks". The named slots (b1, b2, f1, etc.) agree with his terms. All my
+   * numbers check out with his worked examples.
+   */
+  public static BayesianNetwork makeNeapolitanExample310() {
+    Node b = new Node("Burglary", "b1", "b2");
+    Node f = new Node("Freight Truck", "f1", "f2");
+    Node a = new Node("Alarm", "a1", "a2");
+    Node.link(f, a);
+    Node.link(b, a);
+    b.setProbabilityDistribution(new double[] {
+        0.005, 0.995 // P (B)
+    });
+    f.setProbabilityDistribution(new double[] {
+        0.03, 0.97 // P (F)
+    });
+
+    a.setProbabilityDistribution(new double[] {
+        0.992, 1 - 0.992
+    }, b.slotKey(0), f.slotKey(0)); // P(A | b1, f1)
+
+    a.setProbabilityDistribution(new double[] {
+        0.99, 1 - 0.99
+    }, b.slotKey(0), f.slotKey(1)); // P(A | b1, f2)
+
+    a.setProbabilityDistribution(new double[] {
+        0.2, 1 - 0.2
+    }, b.slotKey(1), f.slotKey(0)); // P(A | b2, f1)
+
+    a.setProbabilityDistribution(new double[] {
+        0.003, 1 - 0.003
+    }, b.slotKey(1), f.slotKey(1)); // P(A | b2, f2)
+
+    BayesianNetwork net = new BayesianNetwork();
+    net.addNode(b);
+    net.addNode(f);
+    net.addNode(a);
+    return net;
   }
 
 }
