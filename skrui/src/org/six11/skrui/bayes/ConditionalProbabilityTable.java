@@ -5,6 +5,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.util.Debug;
+
 /**
  * This is something of an unholy hack. It is a probability table that can accommodate any number of
  * related random variables. One of those RVs is the 'main' variable, which is the one given to the
@@ -37,7 +39,7 @@ public class ConditionalProbabilityTable {
     clear();
     addVariable(variable);
   }
-  
+
   public void clear() {
     dimensions = new int[0];
     names = new String[0];
@@ -200,10 +202,22 @@ public class ConditionalProbabilityTable {
     int slot = 0;
     if (keys != null) {
       for (int i = 0; i < keys.length; i++) {
-        slot = slot + (keys[i].index * size[variables.indexOf(keys[i].node)]);
+        try {
+          slot = slot + (keys[i].index * size[variables.indexOf(keys[i].node)]);
+        } catch (ArrayIndexOutOfBoundsException ex) {
+          bug("Index variables.indexOf[keys[i].node)] : " + variables.indexOf(keys[i].node));
+          bug("variables: " + Debug.num(variables, " "));
+          bug("keys[i]: " + keys[i]);
+          bug("keys[i].node: " + keys[i].node);
+          System.exit(0);
+        }
       }
     }
     return slot;
+  }
+
+  private static void bug(String what) {
+    Debug.out("CPT", what);
   }
 
   /**

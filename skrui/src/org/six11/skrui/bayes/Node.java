@@ -61,6 +61,14 @@ public class Node {
     beliefHistory = new SetMap<SlotKey, Stack<double[]>>();
   }
 
+  public String getName() {
+    return name;
+  }
+  
+  public void addParent(Node n) {
+    parents.add(0, n);
+  }
+
   /**
    * Called by the bayesian network when initializing. (Or, if you want debugging info, you can call
    * this directly, but it nukes all information from previous runs, and you have to re-initialize
