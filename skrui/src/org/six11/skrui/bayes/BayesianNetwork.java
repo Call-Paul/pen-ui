@@ -22,6 +22,7 @@ public class BayesianNetwork {
   List<Node> nodes;
   List<Node> activatedNodes;
   List<Node> stable;
+  int numMessagesPassed; // resets on updateTree
   Set<SlotKey> activatedStates;
 
   /**
@@ -109,19 +110,42 @@ public class BayesianNetwork {
     }
   }
 
+  class UpdateInfo {
+    int numMessagesPassed;
+    int numNodes;
+    int numObservations;
+    long timeElapsed;
+
+    UpdateInfo(int nMsg, int nNodes, int nObs, long ms) {
+      this.numMessagesPassed = nMsg;
+      this.numNodes = nNodes;
+      this.numObservations = nObs;
+      this.timeElapsed = ms;
+    }
+
+    public String toString() {
+      return "# messages: " + numMessagesPassed + ",  # nodes: " + numNodes + ",  # observations: "
+          + numObservations + ",  time elapsed: " + timeElapsed + " ms";
+    }
+  }
+
   /**
    * Observe a node. The given object merely references a node and one of its states that is
    * considered true. This slot's probability is set to one, and all other slots in the node are set
    * to zero. The provided slot is added to the list of active slots. After running this you can ask
    * other nodes about their inferred beliefs (given the current set of activated slots).
    */
-  public void updateTree(SlotKey obsSlotKey) {
+  public UpdateInfo updateTree(SlotKey obsSlotKey) {
+    long start = System.currentTimeMillis();
     Support.printObserveBox(obsSlotKey);
     stable.clear();
+    numMessagesPassed = 0;
+
     activatedNodes.add(obsSlotKey.node);
     activatedStates.add(obsSlotKey);
 
-    // Zero out other child/parent/belief values for observed node, EXCEPT observed slot becomes 1.
+    // Zero out other child/parent/belief values for observed node, EXCEPT observed slot becomes
+    // 1.
     for (int i = 0; i < obsSlotKey.node.getStateCount(); i++) {
       double newValue = (i == obsSlotKey.index) ? 1 : 0;
       obsSlotKey.node.setChildValue(i, newValue);
@@ -130,7 +154,8 @@ public class BayesianNetwork {
     }
 
     for (Node z : obsSlotKey.node.parents) {
-      // Do not propagate messages to observed nodes, or those considered stable, because we already
+      // Do not propagate messages to observed nodes, or those considered stable, because we
+      // already
       // have all the info we need from them. Doing this avoids infinite loops (probably).
       if ((activatedNodes.contains(z) || stable.contains(z)) == false) {
         sendChildMessage(obsSlotKey.node, z, 0);
@@ -140,10 +165,13 @@ public class BayesianNetwork {
     for (Node x : obsSlotKey.node.children) {
       sendParentMessage(obsSlotKey.node, x, 0);
     }
+    long end = System.currentTimeMillis();
+    return new UpdateInfo(numMessagesPassed, nodes.size(), activatedNodes.size(), (end - start));
   }
 
   private void sendParentMessage(Node z, Node x, int hopCount) {
     Support.where(">> BEGIN   Send Parent Message: " + z + " --> " + x + " hop count: " + hopCount);
+    numMessagesPassed++;
     String exitMessage = " (" + hopCount + " / " + HOP_LIMIT + ")";
     if (hopCount > HOP_LIMIT) {
       exitMessage = " (maximum hop count reached. bailing!)";
@@ -223,6 +251,7 @@ public class BayesianNetwork {
 
   private void sendChildMessage(Node y, Node x, int hopCount) {
     Support.where(">> BEGIN   Send Child Message:  " + y + " --> " + x + " hop count: " + hopCount);
+    numMessagesPassed++;
     String exitMessage = " (" + hopCount + " / " + HOP_LIMIT + ")";
     if (hopCount >= HOP_LIMIT) {
       exitMessage = " (maximum hop count reached. bailing!)";

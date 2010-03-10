@@ -39,7 +39,7 @@ public class Node {
 
   // This is the number of rounds that we must have before we will compute the change in beliefs
   // (see beliefHistory).
-  private int numRoundsStable = 3;
+  private int numRoundsStable = 2;
 
   /**
    * Make a node for a bayesian network

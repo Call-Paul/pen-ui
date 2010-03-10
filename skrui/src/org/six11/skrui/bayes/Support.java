@@ -22,7 +22,7 @@ public abstract class Support {
     Debug.useColor = false;
     Debug.useTime = false;
     Debug.setDecimalOutputFormat("0.000");
-//     BayesianNetwork net = Support.makeSimpleNetwork();
+    // BayesianNetwork net = Support.makeSimpleNetwork();
     BayesianNetwork net = Support.makeNeapolitanExample310();
     // net.mondoDebug(true);
     net.initializeNetwork();
@@ -125,7 +125,7 @@ public abstract class Support {
   }
 
   static void printObserveBox(SlotKey obsSlotKey) {
-    String obsMessage = "Observing node " + obsSlotKey.node + " = " + obsSlotKey;
+    String obsMessage = "Observing " + obsSlotKey.node + " = " + obsSlotKey;
     Support.important("");
     Support.important(" +" + dashes(obsMessage.length() + 2) + "+");
     Support.important(" | " + obsMessage + " |");
@@ -221,7 +221,6 @@ public abstract class Support {
       System.out.println(what);
     }
   }
-  
 
   public static BayesianNetwork makeSimpleNetwork() {
     Node clouds = new Node("Cloudy", "Sunny", "Cloudy");
@@ -257,11 +256,13 @@ public abstract class Support {
     Node.link(f, a);
     Node.link(b, a);
     b.setProbabilityDistribution(new double[] {
-        0.005, 0.995 // P (B)
-    });
+        0.005, 0.995
+    // P (B)
+        });
     f.setProbabilityDistribution(new double[] {
-        0.03, 0.97 // P (F)
-    });
+        0.03, 0.97
+    // P (F)
+        });
 
     a.setProbabilityDistribution(new double[] {
         0.992, 1 - 0.992

@@ -51,7 +51,8 @@ public class GeomTest {
         0.0923, 0.0462, 0.8615
     };
 
-    long start = System.currentTimeMillis();
+    long start;
+    
     BayesianNetwork net = new BayesianNetwork();
 
     // first make the hypothesis nodes and add them to the network.
@@ -80,12 +81,11 @@ public class GeomTest {
     rectangle.addSubshape(lineC);
     rectangle.addSubshape(lineD);
     rectangle.addConstraint(perpendicularLines);
-    
+
     triangle.addSubshape(lineA);
     triangle.addSubshape(lineB);
     triangle.addSubshape(lineC);
     triangle.addConstraint(threeLegCircuit);
-
 
     ObservationNode obsA = new ObservationNode(lineA);
     ObservationNode obsB = new ObservationNode(lineB);
@@ -105,7 +105,7 @@ public class GeomTest {
     net.addNode(obsD);
     net.addNode(obs3Circuit);
     net.addNode(obsPerp);
-    net.initializeNetwork();
+
 
     // Support.mondoDebug(net, false); // when doing mondoDebug, never reset the variables if you've
     // // already initialized the network.
@@ -116,20 +116,49 @@ public class GeomTest {
     // Observe the triangle as true.
     // net.updateTree(rectangle.slotKey(YES_INDEX));
 
-    // Observe lines as true.
-    net.updateTree(obsA.slotKey(OBS_YES));
-    net.updateTree(obsB.slotKey(OBS_YES));
-    net.updateTree(obsC.slotKey(OBS_YES));
-    net.updateTree(obsD.slotKey(OBS_MAYBE));
-    net.updateTree(obs3Circuit.slotKey(OBS_YES));
-    net.updateTree(obsPerp.slotKey(OBS_MAYBE));
-    System.out.println("~");
-    Support.mondoDebug(net, false);
-
+    // Observe things.
+    start = System.currentTimeMillis();
+    net.initializeNetwork();
+    System.out.println(net.updateTree(obsA.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsB.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsC.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsD.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obs3Circuit.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsPerp.slotKey(OBS_MAYBE)));
     bug("Triangle: " + Debug.num(triangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
     bug("Rectangle: " + Debug.num(rectangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
     long end = System.currentTimeMillis();
+    bug("Total Elapsed time: " + (end - start) + " ms");
+    System.out.println();
+    
+    start = System.currentTimeMillis();
+    net.initializeNetwork();
+    System.out.println(net.updateTree(obsA.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obsB.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obsC.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsD.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obs3Circuit.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsPerp.slotKey(OBS_NO)));
+    bug("Triangle: " + Debug.num(triangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
+    bug("Rectangle: " + Debug.num(rectangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
+    end = System.currentTimeMillis();
     bug("Elapsed time: " + (end - start) + " ms");
+    System.out.println();
+    
+    start = System.currentTimeMillis();
+    net.initializeNetwork();
+    System.out.println(net.updateTree(obsA.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obsB.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obsC.slotKey(OBS_YES)));
+    System.out.println(net.updateTree(obsD.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obs3Circuit.slotKey(OBS_MAYBE)));
+    System.out.println(net.updateTree(obsPerp.slotKey(OBS_YES)));
+    bug("Triangle: " + Debug.num(triangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
+    bug("Rectangle: " + Debug.num(rectangle.getInferredBelief(net.getActivatedStates())[YES_INDEX]));
+    end = System.currentTimeMillis();
+    bug("Elapsed time: " + (end - start) + " ms");
+    System.out.println();
+
   }
 
   private static double[] copy(double[] in) {
@@ -155,9 +184,6 @@ public class GeomTest {
     }
 
     void setSlotProbabilities(double[] parentTrueDist, double[] parentFalseDist) {
-      bug("mom's slot keys: ");
-      bug("parentTrueDist: " + Debug.num(parentTrueDist));
-      bug("parentFalseDist: " + Debug.num(parentFalseDist));
       cpt.setRow(parentTrueDist, mom.slotKey(0));
       cpt.setRow(parentFalseDist, mom.slotKey(1));
     }
