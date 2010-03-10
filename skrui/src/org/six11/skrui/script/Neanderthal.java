@@ -9,7 +9,6 @@ import java.util.Set;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
-import org.six11.skrui.script.Polyline.Segment;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -33,6 +32,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   private static final String K_SOME_THING = "some-thing";
   private static final String K_ANOTHER_THING = "another-thing";
   private static final String SCRAP = "Sequence already dealt with";
+  private static final String MAIN_SEQUENCE = "main sequence";
+  static final String PRIMITIVES = "primitives";
 
   enum Certainty {
     Yes, No, Maybe, Unknown
@@ -78,7 +79,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     bug("Neanderthal is alive!");
     output("id", "le", "les", "ae", "aes", "pathLength", "nPoints", "lesDivLength", "aesDivLength",
         "lesDivNPoints", "aesDivNPoints", "aesDivNPointsSquared", "lesDivNPointsSquared");
-//    output("id", "lineLenDivCurviLen", "isProbablyLine");
+    // output("id", "lineLenDivCurviLen", "isProbablyLine");
     main.getDrawingSurface().getSoup().addSequenceListener(this);
 
   }
@@ -140,6 +141,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         break;
       case END:
         if (seq.getAttribute(SCRAP) == null) {
+          // explicity map points back to their original sequence so we can find it later.
+          for (Pt pt : seq) {
+            pt.setSequence(MAIN_SEQUENCE, seq);
+          }
+          // Create a 'primitives' set where dots/ellipses/polyline elements will go.
+          seq.setAttribute(PRIMITIVES, new HashSet<Primitive>());
+          // All the 'detectXYZ' methods will insert a Primitive into seq's primitives set.
           dotCertainty = detectDot(seq);
           ellipseCertainty = detectEllipse(seq);
           polyline = detectPolyline(seq);
@@ -153,6 +161,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
           } else {
             main.getDrawingSurface().getSoup().removeBuffer("debug");
           }
+
+          // Now see what the haul was:
+          for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+            bug(prim.toString());
+          }
         }
         break;
     }
@@ -164,28 +177,23 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Set<Segment> segs = ret.getSegments();
     Set<Pt> junctions = new HashSet<Pt>();
     // Establish line and arc certainties for each segment.
-    double LINE_OK_THRESH = 20; // lesDivLength
-    double LINE_MAYBE_THRESH = 30; // lesDivLength
-    double ARC_OK_THRESH = 4000;
-    double ARC_MAYBE_THRESH = 20000;
     for (Segment seg : segs) {
       int segID = SEG_ID++;
-      double le = seg.getLineError();
-      double les = seg.getLineErrorSum();
-      double ae = seg.getArcError();
-      double aes = seg.getArcErrorSum();
-      double pathLength = seg.getLength();
-      double nPoints = seg.getNumPoints();
-      double lesDivLength = les / pathLength;
-      double aesDivLength = aes / pathLength;
-      double lesDivNPoints = les / nPoints;
-      double aesDivNPoints = aes / nPoints;
-      double lesDivNPointsSquared = les / (nPoints * nPoints);
-      double aesDivNPointsSquared = aes / (nPoints * nPoints);
+      // double le = seg.getLineError();
+      // double les = seg.getLineErrorSum();
+      // double ae = seg.getArcError();
+      // double aes = seg.getArcErrorSum();
+      // double pathLength = seg.getLength();
+      // double nPoints = seg.getNumPoints();
+      // double lesDivLength = les / pathLength;
+      // double aesDivLength = aes / pathLength;
+      // double lesDivNPoints = les / nPoints;
+      // double aesDivNPoints = aes / nPoints;
+      // double lesDivNPointsSquared = les / (nPoints * nPoints);
+      // double aesDivNPointsSquared = aes / (nPoints * nPoints);
       double lineLenDivCurviLen = seg.getPathLength() / seg.getLineLength();
-      output((double) segID, le, les, ae, aes, pathLength, nPoints, lesDivLength, aesDivLength,
-          lesDivNPoints, aesDivNPoints, aesDivNPointsSquared, lesDivNPointsSquared);
-//      output((double) segID, lineLenDivCurviLen, seg.isProbablyLine() ? 1 : 0);
+      // output((double) segID, le, les, ae, aes, pathLength, nPoints, lesDivLength, aesDivLength,
+      // lesDivNPoints, aesDivNPoints, aesDivNPointsSquared, lesDivNPointsSquared);
       int midIdx = (seg.start + seg.end) / 2;
       Pt m = new Pt(seq.get(midIdx).x - 30, seq.get(midIdx).y);
       DrawingBufferRoutines.text(db, m, "Segment " + segID, Color.RED.darker().darker());
@@ -197,22 +205,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         seg.arcCertainty = Certainty.Maybe;
       } else {
         seg.lineCertainty = Certainty.No;
-        seg.arcCertainty = Certainty. Yes;
+        seg.arcCertainty = Certainty.Yes;
       }
-//      if (lesDivLength < LINE_OK_THRESH) {
-//        seg.lineCertainty = Certainty.Yes;
-//      } else if (lesDivLength < LINE_MAYBE_THRESH) {
-//        seg.lineCertainty = Certainty.Maybe;
-//      } else {
-//        seg.lineCertainty = Certainty.No;
-//      }
-//      if (aesDivLength < ARC_OK_THRESH) {
-//        seg.arcCertainty = seg.isProbablyLine() ? Certainty.Maybe : Certainty.Yes;
-//      } else if (aesDivLength < ARC_MAYBE_THRESH) {
-//        seg.arcCertainty = Certainty.Maybe;
-//      } else {
-//        seg.arcCertainty = Certainty.No;
-//      }
     }
     for (Segment seg : segs) {
       Pt a = seg.getStartPoint();
@@ -228,6 +222,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       DrawingBufferRoutines.dot(db, pt, 6.0, 0.6, Color.BLACK, Color.GREEN);
     }
     main.getDrawingSurface().getSoup().addBuffer(db);
+    for (Segment seg : segs) {
+      if (seg.lineCertainty == Certainty.Yes || seg.lineCertainty == Certainty.Maybe) {
+        new LineSegment(seg.seq, seg.start, seg.end, seg.lineCertainty);
+      }
+      if (seg.arcCertainty == Certainty.Yes || seg.arcCertainty == Certainty.Maybe) {
+        new ArcSegment(seg.seq, seg.start, seg.end, seg.arcCertainty);
+      }
+    }
     return ret;
   }
 
@@ -321,6 +323,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         ret = Certainty.No;
       }
     }
+
+    if (ret == Certainty.Yes || ret == Certainty.Maybe) {
+      new Ellipse(seq, ret);
+    }
     return ret;
   }
 
@@ -330,19 +336,22 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Antipodal antipodes = new Antipodal(hull.getHull());
     double density = (double) seq.size() / antipodes.getArea();
     double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
-    Certainty ret = Certainty.Unknown;
+    Certainty cert = Certainty.Unknown;
 
     if (areaPerAspect < 58) {
-      ret = Certainty.Yes;
+      cert = Certainty.Yes;
     } else if (areaPerAspect < 120) {
-      ret = Certainty.Maybe;
+      cert = Certainty.Maybe;
     } else if (areaPerAspect / (0.3 + density) < 120) {
-      ret = Certainty.Maybe;
+      cert = Certainty.Maybe;
     } else {
-      ret = Certainty.No;
+      cert = Certainty.No;
+    }
+    if (cert == Certainty.Yes || cert == Certainty.Maybe) {
+      new Dot(seq, cert); // will insert the dot into seq's primitives list.
     }
 
-    return ret;
+    return cert;
   }
 
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
