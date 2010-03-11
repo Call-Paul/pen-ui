@@ -11,7 +11,7 @@ import org.six11.util.pen.Sequence;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public abstract class Primitive {
-  Sequence originalSequence;
+  Sequence seq;
   int startIdx;
   int endIdx;
   Certainty cert;
@@ -28,7 +28,7 @@ public abstract class Primitive {
    */
   @SuppressWarnings("unchecked")
   public Primitive(Sequence seq, int startIdx, int endIdx, Certainty cert) {
-    this.originalSequence = seq;
+    this.seq = seq;
     this.startIdx = startIdx;
     this.endIdx = endIdx;
     this.cert = cert;
@@ -39,9 +39,33 @@ public abstract class Primitive {
     }
   }
   
+  public Sequence getSeq() {
+    return seq;
+  }
+
+  public int getStartIdx() {
+    return startIdx;
+  }
+
+  public int getEndIdx() {
+    return endIdx;
+  }
+
+  public Certainty getCert() {
+    return cert;
+  }
+
   public String toString() {
     return typeStr() + "[" + startIdx + ", " + endIdx + "]" + (cert == Certainty.Maybe ? "?" : "");
   }
   
   public abstract String typeStr();
+
+  public Double getLength() {
+    double ret = 0;
+    if (endIdx - startIdx > 1) {
+      ret = seq.getPathLength(startIdx, endIdx);
+    }
+    return ret;
+  }
 }

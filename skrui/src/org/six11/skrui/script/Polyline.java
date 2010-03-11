@@ -4,13 +4,9 @@ import java.awt.Color;
 import java.util.*;
 
 import org.six11.skrui.DrawingBufferRoutines;
-import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
-import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -139,7 +135,7 @@ public class Polyline {
     // segments that are shorter than this threshold. This means it is easier for the threshold to
     // be surpassed with each iteration.
     double threshold = (seq.length() / (double) segs.size()) * (double) iterationNumber;
-    if (threshold > segs.last().getLength()) {
+    if (segs.size() == 0 || threshold > segs.last().getLength()) {
       ret = false;
     } else {
       for (Segment thisSeg : segs) {
@@ -185,6 +181,7 @@ public class Polyline {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("Polyline", what);
   }

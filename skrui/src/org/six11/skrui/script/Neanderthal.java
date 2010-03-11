@@ -9,6 +9,10 @@ import java.util.Set;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.data.AngleGraph;
+import org.six11.skrui.data.LengthGraph;
+import org.six11.skrui.data.PointGraph;
+import org.six11.skrui.data.TimeGraph;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -28,9 +32,6 @@ import org.six11.util.pen.SequenceListener;
  */
 public class Neanderthal extends SkruiScript implements SequenceListener {
 
-  private static int SEG_ID = 1;
-  private static final String K_SOME_THING = "some-thing";
-  private static final String K_ANOTHER_THING = "another-thing";
   private static final String SCRAP = "Sequence already dealt with";
   private static final String MAIN_SEQUENCE = "main sequence";
   static final String PRIMITIVES = "primitives";
@@ -56,10 +57,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-    defs.put(K_SOME_THING, new BoundedParameter.Double(K_SOME_THING, "Some Thing",
-        "This is some sort of double-precision floating point parameter.", 0, 1, 0.75));
-    defs.put(K_ANOTHER_THING, new BoundedParameter.Double(K_ANOTHER_THING, "Another Thing",
-        "This is another parameter.", 1, 5, 2.5));
+
     return defs;
   }
 
@@ -73,17 +71,24 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   //
   // //
   boolean animationInitialized = false;
+  TimeGraph tg;
+  AngleGraph ag;
+  PointGraph allPoints;
+  PointGraph endPoints;
+  LengthGraph lenG;
 
   @Override
   public void initialize() {
     bug("Neanderthal is alive!");
-    output("id", "le", "les", "ae", "aes", "pathLength", "nPoints", "lesDivLength", "aesDivLength",
-        "lesDivNPoints", "aesDivNPoints", "aesDivNPointsSquared", "lesDivNPointsSquared");
-    // output("id", "lineLenDivCurviLen", "isProbablyLine");
+    allPoints = new PointGraph();
+    endPoints = new PointGraph();
+    tg = new TimeGraph();
+    ag = new AngleGraph();
+    lenG = new LengthGraph();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
-
   }
 
+  @SuppressWarnings("unused")
   private void output(String... stuff) {
     boolean first = true;
     for (String v : stuff) {
@@ -92,6 +97,19 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       }
       first = false;
       System.out.print(v);
+    }
+    System.out.print("\n");
+  }
+
+  @SuppressWarnings("unused")
+  private void output(double... stuff) {
+    boolean first = true;
+    for (double v : stuff) {
+      if (!first) {
+        System.out.print(", ");
+      }
+      first = false;
+      System.out.print(Debug.num(v));
     }
     System.out.print("\n");
   }
@@ -112,6 +130,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return seq.get(seq.size() - 1).getDouble("path-length");
   }
 
+  @SuppressWarnings("unused")
   private int sumCertainty(Certainty... certainties) {
     int sum = 0;
     for (Certainty c : certainties) {
@@ -124,6 +143,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return sum;
   }
 
+  @SuppressWarnings("unchecked")
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     if (!animationInitialized && main.getScript("Animation") != null) {
       Animation ani = (Animation) main.getScript("Animation");
@@ -132,71 +152,147 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
-    Certainty dotCertainty = Certainty.Unknown;
-    Certainty ellipseCertainty = Certainty.Unknown;
-    Polyline polyline;
     switch (type) {
       case PROGRESS:
         updatePathLength(seq);
         break;
       case END:
         if (seq.getAttribute(SCRAP) == null) {
+          tg.add(seq);
           // explicity map points back to their original sequence so we can find it later.
           for (Pt pt : seq) {
             pt.setSequence(MAIN_SEQUENCE, seq);
           }
+          allPoints.addAll(seq);
           // Create a 'primitives' set where dots/ellipses/polyline elements will go.
           seq.setAttribute(PRIMITIVES, new HashSet<Primitive>());
           // All the 'detectXYZ' methods will insert a Primitive into seq's primitives set.
-          dotCertainty = detectDot(seq);
-          ellipseCertainty = detectEllipse(seq);
-          polyline = detectPolyline(seq);
-          DrawingBuffer db = new DrawingBuffer();
-          Pt cursor = seq.getLast();
-          cursor = new Pt(cursor.x + 20, cursor.y + 20);
-          cursor = maybeOutputDebugText(db, "Dot", dotCertainty, cursor);
-          cursor = maybeOutputDebugText(db, "Ellipse", ellipseCertainty, cursor);
-          if (sumCertainty(dotCertainty, ellipseCertainty) > 0) {
-            main.getDrawingSurface().getSoup().addBuffer("debug", db);
-          } else {
-            main.getDrawingSurface().getSoup().removeBuffer("debug");
+          detectDot(seq);
+          detectEllipse(seq);
+          detectPolyline(seq);
+
+          for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+            endPoints.add(prim.getSeq().get(prim.getStartIdx()));
+            endPoints.add(prim.getSeq().get(prim.getEndIdx()));
+            if (prim instanceof LineSegment) {
+              ag.add((LineSegment) prim);
+            }
+            lenG.add(prim);
           }
 
-          // Now see what the haul was:
-          for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
-            bug(prim.toString());
-          }
+          // DEBUGGING stuff below here. comment out if you want.
+
+          // drawParallelPerpendicular(seq);
+          // drawAdjacent(seq);
+          drawSimilarLength(seq);
         }
         break;
     }
   }
 
+  @SuppressWarnings("unchecked")
+  private void drawSimilarLength(Sequence seq) {
+    DrawingBuffer db = new DrawingBuffer();
+    boolean dirty = false;
+    for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+      dirty = true;
+      DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
+      double pathLength = prim.getSeq().getPathLength(prim.getStartIdx(), prim.getEndIdx());
+      Set<Primitive> similar = lenG.getSimilar(pathLength, pathLength * 0.25);
+      for (Primitive adj : similar) {
+        if ((adj.getSeq() == prim.getSeq() && adj.getStartIdx() == prim.getStartIdx()
+            && adj.getEndIdx() == prim.getEndIdx()) == false) {
+          DrawingBufferRoutines.patch(db, adj.getSeq(), adj.getStartIdx(), adj.getEndIdx(), 2.0,
+              Color.GREEN);
+        }
+      }
+    }
+    if (dirty) {
+      main.getDrawingSurface().getSoup().addBuffer("similength", db);
+    } else {
+      main.getDrawingSurface().getSoup().removeBuffer("similength");
+    }
+
+  }
+
+  private void drawAdjacent(Sequence seq) {
+    DrawingBuffer db = new DrawingBuffer();
+    boolean dirty = false;
+    for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+      dirty = true;
+      // DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
+      double pathLength = prim.getSeq().getPathLength(prim.getStartIdx(), prim.getEndIdx());
+      double radius = pathLength * 0.20;
+      Set<Pt> ends = endPoints.getNear(prim.getSeq().get(prim.getStartIdx()), radius);
+      ends.addAll(endPoints.getNear(prim.getSeq().get(prim.getEndIdx()), radius));
+      Set<Primitive> adjacentPrims = getPrimitives(ends);
+      adjacentPrims.remove(prim);
+      for (Primitive adj : adjacentPrims) {
+        DrawingBufferRoutines.patch(db, adj.getSeq(), adj.getStartIdx(), adj.getEndIdx(), 2.0,
+            Color.GREEN);
+      }
+    }
+    if (dirty) {
+      main.getDrawingSurface().getSoup().addBuffer("adjacent", db);
+    } else {
+      main.getDrawingSurface().getSoup().removeBuffer("adjacent");
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void drawParallelPerpendicular(Sequence seq) {
+    DrawingBuffer db = new DrawingBuffer();
+    boolean dirty = false;
+    for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+      if (prim instanceof LineSegment) {
+        dirty = true;
+        DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
+        Set<LineSegment> set = ag.getNear((LineSegment) prim, 0, 0.2);
+        // bug(set.size() + " are parallel to " + ((LineSegment) prim).getFixedAngle() + ": ");
+        for (LineSegment p : set) {
+          // bug("  " + p.getFixedAngle());
+          DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
+              Color.BLUE);
+        }
+        set = ag.getNear((LineSegment) prim, Math.PI / 2, 0.2);
+        // bug(set.size() + " are perpendicular to " + ((LineSegment) prim).getFixedAngle() + ": ");
+        for (LineSegment p : set) {
+          // bug("  " + p.getFixedAngle());
+          DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
+              Color.GREEN);
+        }
+      }
+    }
+    if (dirty) {
+      main.getDrawingSurface().getSoup().addBuffer("paraperp", db);
+    } else {
+      main.getDrawingSurface().getSoup().removeBuffer("paraperp");
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private Set<Primitive> getPrimitives(Set<Pt> points) {
+    // each point has a main sequence. that sequence has a list of primitives. a point may be in
+    // zero, one, or more of them. Return all primitives related to the input points.
+    Set<Primitive> ret = new HashSet<Primitive>();
+    for (Pt pt : points) {
+      Sequence seq = pt.getSequence(MAIN_SEQUENCE);
+      int where = seq.indexOf(pt);
+      for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+        if (where <= prim.getEndIdx() && where >= prim.getStartIdx()) {
+          ret.add(prim);
+        }
+      }
+    }
+    return ret;
+  }
+
   private Polyline detectPolyline(Sequence seq) {
     Polyline ret = new Polyline(seq, (Animation) main.getScript("Animation"));
-    DrawingBuffer db = new DrawingBuffer();
     Set<Segment> segs = ret.getSegments();
-    Set<Pt> junctions = new HashSet<Pt>();
     // Establish line and arc certainties for each segment.
     for (Segment seg : segs) {
-      int segID = SEG_ID++;
-      // double le = seg.getLineError();
-      // double les = seg.getLineErrorSum();
-      // double ae = seg.getArcError();
-      // double aes = seg.getArcErrorSum();
-      // double pathLength = seg.getLength();
-      // double nPoints = seg.getNumPoints();
-      // double lesDivLength = les / pathLength;
-      // double aesDivLength = aes / pathLength;
-      // double lesDivNPoints = les / nPoints;
-      // double aesDivNPoints = aes / nPoints;
-      // double lesDivNPointsSquared = les / (nPoints * nPoints);
-      // double aesDivNPointsSquared = aes / (nPoints * nPoints);
       double lineLenDivCurviLen = seg.getPathLength() / seg.getLineLength();
-      // output((double) segID, le, les, ae, aes, pathLength, nPoints, lesDivLength, aesDivLength,
-      // lesDivNPoints, aesDivNPoints, aesDivNPointsSquared, lesDivNPointsSquared);
-      int midIdx = (seg.start + seg.end) / 2;
-      Pt m = new Pt(seq.get(midIdx).x - 30, seq.get(midIdx).y);
-      DrawingBufferRoutines.text(db, m, "Segment " + segID, Color.RED.darker().darker());
       if (lineLenDivCurviLen < 1.07) {
         seg.lineCertainty = Certainty.Yes;
         seg.arcCertainty = Certainty.Maybe;
@@ -208,20 +304,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         seg.arcCertainty = Certainty.Yes;
       }
     }
-    for (Segment seg : segs) {
-      Pt a = seg.getStartPoint();
-      Pt b = seg.getEndPoint();
-      junctions.add(a);
-      junctions.add(b);
-      Pt m = seq.get((seg.end + seg.start) / 2);
-      m = new Pt(m.x, m.y + 20);
-      m = maybeOutputDebugText(db, "Line", seg.lineCertainty, m);
-      m = maybeOutputDebugText(db, "Arc", seg.arcCertainty, m);
-    }
-    for (Pt pt : junctions) {
-      DrawingBufferRoutines.dot(db, pt, 6.0, 0.6, Color.BLACK, Color.GREEN);
-    }
-    main.getDrawingSurface().getSoup().addBuffer(db);
+
     for (Segment seg : segs) {
       if (seg.lineCertainty == Certainty.Yes || seg.lineCertainty == Certainty.Maybe) {
         new LineSegment(seg.seq, seg.start, seg.end, seg.lineCertainty);
@@ -231,28 +314,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       }
     }
     return ret;
-  }
-
-  private void output(double... stuff) {
-    boolean first = true;
-    for (double v : stuff) {
-      if (!first) {
-        System.out.print(", ");
-      }
-      first = false;
-      System.out.print(Debug.num(v));
-    }
-    System.out.print("\n");
-  }
-
-  private Pt maybeOutputDebugText(DrawingBuffer db, String msg, Certainty c, Pt pt) {
-    Pt where = new Pt(pt.x, pt.y);
-    if (c == Certainty.Maybe || c == Certainty.Yes) {
-      Color color = c == Certainty.Maybe ? Color.yellow.darker() : Color.green.darker();
-      DrawingBufferRoutines.text(db, where, msg + ": " + c, color);
-      where = new Pt(where.x, where.y + 20);
-    }
-    return where;
   }
 
   private Certainty detectEllipse(Sequence seq) {

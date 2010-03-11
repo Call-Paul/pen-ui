@@ -213,4 +213,20 @@ public abstract class DrawingBufferRoutines {
     db.addText(msg, color);
     db.up();
   }
+
+  public static void patch(DrawingBuffer db, Sequence seq, int startIdx, int endIdx,
+      double thickness, Color color) {
+    db.setColor(color);
+    db.setThickness(thickness);
+    boolean first = true;
+    for (int i = startIdx; i <= endIdx; i++) {
+      Pt pt = seq.get(i);
+      db.moveTo(pt.x, pt.y);
+      if (first) {
+        db.down();
+        first = false;
+      }
+    }
+    db.up();
+  }
 }
