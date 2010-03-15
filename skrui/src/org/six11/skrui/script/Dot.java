@@ -22,4 +22,9 @@ public class Dot extends Primitive {
     return "Dot";
   }
 
+  @Override
+  public String shortTypeStr() {
+    return "D";
+  }
+
 }

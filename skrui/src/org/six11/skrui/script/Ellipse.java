@@ -25,4 +25,9 @@ public class Ellipse extends Primitive {
     return "Ellipse";
   }
 
+  @Override
+  public String shortTypeStr() {
+    return "E";
+  }
+
 }

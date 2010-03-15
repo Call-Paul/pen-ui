@@ -25,4 +25,9 @@ public class ArcSegment extends Primitive {
     return "Arc";
   }
 
+  @Override
+  public String shortTypeStr() {
+    return "A";
+  }
+
 }

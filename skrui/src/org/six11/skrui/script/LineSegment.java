@@ -48,4 +48,9 @@ public class LineSegment extends Primitive {
     return fixedAngle;
   }
 
+  @Override
+  public String shortTypeStr() {
+    return "L";
+  }
+
 }

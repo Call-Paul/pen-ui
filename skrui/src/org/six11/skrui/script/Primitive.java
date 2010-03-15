@@ -3,6 +3,7 @@ package org.six11.skrui.script;
 import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
+import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
 /**
@@ -10,11 +11,14 @@ import org.six11.util.pen.Sequence;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public abstract class Primitive {
+public abstract class Primitive implements Comparable<Primitive> {
+  private static int ID_COUNTER = 0;
+
   Sequence seq;
   int startIdx;
   int endIdx;
   Certainty cert;
+  int id = ID_COUNTER++;
 
   /**
    * Makes a primitive. Note the start and end indices are INCLUSIVE.
@@ -24,7 +28,8 @@ public abstract class Primitive {
    *          assumed to be of type Set<Primitive>, this object is added to it.
    * @param startIdx
    * @param endIdx
-   * @param cert the certainty that the user intended to draw what it is advertised to be.
+   * @param cert
+   *          the certainty that the user intended to draw what it is advertised to be.
    */
   @SuppressWarnings("unchecked")
   public Primitive(Sequence seq, int startIdx, int endIdx, Certainty cert) {
@@ -39,6 +44,10 @@ public abstract class Primitive {
     }
   }
   
+  public int compareTo(Primitive other) {
+    return (((Integer) id).compareTo(other.id));
+  }
+  
   public Sequence getSeq() {
     return seq;
   }
@@ -47,8 +56,16 @@ public abstract class Primitive {
     return startIdx;
   }
 
+  public Pt getStartPt() {
+    return seq.get(startIdx);
+  }
+
   public int getEndIdx() {
     return endIdx;
+  }
+
+  public Pt getEndPt() {
+    return seq.get(endIdx);
   }
 
   public Certainty getCert() {
@@ -58,8 +75,14 @@ public abstract class Primitive {
   public String toString() {
     return typeStr() + "[" + startIdx + ", " + endIdx + "]" + (cert == Certainty.Maybe ? "?" : "");
   }
-  
+
+  public String getShortStr() {
+    return shortTypeStr() + id;
+  }
+
   public abstract String typeStr();
+
+  public abstract String shortTypeStr();
 
   public Double getLength() {
     double ret = 0;

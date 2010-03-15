@@ -61,12 +61,9 @@ public class TimeGraph {
         Sequence prev = sequences.get(i);
         Sequence next = sequences.get(i + 1);
         long elapsed = next.getFirst().getTime() - prev.getLast().getTime();
-        bug("elapsed time: " + elapsed);
         if (elapsed < timeout) {
           ret.add(0, prev);
-          bug("that's ok. adding it.");
         } else {
-          bug("Too much time elapsed. stopping.");
           break;
         }
       }

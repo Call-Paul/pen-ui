@@ -47,7 +47,7 @@ public class PointGraph {
     }
   }
 
-  private int size() {
+  public int size() {
     return byX.size();
   }
 
