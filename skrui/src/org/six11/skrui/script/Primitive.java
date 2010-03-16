@@ -6,6 +6,7 @@ import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
 
 /**
  * Parent class of Neanderthal primitive types: dot, ellipse, polyline components (lines and arcs).
@@ -23,6 +24,10 @@ public abstract class Primitive implements Comparable<Primitive> {
 
   private boolean subshapeBindingFlipped;
   private boolean subshapeBindingFixed;
+  private boolean fixedAngleValid;
+  private double fixedAngle;
+  private Vec fixedVector;
+
 
   /**
    * Makes a primitive. Note the start and end indices are INCLUSIVE.
@@ -44,6 +49,7 @@ public abstract class Primitive implements Comparable<Primitive> {
 
     this.subshapeBindingFlipped = false;
     this.subshapeBindingFixed = false;
+    this.fixedAngleValid = false;
 
     if (seq.getAttribute(Neanderthal.PRIMITIVES) != null) {
       Set<Primitive> primitives = (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
@@ -75,6 +81,14 @@ public abstract class Primitive implements Comparable<Primitive> {
     return seq.get(endIdx);
   }
 
+  public Pt getSubshape(String which) {
+    if (which.equals("p1")) {
+      return getP1();
+    } else {
+      return getP2();
+    }
+  }
+  
   public Certainty getCert() {
     return cert;
   }
@@ -134,6 +148,32 @@ public abstract class Primitive implements Comparable<Primitive> {
 
   public boolean getFlipState() {
     return subshapeBindingFlipped;
+  }
+  
+  public Vec getFixedVector() {
+    if (fixedVector == null) {
+      Pt start = seq.get(startIdx);
+      Pt end = seq.get(endIdx);
+      Pt left = start;
+      Pt right = end;
+      if (Pt.sortByX.compare(start, end) == 1) {
+        left = end;
+        right = start;
+      }
+      double dx = right.x - left.x;
+      double dy = right.y - left.y;
+      fixedVector = new Vec(dx, dy);
+    }
+    return fixedVector; 
+  }
+  
+  public double getFixedAngle() {
+    if (!fixedAngleValid) {
+      Vec fv = getFixedVector();
+      fixedAngle = Math.atan2(fv.getY(), fv.getX());
+      fixedAngleValid = true;
+    }
+    return fixedAngle;
   }
 
 }

@@ -13,5 +13,6 @@ public class SimpleDomain extends Domain {
   public SimpleDomain(String name, Neanderthal data) {
     super(name, data);
     templates.add(new TriangleTemplate(this));
+    templates.add(new RectangleTemplate(this));
   }
 }

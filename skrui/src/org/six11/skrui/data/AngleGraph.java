@@ -1,14 +1,13 @@
 package org.six11.skrui.data;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.skrui.script.LineSegment;
+import org.six11.skrui.script.Primitive;
 import org.six11.util.Debug;
 
 /**
@@ -44,20 +43,20 @@ public class AngleGraph {
 
   }
 
-  List<LineSegment> segments;
-  static Comparator<LineSegment> orderByAngle = new Comparator<LineSegment>() {
+  List<Primitive> segments;
+  static Comparator<Primitive> orderByAngle = new Comparator<Primitive>() {
 
-    public int compare(LineSegment o1, LineSegment o2) {
+    public int compare(Primitive o1, Primitive o2) {
       return ((Double) o1.getFixedAngle()).compareTo(o2.getFixedAngle());
     }
 
   };
 
   public AngleGraph() {
-    segments = new ArrayList<LineSegment>();
+    segments = new ArrayList<Primitive>();
   }
 
-  public void add(LineSegment seg) {
+  public void add(Primitive seg) {
     int where = Collections.binarySearch(segments, seg, orderByAngle);
     if (where < 0) {
       where = (where + 1) * -1;
@@ -65,8 +64,8 @@ public class AngleGraph {
     segments.add(where, seg);
   }
 
-  public Set<LineSegment> getNear(LineSegment in, double angle, double tolerance) {
-    Set<LineSegment> buddies = getNear(in.getFixedAngle() + angle, tolerance);
+  public Set<Primitive> getNear(Primitive in, double angle, double tolerance) {
+    Set<Primitive> buddies = getNear(in.getFixedAngle() + angle, tolerance);
     buddies.remove(in);
     return buddies;
   }
@@ -84,15 +83,15 @@ public class AngleGraph {
    * 
    * Both angles are interpreted as radians.
    * 
-   * This returns the set of LineSegments that are within tolerance radians of the given angle.
+   * This returns the set of Primitives that are within tolerance radians of the given angle.
    */
-  public Set<LineSegment> getNear(double angle, double tolerance) {
+  public Set<Primitive> getNear(double angle, double tolerance) {
     double half = tolerance / 2;
-    Set<LineSegment> ret = new HashSet<LineSegment>();
+    Set<Primitive> ret = new HashSet<Primitive>();
     double theta = getNormalizedAngle(angle);
     double a = getNormalizedAngle(theta - half);
     double b = getNormalizedAngle(theta + half);
-    if (a < theta && theta < b) {
+    if (a < theta && theta <= b) {
       ret.addAll(search(a, b));
     } else {
       ret.addAll(search(-Math.PI / 2, b));
@@ -101,11 +100,11 @@ public class AngleGraph {
     return ret;
   }
 
-  private Set<LineSegment> search(double a, double b) {
-    Set<LineSegment> ret = new HashSet<LineSegment>();
+  private Set<Primitive> search(double a, double b) {
+    Set<Primitive> ret = new HashSet<Primitive>();
     int idxA = search(a);
     int idxB = search(b);
-    for (int cursor = idxA; cursor < idxB; cursor++) {
+    for (int cursor = idxA; cursor <= idxB; cursor++) {
       ret.add(segments.get(cursor));
     }
     return ret;
@@ -130,7 +129,7 @@ public class AngleGraph {
         if (segments.get(low).getFixedAngle() > target) {
           return low;
         } else {
-          return high;
+          return Math.min(high, segments.size() - 1);
         }
       }
       if (target < thisAngle) {
@@ -152,6 +151,7 @@ public class AngleGraph {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("AngleGraph", what);
   }

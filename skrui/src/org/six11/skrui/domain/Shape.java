@@ -26,7 +26,6 @@ public class Shape {
 
   public Shape(ShapeTemplate shapeTemplate, Stack<String> bindSlot, Stack<Primitive> bindObj) {
     this.template = shapeTemplate;
-    bug("Making an instance of: " + shapeTemplate.name);
     subshapes = new HashMap<String, Primitive>();
     for (int i = 0; i < bindSlot.size(); i++) {
       subshapes.put(bindSlot.get(i), bindObj.get(i));

@@ -42,6 +42,10 @@ public abstract class Constraint {
 
   public abstract Certainty check(Primitive[] p);
 
+  protected boolean ok(Certainty certainty) {
+    return (certainty == Certainty.Yes || certainty == Certainty.Maybe);
+  }
+
   public List<String> getSlotNames() {
     return slotNames;
   }

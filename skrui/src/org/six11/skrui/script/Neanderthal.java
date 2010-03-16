@@ -199,8 +199,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     for (Primitive prim : getPrimitiveSet(seq)) {
       endPoints.add(prim.getSeq().get(prim.getStartIdx()));
       endPoints.add(prim.getSeq().get(prim.getEndIdx()));
-      bug("Just added two points to endPoints. It now has " + endPoints.size() + " points.");
-      ;
       if (prim instanceof LineSegment) {
         ag.add((LineSegment) prim);
       }
@@ -355,16 +353,16 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       if (prim instanceof LineSegment) {
         dirty = true;
         DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
-        Set<LineSegment> set = ag.getNear((LineSegment) prim, 0, 0.2);
+        Set<Primitive> set = ag.getNear((LineSegment) prim, 0, 0.2);
         // bug(set.size() + " are parallel to " + ((LineSegment) prim).getFixedAngle() + ": ");
-        for (LineSegment p : set) {
+        for (Primitive p : set) {
           // bug("  " + p.getFixedAngle());
           DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
               Color.BLUE);
         }
         set = ag.getNear((LineSegment) prim, Math.PI / 2, 0.2);
         // bug(set.size() + " are perpendicular to " + ((LineSegment) prim).getFixedAngle() + ": ");
-        for (LineSegment p : set) {
+        for (Primitive p : set) {
           // bug("  " + p.getFixedAngle());
           DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
               Color.GREEN);
