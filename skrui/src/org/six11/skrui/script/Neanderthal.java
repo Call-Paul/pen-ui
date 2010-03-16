@@ -21,14 +21,7 @@ import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
-import org.six11.util.pen.Antipodal;
-import org.six11.util.pen.ConvexHull;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Pt;
-import org.six11.util.pen.RotatedEllipse;
-import org.six11.util.pen.Sequence;
-import org.six11.util.pen.SequenceEvent;
-import org.six11.util.pen.SequenceListener;
+import org.six11.util.pen.*;
 
 /**
  * 
@@ -206,7 +199,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     for (Primitive prim : getPrimitiveSet(seq)) {
       endPoints.add(prim.getSeq().get(prim.getStartIdx()));
       endPoints.add(prim.getSeq().get(prim.getEndIdx()));
-      bug("Just added two points to endPoints. It now has " + endPoints.size() + " points.");;
+      bug("Just added two points to endPoints. It now has " + endPoints.size() + " points.");
+      ;
       if (prim instanceof LineSegment) {
         ag.add((LineSegment) prim);
       }
@@ -215,14 +209,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
     Set<Primitive> recent = getPrimitiveSet(seq);
     Set<Primitive> cohorts = getCohorts(recent);
-    
+
     for (ShapeTemplate st : domain.getTemplates()) {
       st.apply(cohorts);
     }
 
     // DEBUGGING stuff below here. comment out if you want.
-//    drawPrims(recent, Color.RED, "recent");
-//    cohorts.removeAll(recent);
+    // drawPrims(recent, Color.RED, "recent");
+    // cohorts.removeAll(recent);
     drawPrims(cohorts, Color.GREEN, "cohorts");
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
@@ -239,9 +233,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;
     for (Primitive prim : inSet) {
-      dirty = true;
-      DrawingBufferRoutines.patch(db, prim.getSeq(), prim.getStartIdx(), prim.getEndIdx(), 2.0,
-          color);
+      if (prim instanceof LineSegment) {
+        dirty = true;
+        DrawingBufferRoutines.patch(db, prim.getSeq(), prim.getStartIdx(), prim.getEndIdx(), 2.0,
+            color);
+        DrawingBufferRoutines.text(db, Functions.getMean(prim.getP1(), prim.getP2()).getTranslated(5, 10), prim
+            .getShortStr(), Color.BLACK);
+      }
     }
     if (dirty) {
       main.getDrawingSurface().getSoup().addBuffer(name, db);

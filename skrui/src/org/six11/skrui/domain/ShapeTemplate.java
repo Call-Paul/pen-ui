@@ -1,18 +1,12 @@
 package org.six11.skrui.domain;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.six11.skrui.constraint.Constraint;
 import org.six11.skrui.constraint.ConstraintSolver;
 import org.six11.skrui.constraint.SlotBinding;
 import org.six11.skrui.constraint.TypeConstraint;
+import org.six11.skrui.script.LineSegment;
 import org.six11.skrui.script.Primitive;
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
@@ -25,13 +19,15 @@ import org.six11.util.Debug;
 public abstract class ShapeTemplate {
 
   Domain domain;
+  String name;
   List<String> slotNames;
   Map<String, Constraint> constraints;
   Map<String, Set<String>> slotsToConstraints; // slot name -> set of constraint names
   Map<String, SortedSet<Primitive>> valid;
 
-  public ShapeTemplate(Domain domain) {
+  public ShapeTemplate(Domain domain, String name) {
     this.domain = domain;
+    this.name = name;
     slotNames = new ArrayList<String>();
     constraints = new HashMap<String, Constraint>();
     slotsToConstraints = new HashMap<String, Set<String>>();
@@ -41,10 +37,11 @@ public abstract class ShapeTemplate {
   protected void addConstraint(String cName, Constraint c) {
     constraints.put(cName, c);
     for (String slotName : c.getSlotNames()) {
-      if (!slotsToConstraints.containsKey(slotName)) {
-        slotsToConstraints.put(slotName, new HashSet<String>());
+      String primary = Constraint.primary(slotName);
+      if (!slotsToConstraints.containsKey(primary)) {
+        slotsToConstraints.put(primary, new HashSet<String>());
       }
-      slotsToConstraints.get(slotName).add(cName);
+      slotsToConstraints.get(primary).add(cName);
     }
   }
 
@@ -61,66 +58,133 @@ public abstract class ShapeTemplate {
     resetValid(false); // reset the list of valid options for each slot.
     // set the valid options for each slot by type. E.g., all lines are valid for a line slot.
     setValid(in);
-
-    // Voting algorithm.
-    VoteTable vt = new VoteTable();
-    for (String slot : slotNames) {
-      for (Primitive p : valid.get(slot)) {
-        boolean ok = true;
-        List<SlotBinding> accumulator = new ArrayList<SlotBinding>();
-        for (String cName : slotsToConstraints.get(slot)) {
-          Constraint c = constraints.get(cName);
-          List<SlotBinding> result = vote(slot, p, c);
-          if (result.size() == 0) {
-            ok = false;
-            break;
-          } else {
-            accumulator.addAll(result);
-          }
-        }
-        if (ok) {
-          // This slot/primitive combination is acceptable. Consilodate the slot bindings. The
-          // important thing is that this slot/object cell has pointers to other slot/object cells.
-          Map<String, List<Primitive>> consolidated = consolidate(accumulator);
-          vt.setVotes(slot, p, consolidated);
-        } else {
-          vt.invalidate(slot, p);
-        }
-      }
+    for (String key : slotsToConstraints.keySet()) {
+      bug("key: " + key + ", value: " + slotsToConstraints.get(key));
     }
-    // Now the voting table has a whole bunch of votes to go through, but some of them are for
-    // invalid cells, and others are from invalid cells. Only count those votes that are from and
-    // for valid cells.
-    vt.activateVotes();
+    Stack<String> bindSlot = new Stack<String>();
+    Stack<Primitive> bindObj = new Stack<Primitive>();
+    List<Shape> results = new ArrayList<Shape>();
+    fit(0, bindSlot, bindObj, results);
+    for (Shape s : results) {
+      bug("Result: " + s);
+    }
   }
 
-  // consolodate all the slot->object bindings into a map with multiple values. keys are slot names.
-  private Map<String, List<Primitive>> consolidate(List<SlotBinding> in) {
-    Map<String, List<Primitive>> consolidated = new HashMap<String, List<Primitive>>();
-    for (SlotBinding sb : in) {
-      Map<String, Primitive> bindingMap = sb.getBindingMap();
-      for (String name : bindingMap.keySet()) {
-        if (!consolidated.containsKey(name)) {
-          consolidated.put(name, new ArrayList<Primitive>());
+  private void fit(int slotIndex, Stack<String> bindSlot, Stack<Primitive> bindObj,
+      List<Shape> results) {
+    bug("fit: slotIndex: " + slotIndex + ", slots: " + Debug.num(bindSlot, ", ") + " objects: "
+        + getBugStringPrims(bindObj));
+    String topSlot = slotNames.get(slotIndex);
+    bindSlot.push(topSlot);
+    for (Primitive p : valid.get(topSlot)) {
+      if (!bindObj.contains(p)) {
+        bindObj.push(p);
+        boolean[] revertFixedState = new boolean[bindObj.size()];
+        for (int i = 0; i < bindObj.size(); i++) {
+          Primitive prim = bindObj.get(i);
+          revertFixedState[i] = !prim.isFlippable();
         }
-        if (!consolidated.get(name).contains(bindingMap.get(name))) {
-          consolidated.get(name).add(bindingMap.get(name));
+        Certainty result = evaluate(bindSlot, bindObj);
+        if (result != Certainty.No) {
+          if (slotIndex + 1 < slotNames.size()) {
+            fit(slotIndex + 1, bindSlot, bindObj, results);
+          } else {
+            boolean ok = true;
+            for (Shape s : results) {
+              if (s.containsAllShapes(bindObj)) {
+                ok = false;
+                break;
+              }
+            }
+            if (ok) {
+              bug("Located a " + name + ".                   ***** " + name + " <-----------");
+              results.add(new Shape(this, bindSlot, bindObj));
+            } else {
+              bug("Avoiding redundant shape.");
+            }
+
+          }
         }
+        for (int i = 0; i < bindObj.size(); i++) {
+          Primitive prim = bindObj.get(i);
+          prim.setSubshapeBindingFixed(revertFixedState[i]);
+        }
+        bindObj.pop();
+      } else {
+        bug(p.getShortStr() + " is already being examined.");
       }
     }
-    return consolidated;
+    bindSlot.pop();
+  }
+
+  private Certainty evaluate(Stack<String> bindSlot, Stack<Primitive> bindObj) {
+    bug("evaluate: " + getBugStringPaired(bindSlot, bindObj));
+    String topSlot = bindSlot.peek();
+    Set<String> constraintNames = slotsToConstraints.get(topSlot);
+    Certainty ret = Certainty.Unknown;
+    for (String cName : constraintNames) {
+      Constraint c = constraints.get(cName);
+      List<String> relevantNames = c.getPrimarySlotNames();
+      if (bindSlot.containsAll(relevantNames)) {
+        Primitive[] args = c.makeArguments(bindSlot, bindObj);
+        Certainty result = c.check(args);
+        bug(c.getShortStr() + "(" + Debug.num(c.getSlotNames(), ", ") + "): " + result);
+        if (result == Certainty.No) {
+          ret = result; // :(
+          break;
+        }
+        ret = result;
+      }
+    }
+    bug("evaluate: " + getBugStringPaired(bindSlot, bindObj) + " is returning " + ret);
+    return ret;
   }
 
   private static void bug(String what) {
     Debug.out("ShapeTemplate", what);
   }
 
-  private List<SlotBinding> vote(String slot, Primitive p, Constraint c) {
-    ConstraintSolver solver = c.getSolver();
-    solver.bind(slot, p);
-    solver.setAlternatives(valid);
-    List<SlotBinding> result = solver.solve();
-    return result;
+  public static String getBugStringPaired(Stack<String> slots, Stack<Primitive> prims) {
+    StringBuilder buf = new StringBuilder();
+    if (slots.size() != prims.size()) {
+      buf.append("size mismatch: " + slots.size() + " != " + prims.size());
+    } else {
+      boolean first = true;
+      for (int i = 0; i < slots.size(); i++) {
+        if (!first) {
+          buf.append(", ");
+        }
+        first = false;
+        buf.append(slots.get(i) + "=" + prims.get(i).getShortStr());
+      }
+    }
+    return buf.toString();
+  }
+
+  public static String getBugStringPrims(Collection<Primitive> prims) {
+    StringBuilder buf = new StringBuilder();
+    boolean first = true;
+    for (Primitive p : prims) {
+      if (!first) {
+        buf.append(", ");
+      }
+      first = false;
+      buf.append(p.getShortStr());
+    }
+    return buf.toString();
+  }
+
+  public static String getBugStringConstraints(Collection<Constraint> manyConstraints) {
+    StringBuilder buf = new StringBuilder();
+    boolean first = true;
+    for (Constraint c : manyConstraints) {
+      if (!first) {
+        buf.append(", ");
+      }
+      first = false;
+      buf.append(c.getShortStr());
+    }
+    return buf.toString();
   }
 
   public void resetValid(boolean create) {

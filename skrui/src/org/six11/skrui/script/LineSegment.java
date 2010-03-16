@@ -1,12 +1,13 @@
 package org.six11.skrui.script;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
+import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
 /**
  * 
- *
+ * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class LineSegment extends Primitive {
@@ -14,12 +15,7 @@ public class LineSegment extends Primitive {
   private boolean fixedAngleValid;
   private double fixedAngle;
 
-  /**
-   * @param seq
-   * @param startIdx
-   * @param endIdx
-   * @param cert
-   */
+
   public LineSegment(Sequence seq, int startIdx, int endIdx, Certainty cert) {
     super(seq, startIdx, endIdx, cert);
     fixedAngleValid = false;
@@ -28,6 +24,19 @@ public class LineSegment extends Primitive {
   @Override
   public String typeStr() {
     return "Line";
+  }
+
+
+  private static void bug(String what) {
+    Debug.out("LineSegment", what);
+  }
+
+  public Pt getSubshape(String which) {
+    if (which.equals("p1")) {
+      return getP1();
+    } else {
+      return getP2();
+    }
   }
 
   public double getFixedAngle() {
@@ -52,5 +61,6 @@ public class LineSegment extends Primitive {
   public String shortTypeStr() {
     return "L";
   }
+
 
 }

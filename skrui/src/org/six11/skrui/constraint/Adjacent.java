@@ -1,14 +1,10 @@
 package org.six11.skrui.constraint;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import org.six11.skrui.script.LineSegment;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Primitive;
 import org.six11.skrui.script.Neanderthal.Certainty;
-import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
+import org.six11.util.Debug;
 
 /**
  * 
@@ -23,16 +19,51 @@ public class Adjacent extends Constraint {
 
   @Override
   public Certainty check(Primitive[] p) {
-    double min = Double.MAX_VALUE;
-    min = Math.min(min, p[0].getStartPt().distance(p[1].getStartPt()));
-    min = Math.min(min, p[0].getStartPt().distance(p[1].getEndPt()));
-    min = Math.min(min, p[0].getEndPt().distance(p[1].getEndPt()));
-    min = Math.min(min, p[0].getEndPt().distance(p[1].getStartPt()));
+    String subA = Constraint.subshape(getSlotNames().get(0));
+    String subB = Constraint.subshape(getSlotNames().get(1));
+    LineSegment lineA = (LineSegment) p[0];
+    LineSegment lineB = (LineSegment) p[1];
+
+    Certainty certainty;
+    certainty = checkAdjacent(lineA, subA, lineB, subB);
+    if (!ok(certainty) && lineB.isFlippable()) {
+      lineB.flipSubshapeBinding();
+      certainty = checkAdjacent(lineA, subA, lineB, subB);
+    }
+    if (!ok(certainty) && lineA.isFlippable()) {
+      lineA.flipSubshapeBinding();
+      certainty = checkAdjacent(lineA, subA, lineB, subB);
+    }
+    if (!ok(certainty) && lineB.isFlippable()) {
+      lineB.flipSubshapeBinding();
+      certainty = checkAdjacent(lineA, subA, lineB, subB);
+    }
+    if (ok(certainty)) {
+      lineA.setSubshapeBindingFixed(true);
+      lineB.setSubshapeBindingFixed(true);
+    }
+    return certainty;
+  }
+
+  private boolean ok(Certainty certainty) {
+    return (certainty == Certainty.Yes || certainty == Certainty.Maybe);
+  }
+
+  private static void bug(String what) {
+    Debug.out("Adjacent", what);
+  }
+
+  private Certainty checkAdjacent(LineSegment lineA, String subslotA, LineSegment lineB,
+      String subslotB) {
+
+
+    double dist = lineA.getSubshape(subslotA).distance(lineB.getSubshape(subslotB));
+
     Certainty ret = Certainty.No;
-    if (min < 30) {
+    if (dist < 30) {
       ret = Certainty.Maybe;
     }
-    if (min < 20) {
+    if (dist < 20) {
       ret = Certainty.Yes;
     }
     return ret;

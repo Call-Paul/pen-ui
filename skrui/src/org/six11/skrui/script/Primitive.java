@@ -3,6 +3,7 @@ package org.six11.skrui.script;
 import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
+import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -19,6 +20,9 @@ public abstract class Primitive implements Comparable<Primitive> {
   int endIdx;
   Certainty cert;
   int id = ID_COUNTER++;
+
+  private boolean subshapeBindingFlipped;
+  private boolean subshapeBindingFixed;
 
   /**
    * Makes a primitive. Note the start and end indices are INCLUSIVE.
@@ -38,16 +42,19 @@ public abstract class Primitive implements Comparable<Primitive> {
     this.endIdx = endIdx;
     this.cert = cert;
 
+    this.subshapeBindingFlipped = false;
+    this.subshapeBindingFixed = false;
+
     if (seq.getAttribute(Neanderthal.PRIMITIVES) != null) {
       Set<Primitive> primitives = (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
       primitives.add(this);
     }
   }
-  
+
   public int compareTo(Primitive other) {
     return (((Integer) id).compareTo(other.id));
   }
-  
+
   public Sequence getSeq() {
     return seq;
   }
@@ -91,4 +98,42 @@ public abstract class Primitive implements Comparable<Primitive> {
     }
     return ret;
   }
+
+  public void flipSubshapeBinding() {
+    if (isFlippable()) {
+      subshapeBindingFlipped = !subshapeBindingFlipped;
+    }
+  }
+
+  public void resetFlip() {
+    subshapeBindingFlipped = false;
+    subshapeBindingFixed = false;
+  }
+
+  public void setSubshapeBindingFixed(boolean v) {
+    subshapeBindingFixed = v;
+  }
+
+  private static void bug(String what) {
+    Debug.out("Primitive", what);
+  }
+
+  public Pt getP1() {
+    int idx = subshapeBindingFlipped ? endIdx : startIdx;
+    return seq.get(idx);
+  }
+
+  public Pt getP2() {
+    int idx = subshapeBindingFlipped ? startIdx : endIdx;
+    return seq.get(idx);
+  }
+
+  public boolean isFlippable() {
+    return !subshapeBindingFixed;
+  }
+
+  public boolean getFlipState() {
+    return subshapeBindingFlipped;
+  }
+
 }
