@@ -4,6 +4,8 @@ import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
+import org.six11.util.pen.CircleArc;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
@@ -27,6 +29,7 @@ public abstract class Primitive implements Comparable<Primitive> {
   private boolean fixedAngleValid;
   private double fixedAngle;
   private Vec fixedVector;
+  private Line geometryLine;
 
 
   /**
@@ -105,7 +108,7 @@ public abstract class Primitive implements Comparable<Primitive> {
 
   public abstract String shortTypeStr();
 
-  public Double getLength() {
+  public double getLength() {
     double ret = 0;
     if (endIdx - startIdx > 1) {
       ret = seq.getPathLength(startIdx, endIdx);
@@ -174,6 +177,13 @@ public abstract class Primitive implements Comparable<Primitive> {
       fixedAngleValid = true;
     }
     return fixedAngle;
+  }
+
+  public Line getGeometryLine() {
+    if (geometryLine == null) {
+      geometryLine = new Line(getStartPt(), getEndPt());
+    }
+    return geometryLine;
   }
 
 }

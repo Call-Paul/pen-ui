@@ -14,5 +14,6 @@ public class SimpleDomain extends Domain {
     super(name, data);
     templates.add(new TriangleTemplate(this));
     templates.add(new RectangleTemplate(this));
+    templates.add(new ArrowTemplate(this));
   }
 }

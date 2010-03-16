@@ -29,9 +29,6 @@ public abstract class Constraint {
     primarySlotNames = new ArrayList<String>();
     for (String n : sNames) {
       slotNames.add(n);
-      if (n.indexOf(".") > 0) {
-        bug("Found constraint with sub-shape binding: " + n.substring(n.indexOf(".") + 1));
-      }
       primarySlotNames.add(primary(n));
     }
   }
@@ -71,7 +68,6 @@ public abstract class Constraint {
     if (slotName.indexOf('.') > 0) {
       ret = slotName.substring(0, slotName.indexOf('.'));
     }
-    bug("primary of " + slotName + " is: " + ret);
     return ret;
   }
 

@@ -208,9 +208,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Set<Primitive> recent = getPrimitiveSet(seq);
     Set<Primitive> cohorts = getCohorts(recent);
 
+    long start = System.currentTimeMillis();
     for (ShapeTemplate st : domain.getTemplates()) {
       st.apply(cohorts);
     }
+    long end = System.currentTimeMillis();
+    bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
+        + " primitive shapes in " + (end - start) + " ms.");
 
     // DEBUGGING stuff below here. comment out if you want.
     // drawPrims(recent, Color.RED, "recent");
@@ -235,8 +239,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         dirty = true;
         DrawingBufferRoutines.patch(db, prim.getSeq(), prim.getStartIdx(), prim.getEndIdx(), 2.0,
             color);
-        DrawingBufferRoutines.text(db, Functions.getMean(prim.getP1(), prim.getP2()).getTranslated(5, 10), prim
-            .getShortStr(), Color.BLACK);
+        DrawingBufferRoutines.text(db, Functions.getMean(prim.getP1(), prim.getP2()).getTranslated(
+            5, 10), prim.getShortStr(), Color.BLACK);
       }
     }
     if (dirty) {
