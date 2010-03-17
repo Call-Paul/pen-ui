@@ -1,6 +1,7 @@
 package org.six11.skrui.script;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,8 @@ import org.six11.skrui.data.LengthGraph;
 import org.six11.skrui.data.PointGraph;
 import org.six11.skrui.data.TimeGraph;
 import org.six11.skrui.domain.Domain;
+import org.six11.skrui.domain.Shape;
+import org.six11.skrui.domain.ShapeRenderer;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.domain.SimpleDomain;
 import org.six11.util.Debug;
@@ -74,6 +77,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   PointGraph endPoints;
   LengthGraph lenG;
   Domain domain;
+  List<Shape> recognizedShapes;
 
   @Override
   public void initialize() {
@@ -84,6 +88,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
+    recognizedShapes = new ArrayList<Shape>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
   }
 
@@ -209,26 +214,61 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Set<Primitive> cohorts = getCohorts(recent);
 
     long start = System.currentTimeMillis();
+    List<Shape> results;
+    Set<Shape> newShapes = new HashSet<Shape>();
     for (ShapeTemplate st : domain.getTemplates()) {
-      st.apply(cohorts);
+      results = st.apply(cohorts);
+      newShapes.addAll(merge(results));
     }
     long end = System.currentTimeMillis();
     bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
         + " primitive shapes in " + (end - start) + " ms.");
 
+    
     // DEBUGGING stuff below here. comment out if you want.
+    drawNewShapes(newShapes);
     // drawPrims(recent, Color.RED, "recent");
     // cohorts.removeAll(recent);
-    drawPrims(cohorts, Color.GREEN, "cohorts");
+    drawPrims(cohorts, Color.GREEN, "3");
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
 
   }
 
+
+  private Set<Shape> merge(List<Shape> results) {
+    Set<Shape> unique = new HashSet<Shape>();
+    for (Shape s : results) {
+      if (!recognizedShapes.contains(s)) {
+        unique.add(s);
+        recognizedShapes.add(s);
+      } else {
+        bug("I already have that shape. I refuse to look at it any more! Begone!");
+      }
+    }
+    return unique;
+  }
+
   @SuppressWarnings("unchecked")
   private Set<Primitive> getPrimitiveSet(Sequence seq) {
     return (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
+  }
+  
+  private void drawNewShapes(Set<Shape> newShapes) {
+    if (newShapes.size() > 0) {
+      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");
+      if (db == null) {
+        db = new DrawingBuffer();
+        main.getDrawingSurface().getSoup().addBuffer("2", db);
+      }
+      for (Shape s : newShapes) {
+        ShapeRenderer ren = domain.getRenderer(s.getName());
+        if (ren != null) {
+          ren.draw(db, s);
+        }
+      }
+    }
   }
 
   private void drawPrims(Set<Primitive> inSet, Color color, String name) {

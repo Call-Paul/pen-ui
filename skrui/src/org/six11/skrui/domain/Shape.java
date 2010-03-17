@@ -58,7 +58,20 @@ public class Shape {
     return debugString;
   }
   
+  public boolean equals(Object other) {
+    boolean ret = false;
+    if (other instanceof Shape) {
+      Shape o = (Shape) other;
+      ret = o.template.equals(template) && o.containsAllShapes(subshapes.values());
+    }
+    return ret;
+  }
+  
   public boolean containsAllShapes(Collection<Primitive> otherShapes) {
     return subshapes.values().containsAll(otherShapes);
+  }
+
+  public String getName() {
+    return template.name;
   }
 }

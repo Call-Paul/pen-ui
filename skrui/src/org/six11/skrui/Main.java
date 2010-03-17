@@ -91,6 +91,9 @@ public class Main {
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
     "CornerFinder"
   };
+  private static final String ACTION_WHACK1 = "whack 1";
+  private static final String ACTION_WHACK2 = "whack 2";
+  private static final String ACTION_WHACK3 = "whack 3";
 
   public static void main(String[] in) throws IOException {
     Arguments args = getArgumentSpec();
@@ -314,6 +317,33 @@ public class Main {
     });
     pop.add(actions.get(ACTION_NEW));
 
+    // Whack actions
+    actions.put(ACTION_WHACK1, new NamedAction("Whack Layer 1", KeyStroke.getKeyStroke(
+        KeyEvent.VK_1, 0)) {
+      public void activate() {
+        whackLayer(1);
+      }
+    });
+    pop.add(actions.get(ACTION_WHACK1));
+
+    // Whack actions
+    actions.put(ACTION_WHACK2, new NamedAction("Whack Layer 2", KeyStroke.getKeyStroke(
+        KeyEvent.VK_2, 0)) {
+      public void activate() {
+        whackLayer(2);
+      }
+    });
+    pop.add(actions.get(ACTION_WHACK2));
+
+    // Whack actions
+    actions.put(ACTION_WHACK3, new NamedAction("Whack Layer 3", KeyStroke.getKeyStroke(
+        KeyEvent.VK_3, 0)) {
+      public void activate() {
+        whackLayer(3);
+      }
+    });
+    pop.add(actions.get(ACTION_WHACK3));
+
     // Graph operations
     JMenu graphMenu = new JMenu("Graph");
     actions.put(ACTION_GRAPH_SPEED, new NamedAction("Graph Speed") {
@@ -353,6 +383,25 @@ public class Main {
 
     pop.add(graphMenu);
     return pop;
+  }
+
+  protected void whackLayer(int i) {
+    if (i == 1) {
+      List<DrawingBuffer> dbs = getDrawingSurface().getSoup().getAnonymousDrawingBuffers();
+      if (dbs.size() > 0) {
+        boolean destState = !dbs.get(0).isVisible();
+        for (DrawingBuffer db : dbs) {
+          db.setVisible(destState);
+        }
+        getDrawingSurface().repaint();
+      }
+    } else {
+      DrawingBuffer db = getDrawingSurface().getSoup().getBuffer("" + i);
+      if (db != null) {
+        db.setVisible(!db.isVisible());
+        getDrawingSurface().repaint();
+      }
+    }
   }
 
   /**

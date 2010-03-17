@@ -51,7 +51,7 @@ public abstract class ShapeTemplate {
     return domain;
   }
 
-  public void apply(Set<Primitive> in) {
+  public List<Shape> apply(Set<Primitive> in) {
     resetValid(false); // reset the list of valid options for each slot.
     // set the valid options for each slot by type. E.g., all lines are valid for a line slot.
     setValid(in);
@@ -65,6 +65,7 @@ public abstract class ShapeTemplate {
     for (Shape s : results) {
       bug("Result: " + s);
     }
+    return results;
   }
 
   private void fit(int slotIndex, Stack<String> bindSlot, Stack<Primitive> bindObj,

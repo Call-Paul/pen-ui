@@ -1,6 +1,8 @@
 package org.six11.skrui.domain;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal;
@@ -18,12 +20,14 @@ public abstract class Domain {
 
   String name;
   Set<ShapeTemplate> templates;
+  Map<String, ShapeRenderer> renderers;
   Neanderthal data;
 
   public Domain(String name, Neanderthal data) {
     this.name = name;
     this.data = data;
     this.templates = new HashSet<ShapeTemplate>();
+    this.renderers = new HashMap<String, ShapeRenderer>();
   }
 
   public void addTemplate(ShapeTemplate t) {
@@ -32,6 +36,14 @@ public abstract class Domain {
 
   public Set<ShapeTemplate> getTemplates() {
     return templates;
+  }
+  
+  public void addRenderer(String which, ShapeRenderer renderer) {
+    renderers.put(which, renderer);
+  }
+  
+  public ShapeRenderer getRenderer(String which) {
+    return renderers.get(which);
   }
   
   public Neanderthal getData() {

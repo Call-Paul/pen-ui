@@ -13,6 +13,7 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
 
 /**
  * A collection of drawing routines for DrawingBuffer instances.
@@ -183,6 +184,7 @@ public abstract class DrawingBufferRoutines {
       Color fill) {
     db.up();
     db.setFillColor(fill);
+    db.setFilling(true);
     db.setColor(border);
     db.setThickness(thick);
     boolean first = true;
@@ -228,5 +230,21 @@ public abstract class DrawingBufferRoutines {
       }
     }
     db.up();
+  }
+
+  public static void arrow(DrawingBuffer db, Pt start, Pt tip, double thick, Color color) {
+    double length = start.distance(tip);
+    double headLength = length / 10;
+    Vec tipToStart = new Vec(tip, start).getVectorOfMagnitude(headLength);
+    Pt cross = tip.getTranslated(tipToStart.getX(), tipToStart.getY());
+    Vec outward = tipToStart.getNormal();
+    Pt head1 = cross.getTranslated(outward.getX(), outward.getY());
+    outward = outward.getFlip();
+    Pt head2 = cross.getTranslated(outward.getX(), outward.getY());
+    bug("Draw lines: " + Debug.num(start) + " " + Debug.num(tip) + " " + Debug.num(head1) + " "
+        + Debug.num(head2));
+    line(db, new Line(start, tip), color, thick);
+    line(db, new Line(head1, tip), color, thick);
+    line(db, new Line(head2, tip), color, thick);
   }
 }
