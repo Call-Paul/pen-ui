@@ -62,6 +62,7 @@ public class Polyline {
       }
       if ((Math.abs(pt.getDouble("curvature")) > threshCurve)
           && (pt.getDouble("speed") < threshSpeed)) {
+        pt.setBoolean("both", true);
         candidates.add(idx);
       }
     }

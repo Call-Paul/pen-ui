@@ -3,7 +3,6 @@ package org.six11.skrui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -70,6 +69,7 @@ public class Main {
   private Preferences prefs;
   private Arguments args;
   private Map<String, Action> actions = new HashMap<String, Action>();
+  private Set<Action> anonActions = new HashSet<Action>();
   private Map<String, BoundedParameter> params = new HashMap<String, BoundedParameter>();
   private Map<String, SkruiScript> scripts = new HashMap<String, SkruiScript>();
 
@@ -91,9 +91,6 @@ public class Main {
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
     "CornerFinder"
   };
-  private static final String ACTION_WHACK1 = "whack 1";
-  private static final String ACTION_WHACK2 = "whack 2";
-  private static final String ACTION_WHACK3 = "whack 3";
 
   public static void main(String[] in) throws IOException {
     Arguments args = getArgumentSpec();
@@ -242,6 +239,7 @@ public class Main {
 
     if (args.hasFlag("no-ui") == false) {
       ds.setComponentPopupMenu(makePopup());
+      makeAnonActions();
       attachKeyboardAccelerators(af.getRootPane());
       af.setLayout(new BorderLayout());
       af.add(ds, BorderLayout.CENTER);
@@ -252,6 +250,21 @@ public class Main {
       }
       af.center();
       af.setVisible(true);
+    }
+  }
+
+  /**
+   * Add actions to the anonActions list, which are accessed only via key presses.
+   */
+  private void makeAnonActions() {
+    // pressing 0..9 whacks a visible layer, which are all debugging things. 
+    for (int i = 0; i < 10; i++) {
+      final int which = i;
+      anonActions.add(new NamedAction("Whack Layer " + i, KeyStroke.getKeyStroke("" + which)) {
+        public void activate() {
+          whackLayer(which);
+        }
+      });
     }
   }
 
@@ -316,33 +329,6 @@ public class Main {
       }
     });
     pop.add(actions.get(ACTION_NEW));
-
-    // Whack actions
-    actions.put(ACTION_WHACK1, new NamedAction("Whack Layer 1", KeyStroke.getKeyStroke(
-        KeyEvent.VK_1, 0)) {
-      public void activate() {
-        whackLayer(1);
-      }
-    });
-    pop.add(actions.get(ACTION_WHACK1));
-
-    // Whack actions
-    actions.put(ACTION_WHACK2, new NamedAction("Whack Layer 2", KeyStroke.getKeyStroke(
-        KeyEvent.VK_2, 0)) {
-      public void activate() {
-        whackLayer(2);
-      }
-    });
-    pop.add(actions.get(ACTION_WHACK2));
-
-    // Whack actions
-    actions.put(ACTION_WHACK3, new NamedAction("Whack Layer 3", KeyStroke.getKeyStroke(
-        KeyEvent.VK_3, 0)) {
-      public void activate() {
-        whackLayer(3);
-      }
-    });
-    pop.add(actions.get(ACTION_WHACK3));
 
     // Graph operations
     JMenu graphMenu = new JMenu("Graph");
@@ -410,6 +396,12 @@ public class Main {
    */
   public final void attachKeyboardAccelerators(JRootPane rp) {
     for (Action action : actions.values()) {
+      KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
+      if (s != null) {
+        rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
+      }
+    }
+    for (Action action : anonActions) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
       if (s != null) {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);

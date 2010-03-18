@@ -224,7 +224,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
         + " primitive shapes in " + (end - start) + " ms.");
 
-    
     // DEBUGGING stuff below here. comment out if you want.
     drawNewShapes(newShapes);
     // drawPrims(recent, Color.RED, "recent");
@@ -233,9 +232,62 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-
+    drawDots(seq, true, true, true, false, false, "4");
+    drawDots(seq, false, false, false, true, false, "5");
+    drawDots(seq, false, false, false, false, true, "6");
   }
 
+  private void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
+      boolean corner, String bufferName) {
+    if (seq.size() > 1) {
+      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
+      if (db == null) {
+        db = new DrawingBuffer();
+        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
+        db.setVisible(false);
+      }
+      List<Pt> plainDots = new ArrayList<Pt>();
+      List<Pt> curvyDots = new ArrayList<Pt>();
+      List<Pt> slowDots = new ArrayList<Pt>();
+      List<Pt> bothDots = new ArrayList<Pt>();
+      List<Pt> cornerDots = new ArrayList<Pt>();
+      for (Pt pt : seq) {
+        if (plain) {
+          plainDots.add(pt);
+        }
+        if (curvy && pt.getBoolean("curvy")) {
+          curvyDots.add(pt);
+        }
+        if (slow && pt.getBoolean("slow")) {
+          slowDots.add(pt);
+        }
+        if (both && pt.getBoolean("both")) {
+          bothDots.add(pt);
+        }
+        if (corner && pt.getBoolean("corner")) {
+          cornerDots.add(pt);
+        }
+      }
+      if (plainDots.size() > 0) {
+        DrawingBufferRoutines.dots(db, plainDots, 5.0, 0.5, Color.BLACK, null);
+      }
+      if (curvyDots.size() > 0) {
+        DrawingBufferRoutines.dots(db, curvyDots, 5.0, 0.5, Color.BLACK, Color.YELLOW);
+      }
+      if (slowDots.size() > 0) {
+        DrawingBufferRoutines.dots(db, slowDots, 5.0, 0.5, Color.BLACK, Color.BLUE);
+      }
+      if (bothDots.size() > 0) {
+        DrawingBufferRoutines.dots(db, bothDots, 5.0, 0.5, Color.BLACK, Color.GREEN);
+      }
+      if (cornerDots.size() > 0) {
+        DrawingBufferRoutines.dots(db, cornerDots, 5.0, 0.5, Color.BLACK, Color.RED);
+      }
+
+
+
+    }
+  }
 
   private Set<Shape> merge(List<Shape> results) {
     Set<Shape> unique = new HashSet<Shape>();
@@ -254,7 +306,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   private Set<Primitive> getPrimitiveSet(Sequence seq) {
     return (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
   }
-  
+
   private void drawNewShapes(Set<Shape> newShapes) {
     if (newShapes.size() > 0) {
       DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");
