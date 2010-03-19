@@ -37,7 +37,7 @@ import org.six11.util.pen.*;
  */
 public class Neanderthal extends SkruiScript implements SequenceListener {
 
-  private static final String SCRAP = "Sequence already dealt with";
+  public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
   static final String PRIMITIVES = "primitives";
 

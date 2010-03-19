@@ -160,8 +160,11 @@ public class FlowSelection {
     fsStartTime = System.currentTimeMillis();
     nearestPt = data.getAllPoints().getNearest(dwellPoint);
     nearestSequences.clear();
-    nearestSequences.add(nearestPt.getSequence(Neanderthal.MAIN_SEQUENCE));
     Sequence ns = nearestPt.getSequence(Neanderthal.MAIN_SEQUENCE);
+    nearestSequences.add(ns);
+    data.getDrawingSurface().getSoup().setCurrentSequenceShapeVisible(false);
+    dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE).setAttribute(Neanderthal.SCRAP, "true");
+    bug("just set the scrap attribute on the current scribble, and set it to invisible.");
     ns.setNamedPoint("flow select center", nearestPt);
     DrawingBuffer db = data.getDrawingSurface().getSoup().getBuffer("fs");
     if (db == null) {
