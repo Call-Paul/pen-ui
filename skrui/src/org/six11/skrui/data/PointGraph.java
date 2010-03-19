@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.swing.Timer;
+
 import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -97,11 +99,11 @@ public class PointGraph {
 
   private Set<Pt> getNearX(Pt target, double dist) {
     Set<Pt> xSet = new TreeSet<Pt>(Pt.sortById);
-    Pt x1 = new Pt(target.x - dist/2, Double.MAX_VALUE);
-    Pt x2 = new Pt(target.x + dist/2, Double.MAX_VALUE);
+    Pt x1 = new Pt(target.x - dist / 2, Double.MAX_VALUE);
+    Pt x2 = new Pt(target.x + dist / 2, Double.MAX_VALUE);
     int idxA = -(Collections.binarySearch(byX, x1, Pt.sortByX));
     int idxB = -(Collections.binarySearch(byX, x2, Pt.sortByX) + 1);
-    for (int i=idxA; i < idxB; i++) {
+    for (int i = idxA; i < idxB; i++) {
       xSet.add(byX.get(i));
     }
     return xSet;
@@ -109,11 +111,11 @@ public class PointGraph {
 
   private Set<Pt> getNearY(Pt target, double dist) {
     Set<Pt> ySet = new TreeSet<Pt>(Pt.sortById);
-    Pt y1 = new Pt(Double.MAX_VALUE, target.y - dist/2);
-    Pt y2 = new Pt(Double.MAX_VALUE, target.y + dist/2);
+    Pt y1 = new Pt(Double.MAX_VALUE, target.y - dist / 2);
+    Pt y2 = new Pt(Double.MAX_VALUE, target.y + dist / 2);
     int idxA = -(Collections.binarySearch(byY, y1, Pt.sortByY));
     int idxB = -(Collections.binarySearch(byY, y2, Pt.sortByY) + 1);
-    for (int i=idxA; i < idxB; i++) {
+    for (int i = idxA; i < idxB; i++) {
       ySet.add(byY.get(i));
     }
     return ySet;
@@ -127,6 +129,30 @@ public class PointGraph {
     for (Pt pt : seq) {
       add(pt);
     }
+  }
+
+  public Pt getNearest(Pt pt) {
+    // This is probably a braindead way of finding the nearest point, but it works. I just wanted
+    // to avoid iterating through every point.
+    if (byX.size() == 0) {
+      return null;
+    }
+    double dist = 10;
+    Set<Pt> near = null;
+    while (near == null || near.size() == 0) {
+      near = getNear(pt, dist);
+      dist = dist + 20;
+    }
+    double bestDist = Double.MAX_VALUE;
+    Pt bestPt = null;
+    for (Pt zed : near) {
+      double thisDist = zed.distance(pt);
+      if (thisDist < bestDist) {
+        bestPt = zed;
+        bestDist = thisDist;
+      }
+    }
+    return bestPt;
   }
 
 }

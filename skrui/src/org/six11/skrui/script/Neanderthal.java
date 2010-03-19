@@ -1,6 +1,8 @@
 package org.six11.skrui.script;
 
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,8 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.swing.Timer;
+
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.FlowSelection;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
 import org.six11.skrui.data.LengthGraph;
@@ -33,7 +38,7 @@ import org.six11.util.pen.*;
 public class Neanderthal extends SkruiScript implements SequenceListener {
 
   private static final String SCRAP = "Sequence already dealt with";
-  private static final String MAIN_SEQUENCE = "main sequence";
+  public static final String MAIN_SEQUENCE = "main sequence";
   static final String PRIMITIVES = "primitives";
 
   public enum Certainty {
@@ -78,6 +83,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   LengthGraph lenG;
   Domain domain;
   List<Shape> recognizedShapes;
+  FlowSelection fs;
+  
 
   @Override
   public void initialize() {
@@ -90,6 +97,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     lenG = new LengthGraph();
     recognizedShapes = new ArrayList<Shape>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
+    fs = new FlowSelection(this);
   }
 
   public TimeGraph getTimeGraph() {
@@ -176,11 +184,18 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
     switch (type) {
+      case BEGIN:
+        seq.getLast().setSequence(MAIN_SEQUENCE, seq);
+        fs.sendDown(seq);
+        break;
       case PROGRESS:
+        seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
+        fs.sendDrag();
         break;
       case END:
-        if (seq.getAttribute(SCRAP) == null) {
+        fs.sendUp();
+        if (seq.getAttribute(SCRAP) == null && seq.size() > 1) {
           processFinishedSequence(seq);
         }
         break;
@@ -190,9 +205,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   private void processFinishedSequence(Sequence seq) {
     tg.add(seq);
     // explicity map points back to their original sequence so we can find it later.
-    for (Pt pt : seq) {
-      pt.setSequence(MAIN_SEQUENCE, seq);
-    }
     allPoints.addAll(seq);
     // Create a 'primitives' set where dots/ellipses/polyline elements will go.
     seq.setAttribute(PRIMITIVES, new HashSet<Primitive>());
@@ -283,9 +295,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       if (cornerDots.size() > 0) {
         DrawingBufferRoutines.dots(db, cornerDots, 5.0, 0.5, Color.BLACK, Color.RED);
       }
-
-
-
     }
   }
 

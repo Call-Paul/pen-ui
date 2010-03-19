@@ -247,4 +247,19 @@ public abstract class DrawingBufferRoutines {
     line(db, new Line(head1, tip), color, thick);
     line(db, new Line(head2, tip), color, thick);
   }
+
+  public static void flowSelectEffect(DrawingBuffer db, Sequence seq, double thick) {
+    if (seq.getPoints().size() > 0) {
+      for (int i = 0; i < seq.getPoints().size() - 1; i++) {
+        double a = seq.get(i).hasAttribute("fs strength") ? seq.get(i).getDouble("fs strength") : 0;
+        double b = seq.get(i + 1).hasAttribute("fs strength") ? seq.get(i + 1).getDouble(
+            "fs strength") : 0;
+        double c = (a + b) / 2;
+        if (c > 0) {
+          Color color = new Color(1f, 1 - (float) c, 1 - (float) c, (float) c);
+          line(db, seq.get(i), seq.get(i + 1), color, thick);
+        }
+      }
+    }
+  }
 }
