@@ -191,7 +191,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       case PROGRESS:
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
-        fs.sendDrag();
+        fs.sendDrag(seq.getLast());
         break;
       case END:
         fs.sendUp();

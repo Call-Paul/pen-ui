@@ -259,6 +259,16 @@ public abstract class DrawingBufferRoutines {
           Color color = new Color(1f, 1 - (float) c, 1 - (float) c, (float) c);
           line(db, seq.get(i), seq.get(i + 1), color, thick);
         }
+        if (a > 0.7 && seq.get(i).hasAttribute("corner") && i > 0) {
+          double p = seq.get(i - 1).hasAttribute("fs strength") ? seq.get(i - 1).getDouble(
+              "fs strength") : 0;
+          // See if the corner has a zero-strength neighbor. If so, the corner is a hinge at the
+          // moment.
+          boolean cornerIsExtent = (p * b == 0); // if either p or b is zero, p * b is zero.
+          if (cornerIsExtent) {
+            dot(db, seq.get(i), 7.0, 1.0, Color.BLACK, Color.GREEN);
+          }
+        }
       }
     }
   }

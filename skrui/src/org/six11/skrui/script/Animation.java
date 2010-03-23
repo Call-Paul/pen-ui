@@ -82,15 +82,6 @@ public class Animation extends SkruiScript implements SequenceListener {
       if (baseDir == null) {
         startAnimation(main.getDrawingSurface().getBounds(), "png");
       }
-      // DrawingBuffer buf = new DrawingBuffer();
-      // DrawingBufferRoutines.line(buf, seqEvent.getSeq().getFirst(), seqEvent.getSeq().getLast(),
-      // Color.BLUE);
-      // DrawingBufferRoutines.dot(buf, seqEvent.getSeq().getFirst(), 6, 1, Color.BLACK,
-      // Color.GREEN);
-      // DrawingBufferRoutines.dot(buf, seqEvent.getSeq().getLast(), 6, 1, Color.BLACK,
-      // Color.RED);
-
-      // addFrame(buf, true);
       addFrame();
     }
   }
