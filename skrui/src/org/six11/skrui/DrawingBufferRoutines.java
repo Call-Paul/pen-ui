@@ -251,23 +251,20 @@ public abstract class DrawingBufferRoutines {
   public static void flowSelectEffect(DrawingBuffer db, Sequence seq, double thick) {
     if (seq.getPoints().size() > 0) {
       for (int i = 0; i < seq.getPoints().size() - 1; i++) {
-        double a = seq.get(i).hasAttribute("fs strength") ? seq.get(i).getDouble("fs strength") : 0;
-        double b = seq.get(i + 1).hasAttribute("fs strength") ? seq.get(i + 1).getDouble(
-            "fs strength") : 0;
+        Pt pt = seq.get(i);
+        double a = pt.getDouble("fs strength", 0);
+        double b = seq.get(i + 1).getDouble("fs strength", 0);
         double c = (a + b) / 2;
         if (c > 0) {
           Color color = new Color(1f, 1 - (float) c, 1 - (float) c, (float) c);
-          line(db, seq.get(i), seq.get(i + 1), color, thick);
+          line(db, pt, seq.get(i + 1), color, thick);
         }
-        if (a > 0.7 && seq.get(i).hasAttribute("corner") && i > 0) {
-          double p = seq.get(i - 1).hasAttribute("fs strength") ? seq.get(i - 1).getDouble(
-              "fs strength") : 0;
-          // See if the corner has a zero-strength neighbor. If so, the corner is a hinge at the
-          // moment.
-          boolean cornerIsExtent = (p * b == 0); // if either p or b is zero, p * b is zero.
-          if (cornerIsExtent) {
-            dot(db, seq.get(i), 7.0, 1.0, Color.BLACK, Color.GREEN);
-          }
+        if (pt.getBoolean("hinge", false)) {
+          dot(db, pt, 7.0, 0.7, Color.BLACK, Color.GREEN);
+        } else if (pt.getBoolean("corner", false) && a == 1) {
+          dot(db, pt, 7.0, 0.7, Color.BLACK, Color.RED);
+        } else if (pt.getBoolean("corner", false) && a > 0) {
+          dot(db, pt, 3.0, 0.3, Color.BLACK, Color.BLUE);
         }
       }
     }

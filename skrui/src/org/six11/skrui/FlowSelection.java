@@ -3,6 +3,7 @@ package org.six11.skrui;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.data.FSM;
 import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
@@ -22,6 +24,7 @@ import org.six11.util.pen.Vec;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class FlowSelection {
+  private static final double HINGE_THRESHOLD = 0.7;
   Sequence flowSelectionStroke;
   Pt dwellPoint;
   Pt dragPoint; // latest location of pen during a drag.
@@ -195,13 +198,50 @@ public class FlowSelection {
   protected void reshape() {
     if (dragDelta != null) {
       DrawingBuffer db = new DrawingBuffer();
+      // First see if this is a hinged operation.
+      Pt hinge = null;
+      int numHinges = 0;
       for (Sequence seq : nearestSequences) {
-        int centerIdx = seq.getNamedPointIndex("flow select center");
-        passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
-        DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
-        DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
+        for (Pt pt : seq) {
+          if (pt.getBoolean("hinge", false)) {
+            numHinges++;
+            hinge = pt;
+          }
+        }
+      }
+      if (numHinges == 1) {
+        rotateAndScale(db, hinge);
+      } else {
+        move(db);
       }
       data.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
+    }
+  }
+
+  private void rotateAndScale(DrawingBuffer db, Pt hinge) {
+    Pt prev = dragPoint.getTranslated(-dragDelta.getX(), -dragDelta.getY());
+    Vec toPrev = new Vec(hinge, prev);
+    Vec toDrag = new Vec(hinge, dragPoint);
+    double theta = Math.atan2(toDrag.getY(), toDrag.getX())
+        - Math.atan2(toPrev.getY(), toPrev.getX());
+    AffineTransform trans = Functions.getRotationInstance(hinge, theta);
+    for (Sequence seq : nearestSequences) {
+      for (Pt pt : seq) {
+        if (pt != hinge && pt.getDouble("fs strength", 0) > HINGE_THRESHOLD) {
+          trans.transform(pt, pt);
+        }
+      }
+      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
+      DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
+    }
+  }
+
+  private void move(DrawingBuffer db) {
+    for (Sequence seq : nearestSequences) {
+      int centerIdx = seq.getNamedPointIndex("flow select center");
+      passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
+      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
+      DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
     }
   }
 
@@ -234,52 +274,147 @@ public class FlowSelection {
     nearestSequences.clear();
     Sequence ns = nearestPt.getSequence(Neanderthal.MAIN_SEQUENCE);
     nearestSequences.add(ns);
+    int centerIdx = ns.indexOf(nearestPt);
+    passEffortMsg(centerIdx, ns, 0, 0);
     data.getDrawingSurface().getSoup().setCurrentSequenceShapeVisible(false);
     dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE).setAttribute(Neanderthal.SCRAP, "true");
     bug("just set the scrap attribute on the current scribble, and set it to invisible.");
     ns.setNamedPoint("flow select center", nearestPt);
   }
 
+  /**
+   * Sets the "fs effort" value on each point.
+   */
+  private void passEffortMsg(int idx, Sequence seq, double effort, int dir) {
+    if (indexValid(idx, seq)) {
+      Pt pt = seq.get(idx);
+      pt.setDouble("fs effort", effort);
+      double penalty = getEffortPenalty(idx, seq);
+      bug("effort: " + idx + " / " + (seq.size() - 1) + " = " + Debug.num(effort)
+          + (penalty > 0 ? " *" : ""));
+      if (dir == 0) {
+        int nextIdx = idx + 1;
+        if (indexValid(nextIdx, seq)) {
+          Pt next = seq.get(nextIdx);
+          double dist = pt.distance(next);
+          passEffortMsg(nextIdx, seq, effort + dist + penalty, 1);
+        }
+        nextIdx = idx - 1;
+        if (indexValid(nextIdx, seq)) {
+          Pt next = seq.get(nextIdx);
+          double dist = pt.distance(next);
+          passEffortMsg(nextIdx, seq, effort + dist + penalty, -1);
+        }
+      } else {
+        int nextIdx = idx + dir;
+        if (indexValid(nextIdx, seq)) {
+          Pt next = seq.get(nextIdx);
+          double dist = pt.distance(next);
+          passEffortMsg(nextIdx, seq, effort + dist + penalty, dir);
+        }
+      }
+    }
+  }
+
+  private double getEffortPenalty(int idx, Sequence seq) {
+    double ret = 0;
+    if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute("corner")) {
+      ret = 130;
+    }
+    return ret;
+  }
+
+  private boolean indexValid(int idx, Sequence seq) {
+    return idx >= 0 && idx < seq.size();
+  }
+
   protected void growSelection() {
     DrawingBuffer db = new DrawingBuffer();
+    long duration = System.currentTimeMillis() - fsStartTime;
     for (Sequence seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
-      double maxHeat = 300;
-      passHeatMsg(centerIdx, seq, 20, maxHeat, 0);
+      passStrengthMsg(centerIdx, seq, duration, 0);
+      assignHinge(seq);
       DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
     }
     data.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
   }
 
-  private void passHeatMsg(int idx, Sequence seq, double xfer, double maxHeat, int dir) {
-    Pt pt = seq.get(idx);
-    double currentHeat = pt.getDouble("heat", 0);
-    double headroom = maxHeat - currentHeat; // this is how much hotter I can get.
-    double amt = Math.min(headroom / 3, xfer / 3);
-    double newHeat = Math.min(maxHeat, currentHeat + amt);
-    pt.setDouble("heat", newHeat);
-    double str = getStrength(newHeat, maxHeat);
-    seq.get(idx).setDouble("fs strength", str);
-    double remainingHeat = xfer - amt;
-    if (dir == 0) {
-      double what = 3 / 2;
-      // This is the selection center. Go both directions.
-      int nextIdx = idx + 1;
-      if (nextIdx >= 0 && nextIdx < seq.size()) {
-        passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, 1);
+  /**
+   * For each point, assign a boolean 'hinge' value. A hinge is a point with a 'corner' attribute
+   * that has greater than HINGE_THRESHOLD (e.g. 0.7) selection strength and a point to one side has
+   * less than half the threshold.
+   * 
+   * @return the number of hinges found.
+   */
+  private int assignHinge(Sequence seq) {
+    int numHinges = 0;
+    for (int i = 1; i < seq.size() - 1; i++) {
+      Pt pt = seq.get(i);
+      if (pt.hasAttribute("corner") && pt.getDouble("fs strength", 0) > HINGE_THRESHOLD) {
+        double left = seq.get(i - 1).getDouble("fs strength", 0);
+        double right = seq.get(i + 1).getDouble("fs strength", 0);
+        double min = Math.min(left, right);
+        pt.setBoolean("hinge", (min < HINGE_THRESHOLD / 2));
+        if (min < HINGE_THRESHOLD / 2) {
+          numHinges++;
+        }
+      } else {
+        pt.setBoolean("hinge", false);
       }
-      nextIdx = idx - 1;
-      if (nextIdx >= 0 && nextIdx < seq.size()) {
-        passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, -1);
-      }
-    } else {
-      // Not the center. Just keep going the direction you're on.
-      int nextIdx = idx + dir;
-      if (nextIdx >= 0 && nextIdx < seq.size()) {
-        passHeatMsg(nextIdx, seq, remainingHeat, maxHeat, dir);
+    }
+    return numHinges;
+  }
+
+  /**
+   * Sets the "fs strength" double on points that have positive strength. Other points will not get
+   * a strength value, so remember that.
+   */
+  private void passStrengthMsg(int idx, Sequence seq, long duration, int dir) {
+    if (indexValid(idx, seq)) {
+      Pt pt = seq.get(idx);
+      double str = getStrength(pt.getDouble("fs effort"), duration, 0.1);
+      pt.setDouble("fs strength", str);
+      if (str > 0) {
+        if (dir == 0) {
+          passStrengthMsg(idx + 1, seq, duration, 1);
+          passStrengthMsg(idx - 1, seq, duration, -1);
+        } else {
+          passStrengthMsg(idx + dir, seq, duration, dir);
+        }
       }
     }
   }
+
+  // private void passHeatMsg(int idx, Sequence seq, double xfer, double maxHeat, int dir) {
+  // Pt pt = seq.get(idx);
+  // double currentHeat = pt.getDouble("heat", 0);
+  // double headroom = maxHeat - currentHeat; // this is how much hotter I can get.
+  // double amt = Math.min(headroom / 3, xfer / 3);
+  // double newHeat = Math.min(maxHeat, currentHeat + amt);
+  // pt.setDouble("heat", newHeat);
+  // double str = getStrength(newHeat, maxHeat);
+  // seq.get(idx).setDouble("fs strength", str);
+  // double remainingHeat = xfer - amt;
+  // if (dir == 0) {
+  // double what = 3 / 2;
+  // // This is the selection center. Go both directions.
+  // int nextIdx = idx + 1;
+  // if (nextIdx >= 0 && nextIdx < seq.size()) {
+  // passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, 1);
+  // }
+  // nextIdx = idx - 1;
+  // if (nextIdx >= 0 && nextIdx < seq.size()) {
+  // passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, -1);
+  // }
+  // } else {
+  // // Not the center. Just keep going the direction you're on.
+  // int nextIdx = idx + dir;
+  // if (nextIdx >= 0 && nextIdx < seq.size()) {
+  // passHeatMsg(nextIdx, seq, remainingHeat, maxHeat, dir);
+  // }
+  // }
+  // }
 
   // private void passStrengthMsg(int idx, Sequence seq, double str, int dir) {
   // // double effort = seq.get(idx).getDouble("fs effort");
@@ -306,10 +441,20 @@ public class FlowSelection {
   // }
   // }
 
-  private double getStrength(double heat, double maxHeat) {
-    double ratioSqrt = Math.sqrt(heat / maxHeat);
-    double num = Math.cos(ratioSqrt * Math.PI) + 1;
-    return 1 - (num / 2);
+  // private double getStrength(double heat, double maxHeat) {
+  // double ratioSqrt = Math.sqrt(heat / maxHeat);
+  // double num = Math.cos(ratioSqrt * Math.PI) + 1;
+  // return 1 - (num / 2);
+  // }
+
+  private double getStrength(double effort, double duration, double saneConstant) {
+    double ret = 0;
+    double tc = duration * saneConstant;
+    if (effort < tc) {
+      double trouble = (effort * Math.PI / tc);
+      ret = (Math.cos(trouble) + 1) / 2;
+    }
+    return ret;
   }
 
   public void sendDwell() {
