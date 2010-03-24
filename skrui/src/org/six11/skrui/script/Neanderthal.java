@@ -37,6 +37,8 @@ import org.six11.util.pen.*;
  */
 public class Neanderthal extends SkruiScript implements SequenceListener {
 
+  private static final String K_DO_RECOGNITION = "do-recognition";
+
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
   static final String PRIMITIVES = "primitives";
@@ -47,8 +49,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
-    args.setProgramName("A Nice Hello World");
-    args.setDocumentationProgram("This serves as a template for new scripts. Copy away!");
+    args.setProgramName("Neanderthal: a primitive ink processor.");
+    args.setDocumentationProgram("This performs primitive (and not so primitive) analysis of "
+        + "sketch input.");
 
     Map<String, BoundedParameter> defs = getDefaultParameters();
     for (String k : defs.keySet()) {
@@ -62,7 +65,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-
+    defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
+        "Should the Neanderthal do advanced sketch recognition?", false));
     return defs;
   }
 
@@ -84,7 +88,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   Domain domain;
   List<Shape> recognizedShapes;
   FlowSelection fs;
-  
 
   @Override
   public void initialize() {
@@ -225,22 +228,23 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Set<Primitive> recent = getPrimitiveSet(seq);
     Set<Primitive> cohorts = getCohorts(recent);
 
-    long start = System.currentTimeMillis();
-    List<Shape> results;
-    Set<Shape> newShapes = new HashSet<Shape>();
-    for (ShapeTemplate st : domain.getTemplates()) {
-      results = st.apply(cohorts);
-      newShapes.addAll(merge(results));
+    if (getParam(K_DO_RECOGNITION).getBoolean()) {
+      long start = System.currentTimeMillis();
+      List<Shape> results;
+      Set<Shape> newShapes = new HashSet<Shape>();
+      for (ShapeTemplate st : domain.getTemplates()) {
+        results = st.apply(cohorts);
+        newShapes.addAll(merge(results));
+      }
+      long end = System.currentTimeMillis();
+      bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
+          + " primitive shapes in " + (end - start) + " ms.");
     }
-    long end = System.currentTimeMillis();
-    bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
-        + " primitive shapes in " + (end - start) + " ms.");
-
     // DEBUGGING stuff below here. comment out if you want.
-    drawNewShapes(newShapes);
+    // drawNewShapes(newShapes);
     // drawPrims(recent, Color.RED, "recent");
     // cohorts.removeAll(recent);
-    drawPrims(cohorts, Color.GREEN, "3");
+    // drawPrims(cohorts, Color.GREEN, "3");
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);

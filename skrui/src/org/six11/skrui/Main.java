@@ -247,7 +247,7 @@ public class Main {
       attachKeyboardAccelerators(af.getRootPane());
       af.setLayout(new BorderLayout());
       colorBar = makeColorBar();
-      ds.setPenColor(colorBar.getCurrentColor());
+      ds.getSoup().setPenColor(colorBar.getCurrentColor());
       af.add(colorBar, BorderLayout.NORTH);
       af.add(ds, BorderLayout.CENTER);
       if (args.hasFlag("big")) {
@@ -265,7 +265,7 @@ public class Main {
     ret.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
         bug("Pen color changed to " + evt.getNewValue());
-        ds.setPenColor((Color) evt.getNewValue());
+        ds.getSoup().setPenColor((Color) evt.getNewValue());
       }
     });
     return ret;
