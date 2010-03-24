@@ -39,8 +39,6 @@ public class FlowSelection {
   private static int TICK = 50;
   private static double MOVE_THRESHOLD = 10.0;
 
-  // private static double EFFORT_INCREMENT = 0.3;
-
   public FlowSelection(final Neanderthal data) {
     flowSelectionStroke = null;
     this.data = data;
@@ -293,8 +291,6 @@ public class FlowSelection {
       Pt pt = seq.get(idx);
       pt.setDouble("fs effort", effort);
       double penalty = getEffortPenalty(idx, seq);
-      bug("effort: " + idx + " / " + (seq.size() - 1) + " = " + Debug.num(effort)
-          + (penalty > 0 ? " *" : ""));
       if (dir == 0) {
         int nextIdx = idx + 1;
         if (indexValid(nextIdx, seq)) {
@@ -389,67 +385,6 @@ public class FlowSelection {
     }
   }
 
-  // private void passHeatMsg(int idx, Sequence seq, double xfer, double maxHeat, int dir) {
-  // Pt pt = seq.get(idx);
-  // double currentHeat = pt.getDouble("heat", 0);
-  // double headroom = maxHeat - currentHeat; // this is how much hotter I can get.
-  // double amt = Math.min(headroom / 3, xfer / 3);
-  // double newHeat = Math.min(maxHeat, currentHeat + amt);
-  // pt.setDouble("heat", newHeat);
-  // double str = getStrength(newHeat, maxHeat);
-  // seq.get(idx).setDouble("fs strength", str);
-  // double remainingHeat = xfer - amt;
-  // if (dir == 0) {
-  // double what = 3 / 2;
-  // // This is the selection center. Go both directions.
-  // int nextIdx = idx + 1;
-  // if (nextIdx >= 0 && nextIdx < seq.size()) {
-  // passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, 1);
-  // }
-  // nextIdx = idx - 1;
-  // if (nextIdx >= 0 && nextIdx < seq.size()) {
-  // passHeatMsg(nextIdx, seq, remainingHeat * what, maxHeat, -1);
-  // }
-  // } else {
-  // // Not the center. Just keep going the direction you're on.
-  // int nextIdx = idx + dir;
-  // if (nextIdx >= 0 && nextIdx < seq.size()) {
-  // passHeatMsg(nextIdx, seq, remainingHeat, maxHeat, dir);
-  // }
-  // }
-  // }
-
-  // private void passStrengthMsg(int idx, Sequence seq, double str, int dir) {
-  // // double effort = seq.get(idx).getDouble("fs effort");
-  // seq.get(idx).setDouble("fs strength", str);
-  // int nextIdx = idx + dir;
-  // if (str > 0 && nextIdx >= 0 && nextIdx < seq.size()) {
-  // double nextStr = str * str;
-  // passStrengthMsg(nextIdx, seq, nextStr, dir);
-  // }
-  // }
-
-  // private void passEffortMsg(int idx, Sequence seq, double e, int dir) {
-  // seq.get(idx).setDouble("fs effort", e);
-  // boolean isCorner = idx > 0 && idx < (seq.size() - 1) && seq.get(idx).hasAttribute("corner");
-  // bug("effort " + idx + "/" + (seq.size() - 1) + " = " + Debug.num(e)
-  // + (isCorner ? " (corner)" : ""));
-  // int nextIdx = idx + dir;
-  // if (nextIdx < seq.size() && nextIdx >= 0) {
-  // double dist = seq.get(idx).distance(seq.get(nextIdx));
-  // if (isCorner) {
-  // dist = dist + 1400;
-  // }
-  // passEffortMsg(nextIdx, seq, e + dist, dir);
-  // }
-  // }
-
-  // private double getStrength(double heat, double maxHeat) {
-  // double ratioSqrt = Math.sqrt(heat / maxHeat);
-  // double num = Math.cos(ratioSqrt * Math.PI) + 1;
-  // return 1 - (num / 2);
-  // }
-
   private double getStrength(double effort, double duration, double saneConstant) {
     double ret = 0;
     double tc = duration * saneConstant;
@@ -465,11 +400,13 @@ public class FlowSelection {
   }
 
   public void sendDrag(Pt where) {
-    if (dragPoint != null) {
-      dragDelta = new Vec(dragPoint, where);
+    if (where.distance(dwellPoint) > MOVE_THRESHOLD) {
+      if (dragPoint != null) {
+        dragDelta = new Vec(dragPoint, where);
+      }
+      dragPoint = where;
+      fsm.addEvent("drag");
     }
-    dragPoint = where;
-    fsm.addEvent("drag");
   }
 
   public void sendUp() {
