@@ -222,13 +222,16 @@ public class FlowSelection {
     Pt prev = dragPoint.getTranslated(-dragDelta.getX(), -dragDelta.getY());
     Vec toPrev = new Vec(hinge, prev);
     Vec toDrag = new Vec(hinge, dragPoint);
+    double scale = toDrag.mag() / toPrev.mag();
     double theta = Math.atan2(toDrag.getY(), toDrag.getX())
         - Math.atan2(toPrev.getY(), toPrev.getX());
-    AffineTransform trans = Functions.getRotationInstance(hinge, theta);
+    AffineTransform rot = Functions.getRotationInstance(hinge, theta);
     for (Sequence seq : nearestSequences) {
       for (Pt pt : seq) {
         if (pt != hinge && pt.getDouble("fs strength", 0) > HINGE_THRESHOLD) {
-          trans.transform(pt, pt);
+          rot.transform(pt, pt);
+          Vec toPt = new Vec(hinge, pt).getScaled(scale);
+          pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
         }
       }
       DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);

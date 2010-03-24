@@ -7,6 +7,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,6 +42,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
+import org.six11.skrui.ui.ColorBar;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -62,6 +65,7 @@ import org.six11.util.pen.SequenceIO;
 public class Main {
 
   private OliveDrawingSurface ds;
+  private ColorBar colorBar;
   private ApplicationFrame af;
   private File currentFile;
   private String batchModePdfFileName;
@@ -242,6 +246,9 @@ public class Main {
       makeAnonActions();
       attachKeyboardAccelerators(af.getRootPane());
       af.setLayout(new BorderLayout());
+      colorBar = makeColorBar();
+      ds.setPenColor(colorBar.getCurrentColor());
+      af.add(colorBar, BorderLayout.NORTH);
       af.add(ds, BorderLayout.CENTER);
       if (args.hasFlag("big")) {
         af.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
@@ -251,6 +258,17 @@ public class Main {
       af.center();
       af.setVisible(true);
     }
+  }
+
+  private ColorBar makeColorBar() {
+    ColorBar ret = new ColorBar();
+    ret.addPropertyChangeListener(new PropertyChangeListener() {
+      public void propertyChange(PropertyChangeEvent evt) {
+        bug("Pen color changed to " + evt.getNewValue());
+        ds.setPenColor((Color) evt.getNewValue());
+      }
+    });
+    return ret;
   }
 
   /**
