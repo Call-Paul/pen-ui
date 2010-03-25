@@ -15,6 +15,7 @@ import javax.swing.Timer;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.FlowSelection;
+import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
 import org.six11.skrui.data.LengthGraph;
@@ -88,6 +89,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   Domain domain;
   List<Shape> recognizedShapes;
   FlowSelection fs;
+  Scribbler scribble;
 
   @Override
   public void initialize() {
@@ -101,6 +103,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     recognizedShapes = new ArrayList<Shape>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     fs = new FlowSelection(this);
+    scribble = new Scribbler(this);
   }
 
   public TimeGraph getTimeGraph() {
@@ -189,15 +192,18 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     switch (type) {
       case BEGIN:
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
+        scribble.sendDown(seq);
         fs.sendDown(seq);
         break;
       case PROGRESS:
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
+        scribble.sendDrag();
         fs.sendDrag(seq.getLast());
         break;
       case END:
         fs.sendUp();
+        scribble.sendUp();
         if (seq.getAttribute(SCRAP) == null && seq.size() > 1) {
           processFinishedSequence(seq);
         }
@@ -248,9 +254,21 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
+    drawDots(scribble.getPossibleCorners(), "7");
     drawDots(seq, true, true, true, false, false, "4");
     drawDots(seq, false, false, false, true, false, "5");
     drawDots(seq, false, false, false, false, true, "6");
+  }
+  
+  private void drawDots(List<Pt> spots, String bufferName) {
+    if (spots.size() > 1) {
+      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
+      if (db == null) {
+        db = new DrawingBuffer();
+        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
+      }
+      DrawingBufferRoutines.dots(db, spots, 5.0, 0.5, Color.BLACK, Color.PINK);
+    }
   }
 
   private void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
