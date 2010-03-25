@@ -1,6 +1,7 @@
 package org.six11.skrui.mesh;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,10 +67,6 @@ public class Triangle {
 
   public String toString() {
     return "Triangle " + id + " (edge: " + (edge == null ? "?" : edge.id) + ")";
-  }
-
-  public Set<HalfEdge> getEdges() {
-    return null;
   }
 
   public Set<Triangle> getAdjacentTriangles() {
@@ -219,18 +216,25 @@ public class Triangle {
     double v = barycentric[1];
     HalfEdge ret = null;
     if (Functions.eq(0, u, Functions.EQ_TOL)) {
-      bug("Found edge (1) using barycentric coordinates: " + Debug.num(barycentric));
       ret = edge.getNext();
     } else if (Functions.eq(0, v, Functions.EQ_TOL)) {
-      bug("Found edge (2) using barycentric coordinates: " + Debug.num(barycentric));
       ret = edge;
     } else if (u > 0 && v > 0 && Functions.eq(1, u + v, Functions.EQ_TOL)) {
-      bug("Found edge (3) using barycentric coordinates: " + Debug.num(barycentric));
       ret = edge.getNext().getNext();
     } else {
       bug("Couldn't find edge using barycentric coordiantes even though I "
           + "thought I should have been able to: " + Debug.num(barycentric));
     }
     return ret;
+  }
+
+  public String getVertIds() {
+    List<Pt> p = getPoints();
+    Collections.sort(p, Pt.sortByT);
+    StringBuilder buf = new StringBuilder();
+    for (Pt pt : p) {
+      buf.append(pt.getID() + " ");
+    }
+    return ("[" + buf.toString().trim() + "]");
   }
 }

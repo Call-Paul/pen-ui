@@ -1,17 +1,15 @@
 package org.six11.skrui.mesh;
 
-import java.awt.Color;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
-import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.script.Animation;
 import org.six11.util.Debug;
 import org.six11.util.gui.BoundingBox;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
@@ -26,6 +24,7 @@ public class Mesh {
 
   public static final String HALF_EDGE = "half-edge";
 
+  List<Pt> allPoints;
   Set<Triangle> triangles;
   Animation ani;
 
@@ -35,6 +34,7 @@ public class Mesh {
 
   public Mesh(List<Pt> points, double edgeLengthThreshold, Animation ani) {
     long start = System.nanoTime();
+    this.allPoints = new ArrayList<Pt>();
     this.ani = ani;
     triangles = new HashSet<Triangle>();
 
@@ -43,7 +43,7 @@ public class Mesh {
       bb.add(pt);
     }
     // DrawingBuffer boundingBuf = new DrawingBuffer();
-    bb.grow(2);
+    bb.grow(2000);
     Rectangle2D boundingRect = bb.getRectangle();
     List<Pt> box = new ArrayList<Pt>();
     box.add(new Pt(boundingRect.getMinX(), boundingRect.getMinY())); // p0
@@ -75,7 +75,7 @@ public class Mesh {
     // and then add each point in 'points', fixing the mesh after each one. Not the fastest
     // algorithm, but I'm dealing with relatively tiny meshes.
     for (Pt newVert : points) {
-      addPoint(newVert);
+      addPoint(newVert, false);
     }
     boolean ok = true;
     for (Triangle t : triangles) {
@@ -107,7 +107,7 @@ public class Mesh {
                     e = e.getNext();
                   }
                   Pt splitLocation = Functions.getMean(tp.get(i), tp.get((i + 1) % 3));
-                  addPointOnEdge(e, splitLocation);
+                  addPointOnEdge(e, splitLocation, false);
                   numRepaired++;
                   break;
                 }
@@ -115,7 +115,7 @@ public class Mesh {
             }
           }
         }
-        animate(ani);
+        // animate(ani);
       } while (numRepaired > 0);
     }
     ok = true;
@@ -129,20 +129,28 @@ public class Mesh {
         + triangles.size() + " triangles)");
   }
 
-  private void animate(Animation ani) {
-    if (ani != null) {
-      DrawingBuffer db = new DrawingBuffer();
-      for (Triangle t : getTriangles()) {
-        if (t.getMeshLocation() == Where.Inside) {
-          List<Pt> drawUs = t.getPoints();
-          drawUs.add(drawUs.get(0));
-          DrawingBufferRoutines.lines(db, drawUs, Color.LIGHT_GRAY, 0.5);
-          DrawingBufferRoutines.dot(db, t.getCentroid(), 4.0, 0.4, Color.GRAY, Color.LIGHT_GRAY);
-        }
-      }
-      ani.addFrame(db, false);
-    }
+  public int size() {
+    return triangles.size();
   }
+
+  // private void animate(Animation ani) {
+  // if (ani != null) {
+  // DrawingBuffer db = new DrawingBuffer();
+  // drawToBuffer(db);
+  // ani.addFrame(db, false);
+  // }
+  // }
+
+  // public void drawToBuffer(DrawingBuffer db) {
+  // for (Triangle t : getTriangles()) {
+  // if (t.getMeshLocation() == Where.Inside) {
+  // List<Pt> drawUs = t.getPoints();
+  // drawUs.add(drawUs.get(0));
+  // DrawingBufferRoutines.lines(db, drawUs, Color.LIGHT_GRAY, 0.5);
+  // DrawingBufferRoutines.dot(db, t.getCentroid(), 4.0, 0.4, Color.GRAY, Color.LIGHT_GRAY);
+  // }
+  // }
+  // }
 
   // private void animate(DrawingBuffer boundingBuf, BoundingBox bb, Color c) {
   // boundingBuf.setColor(c);
@@ -151,25 +159,104 @@ public class Mesh {
   // boundingBuf.up();
   // }
 
-  private void addPoint(Pt newVert) {
-    TriangleWhere tw = findTriangle(newVert);
-    if (tw.where == Where.Inside) {
-      addPointInside(tw.triangle, newVert);
-    }
-    if (tw.where == Where.Boundary) {
-      HalfEdge splitMe = tw.triangle.getEdgeContaining(newVert);
-      if (splitMe == null) {
-        bug("I would like to insert a point that should be on a boundary, "
-            + "but I can't figure out where.");
-      } else {
-        bug("Adding point on edge...");
-        addPointOnEdge(splitMe, newVert);
-        bug("If I didn't explode into flames, it might have worked.");
+  private void addPoint(Pt newVert, boolean insertIfBreakBoundary) {
+    if (!allPoints.contains(newVert)) {
+      allPoints.add(newVert);
+      TriangleWhere tw = findTriangle(newVert);
+      if (tw.where == Where.Inside) {
+        addPointInside(tw.triangle, newVert, insertIfBreakBoundary);
+      }
+      if (tw.where == Where.Boundary) {
+        HalfEdge splitMe = tw.triangle.getEdgeContaining(newVert);
+        if (splitMe == null) {
+          bug("I would like to insert a point that should be on a boundary, "
+              + "but I can't figure out where.");
+        } else {
+          addPointOnEdge(splitMe, newVert, insertIfBreakBoundary);
+        }
       }
     }
   }
 
-  private void addPointOnEdge(HalfEdge splitMe, Pt newVert) {
+  public List<Pt> getBoundary() {
+    List<Pt> ret = new ArrayList<Pt>();
+    HalfEdge start = findBoundaryEdge();
+    HalfEdge cursor = start;
+    do {
+      cursor = advanceBoundary(cursor);
+      ret.add(cursor.getPoint());
+    } while (cursor != start);
+
+    return ret;
+  }
+
+  private HalfEdge advanceBoundary(HalfEdge cursor) {
+    cursor = cursor.getNext();
+    while (!isBoundaryEdge(cursor)) {
+      cursor = cursor.getPair().getNext();
+    }
+    return cursor;
+  }
+
+  private HalfEdge findBoundaryEdge() {
+    HalfEdge ret = null;
+    outer: {
+      for (Triangle t : triangles) {
+        if (isBoundaryEdge(t.getEdge())) {
+          ret = t.getEdge();
+          break outer;
+        }
+        if (isBoundaryEdge(t.getEdge().getNext())) {
+          ret = t.getEdge().getNext();
+          break outer;
+        }
+        if (isBoundaryEdge(t.getEdge().getNext().getNext())) {
+          ret = t.getEdge().getNext().getNext();
+          break outer;
+        }
+
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Is this edge on the inside and its pair on the outside?
+   */
+  private boolean isBoundaryEdge(HalfEdge he) {
+    return he.getFace().meshLocation == Where.Inside
+        && he.getPair().getFace().meshLocation == Where.Outside;
+  }
+
+  /**
+   * Add a new point to the mesh and update the boundary data. On occasion this will mean a points
+   * that used to be on the inside of the mesh now appears to be on the outside. To prevent existing
+   * points from defecting from in to out, use okFlipInToOut=false.
+   */
+  public void addPointPushBoundary(Pt newVert, boolean okFlipInToOut) {
+    boolean shouldAdd = false;
+    for (Triangle t : triangles) {
+      if (t.whereIsPoint(newVert) == Where.Inside && (t.meshLocation == Where.Outside)) {
+        shouldAdd = true;
+        break;
+      }
+    }
+    if (shouldAdd) {
+      addPoint(newVert, !okFlipInToOut);
+      for (Triangle t : triangles) {
+        boolean inside = Functions.isPointInRegion(t.getCentroid(), allPoints);
+        if (inside) {
+          t.setLocation(Where.Inside);
+        } else {
+          if (t.meshLocation == Where.Unknown || okFlipInToOut) {
+            t.setLocation(Where.Outside);
+          }
+        }
+      }
+    }
+  }
+
+  private void addPointOnEdge(HalfEdge splitMe, Pt newVert, boolean insertIfBreakBoundary) {
     HalfEdge a, b, c, d, e, f, g, h, i, j, k, l, m, n;
     Triangle u, v, w, x, y, z;
     b = splitMe;
@@ -212,6 +299,9 @@ public class Mesh {
     l.setPair(m);
     m.setNext(h);
     n.setNext(d);
+    // bug("Removing triangles " + x.meshLocation + ", " + w.meshLocation
+    // + " and replacing them with " + u.meshLocation + ", " + v.meshLocation + ", "
+    // + y.meshLocation + ", " + z.meshLocation);
     triangles.remove(x);
     triangles.remove(w);
     Set<Triangle> newTriangles = new HashSet<Triangle>();
@@ -220,9 +310,10 @@ public class Mesh {
     newTriangles.add(y);
     newTriangles.add(z);
     triangles.addAll(newTriangles);
+    Stack<Pt> flipStack = new Stack<Pt>();
     for (Triangle t : newTriangles) {
       if (triangles.contains(t) && !isDelaunay(newVert, t)) {
-        flip(newVert, t);
+        flip(newVert, t, insertIfBreakBoundary, flipStack);
       }
     }
   }
@@ -257,7 +348,7 @@ public class Mesh {
   // }
   // }
 
-  private void addPointInside(Triangle splitMe, Pt newVert) {
+  private void addPointInside(Triangle splitMe, Pt newVert, boolean insertIfBreakBoundary) {
     HalfEdge e1, e2, e3;
     HalfEdge n1, n2, n3, n1p, n2p, n3p;
     Triangle t1, t2, t3;
@@ -289,26 +380,34 @@ public class Mesh {
     n2.setNext(n1p);
     n3.setNext(n2p);
     newVert.setAttribute(HALF_EDGE, n1);
+    // bug("Removing a triangle " + splitMe.meshLocation + " and replacing it with " +
+    // t1.meshLocation
+    // + ", " + t2.meshLocation + ", " + t3.meshLocation);
     triangles.remove(splitMe);
     triangles.add(t1);
     triangles.add(t2);
     triangles.add(t3);
+    Stack flipStack = new Stack<Pt>();
     if (!isDelaunay(newVert, t1)) {
-      flip(newVert, t1);
+      flip(newVert, t1, insertIfBreakBoundary, flipStack);
     }
     if (triangles.contains(t2) && !isDelaunay(newVert, t2)) {
-      flip(newVert, t2);
+      flip(newVert, t2, insertIfBreakBoundary, flipStack);
     }
     if (triangles.contains(t3) && !isDelaunay(newVert, t3)) {
-      flip(newVert, t3);
+      flip(newVert, t3, insertIfBreakBoundary, flipStack);
     }
   }
 
-  private void flip(Pt vert, Triangle t) {
+  private void flip(Pt vert, Triangle t, boolean insertIfBreakBoundary, Stack flipStack) {
     // This unconditionally flips the edge opposite from 'vert' on the given triangle. This has the
     // effect of removing t and it's neighboring triangle from the mesh, and adding two new
     // triangles. At the end of this function, all half-edges have been updated to reflect the new
     // world order.
+    // if (flipStack.contains(vert)) {
+    // bug("Flipping on a point that is already being examined...");
+    // }
+    // flipStack.push(vert);
     HalfEdge a, b, c, d, e, f, g, h;
     Triangle w, x, y, z;
     HalfEdge cursor = t.getEdge();
@@ -322,36 +421,58 @@ public class Mesh {
     e = d.getNext();
     w = d.getFace();
     x = a.getFace();
-    y = new Triangle(a);
-    z = new Triangle(c);
-    g = new HalfEdge(c.getPoint(), y);
-    h = new HalfEdge(d.getPoint(), z);
-    g.setPair(h);
-    g.setNext(a);
-    h.setNext(e);
-    a.setNext(d);
-    a.setFace(y);
-    c.setNext(h);
-    c.setFace(z);
-    d.setNext(g);
-    d.setFace(y);
-    e.setNext(c);
-    e.setFace(z);
-    triangles.remove(w);
-    triangles.remove(x);
-    triangles.add(y);
-    triangles.add(z);
-    // animate(ani);
-    for (Pt pt : y.getPoints()) {
-      if (triangles.contains(y) && !isDelaunay(pt, y)) {
-        flip(pt, y);
+    if (insertIfBreakBoundary && shareBoundary(w, x)) {
+      // w and x are on opposite sides of the fence, and the user wants to make sure that boundary
+      // remains meaningful. So instead of flipping, insert a vertex on the boundary.
+      // bug("Avoiding border screwiness. Inserting a point along the border instead.");
+      Pt intersection = Functions.getIntersectionPoint(new Line(c.getPoint(), d.getPoint()),
+          new Line(a.getPoint(), e.getPoint()));
+      addPointOnEdge(b, intersection, insertIfBreakBoundary);
+    } else {
+      y = new Triangle(a);
+      z = new Triangle(c);
+      g = new HalfEdge(c.getPoint(), y);
+      h = new HalfEdge(d.getPoint(), z);
+      g.setPair(h);
+      g.setNext(a);
+      h.setNext(e);
+      a.setNext(d);
+      a.setFace(y);
+      c.setNext(h);
+      c.setFace(z);
+      d.setNext(g);
+      d.setFace(y);
+      e.setNext(c);
+      e.setFace(z);
+      triangles.remove(w);
+      triangles.remove(x);
+      triangles.add(y);
+      triangles.add(z);
+      // animate(ani);
+      for (Pt pt : y.getPoints()) {
+        if (triangles.contains(y) && !isDelaunay(pt, y)) {
+          // bug("(1) Flip triangle with verts " + y.getVertIds() + " using vert " + pt.getID()
+          // + ". Input triangle and vert: " + t.getVertIds() + ", " + vert.getID());
+          flip(pt, y, insertIfBreakBoundary, flipStack);
+        }
+      }
+      for (Pt pt : z.getPoints()) {
+        if (triangles.contains(z) && !isDelaunay(pt, z)) {
+          // bug("(2) Flip triangle with verts " + z.getVertIds() + " using vert " + pt.getID()
+          // + ". Input triangle and vert: " + t.getVertIds() + ", " + vert.getID());
+          flip(pt, z, insertIfBreakBoundary, flipStack);
+        }
       }
     }
-    for (Pt pt : z.getPoints()) {
-      if (triangles.contains(z) && !isDelaunay(pt, z)) {
-        flip(pt, z);
-      }
-    }
+    // flipStack.pop(); // TODO: remove the flipstack. probably not needed.
+  }
+
+  /**
+   * returns true if one triangle is Inside, and the other is Outside.
+   */
+  private boolean shareBoundary(Triangle w, Triangle x) {
+    return (w.meshLocation == Where.Inside && x.meshLocation == Where.Outside)
+        || (x.meshLocation == Where.Inside && w.meshLocation == Where.Outside);
   }
 
   private HalfEdge advance(HalfEdge cursor, Pt vert) {
@@ -463,12 +584,12 @@ public class Mesh {
     return edge.getTriangles();
   }
 
-  /**
-   * Which edges border this face?
-   */
-  public Set<HalfEdge> getEdges(Triangle t) {
-    return t.getEdges();
-  }
+  // /**
+  // * Which edges border this face?
+  // */
+  // public Set<HalfEdge> getEdges(Triangle t) {
+  // return t.getEdges();
+  // }
 
   /**
    * Which faces are adjacent to this face?
@@ -489,12 +610,21 @@ public class Mesh {
     boolean ret = true;
     List<Pt> quad = t.getQuadrangle(pt);
     if (quad != null && quad.size() == 4) {
-      Pt a = quad.get(0);
-      Pt b = quad.get(1);
-      Pt c = quad.get(2);
-      Pt d = quad.get(3);
+      // Pt a = quad.get(0);
+      // Pt b = quad.get(1);
+      // Pt c = quad.get(2);
+      // Pt d = quad.get(3);
+      // double det = Functions.getDeterminant(a, b, c, d);
+      Pt a = quad.get(3);
+      Pt b = quad.get(2);
+      Pt c = quad.get(1);
+
+      Pt d = quad.get(0);
       double det = Functions.getDeterminant(a, b, c, d);
-      ret = (det <= 0);
+      // bug("det(" + Debug.num(a) + ", " + Debug.num(b) + ", " + Debug.num(c) + ", " + Debug.num(d)
+      // + " = " + Debug.num(det));
+      boolean dInside = det > 0;
+      ret = !dInside;
     }
     return ret;
   }

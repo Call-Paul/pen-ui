@@ -206,7 +206,11 @@ public class Main {
 
   private Main(Arguments args) {
     this.args = args;
-    af = new ApplicationFrame("Olive Test GUI");
+    String title = "Skrui";
+    if (args.hasValue("title")) {
+      title = args.getValue("title");
+    }
+    af = new ApplicationFrame(title);
     af.setNoQuitOnClose();
     ds = new OliveDrawingSurface();
     try {
