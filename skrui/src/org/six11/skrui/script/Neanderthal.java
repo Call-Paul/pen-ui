@@ -9,12 +9,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.swing.Timer;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.FlowSelection;
+import org.six11.skrui.GestureRecognizer;
 import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
@@ -87,6 +90,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   PointGraph endPoints;
   LengthGraph lenG;
   Domain domain;
+  GestureRecognizer gr;
   List<Shape> recognizedShapes;
   FlowSelection fs;
   Scribbler scribble;
@@ -100,6 +104,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
+    gr = new GestureRecognizer(this);
     recognizedShapes = new ArrayList<Shape>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     fs = new FlowSelection(this);
@@ -216,7 +221,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // explicity map points back to their original sequence so we can find it later.
     allPoints.addAll(seq);
     // Create a 'primitives' set where dots/ellipses/polyline elements will go.
-    seq.setAttribute(PRIMITIVES, new HashSet<Primitive>());
+    seq.setAttribute(PRIMITIVES, new TreeSet<Primitive>(Primitive.sortByIndex));
     // All the 'detectXYZ' methods will insert a Primitive into seq's primitives set.
     detectDot(seq);
     detectEllipse(seq);
@@ -231,10 +236,12 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       lenG.add(prim);
       addPrimitiveToPoints(prim);
     }
-    Set<Primitive> recent = getPrimitiveSet(seq);
-    Set<Primitive> cohorts = getCohorts(recent);
+    
+    gr.add(seq);
 
     if (getParam(K_DO_RECOGNITION).getBoolean()) {
+      Set<Primitive> recent = getPrimitiveSet(seq);
+      Set<Primitive> cohorts = getCohorts(recent);
       long start = System.currentTimeMillis();
       List<Shape> results;
       Set<Shape> newShapes = new HashSet<Shape>();
@@ -254,12 +261,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-    drawDots(scribble.getPossibleCorners(), "7");
+    // drawDots(scribble.getPossibleCorners(), "7");
     drawDots(seq, true, true, true, false, false, "4");
     drawDots(seq, false, false, false, true, false, "5");
     drawDots(seq, false, false, false, false, true, "6");
+    drawDots(seq, true, false, false, false, false, "7");
   }
-  
+
   private void drawDots(List<Pt> spots, String bufferName) {
     if (spots.size() > 1) {
       DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
@@ -334,8 +342,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   }
 
   @SuppressWarnings("unchecked")
-  private Set<Primitive> getPrimitiveSet(Sequence seq) {
-    return (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
+  public static SortedSet<Primitive> getPrimitiveSet(Sequence seq) {
+    return (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
   }
 
   private void drawNewShapes(Set<Shape> newShapes) {
@@ -382,9 +390,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
       Pt pt = prim.getSeq().get(i);
       if (!pt.hasAttribute(PRIMITIVES)) {
-        pt.setAttribute(PRIMITIVES, new HashSet<Primitive>());
+        pt.setAttribute(PRIMITIVES, new TreeSet<Primitive>(Primitive.sortByIndex));
       }
-      ((HashSet<Primitive>) pt.getAttribute(PRIMITIVES)).add(prim);
+      ((TreeSet<Primitive>) pt.getAttribute(PRIMITIVES)).add(prim);
     }
   }
 
@@ -415,7 +423,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       out.addAll(allPoints.getNear(source.getSeq().get(i), dist));
     }
     for (Pt pt : out) {
-      Set<Primitive> pointPrims = (Set<Primitive>) pt.getAttribute(Neanderthal.PRIMITIVES);
+      SortedSet<Primitive> pointPrims = (SortedSet<Primitive>) pt.getAttribute(Neanderthal.PRIMITIVES);
       if (pointPrims != null) {
         ret.addAll(pointPrims);
       }
@@ -476,7 +484,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   private void drawParallelPerpendicular(Sequence seq) {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;
-    for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+    for (Primitive prim : (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
       if (prim instanceof LineSegment) {
         dirty = true;
         DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
@@ -507,11 +515,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public static Set<Primitive> getPrimitives(Set<Pt> points) {
     // each point has a main sequence. that sequence has a list of primitives. a point may be in
     // zero, one, or more of them. Return all primitives related to the input points.
-    Set<Primitive> ret = new HashSet<Primitive>();
+    SortedSet<Primitive> ret = new TreeSet<Primitive>(Primitive.sortByIndex);
     for (Pt pt : points) {
       Sequence seq = pt.getSequence(MAIN_SEQUENCE);
       int where = seq.indexOf(pt);
-      for (Primitive prim : (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
+      for (Primitive prim : (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
         if (where <= prim.getEndIdx() && where >= prim.getStartIdx()) {
           ret.add(prim);
         }

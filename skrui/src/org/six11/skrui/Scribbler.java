@@ -29,6 +29,7 @@ public class Scribbler {
   List<Integer> possibleCornerIndexes;
   List<Pt> hull;
   Mesh mesh;
+  Pt lastDrag;
   int cornerNumThreshold = 6;
 
   public Scribbler(Neanderthal data) {
@@ -45,6 +46,7 @@ public class Scribbler {
     this.seq = seq;
     hull = null;
     mesh = null;
+    lastDrag = null;
     lastExaminedIndex = -1;
     possibleCornerIndexes.clear();
     linelike.clear();
@@ -71,23 +73,28 @@ public class Scribbler {
     // hull.add(seq.getLast());
     // hull = new ConvexHull(hull).getHullClosed();
     // DrawingBuffer db = new DrawingBuffer();
-    Color color = data.getDrawingSurface().getSoup().getPenColor();
+
     // DrawingBufferRoutines.fill(db, hull, 1, color, color);
     // data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
-//    long then = System.currentTimeMillis();
-    try {
-    mesh.addPointPushBoundary(seq.getLast(), false);
+    // long then = System.currentTimeMillis();
+    Pt here = seq.getLast();
+    if (here.distance(lastDrag) > 10) {
+      lastDrag = here;
+      try {
+        Color color = data.getDrawingSurface().getSoup().getPenColor();
+        mesh.addPointPushBoundary(seq.getLast(), false);
 
-    DrawingBuffer db = new DrawingBuffer();
-    List<Pt> boundary = mesh.getBoundary();
-    boundary.add(boundary.get(boundary.size() - 1));
-    DrawingBufferRoutines.fill(db, boundary, 1.0, color, color);
-    data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
-//    long now = System.currentTimeMillis();
-//    bug("expandHull took " + (now - then) + " ms for mesh of " + mesh.size() + " ("
-//        + boundary.size() + " boundary points)");
-    } catch (Exception ex) {
-      // occasionally seq is null, and I'm not sure why though I suspect threading issues.
+        DrawingBuffer db = new DrawingBuffer();
+        List<Pt> boundary = mesh.getBoundary();
+        boundary.add(boundary.get(boundary.size() - 1));
+        DrawingBufferRoutines.fill(db, boundary, 1.0, color, color);
+        data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
+        // long now = System.currentTimeMillis();
+        // bug("expandHull took " + (now - then) + " ms for mesh of " + mesh.size() + " ("
+        // + boundary.size() + " boundary points)");
+      } catch (Exception ex) {
+        // occasionally seq is null, and I'm not sure why though I suspect threading issues.
+      }
     }
   }
 
@@ -168,10 +175,11 @@ public class Scribbler {
       filling = true;
       seq.setAttribute(Neanderthal.SCRAP, true);
       // hull = makeHull();
-//      List<Pt> in = Functions.getNormalizedSequence(seq.getPoints(), 18);
-//      mesh = new Mesh(new ConvexHull(seq.getPoints()).getHull(), 0, null);
-//      mesh = new Mesh(in, 0, null);
+      // List<Pt> in = Functions.getNormalizedSequence(seq.getPoints(), 18);
+      // mesh = new Mesh(new ConvexHull(seq.getPoints()).getHull(), 0, null);
+      // mesh = new Mesh(in, 0, null);
       mesh = new Mesh(seq.getPoints(), 0, null);
+      lastDrag = seq.getLast();
       bug("** FILLING **");
     }
   }

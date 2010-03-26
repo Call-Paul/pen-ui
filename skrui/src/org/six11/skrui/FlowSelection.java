@@ -447,7 +447,6 @@ public class FlowSelection {
   private void setDwellPoint() {
     dwellPoint = flowSelectionStroke.getLast();
     dwellTimer.restart();
-    bug("Set dwell point to: " + Debug.num(dwellPoint) + " and restarted timer.");
   }
 
   private static void bug(String what) {

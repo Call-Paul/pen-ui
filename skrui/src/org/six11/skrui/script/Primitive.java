@@ -1,5 +1,6 @@
 package org.six11.skrui.script;
 
+import java.util.Comparator;
 import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
@@ -31,6 +32,22 @@ public abstract class Primitive implements Comparable<Primitive> {
   private Vec fixedVector;
   private Line geometryLine;
 
+  /**
+   * Sorts first by start/end index, then by its default comparable(Primitive) result, which is
+   * based on Primitive ID. This is necessary because there might be two primitives for the same
+   * start (and end) index, e.g. Line[0, 40] and Arc[0, 40].
+   */
+  public static Comparator<Primitive> sortByIndex = new Comparator<Primitive>() {
+
+    public int compare(Primitive o1, Primitive o2) {
+      int ret = ((Integer) o1.startIdx).compareTo(o2.startIdx);
+      if (ret == 0) {
+        ret = o1.compareTo(o2);
+      }
+      return ret;
+    }
+
+  };
 
   /**
    * Makes a primitive. Note the start and end indices are INCLUSIVE.
@@ -91,7 +108,7 @@ public abstract class Primitive implements Comparable<Primitive> {
       return getP2();
     }
   }
-  
+
   public Certainty getCert() {
     return cert;
   }
@@ -152,7 +169,7 @@ public abstract class Primitive implements Comparable<Primitive> {
   public boolean getFlipState() {
     return subshapeBindingFlipped;
   }
-  
+
   public Vec getFixedVector() {
     if (fixedVector == null) {
       Pt start = seq.get(startIdx);
@@ -167,9 +184,9 @@ public abstract class Primitive implements Comparable<Primitive> {
       double dy = right.y - left.y;
       fixedVector = new Vec(dx, dy);
     }
-    return fixedVector; 
+    return fixedVector;
   }
-  
+
   public double getFixedAngle() {
     if (!fixedAngleValid) {
       Vec fv = getFixedVector();
