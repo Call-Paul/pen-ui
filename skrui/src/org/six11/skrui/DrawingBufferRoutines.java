@@ -22,6 +22,8 @@ import org.six11.util.pen.Vec;
  */
 public abstract class DrawingBufferRoutines {
 
+  private static Color veryLightGray = new Color(128, 128, 128, 128);
+
   public static void rect(DrawingBuffer db, Pt where, double sx, double sy, Color borderColor,
       Color fillColor, double borderThickness) {
     db.up();
@@ -268,5 +270,14 @@ public abstract class DrawingBufferRoutines {
         }
       }
     }
+  }
+
+  public static void cross(DrawingBuffer db, Pt spot, Color color) {
+    Pt p1 = spot.getTranslated(-4, -4);
+    Pt p2 = spot.getTranslated(-4, 4);
+    Pt p3 = spot.getTranslated(4, 4);
+    Pt p4 = spot.getTranslated(4, -4);
+    line(db, p1, p3, color, 2);
+    line(db, p2, p4, color, 2);
   }
 }

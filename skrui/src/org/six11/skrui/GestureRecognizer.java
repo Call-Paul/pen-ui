@@ -9,10 +9,13 @@ import java.util.TreeSet;
 
 import org.six11.skrui.domain.Domain;
 import org.six11.skrui.domain.GestureCross;
+import org.six11.skrui.domain.GestureShapeTemplate;
+import org.six11.skrui.domain.Shape;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Primitive;
 import org.six11.util.Debug;
+import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Sequence;
 
 /**
@@ -31,22 +34,18 @@ import org.six11.util.pen.Sequence;
 public class GestureRecognizer extends Domain {
 
   int largestChain = 0;
-  Set<ShapeTemplate> templates;
-  Neanderthal data;
   List<Set<Primitive>> primitives;
 
   public GestureRecognizer(Neanderthal data) {
     super("Gesture Recognizer", data);
     primitives = new ArrayList<Set<Primitive>>();
-    templates = new HashSet<ShapeTemplate>();
-    addShapeTemplate(new GestureCross(this));
+    GestureCross cross = new GestureCross(this); 
+    addShapeTemplate(cross);
   }
 
   public void addShapeTemplate(ShapeTemplate st) {
     templates.add(st);
     largestChain = Math.max(largestChain, st.getSlotTypes().size());
-    bug("Added shape template for " + st);
-    bug("The longest possible chain is " + largestChain);
   }
 
   public void add(Sequence seq) {
@@ -70,18 +69,16 @@ public class GestureRecognizer extends Domain {
       primitives.remove(0);
     }
     for (ShapeTemplate st : templates) {
-      detect(st);
+      detect((GestureShapeTemplate) st);
     }
   }
 
-  private void detect(ShapeTemplate st) {
+  private void detect(GestureShapeTemplate st) {
     if (st.getSlotTypes().size() <= primitives.size()) {
       int offset = primitives.size() - st.getSlotTypes().size();
       List<Primitive> matches = new ArrayList<Primitive>();
       for (int i = 0; i < st.getSlotTypes().size(); i++) {
-        bug("Find a " + st.getSlotTypes().get(i) + " in " + listPrims(primitives.get(offset + i)));
         Primitive p = match(st.getSlotTypes().get(i), primitives.get(offset + i));
-        bug("Found: " + p);
         if (p == null) {
           break;
         } else {
@@ -89,7 +86,13 @@ public class GestureRecognizer extends Domain {
         }
       }
       if (matches.size() == st.getSlotTypes().size()) {
-        bug("** Possible match. Run the constraints.");
+        List<Shape> results = st.apply(new HashSet<Primitive>(matches));
+        if (results.size() > 0) {
+          for (Shape s : results) {
+            bug(" --> " + s);
+            st.trigger(data, s, matches);
+          }
+        }
       }
     }
   }

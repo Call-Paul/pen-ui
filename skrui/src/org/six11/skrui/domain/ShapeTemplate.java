@@ -37,6 +37,10 @@ public abstract class ShapeTemplate {
     return name;
   }
   
+  public String getName() {
+    return name;
+  }
+  
   protected void addConstraint(String cName, Constraint c) {
     constraints.put(cName, c);
     for (String slotName : c.getSlotNames()) {
@@ -134,6 +138,9 @@ public abstract class ShapeTemplate {
     // bug("evaluate: " + getBugStringPaired(bindSlot, bindObj));
     String topSlot = bindSlot.peek();
     Set<String> constraintNames = slotsToConstraints.get(topSlot);
+    if (constraintNames == null) {
+      bug("I don't have constraints for slot: " + topSlot);
+    }
     Certainty ret = Certainty.Unknown;
     for (String cName : constraintNames) {
       Constraint c = constraints.get(cName);

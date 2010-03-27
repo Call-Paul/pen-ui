@@ -85,7 +85,7 @@ public class Splinify extends SkruiScript implements SequenceListener {
       main.getDrawingSurface().getSoup().addBuffer("splines", db);
     }
   }
-
+  
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {

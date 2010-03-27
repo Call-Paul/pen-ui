@@ -268,7 +268,6 @@ public class Main {
     ColorBar ret = new ColorBar();
     ret.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
-        bug("Pen color changed to " + evt.getNewValue());
         ds.getSoup().setPenColor((Color) evt.getNewValue());
       }
     });

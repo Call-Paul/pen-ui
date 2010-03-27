@@ -18,10 +18,10 @@ import org.six11.skrui.script.Neanderthal;
  */
 public abstract class Domain {
 
-  String name;
-  Set<ShapeTemplate> templates;
-  Map<String, ShapeRenderer> renderers;
-  Neanderthal data;
+  protected String name;
+  protected Set<ShapeTemplate> templates;
+  protected Map<String, ShapeRenderer> renderers;
+  protected Neanderthal data;
 
   public Domain(String name, Neanderthal data) {
     this.name = name;

@@ -101,6 +101,10 @@ public abstract class Primitive implements Comparable<Primitive> {
     return seq.get(endIdx);
   }
 
+  public Pt getMidPt() {
+    return getGeometryLine().getMidpoint();
+  }
+  
   public Pt getSubshape(String which) {
     if (which.equals("p1")) {
       return getP1();

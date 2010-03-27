@@ -26,12 +26,6 @@ public class ArrowTemplate extends ShapeTemplate {
     addConstraint("c5", new EqualLength("c5", d.getData(), "head1", "head2"));
     addConstraint("c6", new Larger("c5", d.getData(), "shaft", "head1"));
     
-    // addConstraint("c3", new Perpendicular("c3", d.getData(), "line3", "line4"));
-    // addConstraint("c4", new Parallel("c4", d.getData(), "line2", "line4"));
-    //    
-    // addConstraint("c20", new Coincident("c20", d.getData(), "line2.p2", "line3.p1"));
-    // addConstraint("c30", new Coincident("c30", d.getData(), "line3.p2", "line4.p1"));
-    // addConstraint("c40", new Coincident("c40", d.getData(), "line4.p2", "line1.p1"));
     resetValid(true);
   }
 

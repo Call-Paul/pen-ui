@@ -39,7 +39,7 @@ import org.six11.util.pen.*;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class Neanderthal extends SkruiScript implements SequenceListener {
+public class Neanderthal extends SkruiScript implements SequenceListener, HoverListener {
 
   private static final String K_DO_RECOGNITION = "do-recognition";
 
@@ -94,6 +94,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   List<Shape> recognizedShapes;
   FlowSelection fs;
   Scribbler scribble;
+  PointGraph structurePoints;
+  HoverEvent lastHoverEvent;
 
   @Override
   public void initialize() {
@@ -101,12 +103,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     domain = new SimpleDomain("Simple domain", this);
     allPoints = new PointGraph();
     endPoints = new PointGraph();
+    structurePoints = new PointGraph();
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
     gr = new GestureRecognizer(this);
     recognizedShapes = new ArrayList<Shape>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
+    main.getDrawingSurface().getSoup().addHoverListener(this);
     fs = new FlowSelection(this);
     scribble = new Scribbler(this);
   }
@@ -186,6 +190,58 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return sum;
   }
 
+  public void handleHoverEvent(HoverEvent hoverEvent) {
+    HoverEvent.Type type = hoverEvent.getType();
+    lastHoverEvent = hoverEvent;
+    whackStructuredInk();
+  }
+
+  /**
+   * When the pen moves around inside the drawing area, we want structural ink to be redrawn as a
+   * function of what the user is doing, and where the pen is. Consult 'lastHoverEvent' to know
+   * what's going on.
+   */
+  private void whackStructuredInk() {
+    if (structurePoints.size() > 0) {
+      if (lastHoverEvent != null) {
+        switch (lastHoverEvent.getType()) {
+          case In:
+          case Hover:
+            DrawingBuffer db = new DrawingBuffer();
+            Pt pen = lastHoverEvent.getPt();
+            for (Pt st : structurePoints.getPoints()) {
+              double dist = st.distance(pen);
+              double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
+              Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+              DrawingBufferRoutines.cross(db, st, c);
+            }
+            getSoup().addBuffer("structured", db);
+            break;
+          case Out:
+            if (getSoup().getBuffer("structured") != null) {
+              getSoup().getBuffer("structured").setVisible(false);
+              bug("Making structured buffer invisible");
+              main.getDrawingSurface().repaint();
+            }
+            break;
+        }
+      }
+    }
+  }
+
+  public static double calcAlpha(double dist, double minAlpha, double maxAlpha, double minDist,
+      double maxDist) {
+    double ret = 0;
+    if (dist < minDist) {
+      ret = maxAlpha;
+    } else if (dist > maxDist) {
+      ret = minAlpha;
+    } else {
+      ret = maxAlpha - ((dist - minDist) / (maxDist - minDist)) * (maxAlpha - minAlpha);
+    }
+    return ret;
+  }
+
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     if (!animationInitialized && main.getScript("Animation") != null) {
       Animation ani = (Animation) main.getScript("Animation");
@@ -201,6 +257,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
         fs.sendDown(seq);
         break;
       case PROGRESS:
+        if (lastHoverEvent != null) {
+          lastHoverEvent.setPt(seq.getLast());
+          whackStructuredInk();
+        }
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
         scribble.sendDrag();
@@ -236,7 +296,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       lenG.add(prim);
       addPrimitiveToPoints(prim);
     }
-    
+
     gr.add(seq);
 
     if (getParam(K_DO_RECOGNITION).getBoolean()) {
@@ -423,7 +483,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       out.addAll(allPoints.getNear(source.getSeq().get(i), dist));
     }
     for (Pt pt : out) {
-      SortedSet<Primitive> pointPrims = (SortedSet<Primitive>) pt.getAttribute(Neanderthal.PRIMITIVES);
+      SortedSet<Primitive> pointPrims = (SortedSet<Primitive>) pt
+          .getAttribute(Neanderthal.PRIMITIVES);
       if (pointPrims != null) {
         ret.addAll(pointPrims);
       }
@@ -670,6 +731,29 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       }
     }
     return params;
+  }
+
+  public OliveSoup getSoup() {
+    return main.getDrawingSurface().getSoup();
+  }
+
+  public void addStructurePoint(Pt pt, List<Primitive> matches) {
+    structurePoints.add(pt);
+    Set<Sequence> hideUs = new HashSet<Sequence>();
+    for (Primitive p : matches) {
+      hideUs.add(p.seq);
+      ag.remove(p);
+      lenG.remove(p);
+      endPoints.remove(p.getStartPt());
+    }
+    for (Sequence seq : hideUs) {
+      getSoup().getDrawingBufferForSequence(seq).setVisible(false);
+      getSoup().removeFinishedSequence(seq);
+      tg.remove(seq);
+      for (Pt die : seq) {
+        allPoints.remove(die);
+      }
+    }
   }
 
 }

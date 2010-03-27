@@ -37,6 +37,10 @@ public class LengthGraph {
     }
     primitives.add(where, p);
   }
+  
+  public void remove(Primitive p) {
+    primitives.remove(p);
+  }
 
   public Set<Primitive> getSimilar(double length, double tolerance) {
     Set<Primitive> ret = new HashSet<Primitive>();

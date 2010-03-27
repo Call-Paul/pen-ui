@@ -63,6 +63,10 @@ public class AngleGraph {
     }
     segments.add(where, seg);
   }
+  
+  public void remove(Primitive p) {
+    segments.remove(p);
+  }
 
   public Set<Primitive> getNear(Primitive in, double angle, double tolerance) {
     Set<Primitive> buddies = getNear(in.getFixedAngle() + angle, tolerance);

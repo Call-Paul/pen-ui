@@ -24,33 +24,41 @@ public class PointGraph {
   List<Pt> byX;
   List<Pt> byY;
 
-  public static void main(String[] args) {
-    Debug.useColor = false;
-    Debug.useTime = false;
-    PointGraph pg = new PointGraph();
-    for (int i = 0; i < 50; i++) {
-      for (int j = 0; j < 50; j++) {
-        pg.add(new Pt(Math.sin(i * i), Math.sin(i * j)));
-      }
-    }
-
-    Pt origin = new Pt(0, 0);
-    double max = 0.4;
-    long start = System.nanoTime();
-    Set<Pt> nearOrigin = pg.getNear(origin, max);
-    long end = System.nanoTime();
-    System.out.println(end - start);
-    long ms = (end - start) / 1000000;
-    bug("Found " + nearOrigin.size() + " of " + pg.size() + " points within " + max
-        + " units of origin in " + ms + " ms");
-    for (Pt pt : nearOrigin) {
-      double dist = pt.distance(origin);
-      bug("  " + Debug.num(pt) + " is " + Debug.num(dist) + " away.");
-    }
-  }
+  // public static void main(String[] args) {
+  // Debug.useColor = false;
+  // Debug.useTime = false;
+  // PointGraph pg = new PointGraph();
+  // for (int i = 0; i < 50; i++) {
+  // for (int j = 0; j < 50; j++) {
+  // pg.add(new Pt(Math.sin(i * i), Math.sin(i * j)));
+  // }
+  // }
+  //
+  // Pt origin = new Pt(0, 0);
+  // double max = 0.4;
+  // long start = System.nanoTime();
+  // Set<Pt> nearOrigin = pg.getNear(origin, max);
+  // long end = System.nanoTime();
+  // System.out.println(end - start);
+  // long ms = (end - start) / 1000000;
+  // bug("Found " + nearOrigin.size() + " of " + pg.size() + " points within " + max
+  // + " units of origin in " + ms + " ms");
+  // for (Pt pt : nearOrigin) {
+  // double dist = pt.distance(origin);
+  // bug("  " + Debug.num(pt) + " is " + Debug.num(dist) + " away.");
+  // }
+  // }
 
   public int size() {
     return byX.size();
+  }
+
+  /**
+   * Returns all the points sorted by their X coordinates (Pt.sortByX semantics). The returned value
+   * is one of the backing lists, so if you modify it, the world might likely end.
+   */
+  public Collection<Pt> getPoints() {
+    return byX;
   }
 
   public PointGraph() {
@@ -70,6 +78,11 @@ public class PointGraph {
       where = (where + 1) * -1;
     }
     byY.add(where, pt);
+  }
+
+  public void remove(Pt pt) {
+    byX.remove(pt);
+    byY.remove(pt);
   }
 
   public Set<Pt> getNear(Pt target, double dist) {

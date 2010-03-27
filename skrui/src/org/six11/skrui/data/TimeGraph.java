@@ -37,6 +37,10 @@ public class TimeGraph {
       sequences.add(seq);
     }
   }
+  
+  public void remove(Sequence seq) {
+    sequences.remove(seq);
+  }
 
   private static void bug(String what) {
     Debug.out("TimeGraph", what);
