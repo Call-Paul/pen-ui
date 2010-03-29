@@ -1,13 +1,11 @@
 package org.six11.skrui.domain;
 
-import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.LineSegment;
 import org.six11.skrui.script.Neanderthal;
@@ -15,7 +13,6 @@ import org.six11.skrui.script.Primitive;
 import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
 /**
@@ -75,14 +72,44 @@ public class GestureTap extends GestureShapeTemplate {
         }
       }
     }
-    bug("Now moving " + nearPoints.size() + " end points to " + Debug.num(st));
     for (Pt pt : nearPoints) {
-      bug("transformed point before: " + Debug.num(pt));
       pt.setLocation(st.getX(), st.getY());
-      bug("transformed point after: " + Debug.num(pt));
     }
     for (Primitive prim : prims) {
       data.getSoup().updateFinishedSequence(prim.getSeq());
+    }
+
+    // move primitives that are near the structured point so they pass through it. Exclude those
+    // already modified.
+    pts = data.getAllPoints().getNear(st, TAP_DISTANCE * 4);
+    Set<Primitive> nearPrims = Neanderthal.getPrimitives(pts);
+    nearPrims.removeAll(prims);
+    for (Primitive prim : nearPrims) {
+      moveWire(prim, st);
+      data.getSoup().updateFinishedSequence(prim.getSeq());
+    }
+  }
+
+  private void moveWire(Primitive prim, Pt st) {
+    // Find the point on prim that is closest to structure point, and move all points in the
+    // sequence by the vector formed between them.
+    double dist = Double.MAX_VALUE;
+    int idxClosest = -1;
+    for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
+      Pt pt = prim.getSeq().get(i);
+      double thisDist = pt.distance(st);
+      if (thisDist < dist) {
+        idxClosest = i;
+        dist = thisDist;
+      }
+    }
+    if (idxClosest >= 0) {
+      Pt closest = prim.getSeq().get(idxClosest);
+      Vec toSt = new Vec(closest, st);
+      for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
+        Pt here = prim.getSeq().get(i);
+        here.setLocation(here.getX() + toSt.getX(), here.getY() + toSt.getY());
+      }
     }
   }
 
@@ -118,14 +145,12 @@ public class GestureTap extends GestureShapeTemplate {
 
       for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
         if (i == idxPrev) {
-          bug("Avoiding point: " + Debug.num(prim.getSeq().get(i)));
           continue;
         }
         Pt pt = prim.getSeq().get(i);
         rot.transform(pt, pt);
         Vec toPt = new Vec(hinge, pt).getScaled(scale);
         pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
-        bug("transformed point " + i + " of prim " + prim.getShortStr());
       }
 
     }
@@ -139,6 +164,7 @@ public class GestureTap extends GestureShapeTemplate {
     data.getStructurePoints().add(st);
   }
 
+  @SuppressWarnings("unchecked")
   private int countTaps(Pt st, long time) {
     int ret = 0;
     List<Long> tapTimes = (List<Long>) st.getList("taps");
