@@ -21,6 +21,8 @@ public class Polyline {
   Set<Segment> segments;
   Animation ani;
 
+  public final static double DUPLICATE_THRESHOLD = 15;
+
   public Polyline(Sequence seq, Animation ani) {
     this.seq = seq;
     this.ani = ani;
@@ -30,6 +32,7 @@ public class Polyline {
       Segment s = new Segment(corners.get(i), corners.get(i + 1), seq);
       segments.add(s);
     }
+
   }
 
   public Set<Segment> getSegments() {
@@ -37,56 +40,58 @@ public class Polyline {
   }
 
   public List<Integer> getCorners() {
+
     List<Integer> ret = new ArrayList<Integer>();
-    seq.calculateCurvatureEuclideanWindowSize(24.0);
-    Statistics stats = new Statistics();
-    for (Pt pt : seq) {
-      stats.addData(Math.abs(pt.getDouble("curvature")));
-    }
-    double medianCurve = stats.getMedian();
-    double aveSpeed = seq.calculateSpeed() / (double) seq.size();
-    double threshSpeed = 0.75 * aveSpeed;
-    double threshCurve = 2 * medianCurve;
-
-    SortedSet<Integer> candidates = new TreeSet<Integer>();
-    candidates.add(0);
-    candidates.add(seq.size() - 1);
-
-    for (int idx = 0; idx < seq.size(); idx++) {
-      Pt pt = seq.get(idx);
-      if (Math.abs(pt.getDouble("curvature")) > threshCurve) {
-        pt.setBoolean("curvy", true);
+    if (seq.size() > 1) {
+      seq.calculateCurvatureEuclideanWindowSize(24.0);
+      Statistics stats = new Statistics();
+      for (Pt pt : seq) {
+        stats.addData(Math.abs(pt.getDouble("curvature")));
       }
-      if (pt.getDouble("speed") < threshSpeed) {
-        pt.setBoolean("slow", true);
+      double medianCurve = stats.getMedian();
+      double aveSpeed = seq.calculateSpeed() / (double) seq.size();
+      double threshSpeed = 0.75 * aveSpeed;
+      double threshCurve = 2 * medianCurve;
+
+      SortedSet<Integer> candidates = new TreeSet<Integer>();
+      candidates.add(0);
+      candidates.add(seq.size() - 1);
+
+      for (int idx = 0; idx < seq.size(); idx++) {
+        Pt pt = seq.get(idx);
+        if (Math.abs(pt.getDouble("curvature")) > threshCurve) {
+          pt.setBoolean("curvy", true);
+        }
+        if (pt.getDouble("speed") < threshSpeed) {
+          pt.setBoolean("slow", true);
+        }
+        if ((Math.abs(pt.getDouble("curvature")) > threshCurve)
+            && (pt.getDouble("speed") < threshSpeed)) {
+          pt.setBoolean("both", true);
+          candidates.add(idx);
+        }
       }
-      if ((Math.abs(pt.getDouble("curvature")) > threshCurve)
-          && (pt.getDouble("speed") < threshSpeed)) {
-        pt.setBoolean("both", true);
-        candidates.add(idx);
+      animate("Initial points.", candidates);
+
+      // remove points that are too close
+      candidates = removeDupes(candidates, seq);
+
+      animate("Removed duplicates.", candidates);
+
+      // set curvilinear-distance for all points (including candidates). This value is reused
+      // throughout. Segment length from corners i, j is curvilinear distance of j minus that of i.
+      seq.calculateCurvilinearDistances();
+
+      // perform the CFMerge
+      merge(candidates, seq, 1);
+
+      // Explain to the world which points are the corners.
+      for (int idx : candidates) {
+        seq.get(idx).setBoolean("corner", true);
       }
+
+      ret.addAll(candidates);
     }
-    animate("Initial points.", candidates);
-
-    // remove points that are too close
-    candidates = removeDupes(candidates, seq);
-
-    animate("Removed duplicates.", candidates);
-
-    // set curvilinear-distance for all points (including candidates). This value is reused
-    // throughout. Segment length from corners i, j is curvilinear distance of j minus that of i.
-    seq.calculateCurvilinearDistances();
-
-    // perform the CFMerge
-    merge(candidates, seq, 1);
-
-    // Explain to the world which points are the corners.
-    for (int idx : candidates) {
-      seq.get(idx).setBoolean("corner", true);
-    }
-
-    ret.addAll(candidates);
-
     return ret;
   }
 
@@ -97,7 +102,7 @@ public class Polyline {
       int idxA = working.get(i);
       int idxB = working.get(i + 1);
       double dist = origin.getPathLength(idxA, idxB);
-      if (dist < 15) {
+      if (dist < DUPLICATE_THRESHOLD) { // TODO: this should be a parameter
         if (i == 0) {
           working.remove(i + 1);
         } else if (i == (working.size() - 1)) {
@@ -240,12 +245,8 @@ public class Polyline {
     return ret;
   }
 
-
-
   public enum Type {
     Line, Arc
   }
-
-  
 
 }

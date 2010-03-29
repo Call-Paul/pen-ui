@@ -272,11 +272,11 @@ public abstract class DrawingBufferRoutines {
     }
   }
 
-  public static void cross(DrawingBuffer db, Pt spot, Color color) {
-    Pt p1 = spot.getTranslated(-4, -4);
-    Pt p2 = spot.getTranslated(-4, 4);
-    Pt p3 = spot.getTranslated(4, 4);
-    Pt p4 = spot.getTranslated(4, -4);
+  public static void cross(DrawingBuffer db, Pt spot, double lineLength, Color color) {
+    Pt p1 = spot.getTranslated(-lineLength, -lineLength);
+    Pt p2 = spot.getTranslated(-lineLength, lineLength);
+    Pt p3 = spot.getTranslated(lineLength, lineLength);
+    Pt p4 = spot.getTranslated(lineLength, -lineLength);
     line(db, p1, p3, color, 2);
     line(db, p2, p4, color, 2);
   }

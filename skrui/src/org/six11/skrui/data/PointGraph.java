@@ -7,8 +7,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.swing.Timer;
-
 import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -23,47 +21,24 @@ public class PointGraph {
 
   List<Pt> byX;
   List<Pt> byY;
+  List<Pt> byT;
 
-  // public static void main(String[] args) {
-  // Debug.useColor = false;
-  // Debug.useTime = false;
-  // PointGraph pg = new PointGraph();
-  // for (int i = 0; i < 50; i++) {
-  // for (int j = 0; j < 50; j++) {
-  // pg.add(new Pt(Math.sin(i * i), Math.sin(i * j)));
-  // }
-  // }
-  //
-  // Pt origin = new Pt(0, 0);
-  // double max = 0.4;
-  // long start = System.nanoTime();
-  // Set<Pt> nearOrigin = pg.getNear(origin, max);
-  // long end = System.nanoTime();
-  // System.out.println(end - start);
-  // long ms = (end - start) / 1000000;
-  // bug("Found " + nearOrigin.size() + " of " + pg.size() + " points within " + max
-  // + " units of origin in " + ms + " ms");
-  // for (Pt pt : nearOrigin) {
-  // double dist = pt.distance(origin);
-  // bug("  " + Debug.num(pt) + " is " + Debug.num(dist) + " away.");
-  // }
-  // }
+  public PointGraph() {
+    this.byX = new ArrayList<Pt>();
+    this.byY = new ArrayList<Pt>();
+    this.byT = new ArrayList<Pt>();
+  }
 
   public int size() {
     return byX.size();
   }
 
   /**
-   * Returns all the points sorted by their X coordinates (Pt.sortByX semantics). The returned value
-   * is one of the backing lists, so if you modify it, the world might likely end.
+   * Returns all the points sorted by their time stamps. The returned value is one of the backing
+   * lists, so if you modify it, the world might likely end.
    */
   public Collection<Pt> getPoints() {
-    return byX;
-  }
-
-  public PointGraph() {
-    this.byX = new ArrayList<Pt>();
-    this.byY = new ArrayList<Pt>();
+    return byT;
   }
 
   public void add(Pt pt) {
@@ -78,17 +53,27 @@ public class PointGraph {
       where = (where + 1) * -1;
     }
     byY.add(where, pt);
+
+    where = Collections.binarySearch(byT, pt, Pt.sortByT);
+    if (where < 0) {
+      where = (where + 1) * -1;
+    }
+    byT.add(where, pt);
   }
 
   public void remove(Pt pt) {
     byX.remove(pt);
     byY.remove(pt);
+    byT.remove(pt);
   }
 
   public Set<Pt> getNear(Pt target, double dist) {
     // first, messily get all points that are in a square around the target.
+    bug("Searching within " + dist + " for " + Debug.num(target) + "...");
     Set<Pt> ret = getNearX(target, dist);
+    bug("Found initial points based on x: " + ret.size());
     ret.retainAll(getNearY(target, dist));
+    bug("Reduced that to " + ret.size() + " based on y.");
     // Now remove those that aren't strictly in the circle.
     Set<Pt> doomed = new TreeSet<Pt>();
     for (Pt pt : ret) {
@@ -96,7 +81,9 @@ public class PointGraph {
         doomed.add(pt);
       }
     }
+    bug("Removing " + doomed.size());
     ret.removeAll(doomed);
+    bug("Returning " + ret.size());
     return ret;
   }
 
@@ -114,7 +101,7 @@ public class PointGraph {
     Set<Pt> xSet = new TreeSet<Pt>(Pt.sortById);
     Pt x1 = new Pt(target.x - dist / 2, Double.MAX_VALUE);
     Pt x2 = new Pt(target.x + dist / 2, Double.MAX_VALUE);
-    int idxA = -(Collections.binarySearch(byX, x1, Pt.sortByX));
+    int idxA = -(Collections.binarySearch(byX, x1, Pt.sortByX) + 1);
     int idxB = -(Collections.binarySearch(byX, x2, Pt.sortByX) + 1);
     for (int i = idxA; i < idxB; i++) {
       xSet.add(byX.get(i));
@@ -126,7 +113,7 @@ public class PointGraph {
     Set<Pt> ySet = new TreeSet<Pt>(Pt.sortById);
     Pt y1 = new Pt(Double.MAX_VALUE, target.y - dist / 2);
     Pt y2 = new Pt(Double.MAX_VALUE, target.y + dist / 2);
-    int idxA = -(Collections.binarySearch(byY, y1, Pt.sortByY));
+    int idxA = -(Collections.binarySearch(byY, y1, Pt.sortByY) + 1);
     int idxB = -(Collections.binarySearch(byY, y2, Pt.sortByY) + 1);
     for (int i = idxA; i < idxB; i++) {
       ySet.add(byY.get(i));
@@ -134,6 +121,26 @@ public class PointGraph {
     return ySet;
   }
 
+  /**
+   * Returns a list of points (most recent to least recent) that are within the given timeout of t.
+   * This only looks backward in time, not forward.
+   */
+  public List<Pt> getRecent(long timeout, long t) {
+    List<Pt> ret = new ArrayList<Pt>();
+    long timeThresh = t - timeout;
+    for (int i = byT.size() - 1; i >= 0; i--) {
+      Pt pt = byT.get(i);
+      if (pt.getTime() <= t && pt.getTime() >= timeThresh) {
+        ret.add(pt);
+      }
+      if (pt.getTime() < timeThresh) {
+        break;
+      }
+    }
+    return ret;
+  }
+
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("PointGraph", what);
   }

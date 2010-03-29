@@ -18,7 +18,7 @@ public abstract class ShapeTemplate {
   Domain domain;
   String name;
   List<String> slotNames;
-  List<Class <? extends Primitive>> slotTypes;
+  List<Class<? extends Primitive>> slotTypes;
   Map<String, Constraint> constraints;
   Map<String, Set<String>> slotsToConstraints; // slot name -> set of constraint names
   Map<String, SortedSet<Primitive>> valid;
@@ -36,11 +36,11 @@ public abstract class ShapeTemplate {
   public String toString() {
     return name;
   }
-  
+
   public String getName() {
     return name;
   }
-  
+
   protected void addConstraint(String cName, Constraint c) {
     constraints.put(cName, c);
     for (String slotName : c.getSlotNames()) {
@@ -127,8 +127,6 @@ public abstract class ShapeTemplate {
           prim.setSubshapeBindingFixed(revertFixedState[i]);
         }
         bindObj.pop();
-        // } else {
-        // bug(p.getShortStr() + " is already being examined.");
       }
     }
     bindSlot.pop();
@@ -138,22 +136,22 @@ public abstract class ShapeTemplate {
     // bug("evaluate: " + getBugStringPaired(bindSlot, bindObj));
     String topSlot = bindSlot.peek();
     Set<String> constraintNames = slotsToConstraints.get(topSlot);
-    if (constraintNames == null) {
-      bug("I don't have constraints for slot: " + topSlot);
-    }
     Certainty ret = Certainty.Unknown;
-    for (String cName : constraintNames) {
-      Constraint c = constraints.get(cName);
-      List<String> relevantNames = c.getPrimarySlotNames();
-      if (bindSlot.containsAll(relevantNames)) {
-        Primitive[] args = c.makeArguments(bindSlot, bindObj);
-        Certainty result = c.check(args);
-        // bug(c.getShortStr() + "(" + Debug.num(c.getSlotNames(), ", ") + "): " + result);
-        if (result == Certainty.No) {
-          ret = result; // :(
-          break;
+    if (constraintNames == null) {
+      ret = Certainty.Yes; // This shape has no constraints, so there's nothing to say No.
+    } else {
+      for (String cName : constraintNames) {
+        Constraint c = constraints.get(cName);
+        List<String> relevantNames = c.getPrimarySlotNames();
+        if (bindSlot.containsAll(relevantNames)) {
+          Primitive[] args = c.makeArguments(bindSlot, bindObj);
+          Certainty result = c.check(args);
+          if (result == Certainty.No) {
+            ret = result; // :(
+            break;
+          }
+          ret = result;
         }
-        ret = result;
       }
     }
     // bug("evaluate: " + getBugStringPaired(bindSlot, bindObj) + " is returning " + ret);

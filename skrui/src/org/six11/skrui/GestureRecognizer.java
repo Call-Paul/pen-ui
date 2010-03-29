@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import org.six11.skrui.domain.Domain;
 import org.six11.skrui.domain.GestureCross;
 import org.six11.skrui.domain.GestureShapeTemplate;
+import org.six11.skrui.domain.GestureTap;
 import org.six11.skrui.domain.Shape;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.script.Neanderthal;
@@ -41,6 +42,8 @@ public class GestureRecognizer extends Domain {
     primitives = new ArrayList<Set<Primitive>>();
     GestureCross cross = new GestureCross(this); 
     addShapeTemplate(cross);
+    GestureTap tap = new GestureTap(this);
+    addShapeTemplate(tap);
   }
 
   public void addShapeTemplate(ShapeTemplate st) {

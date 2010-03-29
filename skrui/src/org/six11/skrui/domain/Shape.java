@@ -50,6 +50,10 @@ public class Shape {
     debugString = template.name + " " + buf.toString();
   }
 
+  public Collection<Primitive> getSubshapes() {
+    return subshapes.values();
+  }
+  
   private static void bug(String what) {
     Debug.out("Shape", what);
   }
