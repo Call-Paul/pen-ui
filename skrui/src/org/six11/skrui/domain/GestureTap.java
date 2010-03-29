@@ -3,6 +3,7 @@ package org.six11.skrui.domain;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -49,6 +50,7 @@ public class GestureTap extends GestureShapeTemplate {
           transformNearbyWires(st, data);
           break;
         case 3:
+          transformNearbyWires(st, data);
           break;
         case 4:
       }
@@ -62,50 +64,72 @@ public class GestureTap extends GestureShapeTemplate {
     // rotate and scale primitives that have an endpoint at this structured point.
     Set<Pt> pts = data.getEndPoints().getNear(st, TAP_DISTANCE * 4);
     Set<Primitive> prims = Neanderthal.getPrimitives(pts);
+    Set<Pt> nearPoints = new HashSet<Pt>();
     for (Primitive prim : prims) {
       if (prim instanceof LineSegment) {
-        scaleAndRotateWire((LineSegment) prim, st, data);
+        Pt reply = scaleAndRotateWire(prim, st);
+        if (reply != null) {
+          nearPoints.add(reply);
+        } else {
+          bug("scaleAndRotateWire returned a null point. I hope that is not a problem.");
+        }
       }
+    }
+    bug("Now moving " + nearPoints.size() + " end points to " + Debug.num(st));
+    for (Pt pt : nearPoints) {
+      bug("transformed point before: " + Debug.num(pt));
+      pt.setLocation(st.getX(), st.getY());
+      bug("transformed point after: " + Debug.num(pt));
+    }
+    for (Primitive prim : prims) {
+      data.getSoup().updateFinishedSequence(prim.getSeq());
     }
   }
 
-  private void scaleAndRotateWire(LineSegment prim, Pt st, Neanderthal data) {
+  /**
+   * If the primitive doesn't end/begin on the given point, the primitive is rotated and scaled so
+   * that the nearer endpoint matches st.
+   */
+  private Pt scaleAndRotateWire(Primitive prim, Pt st) {
+    Pt ret = null;
     bug("Doing scale/rotate thing on " + prim + " (" + Debug.num(prim.getLength()) + " px long)");
     if (prim.getSeq().getAttribute(Neanderthal.SCRAP) != null) {
-      bug("Hmm, i'm about to manipulate a scap sequence, and that isn't right.");
+      bug("Hmm, i'm about to manipulate a scrap sequence, and that isn't right.");
     }
-    Pt hinge, prev;
-    if (st.distance(prim.getStartPt()) < st.distance(prim.getEndPt())) {
-      hinge = prim.getEndPt();
-      prev = prim.getStartPt();
-    } else {
-      hinge = prim.getStartPt();
-      prev = prim.getEndPt();
+    if ((st.distance(prim.getStartPt()) > 0 && st.distance(prim.getEndPt()) > 0)) {
+      Pt hinge, prev;
+      int idxPrev;
+      if (st.distance(prim.getStartPt()) < st.distance(prim.getEndPt())) {
+        hinge = prim.getEndPt();
+        prev = prim.getStartPt();
+        idxPrev = prim.getStartIdx();
+      } else {
+        hinge = prim.getStartPt();
+        prev = prim.getEndPt();
+        idxPrev = prim.getEndIdx();
+      }
+      ret = prev;
+      Vec toPrev = new Vec(hinge, prev);
+      Vec toSt = new Vec(hinge, st);
+      double scale = toSt.mag() / toPrev.mag();
+      double theta = Math.atan2(toSt.getY(), toSt.getX())
+          - Math.atan2(toPrev.getY(), toPrev.getX());
+      AffineTransform rot = Functions.getRotationInstance(hinge, theta);
+
+      for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
+        if (i == idxPrev) {
+          bug("Avoiding point: " + Debug.num(prim.getSeq().get(i)));
+          continue;
+        }
+        Pt pt = prim.getSeq().get(i);
+        rot.transform(pt, pt);
+        Vec toPt = new Vec(hinge, pt).getScaled(scale);
+        pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
+        bug("transformed point " + i + " of prim " + prim.getShortStr());
+      }
+
     }
-
-    Vec toPrev = new Vec(hinge, prev);
-    Vec toSt = new Vec(hinge, st);
-    double scale = toSt.mag() / toPrev.mag();
-    double theta = Math.atan2(toSt.getY(), toSt.getX()) - Math.atan2(toPrev.getY(), toPrev.getX());
-    AffineTransform rot = Functions.getRotationInstance(hinge, theta);
-
-    for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
-      Pt pt = prim.getSeq().get(i);
-      rot.transform(pt, pt);
-      Vec toPt = new Vec(hinge, pt).getScaled(scale);
-      pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
-    }
-    data.getSoup().updateFinishedSequence(prim.getSeq());
-    // if (pt != hinge && pt.getDouble("fs strength", 0) > HINGE_THRESHOLD) {
-    // rot.transform(pt, pt);
-    // Vec toPt = new Vec(hinge, pt).getScaled(scale);
-    // pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
-    // }
-    // }
-    // DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
-    // DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
-    // }
-
+    return ret;
   }
 
   private void updateTimeStamp(Pt st, Neanderthal data, long time) {

@@ -69,11 +69,8 @@ public class PointGraph {
 
   public Set<Pt> getNear(Pt target, double dist) {
     // first, messily get all points that are in a square around the target.
-    bug("Searching within " + dist + " for " + Debug.num(target) + "...");
     Set<Pt> ret = getNearX(target, dist);
-    bug("Found initial points based on x: " + ret.size());
     ret.retainAll(getNearY(target, dist));
-    bug("Reduced that to " + ret.size() + " based on y.");
     // Now remove those that aren't strictly in the circle.
     Set<Pt> doomed = new TreeSet<Pt>();
     for (Pt pt : ret) {
@@ -81,9 +78,7 @@ public class PointGraph {
         doomed.add(pt);
       }
     }
-    bug("Removing " + doomed.size());
     ret.removeAll(doomed);
-    bug("Returning " + ret.size());
     return ret;
   }
 
