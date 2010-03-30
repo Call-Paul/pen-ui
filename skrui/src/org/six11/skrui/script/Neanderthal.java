@@ -91,6 +91,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   FlowSelection fs;
   Scribbler scribble;
   PointGraph structurePoints;
+  List<LineSegment> structureLines;
   HoverEvent lastHoverEvent;
 
   @Override
@@ -100,6 +101,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     allPoints = new PointGraph();
     endPoints = new PointGraph();
     structurePoints = new PointGraph();
+    structureLines = new ArrayList<LineSegment>();
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
@@ -232,6 +234,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
+    for (LineSegment line : structureLines) {
+      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
+      double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
+      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+      DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
+          .getGeometryLine(), c, 0.7);
+    }
     List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
     Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
     if (rec.size() > 0) {
@@ -249,11 +258,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       DrawingBufferRoutines.cross(db, mid, 2.3, veryLightGray);
     }
     if (rec.size() > 2) {
-      // when there are three points, make a circle.
+      // when there are three points, make a circle and show its center.
       Pt center = Functions.getCircleCenter(rec.get(0), rec.get(1), rec.get(2));
       double radius = rec.get(0).distance(center);
       DrawingBufferRoutines.dot(db, center, radius, 0.5, veryLightGray, null);
-      DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, null);
+      DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
     }
     getSoup().addBuffer("structured", db);
   }
@@ -574,7 +583,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
   }
 
-  @SuppressWarnings({
+  @SuppressWarnings( {
       "unchecked", "unused"
   })
   private void drawParallelPerpendicular(Sequence seq) {
@@ -796,7 +805,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   public void addStructurePoint(Pt pt) {
     structurePoints.add(pt);
   }
-  
+
+  public void addStructureLine(LineSegment line) {
+    structureLines.add(line);
+  }
+
   public void forget(Shape s) {
     for (Primitive p : s.getSubshapes()) {
       // each primitive has siblings that must also be forgotten.
@@ -829,4 +842,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       allPoints.remove(die);
     }
   }
+
 }
+
+// Did they ever figure out who the man in the jar was?

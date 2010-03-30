@@ -1,6 +1,7 @@
 package org.six11.skrui;
 
 import java.awt.Color;
+import java.awt.Rectangle;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -279,5 +280,17 @@ public abstract class DrawingBufferRoutines {
     Pt p4 = spot.getTranslated(lineLength, -lineLength);
     line(db, p1, p3, color, 2);
     line(db, p2, p4, color, 2);
+  }
+
+  public static void screenLine(DrawingBuffer db, Rectangle bounds, Line geometryLine, Color color,
+      double thick) {
+    // draw a line that spans the entire rectangle
+    if (bounds.intersectsLine(geometryLine)) {
+      // find the two intersection points and connect them.
+      Pt[] ix = Functions.getIntersectionPoints(bounds, geometryLine);
+      if (ix[0] != null && ix[1] != null) {
+        line(db, ix[0], ix[1], color, thick);
+      }
+    }
   }
 }

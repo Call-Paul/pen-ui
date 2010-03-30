@@ -6,12 +6,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.skrui.script.ArcSegment;
 import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.LineSegment;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Primitive;
+import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
@@ -47,9 +50,11 @@ public class GestureTap extends GestureShapeTemplate {
           transformNearbyWires(st, data);
           break;
         case 3:
-          transformNearbyWires(st, data);
+          rectifyNearbyWires(st, data);
           break;
         case 4:
+          structureNearbyWires(st, data);
+          break;
       }
       if (n > 1) {
         data.forget(s);
@@ -57,12 +62,68 @@ public class GestureTap extends GestureShapeTemplate {
     }
   }
 
+  private void structureNearbyWires(Pt st, Neanderthal data) {
+    Set<Pt> pts = data.getAllPoints().getNear(st, TAP_DISTANCE * 4);
+    Set<Primitive> prims = Neanderthal.getPrimitives(pts);
+    for (Primitive prim : prims) {
+      if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
+        data.addStructureLine((LineSegment) prim);
+        data.forget(prim); // yes, massive bug.
+        // shouldn't remove sequence entirely because it might have non-structure primitives.
+        bug("Made a structural line: " + prim.getShortStr());
+      }
+    }
+  }
+
+  private void rectifyNearbyWires(Pt st, Neanderthal data) {
+    Set<Pt> pts = data.getEndPoints().getNear(st, TAP_DISTANCE * 4);
+    Set<Primitive> endPrims = Neanderthal.getPrimitives(pts);
+    for (Primitive prim : endPrims) {
+      if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
+        rectifyLine((LineSegment) prim);
+        data.getSoup().updateFinishedSequence(prim.getSeq());
+        bug("Rectified line: " + prim.getShortStr());
+      }
+    }
+    // rectify primitives that are near the structured point so they pass through it. Exclude those
+    // already straightened.
+    pts = data.getAllPoints().getNear(st, TAP_DISTANCE * 4);
+    Set<Primitive> nearPrims = Neanderthal.getPrimitives(pts);
+    nearPrims.removeAll(endPrims);
+    for (Primitive prim : nearPrims) {
+      if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
+        rectifyLine((LineSegment) prim);
+        data.getSoup().updateFinishedSequence(prim.getSeq());
+        bug("Rectified line: " + prim.getShortStr());
+      }
+    }
+  }
+
+  private void rectifyLine(LineSegment prim) {
+    Line ideal = prim.getGeometryLine();
+    Vec vec = new Vec(ideal.getStart(), ideal.getEnd());
+    double x = ideal.getStart().getX();
+    double y = ideal.getStart().getY();
+    double length = ideal.getLength();
+    int n = prim.getEndIdx() - prim.getStartIdx(); // n is number of segments. n+1 number of points.
+    double incr = length / n;
+    for (int i = prim.getStartIdx() + 1; i < prim.getEndIdx(); i++) { // no need to move end points
+      int j = i - prim.getStartIdx();
+      Vec offset = vec.getVectorOfMagnitude(j * incr);
+      prim.getSeq().get(i).setLocation(x + offset.getX(), y + offset.getY());
+    }
+
+  }
+
   private void transformNearbyWires(Pt st, Neanderthal data) {
     // rotate and scale primitives that have an endpoint at this structured point.
     Set<Pt> pts = data.getEndPoints().getNear(st, TAP_DISTANCE * 4);
-    Set<Primitive> prims = Neanderthal.getPrimitives(pts);
+    Set<Primitive> endPrims = Neanderthal.getPrimitives(pts);
     Set<Pt> nearPoints = new HashSet<Pt>();
-    for (Primitive prim : prims) {
+    for (Primitive prim : endPrims) {
+      // since the same points might be part of arcs and lines, we have to be careful about
+      // not moving the same point twice. The following code does not constitute 'careful', but
+      // it does constitute 'works for now'.
       if (prim instanceof LineSegment) {
         Pt reply = scaleAndRotateWire(prim, st);
         if (reply != null) {
@@ -75,7 +136,7 @@ public class GestureTap extends GestureShapeTemplate {
     for (Pt pt : nearPoints) {
       pt.setLocation(st.getX(), st.getY());
     }
-    for (Primitive prim : prims) {
+    for (Primitive prim : endPrims) {
       data.getSoup().updateFinishedSequence(prim.getSeq());
     }
 
@@ -83,7 +144,7 @@ public class GestureTap extends GestureShapeTemplate {
     // already modified.
     pts = data.getAllPoints().getNear(st, TAP_DISTANCE * 4);
     Set<Primitive> nearPrims = Neanderthal.getPrimitives(pts);
-    nearPrims.removeAll(prims);
+    nearPrims.removeAll(endPrims);
     for (Primitive prim : nearPrims) {
       moveWire(prim, st);
       data.getSoup().updateFinishedSequence(prim.getSeq());
