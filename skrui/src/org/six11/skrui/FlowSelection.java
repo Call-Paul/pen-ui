@@ -5,10 +5,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.swing.Timer;
 
+import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.data.FSM;
@@ -29,12 +32,14 @@ public class FlowSelection {
   Pt dwellPoint;
   Pt dragPoint; // latest location of pen during a drag.
   Vec dragDelta; // latest change in location during drag.
-  Pt nearestPt;
   List<Sequence> nearestSequences;
   FSM fsm;
   Timer dwellTimer;
   Neanderthal data;
   long fsStartTime;
+  List<Dot> taps;
+  Timer tapTimer;
+
   private static int TIMEOUT = 900;
   private static int TICK = 50;
   private static double MOVE_THRESHOLD = 10.0;
@@ -54,6 +59,16 @@ public class FlowSelection {
     dwellTimer.setRepeats(true);
     dwellTimer.setInitialDelay(TIMEOUT);
     dwellTimer.setDelay(TICK);
+
+    taps = new ArrayList<Dot>();
+    tapTimer = new Timer(2 * TIMEOUT, new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        bug("No more taps. I had: " + taps.size());
+        taps.clear();
+      }
+    });
+    tapTimer.stop();
+    tapTimer.setRepeats(false);
 
     fsm = new FSM("Flow Selection");
     fsm.addState("idle");
@@ -173,22 +188,25 @@ public class FlowSelection {
   protected void idle() {
     dragPoint = null;
     dragDelta = null;
-    nearestPt = null;
     flowSelectionStroke = null;
   }
 
   protected void enterReshape() {
     for (Sequence seq : nearestSequences) {
       DrawingBuffer hideMe = data.getDrawingSurface().getSoup().getDrawingBufferForSequence(seq);
-      hideMe.setVisible(false);
+      if (hideMe != null) {
+        hideMe.setVisible(false);
+      }
     }
   }
 
   protected void exitReshape() {
     for (Sequence seq : nearestSequences) {
       DrawingBuffer showMe = data.getDrawingSurface().getSoup().getDrawingBufferForSequence(seq);
-      showMe.setVisible(true);
-      data.getDrawingSurface().getSoup().updateFinishedSequence(seq);
+      if (showMe != null) { // the fact that I must do this tells me there is another bug somewhere.
+        showMe.setVisible(true);
+        data.getDrawingSurface().getSoup().updateFinishedSequence(seq);
+      }
     }
     data.getDrawingSurface().getSoup().removeBuffer("fs buffer");
   }
@@ -271,16 +289,47 @@ public class FlowSelection {
 
   protected void startSelection() {
     fsStartTime = System.currentTimeMillis();
-    nearestPt = data.getAllPoints().getNearest(dwellPoint);
     nearestSequences.clear();
-    Sequence ns = nearestPt.getSequence(Neanderthal.MAIN_SEQUENCE);
-    nearestSequences.add(ns);
-    int centerIdx = ns.indexOf(nearestPt);
-    passEffortMsg(centerIdx, ns, 0, 0);
+    bug("Selecting with " + taps.size() + " preceding pen taps.");
+
+    if (taps.size() == 0) {
+      bug("single-select mode.");
+      Pt nearestPt = data.getAllPoints().getNearest(dwellPoint);
+      prepare(nearestPt);
+    } else {
+      bug("multi-select mode!");
+      int nTaps = taps.size();
+      for (Dot tap : taps) {
+        data.forget(tap);
+      }
+      bug("Selecting many sequences in the neighborhood");
+      Set<Pt> all = data.getAllPoints().getNear(dwellPoint, nTaps * 30);
+      bug("Found " + all.size() + " points...");
+      Set<Pt> near = new HashSet<Pt>();
+      Set<Sequence> sequences = Neanderthal.getSequences(Neanderthal.getPrimitives(all));
+      bug("... which are part of " + sequences.size() + " total sequences.");
+      for (Sequence seq : sequences) {
+        Pt pt = Functions.getNearestPoint(dwellPoint, seq);
+        near.add(pt);
+      }
+      bug("Using " + near.size() + " sequence centers.");
+      for (Pt pt : near) {
+        prepare(pt);
+      }
+    }
     data.getDrawingSurface().getSoup().setCurrentSequenceShapeVisible(false);
     dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE).setAttribute(Neanderthal.SCRAP, "true");
     bug("just set the scrap attribute on the current scribble, and set it to invisible.");
-    ns.setNamedPoint("flow select center", nearestPt);
+  }
+
+  private void prepare(Pt pt) {
+    Sequence ns = pt.getSequence(Neanderthal.MAIN_SEQUENCE);
+    if (!nearestSequences.contains(ns)) {
+      nearestSequences.add(ns);
+      int centerIdx = ns.indexOf(pt);
+      passEffortMsg(centerIdx, ns, 0, 0);
+      ns.setNamedPoint("flow select center", pt);
+    }
   }
 
   /**
@@ -336,7 +385,11 @@ public class FlowSelection {
       assignHinge(seq);
       DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
     }
-    data.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
+    if (nearestSequences.size() > 0) {
+      data.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
+    } else {
+      data.getDrawingSurface().getSoup().removeBuffer("fs buffer");
+    }
   }
 
   /**
@@ -447,6 +500,12 @@ public class FlowSelection {
   private void setDwellPoint() {
     dwellPoint = flowSelectionStroke.getLast();
     dwellTimer.restart();
+  }
+
+  public void sendTap(Dot dot) {
+    taps.add(dot);
+    bug("tap! Now I have " + taps.size());
+    tapTimer.restart();
   }
 
   private static void bug(String what) {

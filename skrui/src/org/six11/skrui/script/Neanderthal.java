@@ -260,9 +260,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     if (rec.size() > 2) {
       // when there are three points, make a circle and show its center.
       Pt center = Functions.getCircleCenter(rec.get(0), rec.get(1), rec.get(2));
-      double radius = rec.get(0).distance(center);
-      DrawingBufferRoutines.dot(db, center, radius, 0.5, veryLightGray, null);
-      DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
+      if (center != null) { // if 0-1-2 are colinear, center is null. avoid NPEs
+        double radius = rec.get(0).distance(center);
+        DrawingBufferRoutines.dot(db, center, radius, 0.5, veryLightGray, null);
+        DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
+      }
     }
     getSoup().addBuffer("structured", db);
   }
@@ -338,6 +340,12 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
 
     gr.add(seq);
+
+    for (Primitive prim : getPrimitiveSet(seq)) {
+      if (prim instanceof Dot) {
+        fs.sendTap((Dot) prim);
+      }
+    }
 
     if (getParam(K_DO_RECOGNITION).getBoolean()) {
       Set<Primitive> recent = getPrimitiveSet(seq);
@@ -629,6 +637,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
           ret.add(prim);
         }
       }
+    }
+    return ret;
+  }
+
+  public static Set<Sequence> getSequences(Set<Primitive> prims) {
+    Set<Sequence> ret = new HashSet<Sequence>();
+    for (Primitive prim : prims) {
+      ret.add(prim.getSeq());
     }
     return ret;
   }
