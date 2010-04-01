@@ -25,6 +25,7 @@ import org.six11.skrui.domain.Shape;
 import org.six11.skrui.domain.ShapeRenderer;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.domain.SimpleDomain;
+import org.six11.skrui.mesh.Mesh;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -93,6 +94,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   PointGraph structurePoints;
   List<LineSegment> structureLines;
   HoverEvent lastHoverEvent;
+  List<Mesh> meshes;
 
   @Override
   public void initialize() {
@@ -107,6 +109,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     lenG = new LengthGraph();
     gr = new GestureRecognizer(this);
     recognizedShapes = new ArrayList<Shape>();
+    meshes = new ArrayList<Mesh>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     main.getDrawingSurface().getSoup().addHoverListener(this);
     fs = new FlowSelection(this);
@@ -137,6 +140,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     return lenG;
   }
 
+  public void addMesh(Mesh mesh) {
+    meshes.add(mesh);
+  }
+  
   @SuppressWarnings("unused")
   private void output(String... stuff) {
     boolean first = true;

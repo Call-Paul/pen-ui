@@ -1,17 +1,28 @@
 package org.six11.skrui;
 
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
-import org.six11.skrui.data.PointGraph;
+import javax.swing.Timer;
+
 import org.six11.skrui.mesh.Mesh;
+import org.six11.skrui.mesh.Triangle;
+import org.six11.skrui.mesh.Where;
+import org.six11.skrui.mesh.Mesh.TriangleWhere;
+import org.six11.skrui.script.Animation;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
@@ -19,7 +30,6 @@ import org.six11.util.pen.Vec;
 public class Scribbler {
 
   Neanderthal data;
-  // PointGraph pg;
   Statistics linelike;
   Statistics timestamps;
   boolean filling;
@@ -27,8 +37,10 @@ public class Scribbler {
   int lastExaminedIndex;
   double halfWindowPixels = 10;
   List<Integer> possibleCornerIndexes;
-  List<Pt> hull;
+  ConvexHull hull;
+  List<Pt> penPath;
   Mesh mesh;
+  boolean meshDrawn = false;
   Pt lastDrag;
   int cornerNumThreshold = 6;
 
@@ -43,13 +55,27 @@ public class Scribbler {
   }
 
   public void sendDown(Sequence seq) {
+    // first see if this is a continuation.
+    boolean shouldFill = false;
+    Pt nub = seq.getLast().getTranslated(0.5, 0.5);
+    if (mesh != null && (nub.getTime() - mesh.getTime()) < 4000) {
+      ConvexHull h = mesh.getHull();
+      if (Functions.isPointInRegion(nub, h.getHullClosed())) {
+        shouldFill = true;
+      }
+    }
     this.seq = seq;
     hull = null;
+    penPath = null;
     mesh = null;
     lastDrag = null;
     lastExaminedIndex = -1;
     possibleCornerIndexes.clear();
     linelike.clear();
+
+    if (shouldFill) {
+      beginFill();
+    }
   }
 
   public List<Pt> getPossibleCorners() {
@@ -68,32 +94,65 @@ public class Scribbler {
     }
   }
 
+  private void draw(boolean done) {
+    DrawingBuffer db = new DrawingBuffer();
+    if (db.isVisible() && penPath.size() > 2) {
+      Set<Triangle> inside = seekInside();
+      DrawingBufferRoutines.triangles(db, inside, data.getSoup().getPenColor());
+      if (done) {
+        data.addMesh(new Mesh(mesh.getPoints(), 0));
+      }
+      data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
+    }
+  }
+
+  private Set<Triangle> seekInside() {
+    Set<Triangle> ret = new HashSet<Triangle>();
+
+    // Now get a convex hull for everything, including the original scribble hull and the pen path.
+    List<Pt> bigHullPoints = new ArrayList<Pt>(hull.getHull());
+    bigHullPoints.addAll(penPath);
+    ConvexHull bigHull = new ConvexHull(bigHullPoints);
+    bigHullPoints = bigHull.getHull();
+    for (Triangle t : mesh.getTriangles()) {
+      if (Functions.isPointInRegion(t.getCentroid(), bigHullPoints)) {
+        ret.add(t);
+      }
+    }
+    return ret;
+  }
+
+  private void beginFill() {
+    filling = true;
+    seq.setAttribute(Neanderthal.SCRAP, true);
+    // hull = new ConvexHull(getPossibleCorners());
+    hull = new ConvexHull(seq.getPoints());
+    penPath = new ArrayList<Pt>();
+    mesh = new Mesh(hull.getHull(), 0);
+    draw(false);
+    lastDrag = seq.getLast();
+    bug("** FILLING **");
+  }
+
   private void expandHull() {
-    // TODO: This hull stuff is OK, but I am testing to see if Mesh works better
-    // hull.add(seq.getLast());
-    // hull = new ConvexHull(hull).getHullClosed();
-    // DrawingBuffer db = new DrawingBuffer();
-
-    // DrawingBufferRoutines.fill(db, hull, 1, color, color);
-    // data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
-    // long then = System.currentTimeMillis();
-    Pt here = seq.getLast();
-    if (here.distance(lastDrag) > 10) {
-      lastDrag = here;
-      try {
-        Color color = data.getDrawingSurface().getSoup().getPenColor();
-        mesh.addPointPushBoundary(seq.getLast(), false);
-
-        DrawingBuffer db = new DrawingBuffer();
-        List<Pt> boundary = mesh.getBoundary();
-        boundary.add(boundary.get(boundary.size() - 1));
-        DrawingBufferRoutines.fill(db, boundary, 1.0, color, color);
-        data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
-        // long now = System.currentTimeMillis();
-        // bug("expandHull took " + (now - then) + " ms for mesh of " + mesh.size() + " ("
-        // + boundary.size() + " boundary points)");
-      } catch (Exception ex) {
-        // occasionally seq is null, and I'm not sure why though I suspect threading issues.
+    if (seq.size() > 3) {
+      Pt here = seq.getLast();
+      if (!Functions.isPointInRegion(here, hull.getHullClosed())) {
+        if (here.distance(lastDrag) > 6) {
+          lastDrag = here;
+          try {
+            // Color color = data.getDrawingSurface().getSoup().getPenColor();
+            if (mesh.expand(here)) {
+              penPath.add(here);
+              draw(false);
+            } else {
+              bug("I did not expand (maybe it contained that point already?");
+            }
+          } catch (Exception ex) {
+            // occasionally seq is null, and I'm not sure why though I suspect threading issues.
+            ex.printStackTrace();
+          }
+        }
       }
     }
   }
@@ -172,15 +231,7 @@ public class Scribbler {
     }
 
     if (yes && linelike.getN() == cornerNumThreshold && linelike.getMin() >= 0.9) {
-      filling = true;
-      seq.setAttribute(Neanderthal.SCRAP, true);
-      // hull = makeHull();
-      // List<Pt> in = Functions.getNormalizedSequence(seq.getPoints(), 18);
-      // mesh = new Mesh(new ConvexHull(seq.getPoints()).getHull(), 0, null);
-      // mesh = new Mesh(in, 0, null);
-      mesh = new Mesh(seq.getPoints(), 0, null);
-      lastDrag = seq.getLast();
-      bug("** FILLING **");
+      beginFill();
     }
   }
 
@@ -216,6 +267,8 @@ public class Scribbler {
 
   public void sendUp() {
     if (filling) {
+      draw(true);
+      bug("** Finished doing mondo draw.");
       DrawingBuffer db = data.main.getDrawingSurface().getSoup().getBuffer("scribble fill");
       if (db != null) {
         data.main.getDrawingSurface().getSoup().addToLayer("fill", db);

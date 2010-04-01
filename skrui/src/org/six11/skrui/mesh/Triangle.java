@@ -210,6 +210,24 @@ public class Triangle {
     return ret;
   }
 
+  /**
+   * Assuming the given triangle really does share an edge with this one, there are two shared
+   * points. Return them in no particular order.
+   */
+  public Pt[] getShared(Triangle opposing) {
+    Pt[] ret = new Pt[2];
+    HalfEdge cursor = edge;
+    do {
+      if (cursor.getPair() != null && cursor.getPair().getFace() == opposing) {
+        ret[0] = cursor.getPoint();
+        ret[1] = cursor.getPair().getPoint();
+        break;
+      }
+      cursor = cursor.getNext();
+    } while (cursor != edge);
+    return ret;
+  }
+
   public HalfEdge getEdgeContaining(Pt pt) {
     double[] barycentric = getBarycentricCoordinates(pt);
     double u = barycentric[0];
@@ -236,5 +254,23 @@ public class Triangle {
       buf.append(pt.getID() + " ");
     }
     return ("[" + buf.toString().trim() + "]");
+  }
+
+  public double getArea() {
+    List<Pt> pts = getPoints();
+    Vec a = new Vec(pts.get(0), pts.get(1));
+    Vec b = new Vec(pts.get(0), pts.get(2));
+    return Math.abs(Functions.getDeterminant(a, b) / 2);
+  }
+
+  public boolean involvesPoints(List<Pt> others) {
+    boolean ret = false;
+    for (Pt other : others) {
+      if (hasVertex(other)) {
+        ret = true;
+        break;
+      }
+    }
+    return ret;
   }
 }

@@ -182,7 +182,6 @@ public class FlowSelection {
         bug("reshaping...");
       }
     });
-
   }
 
   protected void idle() {

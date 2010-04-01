@@ -2,13 +2,19 @@ package org.six11.skrui;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.skrui.mesh.HalfEdge;
+import org.six11.skrui.mesh.Mesh;
+import org.six11.skrui.mesh.Triangle;
+import org.six11.skrui.mesh.Where;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.CircleArc;
+import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -295,4 +301,52 @@ public abstract class DrawingBufferRoutines {
       }
     }
   }
+
+  public static void mesh(DrawingBuffer db, Mesh mesh, ConvexHull hull, List<Pt> penPath,
+      Pt lastPoint) {
+    List<Pt> points = mesh.getPoints();
+    dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
+    Color cCentInside = new Color(0, 0, 255, 50);
+    Color cCentLegit = new Color(255, 0, 0, 50);
+    Set<Triangle> inside = mesh.getInsideTriangles();
+    for (Triangle t : inside) {
+      triangle(db, t, cCentInside);
+    }
+    Set<Triangle> legit = mesh.getLegitimateTriangles();
+    legit.removeAll(inside); // don't do these again.
+    for (Triangle t : legit) {
+      triangle(db, t, cCentLegit);
+    }
+    // fill(db, hull.getHullClosed(), 4.0, Color.BLACK, Color.GRAY);
+    lines(db, penPath, Color.BLACK, 2.0);
+    if (lastPoint != null) {
+      line(db, penPath.get(penPath.size() - 1), lastPoint, Color.BLACK, 2.0);
+    } else {
+      bug("Warning: lastPoint is null, so I don't know how to complete the penPath.");
+    }
+  }
+
+  private static void triangle(DrawingBuffer db, Triangle t, Color fillColor) {
+    HalfEdge start = t.getEdge();
+    HalfEdge cursor = start;
+    List<Pt> drawUs = new ArrayList<Pt>();
+    do {
+      Pt a = cursor.getPoint();
+      drawUs.add(a);
+      cursor = cursor.getNext();
+    } while (cursor != start);
+    drawUs.add(drawUs.get(0));
+    fill(db, drawUs, 1.0, fillColor, fillColor);
+  }
+
+  public static void triangles(DrawingBuffer db, Set<Triangle> manyTriangles, Color color) {
+    for (Triangle t : manyTriangles) {
+      if (t.getArea() > 10000) {
+        bug("This triangle is large: " + t + Debug.num(t.getArea()));
+      } else {
+        triangle(db, t, color);
+      }
+    }
+  }
+
 }
