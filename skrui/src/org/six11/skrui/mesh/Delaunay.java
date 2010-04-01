@@ -40,7 +40,7 @@ public class Delaunay {
     if (main.getScript("Animation") != null) {
       getAni().startAnimation(main.getDrawingSurface().getBounds(), "png");
     }
-    Mesh mesh = new Mesh(decimated, 30, (Animation) main.getScript("Animation"));
+    Mesh mesh = new Mesh(decimated, 30);
     main.getDrawingSurface().getSoup().addBuffer(animate(mesh.getTriangles(), true, false));
   }
 
