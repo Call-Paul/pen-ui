@@ -23,22 +23,22 @@ public class ColorBar extends JPanel {
 
   public ColorBar() {
     pcls = new ArrayList<PropertyChangeListener>();
+    double fullDist = 100;
     squares = new ArrayList<PenSquare>();
     squares.add(new ThicknessSquare(0.05, 24.0, 4.0));
-    ColorSquare black = new ColorSquare(Color.BLACK);
+    ColorSquare black = new ColorSquare(this, Color.BLACK, fullDist);
     squares.add(black);
-    squares.add(new ColorSquare(Color.BLUE));
-    squares.add(new ColorSquare(Color.CYAN));
-    squares.add(new ColorSquare(Color.DARK_GRAY));
-    squares.add(new ColorSquare(Color.GRAY));
-    squares.add(new ColorSquare(Color.GREEN));
-    squares.add(new ColorSquare(Color.LIGHT_GRAY));
-    squares.add(new ColorSquare(Color.MAGENTA));
-    squares.add(new ColorSquare(Color.ORANGE));
-    squares.add(new ColorSquare(Color.PINK));
-    squares.add(new ColorSquare(Color.RED));
-    squares.add(new ColorSquare(Color.WHITE));
-    squares.add(new ColorSquare(Color.YELLOW));
+    squares.add(new ColorSquare(this, Color.BLUE, fullDist));
+    squares.add(new ColorSquare(this, Color.CYAN, fullDist));
+    squares.add(new ColorSquare(this, Color.GREEN, fullDist));
+    squares.add(new ColorSquare(this, Color.LIGHT_GRAY, fullDist));
+    squares.add(new ColorSquare(this, Color.MAGENTA, fullDist));
+    squares.add(new ColorSquare(this, Color.ORANGE, fullDist));
+    squares.add(new ColorSquare(this, Color.PINK, fullDist));
+    squares.add(new ColorSquare(this, Color.RED, fullDist));
+    squares.add(new ColorSquare(this, Color.WHITE, fullDist));
+    squares.add(new ColorSquare(this, Color.YELLOW, fullDist));
+    squares.add(new ColorSquare(this, null, fullDist));
     currentColor = black.getColor();
 
     PropertyChangeListener handler = new PropertyChangeListener() {
@@ -46,11 +46,12 @@ public class ColorBar extends JPanel {
         if (ev.getPropertyName().equals("color")) {
           Color oldColor = currentColor;
           currentColor = (Color) ev.getNewValue();
-          fireColorChange(new PropertyChangeEvent(this, "pen color", oldColor, ev.getNewValue()));
+          firePropertyChange(new PropertyChangeEvent(this, "pen color", oldColor, ev.getNewValue()));
+          whackThicknessForeground();
         } else if (ev.getPropertyName().equals("thickness")) {
           double oldThickness = thickness;
           thickness = (Double) ev.getNewValue();
-          fireColorChange(new PropertyChangeEvent(this, "pen thickness", oldThickness, ev
+          firePropertyChange(new PropertyChangeEvent(this, "pen thickness", oldThickness, ev
               .getNewValue()));
         }
       }
@@ -62,6 +63,14 @@ public class ColorBar extends JPanel {
     }
   }
 
+  protected void whackThicknessForeground() {
+    for (PenSquare ps : squares) {
+      if (ps instanceof ThicknessSquare) {
+        ((ThicknessSquare) ps).setColor(currentColor);
+      }
+    }
+  }
+
   public void addPropertyChangeListener(PropertyChangeListener pcl) {
     pcls.add(pcl);
   }
@@ -70,7 +79,7 @@ public class ColorBar extends JPanel {
     pcls.remove(pcl);
   }
 
-  protected void fireColorChange(PropertyChangeEvent ev) {
+  protected void firePropertyChange(PropertyChangeEvent ev) {
     for (PropertyChangeListener pcl : pcls) {
       pcl.propertyChange(ev);
     }

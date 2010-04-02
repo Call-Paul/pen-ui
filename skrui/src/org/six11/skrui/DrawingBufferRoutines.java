@@ -193,7 +193,6 @@ public abstract class DrawingBufferRoutines {
 
   public static void fill(DrawingBuffer db, Collection<Pt> points, double thick, Color border,
       Color fill) {
-    db.up();
     db.setFillColor(fill);
     db.setFilling(true);
     db.setColor(border);

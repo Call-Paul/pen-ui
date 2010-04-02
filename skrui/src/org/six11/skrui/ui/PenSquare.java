@@ -26,7 +26,14 @@ public abstract class PenSquare extends JPanel {
     pcls = new ArrayList<PropertyChangeListener>();
     setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
     addMouseListener(new MouseAdapter() {
+      
+      public void mousePressed(MouseEvent ev) {
+        down();
+        go(new Pt(ev));
+      }
+      
       public void mouseClicked(MouseEvent ev) {
+        down();
         go(new Pt(ev));
       }
     });
@@ -39,5 +46,14 @@ public abstract class PenSquare extends JPanel {
     setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
   }
 
+  public void addPropertyChangeListener(PropertyChangeListener pcl) {
+    pcls.add(pcl);
+  }
+
+  public void removePropertyChangeListener(PropertyChangeListener pcl) {
+    pcls.remove(pcl);
+  }
+
   public abstract void go(Pt pt);
+  public abstract void down();
 }

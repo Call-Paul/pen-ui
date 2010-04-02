@@ -249,8 +249,8 @@ public class FlowSelection {
           pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
         }
       }
-      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
-      DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
+      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, getThickness(seq));
+      DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
   }
 
@@ -258,9 +258,17 @@ public class FlowSelection {
     for (Sequence seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
-      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, 1.0);
-      DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
+      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, getThickness(seq));
+      DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
+  }
+
+  private double getThickness(Sequence seq) {
+    double ret = 2.0;
+    if (seq.getAttribute("pen thickness") != null) {
+      ret = (Double) seq.getAttribute("pen thickness");
+    }
+    return ret;
   }
 
   private void passReshapeMsg(int idx, Sequence seq, double dx, double dy, int dir) {
@@ -382,7 +390,7 @@ public class FlowSelection {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passStrengthMsg(centerIdx, seq, duration, 0);
       assignHinge(seq);
-      DrawingBufferRoutines.flowSelectEffect(db, seq, 4.0);
+      DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
     if (nearestSequences.size() > 0) {
       data.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
@@ -492,7 +500,6 @@ public class FlowSelection {
       }
       prev = pt;
     }
-    // bug("detectDwell says you moved " + Debug.num(curviDist) + ". Returning: " + ret);
     return ret;
   }
 

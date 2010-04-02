@@ -4,6 +4,10 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.util.Debug;
@@ -22,12 +26,14 @@ public class ThicknessSquare extends PenSquare {
   double min, max, current;
   DrawingBuffer db;
   Pt lastDrag = null;
+  Color fg;
 
   public ThicknessSquare(double min, double max, double current) {
     super();
     this.min = min;
     this.max = max;
     this.current = current;
+    this.fg = Color.BLACK;
   }
 
   @Override
@@ -40,9 +46,17 @@ public class ThicknessSquare extends PenSquare {
         current = calcValue(averageY);
         db = null;
         repaint();
+        firePenThicknessChange();
       }
     }
     lastDrag = pt;
+  }
+
+  private void firePenThicknessChange() {
+    PropertyChangeEvent ev = new PropertyChangeEvent(this, "thickness", null, current);
+    for (PropertyChangeListener pcl : pcls) {
+      pcl.propertyChange(ev);
+    }
   }
 
   @Override
@@ -55,6 +69,16 @@ public class ThicknessSquare extends PenSquare {
     g2.fill(getBounds());
     g.drawImage(db.getImage(), 0, 0, null);
   }
+  
+  public void down() {
+    // do nothing.
+  }
+  
+  public void setColor(Color c) {
+    this.fg = c;
+    db = null;
+    repaint();
+  }
 
   private void initDB() {
     db = new DrawingBuffer();
@@ -64,18 +88,15 @@ public class ThicknessSquare extends PenSquare {
     double topY = offset;
     double botY = r.getHeight() - offset;
     double maxX = r.getWidth() - offset;
-    db.setFillColor(Color.BLACK);
-    db.setFilling(true);
-    db.moveTo(midX, topY);
-    db.down();
-    db.moveTo(midX + (max / 2), topY);
-    db.moveTo(midX + (min / 2), botY);
-    db.moveTo(midX - (min / 2), botY);
-    db.moveTo(midX - (max / 2), topY);
-    db.moveTo(midX, topY);
-    db.up();
-    db.setFilling(false);
-    DrawingBufferRoutines.dot(db, new Pt(maxX, botY), current / 2, 1, Color.BLACK, Color.BLACK);
+    List<Pt> sliderThing = new ArrayList<Pt>();
+    sliderThing.add(new Pt(midX, topY));
+    sliderThing.add(new Pt(midX + (max / 2), topY));
+    sliderThing.add(new Pt(midX + (min / 2), botY));
+    sliderThing.add(new Pt(midX - (min / 2), botY));
+    sliderThing.add(new Pt(midX - (max / 2), topY));
+    sliderThing.add(sliderThing.get(0));
+    DrawingBufferRoutines.fill(db, sliderThing, 1.0, Color.BLACK, fg);
+    DrawingBufferRoutines.dot(db, new Pt(maxX, botY), current / 2, 1, fg, fg);
   }
 
   private double calcValue(double y) {

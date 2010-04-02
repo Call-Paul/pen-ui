@@ -268,7 +268,11 @@ public class Main {
     ColorBar ret = new ColorBar();
     ret.addPropertyChangeListener(new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent evt) {
-        ds.getSoup().setPenColor((Color) evt.getNewValue());
+        if (evt.getPropertyName().equals("pen color")) {
+          ds.getSoup().setPenColor((Color) evt.getNewValue());
+        } else if (evt.getPropertyName().equals("pen thickness")) {
+          ds.getSoup().setPenThickness((Double) evt.getNewValue());
+        }
       }
     });
     return ret;
@@ -278,7 +282,7 @@ public class Main {
    * Add actions to the anonActions list, which are accessed only via key presses.
    */
   private void makeAnonActions() {
-    // pressing 0..9 whacks a visible layer, which are all debugging things. 
+    // pressing 0..9 whacks a visible layer, which are all debugging things.
     for (int i = 0; i < 10; i++) {
       final int which = i;
       anonActions.add(new NamedAction("Whack Layer " + i, KeyStroke.getKeyStroke("" + which)) {
