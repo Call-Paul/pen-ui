@@ -11,20 +11,22 @@ import javax.swing.JPanel;
 
 /**
  * 
- *
+ * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class ColorBar extends JPanel {
 
-  private List<ColorSquare> squares;
+  private ArrayList<PenSquare> squares;
   private Color currentColor;
+  private double thickness;
   List<PropertyChangeListener> pcls;
 
-  
   public ColorBar() {
     pcls = new ArrayList<PropertyChangeListener>();
-    squares = new ArrayList<ColorSquare>();
-    squares.add(new ColorSquare(Color.BLACK));
+    squares = new ArrayList<PenSquare>();
+    squares.add(new ThicknessSquare(0.05, 24.0, 4.0));
+    ColorSquare black = new ColorSquare(Color.BLACK);
+    squares.add(black);
     squares.add(new ColorSquare(Color.BLUE));
     squares.add(new ColorSquare(Color.CYAN));
     squares.add(new ColorSquare(Color.DARK_GRAY));
@@ -37,17 +39,24 @@ public class ColorBar extends JPanel {
     squares.add(new ColorSquare(Color.RED));
     squares.add(new ColorSquare(Color.WHITE));
     squares.add(new ColorSquare(Color.YELLOW));
-    currentColor = squares.get(0).getColor();
-    
+    currentColor = black.getColor();
+
     PropertyChangeListener handler = new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent ev) {
-        Color oldColor = currentColor;
-        currentColor = (Color) ev.getNewValue();
-        fireColorChange(new PropertyChangeEvent(this, "pen color", oldColor, ev.getNewValue()));
+        if (ev.getPropertyName().equals("color")) {
+          Color oldColor = currentColor;
+          currentColor = (Color) ev.getNewValue();
+          fireColorChange(new PropertyChangeEvent(this, "pen color", oldColor, ev.getNewValue()));
+        } else if (ev.getPropertyName().equals("thickness")) {
+          double oldThickness = thickness;
+          thickness = (Double) ev.getNewValue();
+          fireColorChange(new PropertyChangeEvent(this, "pen thickness", oldThickness, ev
+              .getNewValue()));
+        }
       }
     };
     setLayout(new GridLayout(1, 0));
-    for (ColorSquare sq : squares) {
+    for (PenSquare sq : squares) {
       sq.addPropertyChangeListener(handler);
       add(sq);
     }

@@ -12,31 +12,22 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 
+import org.six11.util.pen.Pt;
+
 /**
  * 
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class ColorSquare extends JPanel {
+public class ColorSquare extends PenSquare {
   Color color;
-  List<PropertyChangeListener> pcls;
+  
 
   public ColorSquare(Color c) {
     this.color = c;
-    pcls = new ArrayList<PropertyChangeListener>();
+   
     setBackground(c);
-    setBorder(BorderFactory.createLineBorder(Color.BLACK, 2));
-    addMouseListener(new MouseAdapter() {
-      public void mouseClicked(MouseEvent e) {
-        fireColorChange();
-      }
-    });
-    addMouseMotionListener(new MouseAdapter() {
-      public void mouseDragged(MouseEvent e) {
-        fireColorChange();
-      }
-    });
-    setPreferredSize(new Dimension(50, 50));
+    
   }
 
   public void addPropertyChangeListener(PropertyChangeListener pcl) {
@@ -56,6 +47,11 @@ public class ColorSquare extends JPanel {
 
   public Color getColor() {
     return color;
+  }
+
+  @Override
+  public void go(Pt pt) {
+    fireColorChange();
   }
 
 }
