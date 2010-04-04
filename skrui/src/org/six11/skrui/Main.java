@@ -293,6 +293,14 @@ public class Main {
     }
   }
 
+  /**
+   * Set the file name for a batch-mode pdf output. This is passed directly to a File constructor,
+   * so if it is a relative string, it will be interpreted as such.
+   */
+  public void setBatchModePdfFileName(String pdfName) {
+    batchModePdfFileName = pdfName;
+  }
+
   public SkruiScript getScript(String name) {
     return scripts.get(name);
   }
@@ -506,6 +514,18 @@ public class Main {
       ret = name.substring(0, name.lastIndexOf("."));
     }
     return ret;
+  }
+  
+  public void savePdf(String filenameNoDotPdf, boolean overwrite) {
+    String fileName = filenameNoDotPdf + ".pdf"; 
+    File f = new File (fileName);
+    int n = 2;
+    while (f.exists() && !overwrite) {
+      f = new File(filenameNoDotPdf + "-" + n + ".pdf");
+      n++;
+    }
+    this.batchModePdfFileName = f.getAbsolutePath();
+    savePdf();
   }
 
   private void savePdf() {

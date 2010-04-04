@@ -11,6 +11,7 @@ import java.util.Set;
 
 import javax.swing.Timer;
 
+import org.six11.skrui.script.Animation;
 import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
@@ -424,7 +425,7 @@ public class FlowSelection {
     }
     return numHinges;
   }
-
+  
   /**
    * Sets the "fs strength" double on points that have positive strength. Other points will not get
    * a strength value, so remember that.

@@ -56,7 +56,6 @@ public class ColorSquare extends PenSquare {
     }
     for (int i = 0; i < src.length; i++) {
       delta[i] = dst[i] - src[i];
-      bug("delta[" + i + "] = " + Debug.num(delta[i]));
     }
   }
 
@@ -74,11 +73,8 @@ public class ColorSquare extends PenSquare {
     float frac = (float) (distTravelled / maxDist);
     frac = frac * frac;
     if (frac > 0 && frac <= 1) {
-      bug("frac: " + frac);
-      
       for (int i=0; i < delta.length; i++) {
         value[i] = (src[i] + (frac * delta[i]));
-        bug("value[" + i + "] = " + value[i]);
       }
       fireColorChange();
     }

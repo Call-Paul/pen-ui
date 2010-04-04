@@ -40,8 +40,8 @@ public class ThicknessSquare extends PenSquare {
   public void go(Pt pt) {
     if (lastDrag != null && (pt.getTime() - lastDrag.getTime() < 100)) {
       double midX = getBounds().getCenterX();
-      if (Math.min(lastDrag.getX(), pt.getX()) < midX
-          && Math.max(lastDrag.getX(), pt.getX()) > midX) {
+      if (Math.min(lastDrag.getX(), pt.getX()) <= midX
+          && Math.max(lastDrag.getX(), pt.getX()) >= midX) {
         double averageY = (lastDrag.getY() + pt.getY()) / 2;
         current = calcValue(averageY);
         db = null;
@@ -97,6 +97,7 @@ public class ThicknessSquare extends PenSquare {
     sliderThing.add(sliderThing.get(0));
     DrawingBufferRoutines.fill(db, sliderThing, 1.0, Color.BLACK, fg);
     DrawingBufferRoutines.dot(db, new Pt(maxX, botY), current / 2, 1, fg, fg);
+    DrawingBufferRoutines.line(db, sliderThing.get(0), new Pt(midX, botY), Color.RED, 1.2);
   }
 
   private double calcValue(double y) {

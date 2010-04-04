@@ -239,17 +239,20 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       double dist = st.distance(pen);
       double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
       Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+//      Color c = new Color(0.6f, 0.6f, 0.6f, 0.9f);
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
     for (LineSegment line : structureLines) {
       double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
       double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
       Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+//      Color c= new Color(0.6f, 0.6f, 0.6f, 0.9f);
       DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
           .getGeometryLine(), c, 0.7);
     }
     List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
     Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
+//    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.9);
     if (rec.size() > 0) {
       // draw a line from pen to the most recent point
       Pt st = rec.get(0);
@@ -376,11 +379,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-    // drawDots(scribble.getPossibleCorners(), "7");
-    drawDots(seq, true, true, true, false, false, "4");
-    drawDots(seq, false, false, false, true, false, "5");
-    drawDots(seq, false, false, false, false, true, "6");
-    drawDots(seq, true, false, false, false, false, "7");
+     drawDots(scribble.getPossibleCorners(), "7");
+//    drawDots(seq, true, true, true, false, false, "4");
+//    drawDots(seq, false, false, false, true, false, "5");
+//    drawDots(seq, false, false, false, false, true, "6");
+//    drawDots(seq, true, false, false, false, false, "7");
   }
 
   @SuppressWarnings("unused")

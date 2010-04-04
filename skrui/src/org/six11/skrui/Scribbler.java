@@ -205,6 +205,7 @@ public class Scribbler {
         Pt me = seq.get(idx);
         if (mostRecent.getDouble("scribbler corner value") > me.getDouble("scribbler corner value")) {
           possibleCornerIndexes.remove(lastIdx);
+          seq.get(lastIdx).setBoolean("scribble-actual-corner", false);
           possibleCornerIndexes.add(idx);
         }
       } else {
@@ -225,6 +226,8 @@ public class Scribbler {
         }
         // now add the corner at hand.
         possibleCornerIndexes.add(idx);
+        seq.get(idx).setBoolean("scribble-possible-corner", true);
+        seq.get(idx).setBoolean("scribble-actual-corner", true);
       }
     } else {
       possibleCornerIndexes.add(idx);
