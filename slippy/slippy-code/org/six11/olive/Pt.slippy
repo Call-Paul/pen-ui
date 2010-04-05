@@ -24,6 +24,7 @@ class Pt mixes ID
     "Point " + id + " (" + x + ", " + y + ")"
   done
 
+  ; This is a comment!
   define equals(other)
     (other and 
     getType(other) == "Instance" and 
