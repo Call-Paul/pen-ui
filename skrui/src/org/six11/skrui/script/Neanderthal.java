@@ -1,14 +1,7 @@
 package org.six11.skrui.script;
 
 import java.awt.Color;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
@@ -235,24 +228,25 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   private void drawStructuredInk() {
     DrawingBuffer db = new DrawingBuffer();
     Pt pen = lastHoverEvent.getPt();
+    Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
     for (Pt st : structurePoints.getPoints()) {
       double dist = st.distance(pen);
       double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
-      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-//      Color c = new Color(0.6f, 0.6f, 0.6f, 0.9f);
+//      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+      Color c = debugColor;
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
     for (LineSegment line : structureLines) {
       double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
       double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
-      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-//      Color c= new Color(0.6f, 0.6f, 0.6f, 0.9f);
+//      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+      Color c= debugColor;
       DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
           .getGeometryLine(), c, 0.7);
     }
     List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
-    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
-//    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.9);
+//    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
+    Color veryLightGray = debugColor;
     if (rec.size() > 0) {
       // draw a line from pen to the most recent point
       Pt st = rec.get(0);
@@ -370,12 +364,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       long end = System.currentTimeMillis();
       bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
           + " primitive shapes in " + (end - start) + " ms.");
+      drawNewShapes(newShapes);
     }
     // DEBUGGING stuff below here. comment out if you want.
-    // drawNewShapes(newShapes);
-    // drawPrims(recent, Color.RED, "recent");
+     
+//     drawPrims(recent, Color.RED, "recent");
     // cohorts.removeAll(recent);
-    // drawPrims(cohorts, Color.GREEN, "3");
+//     drawPrims(cohorts, Color.GREEN, "3");
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
@@ -464,7 +459,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   }
 
   @SuppressWarnings("unused")
-  private void drawNewShapes(Set<Shape> newShapes) {
+  private void drawNewShapes(Collection<Shape> newShapes) {
     if (newShapes.size() > 0) {
       DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");
       if (db == null) {

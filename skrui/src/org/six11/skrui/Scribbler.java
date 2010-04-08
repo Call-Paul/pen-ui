@@ -96,7 +96,7 @@ public class Scribbler {
 
   private void draw(boolean done) {
     DrawingBuffer db = new DrawingBuffer();
-    if (db.isVisible() && penPath.size() > 2) {
+    if (db.isVisible() && penPath != null && penPath.size() > 2) {
       Set<Triangle> inside = seekInside();
       DrawingBufferRoutines.triangles(db, inside, data.getSoup().getPenColor());
       if (done) {
@@ -108,7 +108,6 @@ public class Scribbler {
 
   private Set<Triangle> seekInside() {
     Set<Triangle> ret = new HashSet<Triangle>();
-
     // Now get a convex hull for everything, including the original scribble hull and the pen path.
     List<Pt> bigHullPoints = new ArrayList<Pt>(hull.getHull());
     bigHullPoints.addAll(penPath);
@@ -135,7 +134,7 @@ public class Scribbler {
   }
 
   private void expandHull() {
-    if (seq.size() > 3) {
+    if (seq.size() > 3 && hull != null) {
       Pt here = seq.getLast();
       if (!Functions.isPointInRegion(here, hull.getHullClosed())) {
         if (here.distance(lastDrag) > 6) {

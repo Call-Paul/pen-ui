@@ -11,7 +11,6 @@ import java.util.Set;
 
 import javax.swing.Timer;
 
-import org.six11.skrui.script.Animation;
 import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
@@ -275,7 +274,7 @@ public class FlowSelection {
   private void passReshapeMsg(int idx, Sequence seq, double dx, double dy, int dir) {
     Pt pt = seq.get(idx);
     double str = pt.getDouble("fs strength", 0);
-    if (str > 0) {
+//    if (str > 0) {
       pt.setLocation(pt.getX() + (str * dx), pt.getY() + (str * dy));
       if (dir == 0) {
         int nextIdx = idx + 1;
@@ -292,7 +291,7 @@ public class FlowSelection {
           passReshapeMsg(nextIdx, seq, dx, dy, dir);
         }
       }
-    }
+//    }
   }
 
   protected void startSelection() {
@@ -426,23 +425,19 @@ public class FlowSelection {
     return numHinges;
   }
   
-  /**
-   * Sets the "fs strength" double on points that have positive strength. Other points will not get
-   * a strength value, so remember that.
-   */
   private void passStrengthMsg(int idx, Sequence seq, long duration, int dir) {
     if (indexValid(idx, seq)) {
       Pt pt = seq.get(idx);
       double str = getStrength(pt.getDouble("fs effort"), duration, 0.1);
-      pt.setDouble("fs strength", str);
-      if (str > 0) {
+      pt.setDouble("fs strength", Math.max(str, pt.getDouble("fs strength", 0)));
+//      if (str > 0) {
         if (dir == 0) {
           passStrengthMsg(idx + 1, seq, duration, 1);
           passStrengthMsg(idx - 1, seq, duration, -1);
         } else {
           passStrengthMsg(idx + dir, seq, duration, dir);
         }
-      }
+//      }
     }
   }
 
