@@ -19,6 +19,13 @@ import org.six11.skrui.domain.ShapeRenderer;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.domain.SimpleDomain;
 import org.six11.skrui.mesh.Mesh;
+import org.six11.skrui.shape.ArcSegment;
+import org.six11.skrui.shape.Dot;
+import org.six11.skrui.shape.Ellipse;
+import org.six11.skrui.shape.LineSegment;
+import org.six11.skrui.shape.Polyline;
+import org.six11.skrui.shape.Primitive;
+import org.six11.skrui.shape.Segment;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -37,7 +44,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
-  static final String PRIMITIVES = "primitives";
+  public static final String PRIMITIVES = "primitives";
 
   public enum Certainty {
     Yes, No, Maybe, Unknown

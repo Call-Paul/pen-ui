@@ -1,9 +1,10 @@
-package org.six11.skrui.script;
+package org.six11.skrui.shape;
 
 import java.awt.Color;
 import java.util.*;
 
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.script.Animation;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.DrawingBuffer;
@@ -19,7 +20,7 @@ public class Polyline {
 
   Sequence seq;
   Set<Segment> segments;
-  Animation ani;
+  Animation ani; // TODO: remove this
 
   public final static double DUPLICATE_THRESHOLD = 15;
 

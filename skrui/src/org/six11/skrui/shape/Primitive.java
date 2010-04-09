@@ -1,8 +1,9 @@
-package org.six11.skrui.script;
+package org.six11.skrui.shape;
 
 import java.util.Comparator;
 import java.util.Set;
 
+import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 import org.six11.util.pen.Line;
@@ -18,7 +19,7 @@ import org.six11.util.pen.Vec;
 public abstract class Primitive implements Comparable<Primitive> {
   private static int ID_COUNTER = 0;
 
-  Sequence seq;
+  public Sequence seq;
   int startIdx;
   int endIdx;
   Certainty cert;

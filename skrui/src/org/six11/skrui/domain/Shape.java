@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.six11.skrui.constraint.Constraint;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 

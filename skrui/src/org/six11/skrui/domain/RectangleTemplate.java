@@ -3,7 +3,7 @@ package org.six11.skrui.domain;
 import org.six11.skrui.constraint.Coincident;
 import org.six11.skrui.constraint.Parallel;
 import org.six11.skrui.constraint.Perpendicular;
-import org.six11.skrui.script.LineSegment;
+import org.six11.skrui.shape.LineSegment;
 import org.six11.util.Debug;
 
 /**

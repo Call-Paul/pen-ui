@@ -4,7 +4,7 @@ import org.six11.skrui.constraint.AcuteAngle;
 import org.six11.skrui.constraint.Coincident;
 import org.six11.skrui.constraint.EqualLength;
 import org.six11.skrui.constraint.Larger;
-import org.six11.skrui.script.LineSegment;
+import org.six11.skrui.shape.LineSegment;
 import org.six11.util.Debug;
 
 /**

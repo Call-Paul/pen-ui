@@ -3,7 +3,7 @@ package org.six11.skrui.constraint;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.script.Neanderthal.Certainty;
 
 /**

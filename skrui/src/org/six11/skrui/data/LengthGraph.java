@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 
 /**
  * 

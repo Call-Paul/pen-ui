@@ -3,7 +3,7 @@ package org.six11.skrui.constraint;
 import java.util.Set;
 
 import org.six11.skrui.script.Neanderthal;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 

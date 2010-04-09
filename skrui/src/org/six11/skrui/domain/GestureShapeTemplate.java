@@ -3,7 +3,7 @@ package org.six11.skrui.domain;
 import java.util.List;
 
 import org.six11.skrui.script.Neanderthal;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 
 /**
  * 

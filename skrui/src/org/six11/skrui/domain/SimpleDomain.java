@@ -6,7 +6,7 @@ import java.util.List;
 
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.script.Neanderthal;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;

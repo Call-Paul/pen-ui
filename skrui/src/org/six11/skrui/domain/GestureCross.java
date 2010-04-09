@@ -5,10 +5,10 @@ import java.util.List;
 import org.six11.skrui.constraint.EqualLength;
 import org.six11.skrui.constraint.Intersects;
 import org.six11.skrui.constraint.Near;
-import org.six11.skrui.script.Dot;
-import org.six11.skrui.script.LineSegment;
+import org.six11.skrui.shape.Dot;
+import org.six11.skrui.shape.LineSegment;
 import org.six11.skrui.script.Neanderthal;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 

@@ -1,4 +1,4 @@
-package org.six11.skrui.script;
+package org.six11.skrui.shape;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,7 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
-import org.six11.skrui.script.Polyline.Type;
+import org.six11.skrui.shape.Polyline.Type;
 import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -14,11 +14,13 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
 public class Segment implements Comparable<Segment> {
-  int start, end;
+  public int start;
+  public int end;
   CircleArc bestCircle;
   Type type;
-  Certainty lineCertainty, arcCertainty;
-  Sequence seq;
+  public Certainty lineCertainty;
+  public Certainty arcCertainty;
+  public Sequence seq;
 
   public Segment(int start, int end, Sequence seq) {
     this.start = start;

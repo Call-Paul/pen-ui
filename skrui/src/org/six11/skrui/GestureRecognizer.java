@@ -14,7 +14,7 @@ import org.six11.skrui.domain.GestureTap;
 import org.six11.skrui.domain.Shape;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.script.Neanderthal;
-import org.six11.skrui.script.Primitive;
+import org.six11.skrui.shape.Primitive;
 import org.six11.util.Debug;
 import org.six11.util.pen.Sequence;
 

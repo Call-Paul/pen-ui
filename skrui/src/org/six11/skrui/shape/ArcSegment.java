@@ -1,4 +1,4 @@
-package org.six11.skrui.script;
+package org.six11.skrui.shape;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.pen.Sequence;

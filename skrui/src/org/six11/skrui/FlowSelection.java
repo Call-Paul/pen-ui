@@ -11,7 +11,7 @@ import java.util.Set;
 
 import javax.swing.Timer;
 
-import org.six11.skrui.script.Dot;
+import org.six11.skrui.shape.Dot;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.data.FSM;
