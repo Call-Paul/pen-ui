@@ -10,11 +10,9 @@ import java.util.Set;
 import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
-import org.six11.skrui.mesh.Where;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.CircleArc;
-import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -28,8 +26,6 @@ import org.six11.util.pen.Vec;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public abstract class DrawingBufferRoutines {
-
-  private static Color veryLightGray = new Color(128, 128, 128, 128);
 
   public static void rect(DrawingBuffer db, Pt where, double sx, double sy, Color borderColor,
       Color fillColor, double borderThickness) {
@@ -301,8 +297,7 @@ public abstract class DrawingBufferRoutines {
     }
   }
 
-  public static void mesh(DrawingBuffer db, Mesh mesh, ConvexHull hull, List<Pt> penPath,
-      Pt lastPoint) {
+  public static void mesh(DrawingBuffer db, Mesh mesh, List<Pt> penPath, Pt lastPoint) {
     List<Pt> points = mesh.getPoints();
     dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
     Color cCentInside = new Color(0, 0, 255, 50);

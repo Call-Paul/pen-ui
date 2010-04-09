@@ -1,28 +1,18 @@
 package org.six11.skrui;
 
-import java.awt.Color;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
-
-import javax.swing.Timer;
 
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
-import org.six11.skrui.mesh.Where;
-import org.six11.skrui.mesh.Mesh.TriangleWhere;
-import org.six11.skrui.script.Animation;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;

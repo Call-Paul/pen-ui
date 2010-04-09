@@ -71,6 +71,7 @@ public class HalfEdge {
     this.next = nextEdge;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("HalfEdge", what);
   }

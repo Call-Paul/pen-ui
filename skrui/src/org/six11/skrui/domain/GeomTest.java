@@ -14,7 +14,6 @@ import org.six11.util.Debug;
 public class GeomTest {
 
   private static final int YES_INDEX = 0;
-  private static final int NO_INDEX = 1;
 
   private static final int OBS_YES = 0;
   private static final int OBS_MAYBE = 1;

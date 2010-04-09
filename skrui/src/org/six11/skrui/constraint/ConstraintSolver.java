@@ -125,6 +125,7 @@ public class ConstraintSolver {
     return buf.toString();
   }
 
+  @SuppressWarnings("unused")
   private String getBindingsString(Primitive[] binding) {
     StringBuilder buf = new StringBuilder();
     boolean first = true;

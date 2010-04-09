@@ -8,7 +8,6 @@ import java.util.Set;
 
 import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 

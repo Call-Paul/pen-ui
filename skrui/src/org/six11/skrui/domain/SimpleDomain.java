@@ -74,6 +74,7 @@ public class SimpleDomain extends Domain {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private void bug(String what) {
     Debug.out("SimpleDomain", what);
   }

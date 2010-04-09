@@ -12,7 +12,6 @@ import java.util.TreeSet;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.PrettyPrinterSegments;
-import org.six11.skrui.Segment;
 import org.six11.skrui.SkruiScript;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
@@ -192,6 +191,7 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
   /**
    * Attempt to join the following regions into one. For this to work they must be of the same type.
    */
+  @SuppressWarnings("unused")
   private HungryRegion merge(HungryRegion r1, HungryRegion r2) {
     HungryRegion combined = new HungryRegion(r1.seq, Math.min(r1.getStartIdx(), r2.getStartIdx()),
         Math.max(r1.getEndIdx(), r2.getEndIdx()));

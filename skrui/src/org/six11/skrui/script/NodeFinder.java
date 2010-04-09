@@ -81,6 +81,7 @@ public class NodeFinder extends SkruiScript implements SequenceListener {
     }
   }
 
+  @SuppressWarnings("unused")
   private void drawConvexHull(List<Pt> inPoints) {
     ConvexHull ch = new ConvexHull(inPoints);
     List<Pt> hullPoints = ch.getHullClosed();
@@ -122,7 +123,6 @@ public class NodeFinder extends SkruiScript implements SequenceListener {
     Sequence seq = seqEvent.getSeq();
     switch (type) {
       case PROGRESS:
-        double howLong = updatePathLength(seq);
         break;
       case END:
         Delaunay dl = new Delaunay(main);
@@ -131,6 +131,7 @@ public class NodeFinder extends SkruiScript implements SequenceListener {
     }
   }
 
+  @SuppressWarnings("unused")
   private double updatePathLength(Sequence seq) {
     int cursor = seq.size() - 1;
     // back up to the last point that has the 'path-length' value set, or to 0.

@@ -42,6 +42,7 @@ public class TimeGraph {
     sequences.remove(seq);
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("TimeGraph", what);
   }

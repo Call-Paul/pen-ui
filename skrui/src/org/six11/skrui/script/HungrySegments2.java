@@ -479,7 +479,6 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
     }
 
     private void maybeChangeType() {
-      Type origType = type;
       double linePain = measureLinePainInWindow(start, end, seq);
       if (linePain > 0) {
         ArcPainResult apr = measureArcPainInLimits(start, end, seq);
@@ -540,6 +539,7 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
       return seq.getPathLength(start, end);
     }
 
+    @SuppressWarnings("unused")
     private double getIdealLength() {
       double ret = Double.MAX_VALUE;
       if (type == Type.Line) {

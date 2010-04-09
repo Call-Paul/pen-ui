@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.skrui.script.ArcSegment;
 import org.six11.skrui.script.Dot;
 import org.six11.skrui.script.LineSegment;
 import org.six11.skrui.script.Neanderthal;

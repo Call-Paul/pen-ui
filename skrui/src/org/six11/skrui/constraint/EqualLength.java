@@ -28,6 +28,7 @@ public class EqualLength extends Constraint {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("EqualLength", what);
   }

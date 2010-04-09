@@ -230,15 +230,15 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     Pt pen = lastHoverEvent.getPt();
     Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
     for (Pt st : structurePoints.getPoints()) {
-      double dist = st.distance(pen);
-      double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
+//      double dist = st.distance(pen);
+//      double alpha = calcAlpha(dist);
 //      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       Color c = debugColor;
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
     for (LineSegment line : structureLines) {
-      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
-      double alpha = calcAlpha(dist, 0.05, 0.6, 10, 150);
+//      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
+//      double alpha = calcAlpha(dist);
 //      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       Color c= debugColor;
       DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
@@ -273,8 +273,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     getSoup().addBuffer("structured", db);
   }
 
-  public static double calcAlpha(double dist, double minAlpha, double maxAlpha, double minDist,
-      double maxDist) {
+  public static double calcAlpha(double dist) {
+    double minAlpha = 0.05;
+    double maxAlpha = 0.6; 
+    double minDist = 10;
+    double maxDist = 150;
     double ret = 0;
     if (dist < minDist) {
       ret = maxAlpha;
@@ -381,7 +384,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 //    drawDots(seq, true, false, false, false, false, "7");
   }
 
-  @SuppressWarnings("unused")
   private void drawDots(List<Pt> spots, String bufferName) {
     if (spots.size() > 1) {
       DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
@@ -393,6 +395,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
   }
 
+  @SuppressWarnings("unused")
   private void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
       boolean corner, String bufferName) {
     if (seq.size() > 1) {
@@ -458,7 +461,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     return (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
   }
 
-  @SuppressWarnings("unused")
   private void drawNewShapes(Collection<Shape> newShapes) {
     if (newShapes.size() > 0) {
       DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");

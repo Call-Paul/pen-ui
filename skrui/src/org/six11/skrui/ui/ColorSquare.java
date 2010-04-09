@@ -59,6 +59,7 @@ public class ColorSquare extends PenSquare {
     }
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ColorSquare", what);
   }

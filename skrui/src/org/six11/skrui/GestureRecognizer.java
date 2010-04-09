@@ -16,7 +16,6 @@ import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Primitive;
 import org.six11.util.Debug;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Sequence;
 
 /**
@@ -100,6 +99,7 @@ public class GestureRecognizer extends Domain {
     }
   }
 
+  @SuppressWarnings("unused")
   private String listPrims(Set<Primitive> set) {
     StringBuilder buf = new StringBuilder();
     for (Primitive p : set) {

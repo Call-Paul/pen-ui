@@ -2,7 +2,6 @@ package org.six11.skrui.constraint;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Stack;
 
 import org.six11.skrui.script.Neanderthal;
 import org.six11.skrui.script.Primitive;
@@ -33,6 +32,7 @@ public abstract class Constraint {
     }
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("Constraint", what);
   }

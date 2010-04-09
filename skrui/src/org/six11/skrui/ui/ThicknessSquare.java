@@ -113,6 +113,7 @@ public class ThicknessSquare extends PenSquare {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ThicknessSquare", what);
   }
