@@ -32,6 +32,8 @@ import org.six11.util.pen.*;
 public class Neanderthal extends SkruiScript implements SequenceListener, HoverListener {
 
   private static final String K_DO_RECOGNITION = "do-recognition";
+  private static final String K_COHORT_TIMEOUT = "cohort-timeout"; // 1300;
+  private static final String K_COHORT_LENGTH_MULT = "cohort-length-mult"; // 0.3
 
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
@@ -61,6 +63,13 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
     defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
         "Should the Neanderthal do advanced sketch recognition?", false));
+    defs.put(K_COHORT_TIMEOUT, new BoundedParameter.Integer(K_COHORT_TIMEOUT, "Cohort timeout",
+        "Maximum time (milliseconds) that elapses between strokes that are "
+            + "considered together for recognition", 1300));
+    defs.put(K_COHORT_LENGTH_MULT, new BoundedParameter.Double(K_COHORT_LENGTH_MULT,
+        "Cohort distance multiplier", "Multiplier of distance between strokes that are "
+            + "considered together for recognition. This is multiplied with "
+            + "the length of a pen stroke.", 0.01, 1.0, 0.3));
     return defs;
   }
 
@@ -136,7 +145,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   public void addMesh(Mesh mesh) {
     meshes.add(mesh);
   }
-  
+
   @SuppressWarnings("unused")
   private void output(String... stuff) {
     boolean first = true;
@@ -230,22 +239,22 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     Pt pen = lastHoverEvent.getPt();
     Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
     for (Pt st : structurePoints.getPoints()) {
-//      double dist = st.distance(pen);
-//      double alpha = calcAlpha(dist);
-//      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+      // double dist = st.distance(pen);
+      // double alpha = calcAlpha(dist);
+      // Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       Color c = debugColor;
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
     for (LineSegment line : structureLines) {
-//      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
-//      double alpha = calcAlpha(dist);
-//      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-      Color c= debugColor;
+      // double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
+      // double alpha = calcAlpha(dist);
+      // Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
+      Color c = debugColor;
       DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
           .getGeometryLine(), c, 0.7);
     }
     List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
-//    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
+    // Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
     Color veryLightGray = debugColor;
     if (rec.size() > 0) {
       // draw a line from pen to the most recent point
@@ -275,7 +284,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 
   public static double calcAlpha(double dist) {
     double minAlpha = 0.05;
-    double maxAlpha = 0.6; 
+    double maxAlpha = 0.6;
     double minDist = 10;
     double maxDist = 150;
     double ret = 0;
@@ -370,18 +379,18 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       drawNewShapes(newShapes);
     }
     // DEBUGGING stuff below here. comment out if you want.
-     
-//     drawPrims(recent, Color.RED, "recent");
+
+    // drawPrims(recent, Color.RED, "recent");
     // cohorts.removeAll(recent);
-//     drawPrims(cohorts, Color.GREEN, "3");
+    // drawPrims(cohorts, Color.GREEN, "3");
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-     drawDots(scribble.getPossibleCorners(), "7");
-//    drawDots(seq, true, true, true, false, false, "4");
-//    drawDots(seq, false, false, false, true, false, "5");
-//    drawDots(seq, false, false, false, false, true, "6");
-//    drawDots(seq, true, false, false, false, false, "7");
+    drawDots(scribble.getPossibleCorners(), "7");
+    // drawDots(seq, true, true, true, false, false, "4");
+    // drawDots(seq, false, false, false, true, false, "5");
+    // drawDots(seq, false, false, false, false, true, "6");
+    // drawDots(seq, true, false, false, false, false, "7");
   }
 
   private void drawDots(List<Pt> spots, String bufferName) {
@@ -522,9 +531,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     Set<Primitive> ret = new HashSet<Primitive>();
     ret.addAll(recent);
     for (Primitive source : recent) {
-      ret.addAll(getNear(source, source.getLength() * 0.3)); // TODO: turn this into a param
+      ret.addAll(getNear(source, source.getLength()
+          * main.getParam(K_COHORT_LENGTH_MULT).getDouble()));
     }
-    List<Sequence> timeRecent = tg.getRecent(1300); // TODO : make a param
+    List<Sequence> timeRecent = tg.getRecent(main.getParam(K_COHORT_TIMEOUT).getInt());
     for (Sequence s : timeRecent) {
       ret.addAll(getPrimitiveSet(s));
     }

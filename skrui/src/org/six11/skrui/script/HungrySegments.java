@@ -1,3 +1,4 @@
+//  TODO: axe the hungry segments code. it didn't work.
 package org.six11.skrui.script;
 
 import java.awt.Color;
@@ -356,7 +357,6 @@ public class HungrySegments extends SkruiScript implements SequenceListener {
         errorSum += d * d;
       }
     }
-    // TODO: The constants here should be parameters.
     return new HungryError(errorSum / (b - a), bestCircle);
   }
 

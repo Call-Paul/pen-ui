@@ -89,6 +89,34 @@ public abstract class BoundedParameter {
     }
 
   }
+  
+  public static class Integer extends BoundedParameter {
+    int value;
+    
+    public Integer(String keyName, String humanReadableName, String documentation, int value) {
+      super(keyName, humanReadableName, documentation);
+      this.value = value;
+    }
+    
+    public int getInt() {
+      return value;
+    }
+
+    @Override
+    public BoundedParameter copy() {
+      return new Integer(keyName, humanReadableName, documentation, value);
+    }
+
+    @Override
+    public String getValueStr() {
+      return "" + value;
+    }
+
+    @Override
+    public void setValue(String v) {
+      value = java.lang.Integer.parseInt(v);
+    }
+  }
 
   public static class Double extends BoundedParameter {
 
@@ -193,6 +221,11 @@ public abstract class BoundedParameter {
 
   public void setDouble(@SuppressWarnings("unused") double v) {
     warn("Double");
+  }
+  
+  public int getInt() {
+    warn("Integer");
+    return 0;
   }
 
   public boolean getBoolean() {

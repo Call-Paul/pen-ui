@@ -1,3 +1,4 @@
+//  TODO: axe the hungry segments code. it didn't work.
 package org.six11.skrui.script;
 
 import java.awt.Color;

@@ -231,9 +231,6 @@ public class Segment implements Comparable<Segment> {
     Collections.sort(arcs, CircleArc.comparator); // sort based on radius
     bestCircle = arcs.get(arcs.size() / 2); // get the arc with median radius
 
-    // TODO: Maybe this is a better way of finding the best circle: After creating each CircleArc,
-    // calculate its ideal to actual path-length ratio as in isProbablyArc(). Then choose the one
-    // with the most ideal length.
     if (bestCircle.center == null) {
       errorSum = Double.POSITIVE_INFINITY;
     } else {

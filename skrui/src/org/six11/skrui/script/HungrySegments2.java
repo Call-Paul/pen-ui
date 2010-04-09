@@ -1,3 +1,5 @@
+//  TODO: axe the hungry segments code. it didn't work.
+
 package org.six11.skrui.script;
 
 import java.awt.Color;
@@ -246,7 +248,6 @@ public class HungrySegments2 extends SkruiScript implements SequenceListener {
         }
       }
     } while (improvement > 0);
-    // TODO: make sure I return a legit list...
     return new TreeSet<HungrySegment2>(segments);
   }
 

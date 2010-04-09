@@ -102,7 +102,7 @@ public class Polyline {
       int idxA = working.get(i);
       int idxB = working.get(i + 1);
       double dist = origin.getPathLength(idxA, idxB);
-      if (dist < DUPLICATE_THRESHOLD) { // TODO: this should be a parameter
+      if (dist < DUPLICATE_THRESHOLD) {
         if (i == 0) {
           working.remove(i + 1);
         } else if (i == (working.size() - 1)) {
