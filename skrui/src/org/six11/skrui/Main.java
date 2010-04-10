@@ -228,7 +228,7 @@ public class Main {
           bug("Loaded script: " + args.getPosition(i));
         }
       } catch (ClassNotFoundException ex) {
-        bug("Can't load drawing script: " + args.getPosition(i));
+        warn("Can't load drawing script: " + args.getPosition(i));
       } catch (InstantiationException ex) {
         ex.printStackTrace();
       } catch (IllegalAccessException ex) {
@@ -734,6 +734,10 @@ public class Main {
 
   public static void bug(String what) {
     Debug.out("Main", what);
+  }
+
+  public static void warn(String what) {
+    System.out.println("  **WARNING**  " + what);
   }
 
   public BoundedParameter getParam(String key) {

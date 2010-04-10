@@ -5,7 +5,6 @@ import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
-import org.six11.skrui.FlowSelection;
 import org.six11.skrui.GestureRecognizer;
 import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
@@ -19,13 +18,7 @@ import org.six11.skrui.domain.ShapeRenderer;
 import org.six11.skrui.domain.ShapeTemplate;
 import org.six11.skrui.domain.SimpleDomain;
 import org.six11.skrui.mesh.Mesh;
-import org.six11.skrui.shape.ArcSegment;
-import org.six11.skrui.shape.Dot;
-import org.six11.skrui.shape.Ellipse;
-import org.six11.skrui.shape.LineSegment;
-import org.six11.skrui.shape.Polyline;
-import org.six11.skrui.shape.Primitive;
-import org.six11.skrui.shape.Segment;
+import org.six11.skrui.shape.*;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -98,17 +91,20 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   Domain domain;
   GestureRecognizer gr;
   List<Shape> recognizedShapes;
-  FlowSelection fs;
   Scribbler scribble;
   PointGraph structurePoints;
   List<LineSegment> structureLines;
   HoverEvent lastHoverEvent;
   List<Mesh> meshes;
+  private List<SequenceListener> relaySeqEventListeners;
+  private List<PrimitiveListener> primitiveListeners;
 
   @Override
   public void initialize() {
     bug("Neanderthal is alive!");
     domain = new SimpleDomain("Simple domain", this);
+    relaySeqEventListeners = new ArrayList<SequenceListener>();
+    primitiveListeners = new ArrayList<PrimitiveListener>();
     allPoints = new PointGraph();
     endPoints = new PointGraph();
     structurePoints = new PointGraph();
@@ -121,7 +117,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     meshes = new ArrayList<Mesh>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     main.getDrawingSurface().getSoup().addHoverListener(this);
-    fs = new FlowSelection(this);
+//    fs = new FlowSelection(this);
     scribble = new Scribbler(this);
   }
 
@@ -317,7 +313,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       case BEGIN:
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         scribble.sendDown(seq);
-        fs.sendDown(seq);
         break;
       case PROGRESS:
         if (lastHoverEvent != null) {
@@ -327,15 +322,20 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
         scribble.sendDrag();
-        fs.sendDrag(seq.getLast());
         break;
       case END:
-        fs.sendUp();
         scribble.sendUp();
         if (seq.getAttribute(SCRAP) == null/* && seq.size() > 1 */) {
           processFinishedSequence(seq);
         }
         break;
+    }
+    fireRelaySequenceEvent(seqEvent);
+  }
+
+  private void fireRelaySequenceEvent(SequenceEvent seqEvent) {
+    for (SequenceListener sl : relaySeqEventListeners) {
+      sl.handleSequenceEvent(seqEvent);
     }
   }
 
@@ -364,11 +364,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 
     gr.add(seq);
 
-    for (Primitive prim : getPrimitiveSet(seq)) {
-      if (prim instanceof Dot) {
-        fs.sendTap((Dot) prim);
-      }
-    }
+    
+    firePrimitiveEvent(seq);
 
     if (getParam(K_DO_RECOGNITION).getBoolean()) {
       Set<Primitive> recent = getPrimitiveSet(seq);
@@ -398,6 +395,15 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     // drawDots(seq, false, false, false, true, false, "5");
     // drawDots(seq, false, false, false, false, true, "6");
     // drawDots(seq, true, false, false, false, false, "7");
+  }
+
+  private void firePrimitiveEvent(Sequence seq) {
+    SortedSet<Primitive> prims = getPrimitiveSet(seq);
+    PrimitiveEvent pe = new PrimitiveEvent(this, prims);
+    for (PrimitiveListener pl : primitiveListeners) {
+      pl.handlePrimitiveEvent(pe);
+    }
+
   }
 
   private void drawDots(List<Pt> spots, String bufferName) {
@@ -823,6 +829,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   }
 
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
+    // TODO: why is this not just a part of SkruiScript?
     Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
     for (String k : params.keySet()) {
       if (args.hasFlag(k)) {
@@ -883,6 +890,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
   }
 
+  public void addSequenceListener(SequenceListener sel) {
+    relaySeqEventListeners.add(sel);
+  }
+
+  public void addPrimitiveListener(PrimitiveListener pl) {
+    primitiveListeners.add(pl);
+  }
+  
 }
 
 // Did they ever figure out who the man in the jar was?
