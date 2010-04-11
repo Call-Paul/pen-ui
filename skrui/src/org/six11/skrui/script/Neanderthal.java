@@ -11,11 +11,7 @@ import org.six11.skrui.data.AngleGraph;
 import org.six11.skrui.data.LengthGraph;
 import org.six11.skrui.data.PointGraph;
 import org.six11.skrui.data.TimeGraph;
-import org.six11.skrui.domain.Domain;
 import org.six11.skrui.domain.Shape;
-import org.six11.skrui.domain.ShapeRenderer;
-import org.six11.skrui.domain.ShapeTemplate;
-import org.six11.skrui.domain.SimpleDomain;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.shape.*;
 import org.six11.util.Debug;
@@ -31,8 +27,6 @@ import org.six11.util.pen.*;
 public class Neanderthal extends SkruiScript implements SequenceListener, HoverListener {
 
   private static final String K_DO_RECOGNITION = "do-recognition";
-  private static final String K_COHORT_TIMEOUT = "cohort-timeout"; // 1300;
-  private static final String K_COHORT_LENGTH_MULT = "cohort-length-mult"; // 0.3
 
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
@@ -47,12 +41,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   PointGraph allPoints;
   PointGraph endPoints;
   LengthGraph lenG;
-  List<Shape> recognizedShapes;
   List<LineSegment> structureLines;
   List<Mesh> regions;
   PointGraph structurePoints;
 
-  Domain domain;
   HoverEvent lastHoverEvent;
 
   private List<SequenceListener> relaySeqEventListeners;
@@ -61,7 +53,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   @Override
   public void initialize() {
     bug("Neanderthal is alive!");
-    domain = new SimpleDomain("Simple domain", this);
     relaySeqEventListeners = new ArrayList<SequenceListener>();
     primitiveListeners = new ArrayList<PrimitiveListener>();
     allPoints = new PointGraph();
@@ -71,7 +62,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
-    recognizedShapes = new ArrayList<Shape>();
     regions = new ArrayList<Mesh>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     main.getDrawingSurface().getSoup().addHoverListener(this);
@@ -196,25 +186,22 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   private void drawStructuredInk() {
     DrawingBuffer db = new DrawingBuffer();
     Pt pen = lastHoverEvent.getPt();
-    Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
+    // Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
     for (Pt st : structurePoints.getPoints()) {
-      // double dist = st.distance(pen);
-      // double alpha = calcAlpha(dist);
-      // Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-      Color c = debugColor;
+      double dist = st.distance(pen);
+      double alpha = calcAlpha(dist);
+      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       DrawingBufferRoutines.cross(db, st, 3.5, c);
     }
     for (LineSegment line : structureLines) {
-      // double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
-      // double alpha = calcAlpha(dist);
-      // Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-      Color c = debugColor;
+      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
+      double alpha = calcAlpha(dist);
+      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
       DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
           .getGeometryLine(), c, 0.7);
     }
     List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
-    // Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
-    Color veryLightGray = debugColor;
+    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
     if (rec.size() > 0) {
       // draw a line from pen to the most recent point
       Pt st = rec.get(0);
@@ -313,21 +300,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 
     firePrimitiveEvent(seq);
 
-    if (getParam(K_DO_RECOGNITION).getBoolean()) {
-      Set<Primitive> recent = getPrimitiveSet(seq);
-      Set<Primitive> cohorts = getCohorts(recent);
-      long start = System.currentTimeMillis();
-      List<Shape> results;
-      Set<Shape> newShapes = new HashSet<Shape>();
-      for (ShapeTemplate st : domain.getTemplates()) {
-        results = st.apply(cohorts);
-        newShapes.addAll(merge(results));
-      }
-      long end = System.currentTimeMillis();
-      bug("Applied " + domain.getTemplates().size() + " templates to " + cohorts.size()
-          + " primitive shapes in " + (end - start) + " ms.");
-      drawNewShapes(newShapes);
-    }
     // DEBUGGING stuff below here. comment out if you want.
 
     // drawPrims(recent, Color.RED, "recent");
@@ -415,36 +387,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
   }
 
-  private Set<Shape> merge(List<Shape> results) {
-    Set<Shape> unique = new HashSet<Shape>();
-    for (Shape s : results) {
-      if (!recognizedShapes.contains(s)) {
-        unique.add(s);
-        recognizedShapes.add(s);
-      }
-    }
-    return unique;
-  }
-
   @SuppressWarnings("unchecked")
   public static SortedSet<Primitive> getPrimitiveSet(Sequence seq) {
     return (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
-  }
-
-  private void drawNewShapes(Collection<Shape> newShapes) {
-    if (newShapes.size() > 0) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");
-      if (db == null) {
-        db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer("2", db);
-      }
-      for (Shape s : newShapes) {
-        ShapeRenderer ren = domain.getRenderer(s.getName());
-        if (ren != null) {
-          ren.draw(db, s);
-        }
-      }
-    }
   }
 
   @SuppressWarnings("unused")
@@ -480,43 +425,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       }
       ((TreeSet<Primitive>) pt.getAttribute(PRIMITIVES)).add(prim);
     }
-  }
-
-  /**
-   * After a strokes primitives have been found, we can try to do recognition. In order to do that
-   * we need a reasonably inclusive set of related primitives. This includes all primitives that
-   * were just made (in the input 'recent' set), as well as previously drawn elements that are
-   * spatially or temporally close.
-   */
-  private Set<Primitive> getCohorts(Set<Primitive> recent) {
-    Set<Primitive> ret = new HashSet<Primitive>();
-    ret.addAll(recent);
-    for (Primitive source : recent) {
-      ret.addAll(getNear(source, source.getLength()
-          * main.getParam(K_COHORT_LENGTH_MULT).getDouble()));
-    }
-    List<Sequence> timeRecent = tg.getRecent(main.getParam(K_COHORT_TIMEOUT).getInt());
-    for (Sequence s : timeRecent) {
-      ret.addAll(getPrimitiveSet(s));
-    }
-    return ret;
-  }
-
-  @SuppressWarnings("unchecked")
-  private Set<Primitive> getNear(Primitive source, double dist) {
-    Set<Primitive> ret = new HashSet<Primitive>();
-    Set<Pt> out = new HashSet<Pt>();
-    for (int i = source.getStartIdx(); i <= source.getEndIdx(); i++) {
-      out.addAll(allPoints.getNear(source.getSeq().get(i), dist));
-    }
-    for (Pt pt : out) {
-      SortedSet<Primitive> pointPrims = (SortedSet<Primitive>) pt
-          .getAttribute(Neanderthal.PRIMITIVES);
-      if (pointPrims != null) {
-        ret.addAll(pointPrims);
-      }
-    }
-    return ret;
   }
 
   @SuppressWarnings("unused")
@@ -870,13 +778,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
     defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
         "Should the Neanderthal do advanced sketch recognition?", false));
-    defs.put(K_COHORT_TIMEOUT, new BoundedParameter.Integer(K_COHORT_TIMEOUT, "Cohort timeout",
-        "Maximum time (milliseconds) that elapses between strokes that are "
-            + "considered together for recognition", 1300));
-    defs.put(K_COHORT_LENGTH_MULT, new BoundedParameter.Double(K_COHORT_LENGTH_MULT,
-        "Cohort distance multiplier", "Multiplier of distance between strokes that are "
-            + "considered together for recognition. This is multiplied with "
-            + "the length of a pen stroke.", 0.01, 1.0, 0.3));
+
     return defs;
   }
 
