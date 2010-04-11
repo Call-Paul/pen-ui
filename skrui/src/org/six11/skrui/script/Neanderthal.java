@@ -1,10 +1,8 @@
 package org.six11.skrui.script;
 
-import java.awt.Color;
 import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
@@ -24,9 +22,7 @@ import org.six11.util.pen.*;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class Neanderthal extends SkruiScript implements SequenceListener, HoverListener {
-
-  private static final String K_DO_RECOGNITION = "do-recognition";
+public class Neanderthal extends SkruiScript implements SequenceListener {
 
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
@@ -45,7 +41,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   List<Mesh> regions;
   PointGraph structurePoints;
 
-  HoverEvent lastHoverEvent;
+  DebugUtil debugUtil;
 
   private List<SequenceListener> relaySeqEventListeners;
   private List<PrimitiveListener> primitiveListeners;
@@ -53,6 +49,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   @Override
   public void initialize() {
     bug("Neanderthal is alive!");
+    debugUtil = new DebugUtil(main);
     relaySeqEventListeners = new ArrayList<SequenceListener>();
     primitiveListeners = new ArrayList<PrimitiveListener>();
     allPoints = new PointGraph();
@@ -64,11 +61,14 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     lenG = new LengthGraph();
     regions = new ArrayList<Mesh>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
-    main.getDrawingSurface().getSoup().addHoverListener(this);
   }
 
   public PointGraph getStructurePoints() {
     return structurePoints;
+  }
+  
+  public List<LineSegment> getStructureLines() {
+    return structureLines;
   }
 
   public TimeGraph getTimeGraph() {
@@ -87,38 +87,12 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     return endPoints;
   }
 
-  public LengthGraph getLenthGraph() {
+  public LengthGraph getLengthGraph() {
     return lenG;
   }
 
   public void addRegion(Mesh mesh) {
     regions.add(mesh);
-  }
-
-  @SuppressWarnings("unused")
-  private void output(String... stuff) {
-    boolean first = true;
-    for (String v : stuff) {
-      if (!first) {
-        System.out.print(", ");
-      }
-      first = false;
-      System.out.print(v);
-    }
-    System.out.print("\n");
-  }
-
-  @SuppressWarnings("unused")
-  private void output(double... stuff) {
-    boolean first = true;
-    for (double v : stuff) {
-      if (!first) {
-        System.out.print(", ");
-      }
-      first = false;
-      System.out.print(Debug.num(v));
-    }
-    System.out.print("\n");
   }
 
   private double updatePathLength(Sequence seq) {
@@ -137,113 +111,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     return seq.get(seq.size() - 1).getDouble("path-length");
   }
 
-  @SuppressWarnings("unused")
-  private int sumCertainty(Certainty... certainties) {
-    int sum = 0;
-    for (Certainty c : certainties) {
-      switch (c) {
-        case Maybe:
-        case Yes:
-          sum += 1;
-      }
-    }
-    return sum;
-  }
-
-  public void handleHoverEvent(HoverEvent hoverEvent) {
-    lastHoverEvent = hoverEvent;
-    whackStructuredInk();
-  }
-
-  /**
-   * When the pen moves around inside the drawing area, we want structural ink to be redrawn as a
-   * function of what the user is doing, and where the pen is. Consult 'lastHoverEvent' to know
-   * what's going on.
-   */
-  private void whackStructuredInk() {
-    if (structurePoints.size() > 0) {
-      if (lastHoverEvent != null) {
-        switch (lastHoverEvent.getType()) {
-          case In:
-          case Hover:
-            drawStructuredInk();
-            break;
-          case Out:
-            hideStructuredInk();
-            break;
-        }
-      }
-    }
-  }
-
-  private void hideStructuredInk() {
-    if (getSoup().getBuffer("structured") != null) {
-      getSoup().getBuffer("structured").setVisible(false);
-      main.getDrawingSurface().repaint();
-    }
-  }
-
-  private void drawStructuredInk() {
-    DrawingBuffer db = new DrawingBuffer();
-    Pt pen = lastHoverEvent.getPt();
-    // Color debugColor = new Color(1f, 0.3f, 0.3f, 1f);
-    for (Pt st : structurePoints.getPoints()) {
-      double dist = st.distance(pen);
-      double alpha = calcAlpha(dist);
-      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-      DrawingBufferRoutines.cross(db, st, 3.5, c);
-    }
-    for (LineSegment line : structureLines) {
-      double dist = Functions.getDistanceBetweenPointAndLine(pen, line.getGeometryLine());
-      double alpha = calcAlpha(dist);
-      Color c = new Color(0.6f, 0.6f, 0.6f, (float) alpha);
-      DrawingBufferRoutines.screenLine(db, main.getDrawingSurface().getBounds(), line
-          .getGeometryLine(), c, 0.7);
-    }
-    List<Pt> rec = structurePoints.getRecent(30000, pen.getTime());
-    Color veryLightGray = new Color(0.6f, 0.6f, 0.6f, (float) 0.3);
-    if (rec.size() > 0) {
-      // draw a line from pen to the most recent point
-      Pt st = rec.get(0);
-      DrawingBufferRoutines.line(db, pen, st, veryLightGray, 0.5);
-    }
-    for (int i = 0; i < rec.size() - 1; i++) {
-      // draw lines connecting each dot to the previous
-      Pt here = rec.get(i);
-      Pt there = rec.get(i + 1);
-      Line ghostLine = new Line(here, there);
-      Pt mid = ghostLine.getMidpoint();
-      DrawingBufferRoutines.line(db, ghostLine, veryLightGray, 0.5);
-      DrawingBufferRoutines.cross(db, mid, 2.3, veryLightGray);
-    }
-    if (rec.size() > 2) {
-      // when there are three points, make a circle and show its center.
-      Pt center = Functions.getCircleCenter(rec.get(0), rec.get(1), rec.get(2));
-      if (center != null) { // if 0-1-2 are colinear, center is null. avoid NPEs
-        double radius = rec.get(0).distance(center);
-        DrawingBufferRoutines.dot(db, center, radius, 0.5, veryLightGray, null);
-        DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
-      }
-    }
-    getSoup().addBuffer("structured", db);
-  }
-
-  public static double calcAlpha(double dist) {
-    double minAlpha = 0.05;
-    double maxAlpha = 0.6;
-    double minDist = 10;
-    double maxDist = 150;
-    double ret = 0;
-    if (dist < minDist) {
-      ret = maxAlpha;
-    } else if (dist > maxDist) {
-      ret = minAlpha;
-    } else {
-      ret = maxAlpha - ((dist - minDist) / (maxDist - minDist)) * (maxAlpha - minAlpha);
-    }
-    return ret;
-  }
-
   public void handleSequenceEvent(SequenceEvent seqEvent) {
 
     SequenceEvent.Type type = seqEvent.getType();
@@ -253,10 +120,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         break;
       case PROGRESS:
-        if (lastHoverEvent != null) {
-          lastHoverEvent.setPt(seq.getLast());
-          whackStructuredInk();
-        }
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
         break;
@@ -309,7 +172,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
     if (main.getScript("Scribbler") != null) {
-      drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
+      debugUtil.drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
     }
     // drawDots(seq, true, true, true, false, false, "4");
     // drawDots(seq, false, false, false, true, false, "5");
@@ -323,94 +186,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     for (PrimitiveListener pl : primitiveListeners) {
       pl.handlePrimitiveEvent(pe);
     }
-
-  }
-
-  private void drawDots(List<Pt> spots, String bufferName) {
-    if (spots.size() > 1) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
-      if (db == null) {
-        db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
-      }
-      DrawingBufferRoutines.dots(db, spots, 2.5, 0.3, Color.BLACK, Color.PINK);
-    }
-  }
-
-  @SuppressWarnings("unused")
-  private void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
-      boolean corner, String bufferName) {
-    if (seq.size() > 1) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
-      if (db == null) {
-        db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
-        db.setVisible(false);
-      }
-      List<Pt> plainDots = new ArrayList<Pt>();
-      List<Pt> curvyDots = new ArrayList<Pt>();
-      List<Pt> slowDots = new ArrayList<Pt>();
-      List<Pt> bothDots = new ArrayList<Pt>();
-      List<Pt> cornerDots = new ArrayList<Pt>();
-      for (Pt pt : seq) {
-        if (plain) {
-          plainDots.add(pt);
-        }
-        if (curvy && pt.getBoolean("curvy")) {
-          curvyDots.add(pt);
-        }
-        if (slow && pt.getBoolean("slow")) {
-          slowDots.add(pt);
-        }
-        if (both && pt.getBoolean("both")) {
-          bothDots.add(pt);
-        }
-        if (corner && pt.getBoolean("corner")) {
-          cornerDots.add(pt);
-        }
-      }
-      if (plainDots.size() > 0) {
-        DrawingBufferRoutines.dots(db, plainDots, 2.5, 0.3, Color.BLACK, null);
-      }
-      if (curvyDots.size() > 0) {
-        DrawingBufferRoutines.dots(db, curvyDots, 2.5, 0.3, Color.BLACK, Color.YELLOW);
-      }
-      if (slowDots.size() > 0) {
-        DrawingBufferRoutines.dots(db, slowDots, 2.5, 0.3, Color.BLACK, Color.BLUE);
-      }
-      if (bothDots.size() > 0) {
-        DrawingBufferRoutines.dots(db, bothDots, 2.5, 0.3, Color.BLACK, Color.GREEN);
-      }
-      if (cornerDots.size() > 0) {
-        DrawingBufferRoutines.dots(db, cornerDots, 2.5, 0.3, Color.BLACK, Color.RED);
-      }
-    }
   }
 
   @SuppressWarnings("unchecked")
   public static SortedSet<Primitive> getPrimitiveSet(Sequence seq) {
     return (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
-  }
-
-  @SuppressWarnings("unused")
-  private void drawPrims(Set<Primitive> inSet, Color color, String name) {
-    DrawingBuffer db = new DrawingBuffer();
-    boolean dirty = false;
-    for (Primitive prim : inSet) {
-      if (prim instanceof LineSegment) {
-        dirty = true;
-        DrawingBufferRoutines.patch(db, prim.getSeq(), prim.getStartIdx(), prim.getEndIdx(), 2.0,
-            color);
-        DrawingBufferRoutines.text(db, Functions.getMean(prim.getP1(), prim.getP2()).getTranslated(
-            5, 10), prim.getShortStr(), Color.BLACK);
-      }
-    }
-    if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer(name, db);
-    } else {
-      main.getDrawingSurface().getSoup().removeBuffer(name);
-    }
-
   }
 
   /**
@@ -427,88 +207,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     }
   }
 
-  @SuppressWarnings("unused")
-  private void drawSimilarLength(Sequence seq) {
-    DrawingBuffer db = new DrawingBuffer();
-    boolean dirty = false;
-    for (Primitive prim : getPrimitiveSet(seq)) {
-      dirty = true;
-      DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
-      double pathLength = prim.getSeq().getPathLength(prim.getStartIdx(), prim.getEndIdx());
-      Set<Primitive> similar = lenG.getSimilar(pathLength, pathLength * 0.25);
-      for (Primitive adj : similar) {
-        if ((adj.getSeq() == prim.getSeq() && adj.getStartIdx() == prim.getStartIdx() && adj
-            .getEndIdx() == prim.getEndIdx()) == false) {
-          DrawingBufferRoutines.patch(db, adj.getSeq(), adj.getStartIdx(), adj.getEndIdx(), 2.0,
-              Color.GREEN);
-        }
-      }
-    }
-    if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("similength", db);
-    } else {
-      main.getDrawingSurface().getSoup().removeBuffer("similength");
-    }
-
-  }
-
-  @SuppressWarnings("unused")
-  private void drawAdjacent(Sequence seq) {
-    DrawingBuffer db = new DrawingBuffer();
-    boolean dirty = false;
-    for (Primitive prim : getPrimitiveSet(seq)) {
-      dirty = true;
-      // DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
-      double pathLength = prim.getSeq().getPathLength(prim.getStartIdx(), prim.getEndIdx());
-      double radius = pathLength * 0.20;
-      Set<Pt> ends = endPoints.getNear(prim.getSeq().get(prim.getStartIdx()), radius);
-      ends.addAll(endPoints.getNear(prim.getSeq().get(prim.getEndIdx()), radius));
-      Set<Primitive> adjacentPrims = getPrimitives(ends);
-      adjacentPrims.remove(prim);
-      for (Primitive adj : adjacentPrims) {
-        DrawingBufferRoutines.patch(db, adj.getSeq(), adj.getStartIdx(), adj.getEndIdx(), 2.0,
-            Color.GREEN);
-      }
-    }
-    if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("adjacent", db);
-    } else {
-      main.getDrawingSurface().getSoup().removeBuffer("adjacent");
-    }
-  }
-
-  @SuppressWarnings( {
-      "unchecked", "unused"
-  })
-  private void drawParallelPerpendicular(Sequence seq) {
-    DrawingBuffer db = new DrawingBuffer();
-    boolean dirty = false;
-    for (Primitive prim : (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES)) {
-      if (prim instanceof LineSegment) {
-        dirty = true;
-        DrawingBufferRoutines.patch(db, seq, prim.getStartIdx(), prim.getEndIdx(), 2.0, Color.RED);
-        Set<Primitive> set = ag.getNear((LineSegment) prim, 0, 0.2);
-        // bug(set.size() + " are parallel to " + ((LineSegment) prim).getFixedAngle() + ": ");
-        for (Primitive p : set) {
-          // bug("  " + p.getFixedAngle());
-          DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
-              Color.BLUE);
-        }
-        set = ag.getNear((LineSegment) prim, Math.PI / 2, 0.2);
-        // bug(set.size() + " are perpendicular to " + ((LineSegment) prim).getFixedAngle() + ": ");
-        for (Primitive p : set) {
-          // bug("  " + p.getFixedAngle());
-          DrawingBufferRoutines.patch(db, p.getSeq(), p.getStartIdx(), p.getEndIdx(), 2.0,
-              Color.GREEN);
-        }
-      }
-    }
-    if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("paraperp", db);
-    } else {
-      main.getDrawingSurface().getSoup().removeBuffer("paraperp");
-    }
-  }
 
   @SuppressWarnings("unchecked")
   public static Set<Primitive> getPrimitives(Set<Pt> points) {
@@ -541,8 +239,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     // Establish line and arc certainties for each segment.
     for (Segment seg : segs) {
       double lineLenDivCurviLen = seg.getPathLength() / seg.getLineLength();
-      // bug("pathLength / lineLength = " + Debug.num(seg.getPathLength()) + " / "
-      // + Debug.num(seg.getLineLength()) + " = " + Debug.num(lineLenDivCurviLen));
       if (lineLenDivCurviLen < 1.07) {
         seg.lineCertainty = Certainty.Yes;
         seg.arcCertainty = Certainty.Maybe;
@@ -776,9 +472,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-    defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
-        "Should the Neanderthal do advanced sketch recognition?", false));
-
+    
     return defs;
   }
 
