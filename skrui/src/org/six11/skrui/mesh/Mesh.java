@@ -79,7 +79,7 @@ public class Mesh {
       triangles.add(root);
     }
     // and then add each point in 'points', fixing the mesh after each one. Not the fastest
-    // algorithm, but I'm dealing with relatively tiny meshes.
+    // algorithm, but I'm dealing with relatively tiny regions.
     for (Pt newVert : points) {
       addPoint(newVert);
     }

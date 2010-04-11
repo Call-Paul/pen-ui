@@ -5,7 +5,6 @@ import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
-import org.six11.skrui.GestureRecognizer;
 import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
@@ -39,63 +38,23 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   public static final String MAIN_SEQUENCE = "main sequence";
   public static final String PRIMITIVES = "primitives";
 
-  public enum Certainty {
-    Yes, No, Maybe, Unknown
-  }
-
-  public static Arguments getArgumentSpec() {
-    Arguments args = new Arguments();
-    args.setProgramName("Neanderthal: a primitive ink processor.");
-    args.setDocumentationProgram("This performs primitive (and not so primitive) analysis of "
-        + "sketch input.");
-
-    Map<String, BoundedParameter> defs = getDefaultParameters();
-    for (String k : defs.keySet()) {
-      BoundedParameter p = defs.get(k);
-      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
-          .getDocumentation()
-          + " Defaults to " + p.getValueStr() + ". ");
-    }
-    return args;
-  }
-
-  public static Map<String, BoundedParameter> getDefaultParameters() {
-    Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-    defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
-        "Should the Neanderthal do advanced sketch recognition?", false));
-    defs.put(K_COHORT_TIMEOUT, new BoundedParameter.Integer(K_COHORT_TIMEOUT, "Cohort timeout",
-        "Maximum time (milliseconds) that elapses between strokes that are "
-            + "considered together for recognition", 1300));
-    defs.put(K_COHORT_LENGTH_MULT, new BoundedParameter.Double(K_COHORT_LENGTH_MULT,
-        "Cohort distance multiplier", "Multiplier of distance between strokes that are "
-            + "considered together for recognition. This is multiplied with "
-            + "the length of a pen stroke.", 0.01, 1.0, 0.3));
-    return defs;
-  }
-
-  private static void bug(String what) {
-    Debug.out("Neanderthal", what);
-  }
-
-  // ///
+  // ---------------------------------------------------------------------- Member declarations.
   //
-  // * Put member variable declarations here. *
-  //
-  // //
-  boolean animationInitialized = false;
+
+  // Accounting information for all ink related to drawing.
   TimeGraph tg;
   AngleGraph ag;
   PointGraph allPoints;
   PointGraph endPoints;
   LengthGraph lenG;
-  Domain domain;
-  GestureRecognizer gr;
   List<Shape> recognizedShapes;
-  Scribbler scribble;
-  PointGraph structurePoints;
   List<LineSegment> structureLines;
+  List<Mesh> regions;
+  PointGraph structurePoints;
+
+  Domain domain;
   HoverEvent lastHoverEvent;
-  List<Mesh> meshes;
+
   private List<SequenceListener> relaySeqEventListeners;
   private List<PrimitiveListener> primitiveListeners;
 
@@ -112,13 +71,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
-    gr = new GestureRecognizer(this);
     recognizedShapes = new ArrayList<Shape>();
-    meshes = new ArrayList<Mesh>();
+    regions = new ArrayList<Mesh>();
     main.getDrawingSurface().getSoup().addSequenceListener(this);
     main.getDrawingSurface().getSoup().addHoverListener(this);
-//    fs = new FlowSelection(this);
-    scribble = new Scribbler(this);
   }
 
   public PointGraph getStructurePoints() {
@@ -145,8 +101,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     return lenG;
   }
 
-  public void addMesh(Mesh mesh) {
-    meshes.add(mesh);
+  public void addRegion(Mesh mesh) {
+    regions.add(mesh);
   }
 
   @SuppressWarnings("unused")
@@ -302,17 +258,12 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
-    if (!animationInitialized && main.getScript("Animation") != null) {
-      Animation ani = (Animation) main.getScript("Animation");
-      ani.startAnimation(main.getDrawingSurface().getBounds(), "png");
-      animationInitialized = true;
-    }
+
     SequenceEvent.Type type = seqEvent.getType();
     Sequence seq = seqEvent.getSeq();
     switch (type) {
       case BEGIN:
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
-        scribble.sendDown(seq);
         break;
       case PROGRESS:
         if (lastHoverEvent != null) {
@@ -321,10 +272,8 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
         }
         seq.getLast().setSequence(MAIN_SEQUENCE, seq);
         updatePathLength(seq);
-        scribble.sendDrag();
         break;
       case END:
-        scribble.sendUp();
         if (seq.getAttribute(SCRAP) == null/* && seq.size() > 1 */) {
           processFinishedSequence(seq);
         }
@@ -362,9 +311,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
       addPrimitiveToPoints(prim);
     }
 
-    gr.add(seq);
-
-    
     firePrimitiveEvent(seq);
 
     if (getParam(K_DO_RECOGNITION).getBoolean()) {
@@ -390,7 +336,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-    drawDots(scribble.getPossibleCorners(), "7");
+    if (main.getScript("Scribbler") != null) {
+      drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
+    }
     // drawDots(seq, true, true, true, false, false, "4");
     // drawDots(seq, false, false, false, true, false, "5");
     // drawDots(seq, false, false, false, false, true, "6");
@@ -897,7 +845,45 @@ public class Neanderthal extends SkruiScript implements SequenceListener, HoverL
   public void addPrimitiveListener(PrimitiveListener pl) {
     primitiveListeners.add(pl);
   }
-  
+
+  public enum Certainty {
+    Yes, No, Maybe, Unknown
+  }
+
+  public static Arguments getArgumentSpec() {
+    Arguments args = new Arguments();
+    args.setProgramName("Neanderthal: a primitive ink processor.");
+    args.setDocumentationProgram("This performs primitive (and not so primitive) analysis of "
+        + "sketch input.");
+
+    Map<String, BoundedParameter> defs = getDefaultParameters();
+    for (String k : defs.keySet()) {
+      BoundedParameter p = defs.get(k);
+      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
+          .getDocumentation()
+          + " Defaults to " + p.getValueStr() + ". ");
+    }
+    return args;
+  }
+
+  public static Map<String, BoundedParameter> getDefaultParameters() {
+    Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
+    defs.put(K_DO_RECOGNITION, new BoundedParameter.Boolean(K_DO_RECOGNITION, "Do recognition",
+        "Should the Neanderthal do advanced sketch recognition?", false));
+    defs.put(K_COHORT_TIMEOUT, new BoundedParameter.Integer(K_COHORT_TIMEOUT, "Cohort timeout",
+        "Maximum time (milliseconds) that elapses between strokes that are "
+            + "considered together for recognition", 1300));
+    defs.put(K_COHORT_LENGTH_MULT, new BoundedParameter.Double(K_COHORT_LENGTH_MULT,
+        "Cohort distance multiplier", "Multiplier of distance between strokes that are "
+            + "considered together for recognition. This is multiplied with "
+            + "the length of a pen stroke.", 0.01, 1.0, 0.3));
+    return defs;
+  }
+
+  private static void bug(String what) {
+    Debug.out("Neanderthal", what);
+  }
+
 }
 
 // Did they ever figure out who the man in the jar was?

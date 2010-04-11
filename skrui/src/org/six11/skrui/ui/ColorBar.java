@@ -25,7 +25,8 @@ public class ColorBar extends JPanel {
     pcls = new ArrayList<PropertyChangeListener>();
     double fullDist = 100;
     squares = new ArrayList<PenSquare>();
-    squares.add(new ThicknessSquare(0.05, 24.0, 4.0));
+    this.thickness = 4.0;
+    squares.add(new ThicknessSquare(0.05, 24.0, thickness));
     ColorSquare black = new ColorSquare(this, Color.BLACK, fullDist);
     squares.add(black);
     squares.add(new ColorSquare(this, Color.BLUE, fullDist));
@@ -87,5 +88,9 @@ public class ColorBar extends JPanel {
 
   public Color getCurrentColor() {
     return currentColor;
+  }
+  
+  public double getCurrentThickness() {
+    return thickness;
   }
 }

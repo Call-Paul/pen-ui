@@ -58,6 +58,8 @@ public abstract class SkruiScript {
   }
 
   public abstract Map<String, BoundedParameter> initializeParameters(Arguments args);
+  
+  
 
   public static Map<String, BoundedParameter> copyParameters(Map<String, BoundedParameter> orig) {
     Map<String, BoundedParameter> ret = new HashMap<String, BoundedParameter>();

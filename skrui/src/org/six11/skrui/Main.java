@@ -121,6 +121,7 @@ public class Main {
         }
       } else {
         System.out.println(args.getDocumentation());
+        // TODO: Look for other subclasses of SkruiScript and mention their names.
       }
       System.exit(0);
     }
@@ -252,6 +253,7 @@ public class Main {
       af.setLayout(new BorderLayout());
       colorBar = makeColorBar();
       ds.getSoup().setPenColor(colorBar.getCurrentColor());
+      ds.getSoup().setPenThickness(colorBar.getCurrentThickness());
       af.add(colorBar, BorderLayout.NORTH);
       af.add(ds, BorderLayout.CENTER);
       if (args.hasFlag("big")) {

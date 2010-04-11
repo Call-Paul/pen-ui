@@ -1,23 +1,30 @@
 package org.six11.skrui;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
 import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
+import org.six11.util.args.Arguments;
+import org.six11.util.args.Arguments.ArgType;
+import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.SequenceEvent;
+import org.six11.util.pen.SequenceListener;
 import org.six11.util.pen.Vec;
 
-public class Scribbler {
+public class Scribbler extends SkruiScript implements SequenceListener {
 
   Neanderthal data;
   Statistics linelike;
@@ -34,15 +41,8 @@ public class Scribbler {
   Pt lastDrag;
   int cornerNumThreshold = 6;
 
-  public Scribbler(Neanderthal data) {
-    this.data = data;
-    possibleCornerIndexes = new ArrayList<Integer>();
-    // pg = new PointGraph();
-    timestamps = new Statistics();
-    timestamps.setMaximumN(cornerNumThreshold);
-    linelike = new Statistics();
-    linelike.setMaximumN(cornerNumThreshold);
-  }
+//  public Scribbler(Neanderthal data) {
+//  }
 
   public void sendDown(Sequence seq) {
     // first see if this is a continuation.
@@ -90,7 +90,7 @@ public class Scribbler {
       Set<Triangle> inside = seekInside();
       DrawingBufferRoutines.triangles(db, inside, data.getSoup().getPenColor());
       if (done) {
-        data.addMesh(new Mesh(mesh.getPoints(), 0));
+        data.addRegion(new Mesh(mesh.getPoints(), 0));
       }
       data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
     }
@@ -227,14 +227,6 @@ public class Scribbler {
     }
   }
 
-  // private List<Pt> makeHull() {
-  // long then = System.currentTimeMillis();
-  // List<Pt> ret = new ConvexHull(seq.getPoints()).getHullClosed();
-  // long now = System.currentTimeMillis();
-  // bug("Made hull with " + seq.size() + " points in " + (now - then) + " ms");
-  // return ret;
-  // }
-
   private int look(int startIdx, int dir) {
     int ret = -1;
     int cursor = startIdx;
@@ -271,5 +263,77 @@ public class Scribbler {
 
   private static void bug(String what) {
     Debug.out("Scribbler", what);
+  }
+
+  @Override
+  public void initialize() {
+    bug("Scribbler initializing...");
+    this.data = (Neanderthal) main.getScript("Neanderthal");
+    data.addSequenceListener(this);
+    possibleCornerIndexes = new ArrayList<Integer>();
+    // pg = new PointGraph();
+    timestamps = new Statistics();
+    timestamps.setMaximumN(cornerNumThreshold);
+    linelike = new Statistics();
+    linelike.setMaximumN(cornerNumThreshold);
+
+    bug("Scribbler initialized!");
+  }
+  
+  public static Arguments getArgumentSpec() {
+    Arguments args = new Arguments();
+    args.setProgramName("Scribbler: scribble to fill regions.");
+    args.setDocumentationProgram("Detects scribble gestures that begins a fill operation.");
+
+    Map<String, BoundedParameter> defs = getDefaultParameters();
+    for (String k : defs.keySet()) {
+      BoundedParameter p = defs.get(k);
+      args.addFlag(p.getKeyName(), ArgType.ARG_OPTIONAL, ValueType.VALUE_REQUIRED, p
+          .getDocumentation()
+          + " Defaults to " + p.getValueStr() + ". ");
+    }
+    return args;
+  }
+
+  public static Map<String, BoundedParameter> getDefaultParameters() {
+    Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
+
+    return defs;
+  }
+
+
+  @Override
+  public Map<String, BoundedParameter> initializeParameters(Arguments args) {
+    // TODO: why is this not just a part of SkruiScript?
+    Map<String, BoundedParameter> params = copyParameters(getDefaultParameters());
+    for (String k : params.keySet()) {
+      if (args.hasFlag(k)) {
+        if (args.hasValue(k)) {
+          params.get(k).setValue(args.getValue(k));
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        } else {
+          params.get(k).setValue("true");
+          bug("Set " + params.get(k).getHumanReadableName() + " to " + params.get(k).getValueStr());
+        }
+      }
+    }
+    return params;
+  }
+  
+  public void handleSequenceEvent(SequenceEvent seqEvent) {
+    SequenceEvent.Type type = seqEvent.getType();
+    Sequence seq = seqEvent.getSeq();
+    switch (type) {
+      case BEGIN:
+        sendDown(seq);
+        break;
+      case PROGRESS:
+        sendDrag();
+        break;
+      case END:
+        sendUp();
+        break;
+    }
+    
   }
 }

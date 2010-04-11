@@ -58,6 +58,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     dragPoint = null;
     dragDelta = null;
     flowSelectionStroke = null;
+    dwellPoint = null;
   }
 
   protected void enterReshape() {
@@ -319,11 +320,17 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   }
 
   public void sendDrag(Pt where) {
-    if (where.distance(dwellPoint) > main.getParam(K_MOVE_THRESHOLD).getDouble()) {
+    // it is always OK to drag if we have dragged once. If we don't test if dragPoint != null, there
+    // is a 'dead zone' around the initial dwell point where dragging does no good, even if we have
+    // already moved the selection.
+    if (dragPoint != null
+        || where.distance(dwellPoint) > main.getParam(K_MOVE_THRESHOLD).getDouble()) {
       if (dragPoint != null) {
         dragDelta = new Vec(dragPoint, where);
       }
       dragPoint = where;
+    }
+    if (dragPoint != null) {
       fsm.addEvent("drag");
     }
   }
