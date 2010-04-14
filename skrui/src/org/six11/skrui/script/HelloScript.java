@@ -64,7 +64,7 @@ public class HelloScript extends SkruiScript implements SequenceListener {
   @Override
   public void initialize() {
     bug("HelloScript is alive!");
-    main.getDrawingSurface().getSoup().addSequenceListener(this);
+    main.addSequenceListener(this);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
@@ -73,7 +73,7 @@ public class HelloScript extends SkruiScript implements SequenceListener {
       DrawingBuffer db = new DrawingBuffer();
       DrawingBufferRoutines.line(db, seqEvent.getSeq().getFirst(), seqEvent.getSeq().getLast(),
           Color.BLUE);
-      main.getDrawingSurface().getSoup().addBuffer(db);
+      main.addBuffer(db);
     }
   }
 

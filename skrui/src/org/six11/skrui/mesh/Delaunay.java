@@ -41,7 +41,7 @@ public class Delaunay {
       getAni().startAnimation(main.getDrawingSurface().getBounds(), "png");
     }
     Mesh mesh = new Mesh(decimated, 30);
-    main.getDrawingSurface().getSoup().addBuffer(animate(mesh.getTriangles(), true, false));
+    main.addBuffer(animate(mesh.getTriangles(), true, false));
   }
 
   private DrawingBuffer animate(Set<Triangle> triangles, boolean override,

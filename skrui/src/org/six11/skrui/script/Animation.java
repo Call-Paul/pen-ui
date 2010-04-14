@@ -73,7 +73,7 @@ public class Animation extends SkruiScript implements SequenceListener {
     if (getParam(K_RECORD).getBoolean()) {
       String where = startAnimation(main.getDrawingSurface().getBounds(), "png");
       System.out.println("Recording to " + where + ".");
-      main.getDrawingSurface().getSoup().addSequenceListener(this);
+      main.addSequenceListener(this);
     }
   }
 

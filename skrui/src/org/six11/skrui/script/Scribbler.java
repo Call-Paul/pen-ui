@@ -90,11 +90,11 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     DrawingBuffer db = new DrawingBuffer();
     if (db.isVisible() && penPath != null && penPath.size() > 2) {
       Set<Triangle> inside = seekInside();
-      DrawingBufferRoutines.triangles(db, inside, data.getSoup().getPenColor());
+      DrawingBufferRoutines.triangles(db, inside, main.getPenColor());
       if (done) {
         data.addRegion(new Mesh(mesh.getPoints(), 0));
       }
-      main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
+      main.addBuffer("scribble fill", db);
     }
   }
 
@@ -255,9 +255,9 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     if (filling) {
       draw(true);
       bug("** Finished doing mondo draw.");
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("scribble fill");
+      DrawingBuffer db = main.getBuffer("scribble fill");
       if (db != null) {
-        main.getDrawingSurface().getSoup().addToLayer("fill", db);
+        main.addToLayer("fill", db);
       }
     }
     filling = false;

@@ -154,10 +154,10 @@ public class Recognition extends SkruiScript implements PrimitiveListener {
 
   private void drawNewShapes(Collection<Shape> newShapes) {
     if (newShapes.size() > 0) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("2");
+      DrawingBuffer db = main.getBuffer("2");
       if (db == null) {
         db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer("2", db);
+        main.addBuffer("2", db);
       }
       for (Shape s : newShapes) {
         ShapeRenderer ren = domain.getRenderer(s.getName());

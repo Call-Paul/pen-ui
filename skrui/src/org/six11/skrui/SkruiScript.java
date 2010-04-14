@@ -5,8 +5,6 @@ import java.util.Map;
 
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
-import org.six11.util.pen.OliveDrawingSurface;
-import org.six11.util.pen.OliveSoup;
 
 /**
  * 
@@ -36,13 +34,9 @@ public abstract class SkruiScript {
   protected SkruiScript() {
 
   }
-  
-  protected OliveDrawingSurface getDrawingSurface() {
-    return main.getDrawingSurface();
-  }
-  
-  protected OliveSoup getSoup() {
-    return getDrawingSurface().getSoup();
+    
+  public Main getMain() {
+    return main;
   }
   
   protected BoundedParameter getParam(String key) {

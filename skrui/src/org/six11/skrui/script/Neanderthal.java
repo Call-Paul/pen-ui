@@ -59,7 +59,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     ag = new AngleGraph();
     lenG = new LengthGraph();
     regions = new ArrayList<Mesh>();
-    main.getDrawingSurface().getSoup().addSequenceListener(this);
+    main.addSequenceListener(this);
   }
 
   public PointGraph getStructurePoints() {
@@ -396,10 +396,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return params;
   }
 
-  public OliveSoup getSoup() {
-    return main.getDrawingSurface().getSoup();
-  }
-
   public void addStructurePoint(Pt pt) {
     structurePoints.add(pt);
   }
@@ -430,11 +426,11 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
 
   public void forget(Sequence seq) {
     seq.setAttribute(SCRAP, true);
-    if (getSoup().getDrawingBufferForSequence(seq) != null) {
-      getSoup().getDrawingBufferForSequence(seq).setVisible(false);
+    if (getMain().getDrawingBufferForSequence(seq) != null) {
+      getMain().getDrawingBufferForSequence(seq).setVisible(false);
       seq.setAttribute(SCRAP, true);
     }
-    getSoup().removeFinishedSequence(seq);
+    getMain().removeFinishedSequence(seq);
     tg.remove(seq);
     for (Pt die : seq) {
       allPoints.remove(die);

@@ -69,10 +69,10 @@ public class DebugUtil {
 
   void drawDots(List<Pt> spots, String bufferName) {
     if (spots.size() > 1) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
+      DrawingBuffer db = main.getBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
+        main.addBuffer(bufferName, db);
       }
       DrawingBufferRoutines.dots(db, spots, 2.5, 0.3, Color.BLACK, Color.PINK);
     }
@@ -81,10 +81,10 @@ public class DebugUtil {
   void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
       boolean corner, String bufferName) {
     if (seq.size() > 1) {
-      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer(bufferName);
+      DrawingBuffer db = main.getBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.getDrawingSurface().getSoup().addBuffer(bufferName, db);
+        main.addBuffer(bufferName, db);
         db.setVisible(false);
       }
       List<Pt> plainDots = new ArrayList<Pt>();
@@ -140,9 +140,9 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer(name, db);
+      main.addBuffer(name, db);
     } else {
-      main.getDrawingSurface().getSoup().removeBuffer(name);
+      main.removeBuffer(name);
     }
   }
 
@@ -164,9 +164,9 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("similength", db);
+      main.addBuffer("similength", db);
     } else {
-      main.getDrawingSurface().getSoup().removeBuffer("similength");
+      main.removeBuffer("similength");
     }
   }
 
@@ -189,9 +189,9 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("adjacent", db);
+      main.addBuffer("adjacent", db);
     } else {
-      main.getDrawingSurface().getSoup().removeBuffer("adjacent");
+      main.removeBuffer("adjacent");
     }
   }
 
@@ -221,9 +221,9 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawingSurface().getSoup().addBuffer("paraperp", db);
+      main.addBuffer("paraperp", db);
     } else {
-      main.getDrawingSurface().getSoup().removeBuffer("paraperp");
+      main.removeBuffer("paraperp");
     }
   }
 }

@@ -67,7 +67,7 @@ public class Playground extends SkruiScript implements SequenceListener {
   @Override
   public void initialize() {
     bug("Playground is alive!");
-    main.getDrawingSurface().getSoup().addSequenceListener(this);
+    main.addSequenceListener(this);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
@@ -76,7 +76,7 @@ public class Playground extends SkruiScript implements SequenceListener {
       Sequence seq = seqEvent.getSeq();
       DrawingBuffer db = new DrawingBuffer();
       placeEllipse(db, seq.getFirst());
-      main.getDrawingSurface().getSoup().addBuffer(db);
+      main.addBuffer(db);
     }
   }
 

@@ -16,7 +16,6 @@ import javax.swing.Timer;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
-import org.six11.skrui.BoundedParameter.Double;
 import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.shape.PrimitiveEvent;
@@ -66,7 +65,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   protected void enterReshape() {
     for (Sequence seq : nearestSequences) {
-      DrawingBuffer hideMe = main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seq);
+      DrawingBuffer hideMe = main.getDrawingBufferForSequence(seq);
       if (hideMe != null) {
         hideMe.setVisible(false);
       }
@@ -75,13 +74,13 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   protected void exitReshape() {
     for (Sequence seq : nearestSequences) {
-      DrawingBuffer showMe = main.getDrawingSurface().getSoup().getDrawingBufferForSequence(seq);
+      DrawingBuffer showMe = main.getDrawingBufferForSequence(seq);
       if (showMe != null) { // the fact that I must do this tells me there is another bug somewhere.
         showMe.setVisible(true);
-        main.getDrawingSurface().getSoup().updateFinishedSequence(seq);
+        main.updateFinishedSequence(seq);
       }
     }
-    main.getDrawingSurface().getSoup().removeBuffer("fs buffer");
+    main.removeBuffer("fs buffer");
   }
 
   protected void reshape() {
@@ -103,7 +102,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       } else {
         move(db);
       }
-      main.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
+      main.addBuffer("fs buffer", db);
     }
   }
 
@@ -141,7 +140,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   private double getThickness(Sequence seq) {
     double ret = 2.0;
     if (seq.getAttribute("pen thickness") != null) {
-      ret = ((Double) seq.getAttribute("pen thickness")).getDouble();
+      ret = (java.lang.Double) seq.getAttribute("pen thickness");
     }
     return ret;
   }
@@ -193,7 +192,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
         prepare(pt);
       }
     }
-    main.getDrawingSurface().getSoup().setCurrentSequenceShapeVisible(false);
+    main.setCurrentSequenceShapeVisible(false);
     dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE).setAttribute(Neanderthal.SCRAP, "true");
   }
 
@@ -261,9 +260,9 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
     if (nearestSequences.size() > 0) {
-      main.getDrawingSurface().getSoup().addBuffer("fs buffer", db);
+      main.addBuffer("fs buffer", db);
     } else {
-      main.getDrawingSurface().getSoup().removeBuffer("fs buffer");
+      main.removeBuffer("fs buffer");
     }
   }
 

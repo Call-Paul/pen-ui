@@ -80,7 +80,7 @@ public class GestureTap extends GestureShapeTemplate {
     for (Primitive prim : endPrims) {
       if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
         rectifyLine((LineSegment) prim);
-        data.getSoup().updateFinishedSequence(prim.getSeq());
+        data.getMain().updateFinishedSequence(prim.getSeq());
         bug("Rectified line: " + prim.getShortStr());
       }
     }
@@ -92,7 +92,7 @@ public class GestureTap extends GestureShapeTemplate {
     for (Primitive prim : nearPrims) {
       if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
         rectifyLine((LineSegment) prim);
-        data.getSoup().updateFinishedSequence(prim.getSeq());
+        data.getMain().updateFinishedSequence(prim.getSeq());
         bug("Rectified line: " + prim.getShortStr());
       }
     }
@@ -136,7 +136,7 @@ public class GestureTap extends GestureShapeTemplate {
       pt.setLocation(st.getX(), st.getY());
     }
     for (Primitive prim : endPrims) {
-      data.getSoup().updateFinishedSequence(prim.getSeq());
+      data.getMain().updateFinishedSequence(prim.getSeq());
     }
 
     // move primitives that are near the structured point so they pass through it. Exclude those
@@ -146,7 +146,7 @@ public class GestureTap extends GestureShapeTemplate {
     nearPrims.removeAll(endPrims);
     for (Primitive prim : nearPrims) {
       moveWire(prim, st);
-      data.getSoup().updateFinishedSequence(prim.getSeq());
+      data.getMain().updateFinishedSequence(prim.getSeq());
     }
   }
 

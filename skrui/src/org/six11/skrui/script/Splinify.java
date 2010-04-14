@@ -67,7 +67,7 @@ public class Splinify extends SkruiScript implements SequenceListener {
   @Override
   public void initialize() {
     bug("Splinify is alive!");
-    main.getDrawingSurface().getSoup().addSequenceListener(this);
+    main.addSequenceListener(this);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
@@ -81,8 +81,8 @@ public class Splinify extends SkruiScript implements SequenceListener {
       }
       DrawingBufferRoutines.lines(db, interp, Color.BLUE, 1.8);
       // The following tests named access to drawing buffers.
-      main.getDrawingSurface().getSoup().removeBuffer("splines");
-      main.getDrawingSurface().getSoup().addBuffer("splines", db);
+      main.removeBuffer("splines");
+      main.addBuffer("splines", db);
     }
   }
   
