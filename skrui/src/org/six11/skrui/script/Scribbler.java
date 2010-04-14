@@ -1,4 +1,4 @@
-package org.six11.skrui;
+package org.six11.skrui.script;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,9 +7,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.six11.skrui.BoundedParameter;
+import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.SkruiScript;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
-import org.six11.skrui.script.Neanderthal;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -92,7 +94,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
       if (done) {
         data.addRegion(new Mesh(mesh.getPoints(), 0));
       }
-      data.main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
+      main.getDrawingSurface().getSoup().addBuffer("scribble fill", db);
     }
   }
 
@@ -253,9 +255,9 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     if (filling) {
       draw(true);
       bug("** Finished doing mondo draw.");
-      DrawingBuffer db = data.main.getDrawingSurface().getSoup().getBuffer("scribble fill");
+      DrawingBuffer db = main.getDrawingSurface().getSoup().getBuffer("scribble fill");
       if (db != null) {
-        data.main.getDrawingSurface().getSoup().addToLayer("fill", db);
+        main.getDrawingSurface().getSoup().addToLayer("fill", db);
       }
     }
     filling = false;

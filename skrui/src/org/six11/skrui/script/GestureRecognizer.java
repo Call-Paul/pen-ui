@@ -1,4 +1,4 @@
-package org.six11.skrui;
+package org.six11.skrui.script;
 
 import java.awt.Color;
 import java.util.HashMap;
@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.six11.skrui.script.Neanderthal;
+import org.six11.skrui.BoundedParameter;
+import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.GestureRecognizerDomain;
+import org.six11.skrui.SkruiScript;
 import org.six11.skrui.shape.LineSegment;
 import org.six11.skrui.shape.Primitive;
 import org.six11.util.Debug;

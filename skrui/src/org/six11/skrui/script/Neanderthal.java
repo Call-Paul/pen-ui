@@ -3,7 +3,6 @@ package org.six11.skrui.script;
 import java.util.*;
 
 import org.six11.skrui.BoundedParameter;
-import org.six11.skrui.Scribbler;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.AngleGraph;
 import org.six11.skrui.data.LengthGraph;
