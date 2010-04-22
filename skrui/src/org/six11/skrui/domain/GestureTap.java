@@ -56,7 +56,7 @@ public class GestureTap extends GestureShapeTemplate {
           break;
       }
       if (n > 1) {
-        data.forget(s);
+        data.forget(s, false);
       }
     }
   }
@@ -67,7 +67,7 @@ public class GestureTap extends GestureShapeTemplate {
     for (Primitive prim : prims) {
       if (prim instanceof LineSegment && prim.getCert() == Certainty.Yes) {
         data.addStructureLine((LineSegment) prim);
-        data.forget(prim); // yes, massive bug.
+        data.forget(prim, false); // yes, massive bug.
         // shouldn't remove sequence entirely because it might have non-structure primitives.
         bug("Made a structural line: " + prim.getShortStr());
       }
@@ -179,7 +179,7 @@ public class GestureTap extends GestureShapeTemplate {
    */
   private Pt scaleAndRotateWire(Primitive prim, Pt st) {
     Pt ret = null;
-    bug("Doing scale/rotate thing on " + prim + " (" + Debug.num(prim.getLength()) + " px long)");
+//    bug("Doing scale/rotate thing on " + prim + " (" + Debug.num(prim.getLength()) + " px long)");
     if (prim.getSeq().getAttribute(Neanderthal.SCRAP) != null) {
       bug("Hmm, i'm about to manipulate a scrap sequence, and that isn't right.");
     }

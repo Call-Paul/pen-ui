@@ -20,6 +20,15 @@ public class Ellipse extends Primitive {
     super(seq, 0, seq.size() - 1, cert);
   }
 
+  /**
+   * @param primID
+   * @param seq
+   * @param cert
+   */
+  public Ellipse(int primID, Sequence seq, Certainty cert) {
+    super(primID, seq, 0, seq.size() - 1, cert);
+  }
+
   @Override
   public String typeStr() {
     return "Ellipse";

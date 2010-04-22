@@ -45,12 +45,15 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
+import org.json.JSONException;
+import org.six11.skrui.data.Journal;
 import org.six11.skrui.ui.ColorBar;
 import org.six11.skrui.ui.DrawingSurface;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
+import org.six11.util.data.Statistics;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
@@ -69,6 +72,27 @@ import org.six11.util.pen.SequenceListener;
  * 
  **/
 public class Main {
+
+  private static Set<Main> instances = new HashSet<Main>();
+  private static final String ACTION_SAVE_AS = "save as";
+  private static final String ACTION_SAVE = "save";
+  private static final String ACTION_OPEN = "open";
+  private static final String ACTION_SAVE_PDF = "save-pdf";
+  private static final String ACTION_NEW = "new";
+  private static final String ACTION_GRAPH_SPEED = "graph speed";
+  private static final String ACTION_GRAPH_CURVATURE_ABS = "graph curvature (absolute value)";
+  private static final String ACTION_GRAPH_ANGLE_ABS = "graph angle (absolute value)";
+  private static final String ACTION_GRAPH_CURVATURE_SIGNED = "graph curvature (signed value)";
+  private static final String ACTION_GRAPH_ANGLE_SIGNED = "graph angle (signed value)";
+
+  private static final String PROP_SKETCH_DIR = "sketchDir";
+  private static final String PROP_PDF_DIR = "pdfDir";
+  private static final String PROP_GRAPH_DIR = "graphDir";
+
+  private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
+      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
+      "--debug-color"
+  };
 
   private List<Sequence> pastSequences;
   private Sequence seq;
@@ -92,6 +116,7 @@ public class Main {
   // hover listeners are interested in pen hover (in/out/move) activity
   private Set<HoverListener> hoverListeners;
 
+  private Map<String, List<Long>> whackData;
   private Map<String, DrawingBuffer> namedBuffers;
   private Map<String, List<DrawingBuffer>> layers;
 
@@ -102,7 +127,6 @@ public class Main {
   private ApplicationFrame af;
   private File currentFile;
   private String batchModePdfFileName;
-  private static Set<Main> instances = new HashSet<Main>();
   private Preferences prefs;
   private Arguments args;
   private Map<String, Action> actions = new HashMap<String, Action>();
@@ -110,26 +134,7 @@ public class Main {
   private Map<String, BoundedParameter> params = new HashMap<String, BoundedParameter>();
   private Map<String, SkruiScript> scripts = new HashMap<String, SkruiScript>();
 
-  private static final String ACTION_SAVE_AS = "save as";
-  private static final String ACTION_SAVE = "save";
-  private static final String ACTION_OPEN = "open";
-  private static final String ACTION_SAVE_PDF = "save-pdf";
-  private static final String ACTION_NEW = "new";
-  private static final String ACTION_GRAPH_SPEED = "graph speed";
-  private static final String ACTION_GRAPH_CURVATURE_ABS = "graph curvature (absolute value)";
-  private static final String ACTION_GRAPH_ANGLE_ABS = "graph angle (absolute value)";
-  private static final String ACTION_GRAPH_CURVATURE_SIGNED = "graph curvature (signed value)";
-  private static final String ACTION_GRAPH_ANGLE_SIGNED = "graph angle (signed value)";
-
-  private static final String PROP_SKETCH_DIR = "sketchDir";
-  private static final String PROP_PDF_DIR = "pdfDir";
-  private static final String PROP_GRAPH_DIR = "graphDir";
-
-  private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
-    "CornerFinder"
-  };
-
-  public static void main(String[] in) throws IOException {
+  public static void main(String[] in) throws IOException, JSONException {
     Arguments args = getArgumentSpec();
     if (in.length == 0) {
       args.parseArguments(DEFAULT_COMMAND_LINE_ARGS);
@@ -219,11 +224,11 @@ public class Main {
     return args;
   }
 
-  public static Main makeInstance() {
+  public static Main makeInstance() throws JSONException {
     return makeInstance(new Arguments());
   }
 
-  public static Main makeInstance(Arguments args) {
+  public static Main makeInstance(Arguments args) throws JSONException {
     final Main inst = new Main(args);
     instances.add(inst);
     inst.af.addWindowListener(new WindowAdapter() {
@@ -238,10 +243,11 @@ public class Main {
     return inst;
   }
 
-  private Main(Arguments args) {
+  private Main(Arguments args) throws JSONException {
     this.args = args;
     drawingBuffers = new ArrayList<DrawingBuffer>();
     namedBuffers = new HashMap<String, DrawingBuffer>();
+    whackData = new HashMap<String, List<Long>>();
     layers = new HashMap<String, List<DrawingBuffer>>();
     pastSequences = new ArrayList<Sequence>();
     sequenceListeners = new HashSet<SequenceListener>();
@@ -307,6 +313,10 @@ public class Main {
     }
   }
 
+  public Set<String> getScriptNames() {
+    return scripts.keySet();
+  }
+  
   public void setPenColor(Color pc) {
     penColor = pc;
   }
@@ -463,6 +473,10 @@ public class Main {
       return;
     } else {
       addFinishedSequence(seq);
+      if (seq != null) {
+        SequenceEvent sev = new SequenceEvent(this, seq, SequenceEvent.Type.END);
+        fireSequenceEvent(sev);
+      }
       seq = null;
       lastCurrentSequenceIdx = 0;
       gp = null;
@@ -471,35 +485,19 @@ public class Main {
     }
   }
 
+  public void addFinishedSequenceNoninteractively(Sequence s) {
+//    bug("making a buffer and adding it to data structures.");
+    DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
+    seqToDrawBuf.put(s, buf);
+    drawingBuffers.add(buf);
+    combinedBuffers = null;
+    pastSequences.add(s);
+    fireChange();
+  }
+
   public void addFinishedSequence(Sequence s) {
     if (s != null && s.size() > 1 && gpVisible) {
-      DrawingBuffer buf = new DrawingBuffer();
-      seqToDrawBuf.put(s, buf);
-      if (s.getAttribute("pen color") != null) {
-        buf.setColor((Color) s.getAttribute("pen color"));
-      } else {
-        buf.setColor(DrawingBuffer.getBasicPen().color);
-      }
-      if (s.getAttribute("pen thickness") != null) {
-        buf.setThickness((Double) s.getAttribute("pen thickness"));
-      } else {
-        buf.setThickness(DrawingBuffer.getBasicPen().thickness);
-      }
-      buf.up();
-      buf.moveTo(s.get(0).x, s.get(0).y);
-      buf.down();
-      for (Pt pt : s) {
-        buf.moveTo(pt.x, pt.y);
-      }
-      buf.up();
-      drawingBuffers.add(buf);
-      combinedBuffers = null;
-      pastSequences.add(s);
-    }
-
-    if (s != null) {
-      SequenceEvent sev = new SequenceEvent(this, s, SequenceEvent.Type.END);
-      fireSequenceEvent(sev);
+      addFinishedSequenceNoninteractively(s);
     }
   }
 
@@ -604,7 +602,7 @@ public class Main {
     // Save Action
     actions.put(ACTION_SAVE, new NamedAction("Save", KeyStroke.getKeyStroke(KeyEvent.VK_S, mod)) {
       public void activate() {
-        save(currentFile);
+        save();
       }
     });
     pop.add(actions.get(ACTION_SAVE));
@@ -622,7 +620,11 @@ public class Main {
     actions.put(ACTION_OPEN,
         new NamedAction("Open...", KeyStroke.getKeyStroke(KeyEvent.VK_O, mod)) {
           public void activate() {
-            open();
+            try {
+              open();
+            } catch (JSONException ex) {
+              ex.printStackTrace();
+            }
           }
         });
     pop.add(actions.get(ACTION_OPEN));
@@ -640,7 +642,11 @@ public class Main {
     actions.put(ACTION_NEW, new NamedAction("New Sketch", KeyStroke
         .getKeyStroke(KeyEvent.VK_N, mod)) {
       public void activate() {
-        newSketch();
+        try {
+          newSketch();
+        } catch (JSONException ex) {
+          ex.printStackTrace();
+        }
       }
     });
     pop.add(actions.get(ACTION_NEW));
@@ -689,8 +695,30 @@ public class Main {
   protected void whackLayer(int i) {
     DrawingBuffer db = getBuffer("" + i);
     if (db != null) {
-      db.setVisible(!db.isVisible());
+      boolean currentValue = db.isVisible();
+      String key = "" + i;
+      if (!whackData.containsKey(key)) {
+        whackData.put(key, new ArrayList<Long>());
+      }
+      List<Long> timestamps = whackData.get(key);
+      timestamps.add(System.currentTimeMillis());
+      if (timestamps.size() == 4) {
+        Statistics diffs = new Statistics();
+        for (int idx=0; idx < timestamps.size() - 1; idx++) {
+          diffs.addData(timestamps.get(idx+1) - timestamps.get(idx));
+        }
+        if (diffs.getMean() < 400) {
+          db = new DrawingBuffer();
+          addBuffer(key, db);
+        }
+        timestamps.remove(0);
+      }
+      bug("Whacking layer " + key);
+      db.setVisible(!currentValue);
       getDrawingSurface().repaint();
+
+    } else {
+      bug("Can't find buffer for layer: " + i);
     }
   }
 
@@ -902,9 +930,9 @@ public class Main {
   }
 
   /**
-   * Fires a simple event indicating some (potentially) visual aspect of the soup has changed.
+   * Fires a simple event indicating some (potentially) visual aspect of the data has changed.
    */
-  private void fireChange() {
+  public void fireChange() {
     if (changeListeners != null) {
       ChangeEvent ev = new ChangeEvent(this);
       for (ChangeListener cl : changeListeners) {
@@ -960,73 +988,76 @@ public class Main {
   }
 
   private void saveAs() {
-    warn("Can not save files at the moment.");
-//    File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
-//    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
-//    int result = chooser.showSaveDialog(ds);
-//    if (result == JFileChooser.APPROVE_OPTION) {
-//      File outFile = chooser.getSelectedFile();
-//      if (!outFile.getName().endsWith(".sketch")) {
-//        outFile = new File(outFile.getParentFile(), outFile.getName() + ".sketch");
-//      }
-//      bug("You chose " + outFile.getAbsolutePath());
-//      try {
-//        FileUtil.createIfNecessary(outFile);
-//        setCurrentFile(outFile);
-//        save(currentFile);
-//      } catch (IOException ex) {
-//        bug("Error creating file: " + outFile.getAbsolutePath());
-//      }
-//    }
+    File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
+    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
+    int result = chooser.showSaveDialog(ds);
+    if (result == JFileChooser.APPROVE_OPTION) {
+      File outFile = chooser.getSelectedFile();
+      if (!outFile.getName().endsWith(".sketch")) {
+        outFile = new File(outFile.getParentFile(), outFile.getName() + ".sketch");
+      }
+      bug("You chose " + outFile.getAbsolutePath());
+      try {
+        FileUtil.createIfNecessary(outFile);
+        setCurrentFile(outFile);
+        save();
+      } catch (IOException ex) {
+        bug("Error creating file: " + outFile.getAbsolutePath());
+      }
+    }
   }
 
-  private void save(@SuppressWarnings("unused") File outFile) {
-    warn("Can not save files at the moment.");
-//    if (outFile == null) {
-//      saveAs();
-//    } else {
-//      try {
-//        FileUtil.createIfNecessary(outFile);
-//        FileUtil.complainIfNotWriteable(outFile);
-//        FileWriter fw = new FileWriter(outFile);
-//        List<Sequence> sequences = getSequences();
-//        SequenceIO.writeAll(sequences, fw);
-//        System.out.println("Saved " + outFile.getName());
-//      } catch (IOException ex) {
-//        ex.printStackTrace();
-//      }
-//    }
+  private void save() {
+    bug("save...");
+    if (currentFile == null) {
+      saveAs();
+    } else {
+      try {
+        FileUtil.createIfNecessary(currentFile);
+        FileUtil.complainIfNotWriteable(currentFile);
+        Journal jnl = new Journal(this);
+        bug("made journal. saving...");
+        jnl.save();
+        bug("journal save returned.");
+        System.out.println("Saved " + currentFile.getName());
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      } catch (JSONException ex) {
+        ex.printStackTrace();
+      }
+    }
   }
 
-  private void open() {
-    warn("Can not open files at the moment.");
-    // File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
-    // JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
-    // int result = chooser.showOpenDialog(ds);
-    // if (result == JFileChooser.APPROVE_OPTION) {
-    // File inFile = chooser.getSelectedFile();
-    // open(inFile);
-    // }
+  private void open() throws JSONException {
+    File initialDir = maybeGetInitialDir(PROP_SKETCH_DIR);
+    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "sketch", "Raw Sketch Files");
+    int result = chooser.showOpenDialog(ds);
+    if (result == JFileChooser.APPROVE_OPTION) {
+      File inFile = chooser.getSelectedFile();
+      open(inFile);
+    }
   }
 
-  private void open(@SuppressWarnings("unused") File inFile) {
-    warn("Can not open files at the moment.");
-    // try {
-    // FileUtil.complainIfNotReadable(inFile);
-    // BufferedReader in = new BufferedReader(new FileReader(inFile));
-    // List<Sequence> sequences = SequenceIO.readAll(in);
-    // bug("Read " + sequences.size() + " sequences from " + inFile.getAbsolutePath());
-    // clearDrawing();
-    // for (Sequence seq : sequences) {
-    // addFinishedSequence(seq);
-    // }
-    // setCurrentFile(inFile);
-    // bug("Reset drawing surface with new data.");
-    // System.out.println("Opened " + inFile.getAbsolutePath());
-    // } catch (IOException ex) {
-    // bug("Can't read file: " + inFile.getAbsolutePath());
-    // ex.printStackTrace();
-    // }
+  private void open(File inFile) throws JSONException {
+    try {
+      FileUtil.complainIfNotReadable(inFile);
+      setCurrentFile(inFile);
+      clearDrawing();
+      Journal jnl = new Journal(this);
+      jnl.open();
+      System.out.println("Opened " + inFile.getAbsolutePath());
+    } catch (IOException ex) {
+      bug("Can't read file: " + inFile.getAbsolutePath());
+      ex.printStackTrace();
+    }
+  }
+
+  public void clearDrawing() {
+    seq = null;
+    drawingBuffers = new ArrayList<DrawingBuffer>();
+    combinedBuffers = null;
+    pastSequences.clear();
+    fireChange();
   }
 
   @SuppressWarnings("unused")
@@ -1043,7 +1074,11 @@ public class Main {
     }
   }
 
-  private void newSketch() {
+  public File getCurrentFile() {
+    return currentFile;
+  }
+
+  private void newSketch() throws JSONException {
     makeInstance(args);
   }
 

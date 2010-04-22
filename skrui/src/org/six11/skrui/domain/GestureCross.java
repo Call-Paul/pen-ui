@@ -43,7 +43,7 @@ public class GestureCross extends GestureShapeTemplate {
 //    for (Primitive p : matches) {
 //      data.forget(p);
 //    }
-    data.forget(s);
+    data.forget(s, false);
   }
 
 }

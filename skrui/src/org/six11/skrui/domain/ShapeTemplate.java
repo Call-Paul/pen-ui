@@ -81,9 +81,9 @@ public abstract class ShapeTemplate {
     Stack<Primitive> bindObj = new Stack<Primitive>();
     List<Shape> results = new ArrayList<Shape>();
     fit(0, bindSlot, bindObj, results);
-    for (Shape s : results) {
-      bug("Result: " + s);
-    }
+//    for (Shape s : results) {
+//      bug("Result: " + s);
+//    }
     return results;
   }
 

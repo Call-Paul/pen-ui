@@ -53,7 +53,7 @@ public class Polyline {
       double aveSpeed = seq.calculateSpeed() / (double) seq.size();
       double threshSpeed = 0.75 * aveSpeed;
       double threshCurve = 2 * medianCurve;
-
+      
       SortedSet<Integer> candidates = new TreeSet<Integer>();
       candidates.add(0);
       candidates.add(seq.size() - 1);

@@ -23,7 +23,7 @@ public abstract class Primitive implements Comparable<Primitive> {
   int startIdx;
   int endIdx;
   Certainty cert;
-  int id = ID_COUNTER++;
+  final int id; // = ID_COUNTER++;
 
   private boolean subshapeBindingFlipped;
   private boolean subshapeBindingFixed;
@@ -62,6 +62,11 @@ public abstract class Primitive implements Comparable<Primitive> {
    */
   @SuppressWarnings("unchecked")
   public Primitive(Sequence seq, int startIdx, int endIdx, Certainty cert) {
+    this(++ID_COUNTER, seq, startIdx, endIdx, cert);
+  }
+  
+  public Primitive(int id, Sequence seq, int startIdx, int endIdx, Certainty cert) {
+    this.id = id;
     this.seq = seq;
     this.startIdx = startIdx;
     this.endIdx = endIdx;
@@ -75,6 +80,11 @@ public abstract class Primitive implements Comparable<Primitive> {
       Set<Primitive> primitives = (Set<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
       primitives.add(this);
     }
+    ID_COUNTER = Math.max(id, ID_COUNTER);
+  }
+  
+  public int getId() {
+    return id;
   }
 
   public int compareTo(Primitive other) {

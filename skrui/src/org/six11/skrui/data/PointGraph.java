@@ -3,6 +3,7 @@ package org.six11.skrui.data;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -19,6 +20,9 @@ import org.six11.util.pen.Sequence;
  */
 public class PointGraph {
 
+  public transient boolean debugEnabled = false;
+  
+  
   List<Pt> byX;
   List<Pt> byY;
   List<Pt> byT;
@@ -42,6 +46,9 @@ public class PointGraph {
   }
 
   public void add(Pt pt) {
+    if (debugEnabled) {
+      Debug.stacktrace("Adding point " + pt.getID(), 4);
+    }
     int where = Collections.binarySearch(byX, pt, Pt.sortByX);
     if (where < 0) {
       where = (where + 1) * -1;
@@ -62,6 +69,9 @@ public class PointGraph {
   }
 
   public void remove(Pt pt) {
+    if (debugEnabled) {
+      Debug.stacktrace("Removing point " + pt.getID(), 4);
+    }
     byX.remove(pt);
     byY.remove(pt);
     byT.remove(pt);

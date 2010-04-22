@@ -67,6 +67,28 @@ public class DebugUtil {
     return sum;
   }
 
+  void drawDots(Sequence seq, String booleanPropertyName, String drawingBufferName, Color color,
+      double radius) {
+    if (seq.size() > 1) {
+      DrawingBuffer db = main.getBuffer(drawingBufferName);
+      if (db == null) {
+        db = new DrawingBuffer();
+        main.addBuffer(drawingBufferName, db);
+        db.setVisible(true);
+      }
+      db.setEmptyOK(true);
+      List<Pt> suspects = new ArrayList<Pt>();
+      for (Pt pt : seq) {
+        if (pt.getBoolean(booleanPropertyName, false)) {
+          suspects.add(pt);
+        }
+      }
+      if (suspects.size() > 0) {
+        DrawingBufferRoutines.dots(db, suspects, radius, 0.3, Color.BLACK, color);
+      }
+    }
+  }
+
   void drawDots(List<Pt> spots, String bufferName) {
     if (spots.size() > 1) {
       DrawingBuffer db = main.getBuffer(bufferName);

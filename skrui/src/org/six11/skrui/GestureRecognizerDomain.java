@@ -56,7 +56,7 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
         List<Shape> results = st.apply(new HashSet<Primitive>(matches));
         if (results.size() > 0) {
           for (Shape s : results) {
-            bug(" --> " + s);
+//            bug(" --> " + s);
             st.trigger(data, s, matches);
           }
         }

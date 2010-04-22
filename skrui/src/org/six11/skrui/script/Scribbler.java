@@ -115,7 +115,9 @@ public class Scribbler extends SkruiScript implements SequenceListener {
 
   private void beginFill() {
     filling = true;
-    seq.setAttribute(Neanderthal.SCRAP, true);
+//    seq.setAttribute(Neanderthal.SCRAP, true);
+//    data.makeScrap(seq, "Scribble begin fill");
+    data.forget(seq, false);
     // hull = new ConvexHull(getPossibleCorners());
     hull = new ConvexHull(seq.getPoints());
     penPath = new ArrayList<Pt>();

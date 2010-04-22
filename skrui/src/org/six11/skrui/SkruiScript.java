@@ -3,6 +3,9 @@ package org.six11.skrui;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.six11.skrui.data.Journal;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 
@@ -74,5 +77,14 @@ public abstract class SkruiScript {
    * Called once when the script is loaded. To parse arguments, look at main.getArguments().
    */
   public abstract void initialize();
+
+  public JSONObject getSaveData(Journal jnl) throws JSONException {
+    bug("Script '" + getClass() + "' does not implement getSaveData()");
+    return null;
+  }
+  
+  public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
+    bug("Script '" + getClass() + "' does not implement openSaveData(JSONObject)");    
+  }
 
 }

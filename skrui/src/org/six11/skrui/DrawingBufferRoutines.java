@@ -343,4 +343,31 @@ public abstract class DrawingBufferRoutines {
     }
   }
 
+  /**
+   * Given a sequence that represents a pen stroke, make a drawing buffer that has a colored stroke
+   * of some thickness. This only makes the buffer---it does not add it to any data structures or
+   * map it in any way.
+   */
+  public static DrawingBuffer makeSequenceBuffer(Sequence s) {
+    DrawingBuffer buf = new DrawingBuffer();
+    if (s.getAttribute("pen color") != null) {
+      buf.setColor((Color) s.getAttribute("pen color"));
+    } else {
+      buf.setColor(DrawingBuffer.getBasicPen().color);
+    }
+    if (s.getAttribute("pen thickness") != null) {
+      buf.setThickness((Double) s.getAttribute("pen thickness"));
+    } else {
+      buf.setThickness(DrawingBuffer.getBasicPen().thickness);
+    }
+    buf.up();
+    buf.moveTo(s.get(0).x, s.get(0).y);
+    buf.down();
+    for (Pt pt : s) {
+      buf.moveTo(pt.x, pt.y);
+    }
+    buf.up();
+    return buf;
+  }
+
 }

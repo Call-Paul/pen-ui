@@ -1,0 +1,387 @@
+package org.six11.skrui.data;
+
+import java.awt.Color;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.six11.skrui.Main;
+import org.six11.skrui.SkruiScript;
+import org.six11.skrui.script.Neanderthal;
+import org.six11.skrui.script.Neanderthal.Certainty;
+import org.six11.skrui.shape.ArcSegment;
+import org.six11.skrui.shape.Dot;
+import org.six11.skrui.shape.Ellipse;
+import org.six11.skrui.shape.LineSegment;
+import org.six11.skrui.shape.Primitive;
+import org.six11.util.Debug;
+import org.six11.util.data.GaussianHat;
+import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
+
+/**
+ * 
+ * 
+ * @author Gabe Johnson <johnsogg@cmu.edu>
+ */
+public class Journal {
+
+  Main main;
+  Map<Integer, Pt> pointMap;
+  Map<Integer, Sequence> seqMap;
+
+  Map<String, Class> validPointAttributes;
+  Map<String, Class> validSequenceAttributes;
+
+  Map<String, Class> missedPointAttributes;
+  Map<String, Class> missedSequenceAttributes;
+
+  @SuppressWarnings("unchecked")
+  public Journal(Main main) {
+    this.main = main;
+    this.pointMap = new HashMap<Integer, Pt>();
+    this.seqMap = new HashMap<Integer, Sequence>();
+    validSequenceAttributes = new HashMap<String, Class>();
+    validSequenceAttributes.put("pen thickness", Double.class);
+    validSequenceAttributes.put("pen color", Color.class);
+    validSequenceAttributes.put(Neanderthal.SCRAP, Boolean.class);
+    // validSequenceAttributes.add(Neanderthal.PRIMITIVES);
+
+    validPointAttributes = new HashMap<String, Class>();
+    validPointAttributes.put("corner", Boolean.class);
+
+    missedPointAttributes = new HashMap<String, Class>();
+    missedSequenceAttributes = new HashMap<String, Class>();
+  }
+
+  public void save() throws JSONException, IOException {
+    List<Sequence> sequences = main.getSequences();
+    JSONObject sketch = new JSONObject();
+    JSONArray jsonSequences = new JSONArray();
+    sketch.put("sequences", jsonSequences);
+    bug("Saving " + sequences.size() + " sequences.");
+    for (Sequence seq : sequences) {
+      JSONObject jsonSeq = makeJsonSequence(seq);
+      if (jsonSeq != null) {
+        jsonSequences.put(jsonSeq);
+      }
+    }
+    for (String scriptName : main.getScriptNames()) {
+      SkruiScript script = main.getScript(scriptName);
+      JSONObject scriptSave = script.getSaveData(this);
+      if (scriptSave != null) {
+        sketch.put(scriptName, scriptSave);
+      }
+    }
+    write(sketch);
+    bug("Missed " + missedSequenceAttributes.size() + " sequence attributes:");
+    for (String att : missedSequenceAttributes.keySet()) {
+      bug("  " + att + ": " + missedSequenceAttributes.get(att));
+    }
+    bug("Missed " + missedPointAttributes.size() + " point attributes:");
+    for (String att : missedPointAttributes.keySet()) {
+      bug("  " + att + ": " + missedPointAttributes.get(att));
+    }
+  }
+
+  public void open() throws FileNotFoundException, JSONException {
+    File file = main.getCurrentFile();
+    JSONTokener toks = new JSONTokener(new FileReader(file));
+    JSONObject sketch = new JSONObject(toks);
+    JSONArray sequences = sketch.getJSONArray("sequences");
+    for (int i = 0; i < sequences.length(); i++) {
+      JSONObject jsonSeq = (JSONObject) sequences.get(i);
+      Sequence seq = makeSequence(jsonSeq);
+      mapSequence(seq.getId(), seq);
+      main.addFinishedSequenceNoninteractively(seq);
+    }
+    String[] names = JSONObject.getNames(sketch);
+    for (String name : names) {
+      SkruiScript script = main.getScript(name);
+      if (script != null) {
+        script.openSaveData(this, sketch.getJSONObject(name));
+      }
+    }
+  }
+
+  private void write(JSONObject job) throws IOException, JSONException {
+    FileWriter fw = new FileWriter(main.getCurrentFile());
+    fw.write(job.toString(2));
+    fw.flush();
+    fw.close();
+  }
+
+  public JSONObject makeJsonSequence(Sequence seq) throws JSONException {
+    JSONObject jsonSeq = null;
+    // if (seq.getAttribute(Neanderthal.SCRAP) == null) {
+    jsonSeq = new JSONObject();
+    jsonSeq.put("id", seq.getId());
+    JSONArray jsonPointArray = new JSONArray();
+    for (int idx = 0; idx < seq.size(); idx++) {
+      jsonPointArray.put(idx, makeFullJsonPt(seq.get(idx)));
+    }
+    jsonSeq.put("points", jsonPointArray);
+
+    Set<String> attribs = seq.getAttributeNames();
+    for (String att : attribs) {
+      if (validSequenceAttributes.containsKey(att)) {
+        Object attObj = makeJsonObj(seq.getAttribute(att));
+        if (attObj != null) {
+          jsonSeq.put(att, attObj);
+        } else {
+          bug("makeJsonSequence: '" + att + "': avoiding null value)");
+        }
+      } else {
+        missedSequenceAttributes.put(att, seq.getAttribute(att).getClass());
+      }
+    }
+    // }
+    return jsonSeq;
+  }
+
+  @SuppressWarnings("unchecked")
+  public Sequence makeSequence(JSONObject jsonSeq) throws JSONException {
+    int id = jsonSeq.getInt("id");
+    Sequence seq = new Sequence(id);
+    for (String name : JSONObject.getNames(jsonSeq)) {
+      if (validSequenceAttributes.containsKey(name)) {
+        Class cls = validSequenceAttributes.get(name);
+        if (cls.equals(Double.class)) {
+          seq.setAttribute(name, jsonSeq.getDouble(name));
+        } else if (cls.equals(Boolean.class)) {
+          seq.setAttribute(name, jsonSeq.getBoolean(name));
+        } else if (cls.equals(Color.class)) {
+          Color color = makeColor(jsonSeq.getJSONObject(name));
+          seq.setAttribute(name, color);
+        } else {
+          warn("Unable to deserialize sequence attribute '" + name + "' of type: " + cls);
+        }
+      }
+    }
+    // double thickness = jsonSeq.getDouble("pen thickness");
+    // seq.setAttribute("pen thickness", thickness);
+    // Color color = makeColor(jsonSeq.getJSONObject("pen color"));
+    // seq.setAttribute("pen color", color);
+    // if (jsonSeq.optBoolean(Neanderthal.SCRAP)) {
+    // seq.setAttribute(Neanderthal.SCRAP, jsonSeq.optBoolean(Neanderthal.SCRAP));
+    // }
+    JSONArray points = jsonSeq.getJSONArray("points");
+    for (int i = 0; i < points.length(); i++) {
+      Pt pt = makeFullPoint((JSONObject) points.get(i), seq);
+      seq.add(pt);
+    }
+    return seq;
+  }
+
+  public void mapSequence(int id, Sequence seq) {
+    seqMap.put(id, seq);
+  }
+
+  public Pt makeFullPoint(JSONObject jsonPt, Sequence seq) throws JSONException {
+    Pt ret = makeFullLonelyPoint(jsonPt);
+    if (seq != null) {
+      ret.setAttribute(Neanderthal.MAIN_SEQUENCE, seq);
+      if (pointMap.containsKey(ret.getID())) {
+        warn("Created duplicate point: " + Debug.num(ret) + " (id: " + ret.getID() + ")");
+      }
+      pointMap.put(ret.getID(), ret);
+    } else {
+      warn("Point " + ret.getID() + " does not have a sequence!");
+    }
+    return ret;
+  }
+
+  public Pt makeFullLonelyPoint(JSONObject jsonPt) throws JSONException {
+    JSONArray ptData = jsonPt.getJSONArray("pt");
+    int id = ptData.getInt(0); // jsonPt.getInt("id");
+    double x = ptData.getDouble(1); // jsonPt.getDouble("x");
+    double y = ptData.getDouble(2); // jsonPt.getDouble("y");
+    long t = ptData.getLong(3); // jsonPt.getLong("t");
+    Pt ret = new Pt(id, x, y, t);
+    JSONObject attr = jsonPt.optJSONObject("attribs");
+    if (attr != null) {
+      String[] names = JSONObject.getNames(attr);
+      if (names != null) {
+        for (String name : names) {
+          if (validPointAttributes.containsKey(name)) {
+            Class cls = validPointAttributes.get(name);
+            if (cls.equals(Double.class)) {
+              ret.setAttribute(name, attr.getDouble(name));
+            } else if (cls.equals(Boolean.class)) {
+              ret.setAttribute(name, attr.getBoolean(name));
+            } else if (cls.equals(Color.class)) {
+              Color color = makeColor(attr.getJSONObject(name));
+              ret.setAttribute(name, color);
+            } else {
+              warn("Unable to deserialize point attribute '" + name + "' of type: " + cls);
+            }
+          }
+        }
+      }
+    }
+    return ret;
+  }
+
+  public static Color makeColor(JSONObject jsonColor) throws JSONException {
+    int red = jsonColor.getInt("red");
+    int green = jsonColor.getInt("green");
+    int blue = jsonColor.getInt("blue");
+    int alpha = jsonColor.getInt("alpha");
+    return new Color(red, green, blue, alpha);
+  }
+
+  public Primitive makePrimitive(JSONArray jsonPrim) throws JSONException {
+    Primitive ret = null;
+    // 0=primID 1=seqID 2=startIdx 3=endIdx 4=cert 5=type
+    int primID = jsonPrim.getInt(0);
+    int sequenceID = jsonPrim.getInt(1);
+    Sequence seq = findSequence(sequenceID);
+    int startIdx = jsonPrim.getInt(2);
+    int endIdx = jsonPrim.getInt(3);
+    Certainty cert = makeCertainty(jsonPrim.getString(4));
+    String type = jsonPrim.getString(5);
+    if ("LineSegment".equals(type)) {
+      ret = new LineSegment(primID, seq, startIdx, endIdx, cert);
+    } else if ("ArcSegment".equals(type)) {
+      ret = new ArcSegment(primID, seq, startIdx, endIdx, cert);
+    } else if ("Dot".equals(type)) {
+      ret = new Dot(primID, seq, cert);
+    } else if ("Ellipse".equals(type)) {
+      ret = new Ellipse(primID, seq, cert);
+    } else {
+      bug("Unknown primitive type: " + type);
+    }
+    return ret;
+  }
+
+  private Certainty makeCertainty(String str) {
+    Certainty ret = Certainty.Unknown;
+    if ("Yes".equals(str)) {
+      ret = Certainty.Yes;
+    } else if ("No".equals(str)) {
+      ret = Certainty.No;
+    } else if ("Maybe".equals(str)) {
+      ret = Certainty.Maybe;
+    }
+    return ret;
+  }
+
+  public Object makeJsonObj(Object value) throws JSONException {
+    Object ret = null;
+    if (value instanceof Double || //
+        value instanceof Boolean || //
+        value instanceof Integer || //
+        value instanceof Long || //
+        value instanceof Short) {
+      ret = value;
+    } else if (value instanceof Color) {
+      JSONObject job = new JSONObject();
+      Color c = (Color) value;
+      job.put("red", c.getRed());
+      job.put("green", c.getGreen());
+      job.put("blue", c.getBlue());
+      job.put("alpha", c.getAlpha());
+      ret = job;
+    } else if (value instanceof Primitive) {
+      // Sequence seq, int startIdx, int endIdx, Certainty cert
+      JSONArray jarr = new JSONArray();
+      Primitive prim = (Primitive) value;
+      jarr.put(prim.getId()); // primID seqID startIdx endIdx cert type
+      jarr.put(prim.getSeq().getId());
+      jarr.put(prim.getStartIdx());
+      jarr.put(prim.getEndIdx());
+      jarr.put(prim.getCert().toString()); // Yes, Maybe, No
+      String type = null;
+      if (prim instanceof LineSegment) {
+        type = "LineSegment";
+      } else if (prim instanceof ArcSegment) {
+        type = "ArcSegment";
+      } else if (prim instanceof Dot) {
+        type = "Dot";
+      } else if (prim instanceof Ellipse) {
+        type = "Ellipse";
+      } else {
+        bug("You missed the primitive type: " + prim.getClass());
+      }
+      if (type != null) {
+        jarr.put(type);
+      }
+      ret = jarr;
+    } else {
+      bug("makeJsonObj: Unknown object type: " + value.getClass() + ". This will screw things up.");
+    }
+    return ret;
+  }
+
+  public JSONObject makeFullJsonPt(Pt pt) throws JSONException {
+    JSONObject ret = new JSONObject();
+    JSONArray ptData = new JSONArray();
+    // ret.put("id", pt.getID());
+    // ret.put("x", pt.getX());
+    // ret.put("y", pt.getY());
+    // ret.put("t", pt.getTime());
+    ptData.put(pt.getID());
+    ptData.put(pt.getX());
+    ptData.put(pt.getY());
+    ptData.put(pt.getTime());
+    ret.put("pt", ptData);
+
+    Map<String, Object> attribs = pt.getAttribs();
+    JSONObject attribObj = new JSONObject();
+    int attribCount = 0;
+    for (String attrName : attribs.keySet()) {
+      if (validPointAttributes.containsKey(attrName)) {
+        Object val = makeJsonObj(attribs.get(attrName));
+        if (val != null) {
+          attribCount++;
+          attribObj.put(attrName, val);
+        } else {
+          bug("avoiding point attribute '" + attrName + "'. is this bad?");
+        }
+      } else {
+        missedPointAttributes.put(attrName, attribs.get(attrName).getClass());
+      }
+    }
+    if (attribCount > 0) {
+      ret.put("attribs", attribObj);
+    }
+    return ret;
+  }
+
+  private static void bug(String what) {
+    Debug.out("Journal", what);
+  }
+
+  private static void warn(String what) {
+    System.out.println("*** Warning ***\t" + what);
+  }
+
+  public Sequence findSequence(int seqId) {
+    Sequence ret = seqMap.get(seqId);
+    if (ret == null) {
+      bug("Could not find sequence: " + seqId);
+    }
+    return ret;
+  }
+
+  public Pt findPoint(int ptId) {
+    Pt ret = pointMap.get(ptId);
+    if (ret == null) {
+      bug("Could not find point: " + ptId);
+    }
+    return ret;
+  }
+
+}

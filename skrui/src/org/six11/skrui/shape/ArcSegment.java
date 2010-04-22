@@ -20,6 +20,17 @@ public class ArcSegment extends Primitive {
     super(seq, startIdx, endIdx, cert);
   }
 
+  /**
+   * @param primID
+   * @param seq
+   * @param startIdx
+   * @param endIdx
+   * @param cert
+   */
+  public ArcSegment(int primID, Sequence seq, int startIdx, int endIdx, Certainty cert) {
+    super(primID, seq, startIdx, endIdx, cert);
+  }
+
   @Override
   public String typeStr() {
     return "Arc";

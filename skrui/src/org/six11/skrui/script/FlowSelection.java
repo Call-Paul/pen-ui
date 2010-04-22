@@ -169,17 +169,16 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   protected void startSelection() {
     fsStartTime = System.currentTimeMillis();
     nearestSequences.clear();
-    bug("Selecting with " + taps.size() + " preceding pen taps.");
+    // bug("Selecting with " + taps.size() + " preceding pen taps.");
 
     if (taps.size() == 0) {
-      bug("single-select mode.");
       Pt nearestPt = data.getAllPoints().getNearest(dwellPoint);
       prepare(nearestPt);
     } else {
-      bug("multi-select mode!");
+      // bug("multi-select mode!");
       int nTaps = taps.size();
       for (Dot tap : taps) {
-        data.forget(tap);
+        data.forget(tap, false);
       }
       Set<Pt> all = data.getAllPoints().getNear(dwellPoint, nTaps * 30);
       Set<Pt> near = new HashSet<Pt>();
@@ -193,7 +192,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       }
     }
     main.setCurrentSequenceShapeVisible(false);
-    dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE).setAttribute(Neanderthal.SCRAP, "true");
+    Sequence scrapMe = dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE);
+    data.forget(scrapMe, false);
   }
 
   private void prepare(Pt pt) {
@@ -394,7 +394,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     taps = new ArrayList<Dot>();
     tapTimer = new Timer(2 * timeout, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        bug("No more taps. I had: " + taps.size());
+        // bug("No more taps. I had: " + taps.size());
         taps.clear();
       }
     });
@@ -467,14 +467,14 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       @Override
       public void doAfterTransition() {
         setDwellPoint();
-        bug("reshaping...");
+        // bug("reshaping...");
       }
     });
 
     fsm.addTransition(new FSM.Transition("up", "reshape", "idle") {
       @Override
       public void doAfterTransition() {
-        bug("up!");
+        // bug("up!");
       }
     });
 
@@ -489,7 +489,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       @Override
       public void doAfterTransition() {
         setDwellPoint();
-        bug("smoothing...");
+        // bug("smoothing...");
       }
     });
 
@@ -594,7 +594,6 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       if (prim instanceof Dot) {
         Dot dot = (Dot) prim;
         taps.add(dot);
-        bug("tap! Now I have " + taps.size());
         tapTimer.restart();
       }
     }
