@@ -17,6 +17,7 @@ public class HalfEdge {
   private HalfEdge pair;
   private Triangle face;
   private HalfEdge next;
+  private boolean boundary;
 
   String id;
   private static int ID_COUNTER = 0;
@@ -56,6 +57,14 @@ public class HalfEdge {
     return pair;
   }
 
+  public String getVertexOrderString() {
+    String ret = "<null pair>";
+    if (getPair() != null) {
+      ret = getPair().getPoint().getID() + " -> " + getPoint().getID();
+    }
+    return ret;
+  }
+  
   /**
    * Returns the successor half-edge. If your triangle is well-formed, you should be able to call
    * getNext() on each successive half-edge and eventually get back to where you started.
@@ -134,5 +143,13 @@ public class HalfEdge {
 
   public String getId() {
     return id;
+  }
+
+  public void setBoundary(boolean b) {
+    boundary = b;
+  }
+  
+  public boolean isBoundary() {
+    return boundary;
   }
 }

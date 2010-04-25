@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -297,27 +298,20 @@ public abstract class DrawingBufferRoutines {
     }
   }
 
-  public static void mesh(DrawingBuffer db, Mesh mesh, List<Pt> penPath, Pt lastPoint) {
+  public static void mesh(DrawingBuffer db, Mesh mesh) {
     List<Pt> points = mesh.getPoints();
     dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
     Color cCentInside = new Color(0, 0, 255, 50);
-    Color cCentLegit = new Color(255, 0, 0, 50);
+    // Color cCentLegit = new Color(255, 0, 0, 50);
     Set<Triangle> inside = mesh.getInsideTriangles();
     for (Triangle t : inside) {
       triangle(db, t, cCentInside);
     }
-    Set<Triangle> legit = mesh.getLegitimateTriangles();
-    legit.removeAll(inside); // don't do these again.
-    for (Triangle t : legit) {
-      triangle(db, t, cCentLegit);
-    }
-    // fill(db, hull.getHullClosed(), 4.0, Color.BLACK, Color.GRAY);
-    lines(db, penPath, Color.BLACK, 2.0);
-    if (lastPoint != null) {
-      line(db, penPath.get(penPath.size() - 1), lastPoint, Color.BLACK, 2.0);
-    } else {
-      bug("Warning: lastPoint is null, so I don't know how to complete the penPath.");
-    }
+    // Set<Triangle> legit = mesh.getLegitimateTriangles();
+    // legit.removeAll(inside); // don't do these again.
+    // for (Triangle t : legit) {
+    // triangle(db, t, cCentLegit);
+    // }
   }
 
   private static void triangle(DrawingBuffer db, Triangle t, Color fillColor) {
@@ -368,6 +362,113 @@ public abstract class DrawingBufferRoutines {
     }
     buf.up();
     return buf;
+  }
+
+  public static void meshBoundary(DrawingBuffer db, Mesh mesh, Color color, double thick) {
+    Set<Triangle> triangles = mesh.getTriangles();
+    List<Line> boundary = new ArrayList<Line>(); // NOT IN ORDER
+    for (Triangle t : triangles) {
+      HalfEdge he = t.getEdge();
+      if (he.isBoundary() && he.getPoint().getID() < he.getPair().getPoint().getID()) {
+        boundary.add(new Line(he.getPoint(), he.getPair().getPoint()));
+      }
+      he = he.getNext();
+      if (he.isBoundary() && he.getPoint().getID() < he.getPair().getPoint().getID()) {
+        boundary.add(new Line(he.getPoint(), he.getPair().getPoint()));
+      }
+      he = he.getNext();
+      if (he.isBoundary() && he.getPoint().getID() < he.getPair().getPoint().getID()) {
+        boundary.add(new Line(he.getPoint(), he.getPair().getPoint()));
+      }
+    }
+    for (Line line : boundary) {
+      DrawingBufferRoutines.line(db, line, color, thick);
+    }
+  }
+
+  public static void meshFiniteEdges(DrawingBuffer db, Mesh mesh, Color color, double thick) {
+    Set<Triangle> triangles = mesh.getFiniteTriangles();
+    List<Line> lines = new ArrayList<Line>();
+    for (Triangle t : triangles) {
+      HalfEdge he = t.getEdge();
+      try {
+        lines.add(new Line(he.getPoint(), he.getPair().getPoint()));
+        he = he.getNext();
+        lines.add(new Line(he.getPoint(), he.getPair().getPoint()));
+        he = he.getNext();
+        lines.add(new Line(he.getPoint(), he.getPair().getPoint()));
+      } catch (NullPointerException ex) {
+        bug("One of the edges has a null pair.");
+      }
+    }
+    for (Line line : lines) {
+      DrawingBufferRoutines.line(db, line, color, thick);
+    }
+  }
+
+  public static void meshAllEdges(DrawingBuffer db, Mesh mesh, Color color, double thick) {
+    Set<Triangle> triangles = mesh.getTriangles();
+    List<Line> lines = new ArrayList<Line>();
+    for (Triangle t : triangles) {
+      HalfEdge he = t.getEdge();
+
+      lines.add(new Line(he.getPoint(), he.getStartPoint()));
+      he = he.getNext();
+      lines.add(new Line(he.getPoint(), he.getStartPoint()));
+      he = he.getNext();
+      lines.add(new Line(he.getPoint(), he.getStartPoint()));
+    }
+    for (Line line : lines) {
+      DrawingBufferRoutines.line(db, line, color, thick);
+    }
+  }
+
+  public static void meshDebug(DrawingBuffer db, Mesh mesh) {
+    DrawingBufferRoutines.meshBoundary(db, mesh, Color.RED, 2.0);
+    DrawingBufferRoutines.meshFiniteEdges(db, mesh, Color.GRAY, 1.0);
+    // DrawingBufferRoutines.meshAllEdges(db, mesh, Color.GRAY, 1.0);
+    DrawingBufferRoutines.dots(db, mesh.getPoints(), 2.0, 0.2, Color.BLACK, Color.GREEN);
+    DrawingBufferRoutines.mesh(db, mesh);
+    DrawingBufferRoutines.meshVertexIDs(db, mesh);
+    List<Pt> all = mesh.getPoints();
+    if (all.size() > 0) {
+      DrawingBufferRoutines.dot(db, all.get(all.size() - 1), 2.5, 0.3, Color.GREEN, Color.GREEN);
+    }
+    if (all.size() > 1) {
+      DrawingBufferRoutines.dot(db, all.get(all.size() - 2), 2.5, 0.3, Color.BLUE, Color.BLUE);
+    }
+  }
+
+  private static void meshVertexIDs(DrawingBuffer db, Mesh mesh) {
+    Set<Triangle> triangles = mesh.getFiniteTriangles();
+    Set<Pt> points = new HashSet<Pt>();
+    StringBuilder tris = new StringBuilder();
+    for (Triangle t : triangles) {
+      tris.append("  Triangle " + t.id + ": [ ");
+      for (Pt pt : t.getPoints()) {
+        tris.append(pt.getID() + " ");
+        points.add(pt);
+      }
+      tris.append("]\n");
+    }
+    Set<Triangle> allTriangles = mesh.getTriangles();
+    for (Triangle t : allTriangles) {
+      if (!triangles.contains(t)) {
+        tris.append("  Infinite Triangle " + t.id + ": " + t.getVertIds() + "\n");
+      }
+    }
+    System.out.println("-------------------------------------------------------------------------");
+    System.out.println("Triangles:\n" + tris.toString());
+    System.out.println("There are " + points.size() + " 'finite' points in this mesh:");
+    for (Pt pt : points) {
+      System.out.println("   Pt " + pt.getID() + " at " + Debug.num(pt));
+      DrawingBufferRoutines.text(db, pt.getTranslated(4, 0), "" + pt.getID(), Color.CYAN);
+    }
+    System.out.println("'Infinite' root points for this mesh:");
+    for (Pt rp : mesh.getRootPoints()) {
+      System.out.println("   Pt " + rp.getID() + " at " + Debug.num(rp));
+    }
+    System.out.println("-------------------------------------------------------------------------");
   }
 
 }

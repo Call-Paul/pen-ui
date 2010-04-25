@@ -90,7 +90,7 @@ public class Main {
   private static final String PROP_GRAPH_DIR = "graphDir";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
-      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
+      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler2", "--debugging",
       "--debug-color"
   };
 
@@ -1105,5 +1105,33 @@ public class Main {
         bug(k + " : " + params.get(k).getValueStr());
       }
     }
+  }
+
+  public static void savePDF(DrawingBuffer db, File file) throws FileNotFoundException {
+    FileOutputStream out = new FileOutputStream(file);
+    db.update();
+    BoundingBox bb = db.getBoundingBox();
+    int w = bb.getWidthInt();
+    int h = bb.getHeightInt();
+    Rectangle size = new Rectangle(w, h);
+    Document document = new Document(size, 0, 0, 0, 0);
+    try {
+      PdfWriter writer = PdfWriter.getInstance(document, out);
+      document.open();
+      DefaultFontMapper mapper = new DefaultFontMapper();
+      PdfContentByte cb = writer.getDirectContent();
+      PdfTemplate tp = cb.createTemplate(w, h);
+      Graphics2D g2 = tp.createGraphics(w, h, mapper);
+      tp.setWidth(w);
+      tp.setHeight(h);
+      g2.translate(-bb.getX(), -bb.getY());
+      db.drawToGraphics(g2);
+      g2.dispose();
+      cb.addTemplate(tp, 0, 0);
+    } catch (DocumentException ex) {
+      bug(ex.getMessage());
+    }
+    document.close();
+    System.out.println("Wrote " + file.getAbsolutePath());
   }
 }

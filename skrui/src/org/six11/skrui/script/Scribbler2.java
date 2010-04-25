@@ -15,6 +15,7 @@ import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.Journal;
+import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
 import org.six11.util.Debug;
@@ -22,18 +23,18 @@ import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Statistics;
-import org.six11.util.pen.ConvexHull;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
-import org.six11.util.pen.SequenceEvent;
-import org.six11.util.pen.SequenceListener;
-import org.six11.util.pen.Vec;
+import org.six11.util.pen.*;
 
-public class Scribbler extends SkruiScript implements SequenceListener {
+public class Scribbler2 extends SkruiScript implements SequenceListener {
 
+  /**
+   * Reference to the mothership.
+   */
   Neanderthal data;
+
+  //
+  // ---------------------------------------- member variables for detecting scribble gesture -----
+  //
   Statistics linelike;
   Statistics timestamps;
   boolean filling;
@@ -41,38 +42,44 @@ public class Scribbler extends SkruiScript implements SequenceListener {
   int lastExaminedIndex;
   double halfWindowPixels = 10;
   List<Integer> possibleCornerIndexes;
-  ConvexHull hull;
-  List<Pt> penPath;
-  Mesh mesh;
-  boolean meshDrawn = false;
-  Pt lastDrag;
   int cornerNumThreshold = 6;
 
-//  public Scribbler(Neanderthal data) {
-//  }
+  //
+  // ---------------------------------------- member variables for making a filled region ---------
+  //
+  // ConvexHull hull;
+  List<Pt> penPath;
+  Mesh mesh;
+  Pt lastDrag;
+
+  // boolean meshDrawn = false;
+
+  public void handleSequenceEvent(SequenceEvent seqEvent) {
+    SequenceEvent.Type type = seqEvent.getType();
+    Sequence seq = seqEvent.getSeq();
+    switch (type) {
+      case BEGIN:
+        sendDown(seq);
+        break;
+      case PROGRESS:
+        sendDrag();
+        break;
+      case END:
+        sendUp();
+        break;
+    }
+  }
 
   public void sendDown(Sequence seq) {
-    // first see if this is a continuation.
-    boolean shouldFill = false;
-    Pt nub = seq.getLast().getTranslated(0.5, 0.5);
-    if (mesh != null && (nub.getTime() - mesh.getTime()) < 4000) {
-      ConvexHull h = mesh.getHull();
-      if (Functions.isPointInRegion(nub, h.getHullClosed())) {
-        shouldFill = true;
-      }
-    }
+    // clear/set the gesture-detection variables
     this.seq = seq;
-    hull = null;
-    penPath = null;
-    mesh = null;
-    lastDrag = null;
     lastExaminedIndex = -1;
     possibleCornerIndexes.clear();
     linelike.clear();
 
-    if (shouldFill) {
-      beginFill();
-    }
+    // clear the mesh-forming variables
+    // hull = null;
+    mesh = null;
   }
 
   public List<Pt> getPossibleCorners() {
@@ -84,75 +91,32 @@ public class Scribbler extends SkruiScript implements SequenceListener {
   }
 
   public void sendDrag() {
-    if (!filling) {
-      examine();
+    if (filling) {
+      expandRegion(); // user is filling---might involve expanding the region.
     } else {
-      expandHull();
+      examine(); // user is not (yet) filling---examine input to see if there is a scribble gesture
     }
-  }
-
-  private void draw(boolean done) {
-    DrawingBuffer db = new DrawingBuffer();
-    if (db.isVisible() && penPath != null && penPath.size() > 2) {
-      Set<Triangle> inside = seekInside();
-      DrawingBufferRoutines.triangles(db, inside, main.getPenColor());
-      if (done) {
-        data.getRegions().add(new Mesh(mesh.getPoints(), true));
-      }
-      main.addBuffer("scribble fill", db);
-    }
-  }
-
-  private Set<Triangle> seekInside() {
-    Set<Triangle> ret = new HashSet<Triangle>();
-    // Now get a convex hull for everything, including the original scribble hull and the pen path.
-    List<Pt> bigHullPoints = new ArrayList<Pt>(hull.getHull());
-    bigHullPoints.addAll(penPath);
-    ConvexHull bigHull = new ConvexHull(bigHullPoints);
-    bigHullPoints = bigHull.getHull();
-    for (Triangle t : mesh.getTriangles()) {
-      if (Functions.isPointInRegion(t.getCentroid(), bigHullPoints)) {
-        ret.add(t);
-      }
-    }
-    return ret;
   }
 
   private void beginFill() {
     filling = true;
-//    seq.setAttribute(Neanderthal.SCRAP, true);
-//    data.makeScrap(seq, "Scribble begin fill");
     data.forget(seq, false);
-    // hull = new ConvexHull(getPossibleCorners());
-    hull = new ConvexHull(seq.getPoints());
-    penPath = new ArrayList<Pt>();
-    mesh = new Mesh(hull.getHull(), true);
-    draw(false);
-    lastDrag = seq.getLast();
-    bug("** FILLING **");
-  }
 
-  private void expandHull() {
-    if (seq.size() > 3 && hull != null) {
-      Pt here = seq.getLast();
-      if (!Functions.isPointInRegion(here, hull.getHullClosed())) {
-        if (here.distance(lastDrag) > 6) {
-          lastDrag = here;
-          try {
-            // Color color = data.getDrawingSurface().getSoup().getPenColor();
-            if (mesh.expand(here)) {
-              penPath.add(here);
-              draw(false);
-            } else {
-              bug("I did not expand (maybe it contained that point already?");
-            }
-          } catch (Exception ex) {
-            // occasionally seq is null, and I'm not sure why though I suspect threading issues.
-            ex.printStackTrace();
-          }
-        }
-      }
+    ConvexHull hull = new ConvexHull(getPossibleCorners());
+    penPath = new ArrayList<Pt>(hull.getHullClosed());
+    mesh = new Mesh();
+    mesh.setSequenceMatters(true);
+    for (Pt hp : hull.getHull()) {
+      mesh.addPoint(hp);
     }
+    List<Pt> rp = mesh.getRootPoints();
+    for (Pt pt : rp) {
+      bug("Root point: " + Debug.num(pt));
+    }
+    lastDrag = seq.getLast();
+    draw();
+
+    bug("** FILLING **");
   }
 
   private void examine() {
@@ -183,7 +147,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
       if (v1.mag() > (halfWindowPixels * 0.8) && v1.mag() > (halfWindowPixels * 0.8)) {
         double angle = Math.abs(Functions.getAngleBetween(v1, v2));
         if (angle < 1) {
-          seq.get(mid).setDouble("scribbler corner value", angle);
+          seq.get(mid).setDouble("Scribbler2 corner value", angle);
           addPossibleCornerIndex(mid);
         }
       }
@@ -201,7 +165,8 @@ public class Scribbler extends SkruiScript implements SequenceListener {
       if (pl(idx, mostRecentIdx) < halfWindowPixels) {
         Pt mostRecent = seq.get(mostRecentIdx);
         Pt me = seq.get(idx);
-        if (mostRecent.getDouble("scribbler corner value") > me.getDouble("scribbler corner value")) {
+        if (mostRecent.getDouble("Scribbler2 corner value") > me
+            .getDouble("Scribbler2 corner value")) {
           possibleCornerIndexes.remove(lastIdx);
           seq.get(lastIdx).setBoolean("scribble-actual-corner", false);
           possibleCornerIndexes.add(idx);
@@ -260,65 +225,93 @@ public class Scribbler extends SkruiScript implements SequenceListener {
 
   public void sendUp() {
     if (filling) {
-      draw(true);
-      bug("** Finished doing mondo draw.");
-      DrawingBuffer db = main.getBuffer("scribble fill");
-      if (db != null) {
-        main.addToLayer("fill", db);
-      }
+      bug("done filling (uncomment this and fix)");
+      // draw(true);
+      // bug("** Finished doing mondo draw.");
+      // DrawingBuffer db = main.getBuffer("scribble fill");
+      // if (db != null) {
+      // main.addToLayer("fill", db);
+      // }
     }
     filling = false;
   }
 
-  public JSONObject getSaveData(Journal jnl) throws JSONException {
-    JSONObject ret = new JSONObject();
-    
-    // ---------------------------------------------- regions
-    if (data.getRegions().size() > 0) {
-      JSONArray jsonRegions = new JSONArray();
-      for (Mesh mesh : data.getRegions()) {
-        List<Pt> meshPoints = mesh.getPoints();
-        JSONObject jsonMesh = new JSONObject();
-        JSONArray jsonMeshPoints = new JSONArray();
-        for (Pt pt : meshPoints) {
-          jsonMeshPoints.put(jnl.makeFullJsonPt(pt));
-        }
-        jsonMesh.put("points", jsonMeshPoints);
-        jsonRegions.put(jsonMesh);
-      }
-      ret.put("regions", jsonRegions);
-    }
-    
-    return ret;
+  //
+  // ---------------------------------------- member functions for making a filled region ---------
+  //
+
+  private void draw() {
+    DrawingBuffer db = new DrawingBuffer();
+    // DrawingBufferRoutines.dots(db, penPath, 2.0, 0.2, Color.BLACK, Color.BLUE);
+    DrawingBufferRoutines.meshBoundary(db, mesh, Color.RED, 2.0);
+    DrawingBufferRoutines.meshFiniteEdges(db, mesh, Color.GRAY, 1.0);
+    DrawingBufferRoutines.dots(db, mesh.getPoints(), 2.0, 0.2, Color.BLACK, Color.GREEN);
+    DrawingBufferRoutines.mesh(db, mesh);
+    main.addBuffer("scribble fill", db);
   }
-  
-  public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
-    JSONArray jsonRegions = job.getJSONArray("regions");
-    for (int i=0; i < jsonRegions.length(); i++) {
-      JSONObject jsonMesh = jsonRegions.getJSONObject(i);
-      JSONArray jsonMeshPoints = jsonMesh.getJSONArray("points");
-      List<Pt> meshPoints = new ArrayList<Pt>();
-      for (int j=0; j < jsonMeshPoints.length(); j++) {
-        meshPoints.add(jnl.makeFullLonelyPoint(jsonMeshPoints.getJSONObject(j)));
-      }
-      mesh = new Mesh(meshPoints, true);
-      // draw the mesh and add it to Neanderthal's regions list.
-      DrawingBuffer db = new DrawingBuffer();
-//      DrawingBufferRoutines.mesh(db, mesh, meshPoints, null);
-      DrawingBufferRoutines.dots(db, meshPoints, 2.0, 0.2, Color.BLACK, Color.RED);
-      main.addBuffer("scribble fill", db);
-      data.getRegions().add(mesh);
+
+  private void expandRegion() {
+    Pt here = seq.getLast();
+    if (lastDrag.distance(here) > 4 && (here.getTime() - lastDrag.getTime()) > 100) {
+      penPath.add(here);
+      lastDrag = here;
+      mesh.addPoint(here);
+      draw();
     }
   }
-  
-  
+
+  //
+
+  //
+  // public JSONObject getSaveData(Journal jnl) throws JSONException {
+  // JSONObject ret = new JSONObject();
+  //    
+  // // ---------------------------------------------- regions
+  // if (data.getRegions().size() > 0) {
+  // JSONArray jsonRegions = new JSONArray();
+  // for (Mesh mesh : data.getRegions()) {
+  // List<Pt> meshPoints = mesh.getPoints();
+  // JSONObject jsonMesh = new JSONObject();
+  // JSONArray jsonMeshPoints = new JSONArray();
+  // for (Pt pt : meshPoints) {
+  // jsonMeshPoints.put(jnl.makeFullJsonPt(pt));
+  // }
+  // jsonMesh.put("points", jsonMeshPoints);
+  // jsonRegions.put(jsonMesh);
+  // }
+  // ret.put("regions", jsonRegions);
+  // }
+  //    
+  // return ret;
+  // }
+  //  
+  // public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
+  // JSONArray jsonRegions = job.getJSONArray("regions");
+  // for (int i=0; i < jsonRegions.length(); i++) {
+  // JSONObject jsonMesh = jsonRegions.getJSONObject(i);
+  // JSONArray jsonMeshPoints = jsonMesh.getJSONArray("points");
+  // List<Pt> meshPoints = new ArrayList<Pt>();
+  // for (int j=0; j < jsonMeshPoints.length(); j++) {
+  // meshPoints.add(jnl.makeFullLonelyPoint(jsonMeshPoints.getJSONObject(j)));
+  // }
+  // mesh = new Mesh(meshPoints, 0);
+  // // draw the mesh and add it to Neanderthal's regions list.
+  // DrawingBuffer db = new DrawingBuffer();
+  // // DrawingBufferRoutines.mesh(db, mesh, meshPoints, null);
+  // DrawingBufferRoutines.dots(db, meshPoints, 2.0, 0.2, Color.BLACK, Color.RED);
+  // main.addBuffer("scribble fill", db);
+  // data.getRegions().add(mesh);
+  // }
+  // }
+  //  
+
   private static void bug(String what) {
-    Debug.out("Scribbler", what);
+    Debug.out("Scribbler2", what);
   }
 
   @Override
   public void initialize() {
-    bug("Scribbler initializing...");
+    bug("Scribbler2 initializing...");
     this.data = (Neanderthal) main.getScript("Neanderthal");
     data.addSequenceListener(this);
     possibleCornerIndexes = new ArrayList<Integer>();
@@ -328,12 +321,12 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     linelike = new Statistics();
     linelike.setMaximumN(cornerNumThreshold);
 
-    bug("Scribbler initialized!");
+    bug("Scribbler2 initialized!");
   }
-  
+
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
-    args.setProgramName("Scribbler: scribble to fill regions.");
+    args.setProgramName("Scribbler2: scribble to fill regions.");
     args.setDocumentationProgram("Detects scribble gestures that begins a fill operation.");
 
     Map<String, BoundedParameter> defs = getDefaultParameters();
@@ -352,7 +345,6 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     return defs;
   }
 
-
   @Override
   public Map<String, BoundedParameter> initializeParameters(Arguments args) {
     // TODO: why is this not just a part of SkruiScript?
@@ -370,21 +362,5 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     }
     return params;
   }
-  
-  public void handleSequenceEvent(SequenceEvent seqEvent) {
-    SequenceEvent.Type type = seqEvent.getType();
-    Sequence seq = seqEvent.getSeq();
-    switch (type) {
-      case BEGIN:
-        sendDown(seq);
-        break;
-      case PROGRESS:
-        sendDrag();
-        break;
-      case END:
-        sendUp();
-        break;
-    }
-    
-  }
+
 }

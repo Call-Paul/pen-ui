@@ -11,6 +11,10 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
+import static org.six11.util.pen.Functions.eq;
+import static org.six11.util.pen.Functions.gt;
+import static org.six11.util.pen.Functions.lt;
+
 /**
  * 
  * 
@@ -19,7 +23,7 @@ import org.six11.util.pen.Vec;
 public class Triangle {
 
   private HalfEdge edge;
-  String id;
+  public String id;
   private List<Pt> cachedPoints;
   private Pt cachedCentroid;
   private static int ID_COUNTER = 0;
@@ -124,7 +128,7 @@ public class Triangle {
    * This function is translated (with slight modifications) from
    * http://www.blackpawn.com/texts/pointinpoly/default.html.
    **/
-  private double[] getBarycentricCoordinates(Pt pt) {
+  public double[] getBarycentricCoordinates(Pt pt) {
     List<Pt> pts = getPoints();
     Pt a = pts.get(0);
     Pt b = pts.get(1);
@@ -149,13 +153,13 @@ public class Triangle {
     };
   }
 
-  public Where whereIsPoint(Pt pt) {
+  public Where whereIsPoint(Pt pt, boolean showDebug) {
 
     // There are eight possibilities:
-    // pt is one of the three vertexes
-    // pt is on one of the three edges
-    // pt is strictly inside the triangle
-    // pt is strictly outside the triangle.
+    // 1,2,3: pt is one of the three vertexes
+    // 4,5,6: pt is on one of the three edges
+    // 7: pt is strictly inside the triangle
+    // 8: pt is strictly outside the triangle.
     Where ret = Where.Outside;
     if (hasVertex(pt)) {
       ret = Where.Coincidental;
@@ -163,14 +167,18 @@ public class Triangle {
       double[] barycentric = getBarycentricCoordinates(pt);
       double u = barycentric[0];
       double v = barycentric[1];
-      if (u == 0 && v > 0 && v <= 1) {
+      double T = Functions.EQ_TOL;
+      if /*   */(eq(u, 0, T) && gt(v, 0, T) && v <= 1) {
         ret = Where.Boundary;
-      } else if (u > 0 && v == 0 && u <= 1) {
+      } else if (gt(u, 0, T) && eq(v, 0, T) && u <= 1) {
         ret = Where.Boundary;
-      } else if (u > 0 && v > 0 && u + v == 1) {
+      } else if (gt(u, 0, T) && gt(v, 0, T) && eq(u + v, 1, T)) {
         ret = Where.Boundary;
-      } else if ((u > 0) && (v > 0) && (u + v < 1)) {
+      } else if (gt(u, 0, T) && gt(v, 0, T) && lt(u + v, 1, T)) {
         ret = Where.Inside;
+      }
+      if (showDebug) {
+        bug("Point is " + ret + " (barycentric coords: " + Debug.num(u) + ", " + Debug.num(v) + ")");
       }
     }
     return ret;
@@ -262,6 +270,9 @@ public class Triangle {
     return Math.abs(Functions.getDeterminant(a, b) / 2);
   }
 
+  /**
+   * Returns true if this triangle involves ANY of the points in the provided list.
+   */
   public boolean involvesPoints(List<Pt> others) {
     boolean ret = false;
     for (Pt other : others) {

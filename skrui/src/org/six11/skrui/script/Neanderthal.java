@@ -101,7 +101,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     primitiveListeners = new ArrayList<PrimitiveListener>();
     allPoints = new PointGraph();
     endPoints = new PointGraph();
-//    endPoints.debugEnabled = true;
     structurePoints = new PointGraph();
     structureLines = new ArrayList<LineSegment>();
     forgottenSequences = new ArrayList<Sequence>();
@@ -140,32 +139,20 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
     ret.put("primitives", jsonPrimArray);
 
-//    // ---------------------------------------------- allPoints
-//    JSONArray allPointIDs = new JSONArray();
-//    for (Pt pt : getAllPoints().getPoints()) {
-//      allPointIDs.put(pt.getID());
-//    }
-//    ret.put("allPoints", allPointIDs);
-//
-//    // ---------------------------------------------- endPoints
-//    JSONArray endPointIDs = new JSONArray();
-//    for (Pt pt : getEndPoints().getPoints()) {
-//      endPointIDs.put(pt.getID());
-//    }
-//    ret.put("endPoints", endPointIDs);
-
     // ---------------------------------------------- structurePoints
-    JSONArray jsonStructurePoints = new JSONArray();
-    for (Pt pt : structurePoints.getPoints()) {
-      jsonStructurePoints.put(jnl.makeFullJsonPt(pt));
+    if (structurePoints.size() > 0) {
+      JSONArray jsonStructurePoints = new JSONArray();
+      for (Pt pt : structurePoints.getPoints()) {
+        jsonStructurePoints.put(jnl.makeFullJsonPt(pt));
+      }
+      ret.put("structurePoints", jsonStructurePoints);
     }
-    ret.put("structurePoints", jsonStructurePoints);
-
     // ---------------------------------------------- structureLines
     if (getStructureLines().size() > 0) {
       // TODO: implement structureLine saving.
       bug("Note: the " + getStructureLines().size() + " structure line(s) will not be saved.");
     }
+
 
     return ret;
   }
@@ -191,31 +178,48 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
       recordPrimitive(p);
     }
 
-//    // ---------------------------------------------- allPoints
-//    JSONArray allPointIDs = job.getJSONArray("allPoints");
-//    for (int i = 0; i < allPointIDs.length(); i++) {
-//      Pt pt = jnl.findPoint(allPointIDs.getInt(i));
-//      getAllPoints().add(pt);
-//    }
-//
-//    // ---------------------------------------------- endPoints
-//    JSONArray endPointIDs = job.getJSONArray("endPoints");
-//    for (int i = 0; i < endPointIDs.length(); i++) {
-//      Pt pt = jnl.findPoint(endPointIDs.getInt(i));
-//      getEndPoints().add(pt);
-//    }
-
     // ---------------------------------------------- structurePoints
-    JSONArray jsonStructurePoints = job.getJSONArray("structurePoints");
-    Map<Integer, Pt> strPtMap = new HashMap<Integer, Pt>();
-    for (int i = 0; i < jsonStructurePoints.length(); i++) {
-      Pt pt = jnl.makeFullLonelyPoint(jsonStructurePoints.getJSONObject(i));
-      structurePoints.add(pt);
-      strPtMap.put(pt.getID(), pt);
+    JSONArray jsonStructurePoints = job.optJSONArray("structurePoints");
+    if (jsonStructurePoints != null) {
+      Map<Integer, Pt> strPtMap = new HashMap<Integer, Pt>();
+      for (int i = 0; i < jsonStructurePoints.length(); i++) {
+        Pt pt = jnl.makeFullLonelyPoint(jsonStructurePoints.getJSONObject(i));
+        structurePoints.add(pt);
+        strPtMap.put(pt.getID(), pt);
+      }
     }
 
     // ---------------------------------------------- structureLines
     // TODO: implement structureLine saving.
+    
+    // ---------------------------------------------- regions
+    JSONArray jsonRegions = job.optJSONArray("regions");
+    if (jsonRegions != null) {
+      for (int i=0; i < jsonRegions.length(); i++) {
+        JSONObject jsonMesh = jsonRegions.getJSONObject(i);
+        JSONArray jsonMeshPoints = jsonMesh.getJSONArray("points");
+        List<Pt> meshPoints = new ArrayList<Pt>();
+        for (int j=0; j < jsonMeshPoints.length(); j++) {
+          meshPoints.add(jnl.makeFullLonelyPoint(jsonMeshPoints.getJSONObject(j)));
+        }
+        Mesh mesh = new Mesh(meshPoints, true);
+        regions.add(mesh);
+      }
+    }
+//    if (regions.size() > 0) {
+//      JSONArray jsonRegions = new JSONArray();
+//      for (Mesh mesh : regions) {
+//        List<Pt> meshPoints = mesh.getPoints();
+//        JSONObject jsonMesh = new JSONObject();
+//        JSONArray jsonMeshPoints = new JSONArray();
+//        for (Pt pt : meshPoints) {
+//          jsonMeshPoints.put(jnl.makeFullJsonPt(pt));
+//        }
+//        jsonMesh.put("points", jsonMeshPoints);
+//        jsonRegions.put(jsonMesh);
+//      }
+//      ret.put("regions", jsonRegions);
+//    }
   }
 
   public PointGraph getStructurePoints() {
@@ -245,9 +249,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public LengthGraph getLengthGraph() {
     return lenG;
   }
-
-  public void addRegion(Mesh mesh) {
-    regions.add(mesh);
+  
+  public List<Mesh> getRegions() {
+    return regions;
   }
 
   private double updatePathLength(Sequence seq) {
@@ -309,7 +313,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     for (Primitive prim : getPrimitiveSet(seq)) {
       recordPrimitive(prim);
     }
-    
+
     // complain when points are not part of a primitive
     for (Pt pt : seq) {
       TreeSet<Primitive> pointPrims = (TreeSet<Primitive>) pt.getAttribute(PRIMITIVES);
@@ -599,15 +603,16 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     getLengthGraph().remove(p);
     getEndPoints().remove(p.getStartPt());
     getEndPoints().remove(p.getEndPt());
-    forget(p.seq, rememberForgottenSequence); // removes drawing buffer, sets SCRAP, removes points from tg and allPoints.
+    forget(p.seq, rememberForgottenSequence); // removes drawing buffer, sets SCRAP, removes points
+    // from tg and allPoints.
   }
 
   public void forget(Sequence seq, boolean rememberForgottenSequence) {
     if (rememberForgottenSequence) {
       forgottenSequences.add(seq);
     }
-//    bug("Forgetting sequence " + seq.getId() + " with " + seq.size() + " points. There are now "
-//        + forgottenSequences.size() + " forgotten sequences.");
+    // bug("Forgetting sequence " + seq.getId() + " with " + seq.size() + " points. There are now "
+    // + forgottenSequences.size() + " forgotten sequences.");
     makeScrap(seq, "Neanderthal forget(sequence)");
     if (getMain().getDrawingBufferForSequence(seq) != null) {
       getMain().getDrawingBufferForSequence(seq).setVisible(false);
@@ -658,7 +663,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   }
 
   public void makeScrap(Sequence scrapMe, String reason) {
-//    bug("Turning sequence " + scrapMe.getId() + " into scrap. Reason: " + reason);
+    // bug("Turning sequence " + scrapMe.getId() + " into scrap. Reason: " + reason);
     scrapMe.setAttribute(Neanderthal.SCRAP, "true");
   }
 
