@@ -83,7 +83,6 @@ public class Triangle {
       }
       cursor = cursor.getNext();
     } while (cursor != edge);
-
     return ret;
   }
 
@@ -91,6 +90,25 @@ public class Triangle {
     Triangle ret = null;
     if (cursor.getPair() != null) {
       ret = cursor.getPair().getFace();
+    }
+    return ret;
+  }
+
+  public HalfEdge getCommonEdge(Triangle neighbor) {
+    HalfEdge ret = null;
+    HalfEdge cursorThis = edge;
+    outside: {
+      do {
+        HalfEdge cursorThat = neighbor.edge;
+        do {
+          if (cursorThis.getPair() == cursorThat) {
+            ret = cursorThis;
+            break outside;
+          }
+          cursorThat = cursorThat.getNext();
+        } while (cursorThat != neighbor.edge);
+        cursorThis = cursorThis.getNext();
+      } while (cursorThis != edge);
     }
     return ret;
   }

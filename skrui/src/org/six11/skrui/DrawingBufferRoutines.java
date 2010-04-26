@@ -299,19 +299,12 @@ public abstract class DrawingBufferRoutines {
   }
 
   public static void mesh(DrawingBuffer db, Mesh mesh) {
-    List<Pt> points = mesh.getPoints();
-    dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
+//    List<Pt> points = mesh.getPoints();
+//    dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
     Color cCentInside = new Color(0, 0, 255, 50);
     // Color cCentLegit = new Color(255, 0, 0, 50);
     Set<Triangle> inside = mesh.getInsideTriangles();
-    for (Triangle t : inside) {
-      triangle(db, t, cCentInside);
-    }
-    // Set<Triangle> legit = mesh.getLegitimateTriangles();
-    // legit.removeAll(inside); // don't do these again.
-    // for (Triangle t : legit) {
-    // triangle(db, t, cCentLegit);
-    // }
+    triangles(db, inside, cCentInside);
   }
 
   private static void triangle(DrawingBuffer db, Triangle t, Color fillColor) {

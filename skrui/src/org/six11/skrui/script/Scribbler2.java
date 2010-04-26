@@ -1,23 +1,13 @@
 package org.six11.skrui.script;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
-import org.six11.skrui.data.Journal;
-import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
-import org.six11.skrui.mesh.Triangle;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -47,12 +37,9 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   //
   // ---------------------------------------- member variables for making a filled region ---------
   //
-  // ConvexHull hull;
   List<Pt> penPath;
   Mesh mesh;
   Pt lastDrag;
-
-  // boolean meshDrawn = false;
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
@@ -101,7 +88,6 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   private void beginFill() {
     filling = true;
     data.forget(seq, false);
-
     ConvexHull hull = new ConvexHull(getPossibleCorners());
     penPath = new ArrayList<Pt>(hull.getHullClosed());
     mesh = new Mesh();
@@ -109,13 +95,8 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
     for (Pt hp : hull.getHull()) {
       mesh.addPoint(hp);
     }
-    List<Pt> rp = mesh.getRootPoints();
-    for (Pt pt : rp) {
-      bug("Root point: " + Debug.num(pt));
-    }
     lastDrag = seq.getLast();
-    draw();
-
+    draw(false);
     bug("** FILLING **");
   }
 
@@ -225,13 +206,9 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   public void sendUp() {
     if (filling) {
-      bug("done filling (uncomment this and fix)");
-      // draw(true);
-      // bug("** Finished doing mondo draw.");
-      // DrawingBuffer db = main.getBuffer("scribble fill");
-      // if (db != null) {
-      // main.addToLayer("fill", db);
-      // }
+      bug("done filling");
+      draw(true);
+      bug("** Finished doing mondo draw.");
     }
     filling = false;
   }
@@ -240,14 +217,22 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   // ---------------------------------------- member functions for making a filled region ---------
   //
 
-  private void draw() {
+  private void draw(boolean done) {
     DrawingBuffer db = new DrawingBuffer();
     // DrawingBufferRoutines.dots(db, penPath, 2.0, 0.2, Color.BLACK, Color.BLUE);
-    DrawingBufferRoutines.meshBoundary(db, mesh, Color.RED, 2.0);
-    DrawingBufferRoutines.meshFiniteEdges(db, mesh, Color.GRAY, 1.0);
-    DrawingBufferRoutines.dots(db, mesh.getPoints(), 2.0, 0.2, Color.BLACK, Color.GREEN);
-    DrawingBufferRoutines.mesh(db, mesh);
-    main.addBuffer("scribble fill", db);
+    // DrawingBufferRoutines.meshBoundary(db, mesh, Color.RED, 2.0);
+    // DrawingBufferRoutines.meshFiniteEdges(db, mesh, Color.GRAY, 1.0);
+    // DrawingBufferRoutines.dots(db, mesh.getPoints(), 2.0, 0.2, Color.BLACK, Color.GREEN);
+    mesh.classifyTriangles();
+    DrawingBufferRoutines.triangles(db, mesh.getInsideTriangles(), main.getPenColor());
+    if (done) {
+      data.forget(seq, false);
+      data.getRegions().add(mesh);
+      main.addToLayer("fill", db);
+      main.removeBuffer("scribble fill"); // the 'fill' layer will show it now---avoid double draw
+    } else {
+      main.addBuffer("scribble fill", db);
+    }
   }
 
   private void expandRegion() {
@@ -256,7 +241,7 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
       penPath.add(here);
       lastDrag = here;
       mesh.addPoint(here);
-      draw();
+      draw(false);
     }
   }
 
@@ -341,7 +326,6 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   public static Map<String, BoundedParameter> getDefaultParameters() {
     Map<String, BoundedParameter> defs = new HashMap<String, BoundedParameter>();
-
     return defs;
   }
 

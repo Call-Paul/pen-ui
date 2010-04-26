@@ -8,14 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
+import java.util.*;
 
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.Main;
@@ -48,6 +41,7 @@ public class Mesh {
   List<Pt> allPoints;
   Set<Triangle> triangles;
   List<Pt> rootPoints;
+  boolean dirty = true;
 
   public static void main(String[] args) throws IOException {
     Debug.useColor = false;
@@ -73,6 +67,7 @@ public class Mesh {
     mesh.setSequenceMatters(true);
     for (Pt pt : data) {
       mesh.addPoint(pt);
+      mesh.classifyTriangles();
     }
     snap(mesh, "Final State!");
   }
@@ -180,14 +175,45 @@ public class Mesh {
    * Classify each triangle as Where.Inside or Where.Outside.
    */
   public void classifyTriangles() {
-    Set<Triangle> infinite = new HashSet<Triangle>();
-    for (Triangle t : triangles) {
-      t.setLocation(Where.Unknown);
-      if (t.involvesPoints(rootPoints)) {
-        infinite.add(t);
+    if (dirty) {
+      Stack<Triangle> infinite = new Stack<Triangle>();
+      for (Triangle t : triangles) {
+        t.setLocation(Where.Unknown);
+        if (t.involvesPoints(rootPoints)) {
+          infinite.push(t);
+        }
+      }
+      classifyTriangles(infinite);
+      for (Triangle t : triangles) {
+        if (t.getMeshLocation() == Where.Unknown) {
+          t.setLocation(Where.Inside);
+        }
+      }
+      dirty = false;
+    }
+  }
+
+  private void classifyTriangles(Stack<Triangle> uncategorized) {
+    if (!uncategorized.isEmpty()) {
+      Triangle classifyMe = uncategorized.pop();
+      classifyMe.setLocation(Where.Outside);
+      Set<Triangle> neighbors = classifyMe.getAdjacentTriangles();
+      for (Triangle n : neighbors) {
+        if (n.getMeshLocation() == Where.Unknown) {
+          HalfEdge common = classifyMe.getCommonEdge(n);
+          if (common != null) {
+            if (!common.isBoundary()) {
+              uncategorized.push(n);
+            }
+          } else {
+            warn("Failed to find common edge between supposedly neighboring triangles");
+          }
+        }
       }
     }
-
+    if (!uncategorized.isEmpty()) {
+      classifyTriangles(uncategorized);
+    }
   }
 
   public long getTime() {
@@ -219,7 +245,7 @@ public class Mesh {
           }
         }
       }
-//      snap(this, "fixMesh(): " + numRepaired + " repaired");
+      // snap(this, "fixMesh(): " + numRepaired + " repaired");
     } while (numRepaired > 0);
   }
 
@@ -281,7 +307,7 @@ public class Mesh {
   }
 
   public boolean addPoint(Pt newVert) {
-//    snap(this, "addPoint(" + newVert.getID() + "), before");
+    // snap(this, "addPoint(" + newVert.getID() + "), before");
     boolean ret = false;
     // if sequence matters, find intersection points and insert them as well.
     boolean insertedIntersectionPoint = false;
@@ -310,6 +336,7 @@ public class Mesh {
     boolean ret = false;
     if (!allPoints.contains(newVert)) {
       allPoints.add(newVert);
+      dirty = true;
       TriangleWhere tw = findTriangle(newVert, showDebug);
       if (showDebug) {
         // bug("addPointNow for point " + newVert.getID() + ": tw.where: " + tw.where);
@@ -428,8 +455,8 @@ public class Mesh {
         repair(newVert, t);
       }
     }
-//    snap(this, "addPointOnEdge(): " + allPoints.size() + " points. edge: " + splitMe.id
-//        + ", vertex: " + newVert.getID());
+    // snap(this, "addPointOnEdge(): " + allPoints.size() + " points. edge: " + splitMe.id
+    // + ", vertex: " + newVert.getID());
   }
 
   private void retainBoundaryEdges(HalfEdge oldEdge, HalfEdge... newEdges) {
@@ -440,33 +467,34 @@ public class Mesh {
 
   private void maybeSetBoundaryEdges(HalfEdge... newEdges) {
     if (sequenceMatters && allPoints.size() > 1) {
-//      StringBuilder buf = new StringBuilder();
+      // StringBuilder buf = new StringBuilder();
       Pt ult = allPoints.get(allPoints.size() - 1);
       Pt penult = allPoints.get(allPoints.size() - 2);
-//      buf.append("Looking for [" + penult.getID() + " -> " + ult.getID() + "] in ");
-//      boolean marked = false;
+      // buf.append("Looking for [" + penult.getID() + " -> " + ult.getID() + "] in ");
+      // boolean marked = false;
       for (HalfEdge e : newEdges) {
         if (e.getPair() != null) {
-//          buf.append("[" + e.getPair().getPoint().getID() + " -> " + e.getPoint().getID() + "] ");
+          // buf.append("[" + e.getPair().getPoint().getID() + " -> " + e.getPoint().getID() +
+          // "] ");
           boolean result = e.getPoint() == ult && e.getPair().getPoint() == penult;
           if (result) {
-//            bug("Edge from " + e.getPair().getPoint().getID() + " -> " + e.getPoint().getID()
-//                + " is a boundary.");
+            // bug("Edge from " + e.getPair().getPoint().getID() + " -> " + e.getPoint().getID()
+            // + " is a boundary.");
             markBoundary(e);
-//            marked = true;
+            // marked = true;
           }
         }
       }
-//      buf.append("... marked: " + marked);
-//      bug(buf.toString());
+      // buf.append("... marked: " + marked);
+      // bug(buf.toString());
     }
   }
 
   private void addPointInside(Triangle splitMe, Pt newVert) {
     // bug("addPointInside() with triangle " + splitMe.id + ", vertex " + newVert.getID());
     double[] bar = splitMe.getBarycentricCoordinates(newVert);
-//    bug("  barycentric coordinates of that point in this triangle: " + bar[0] + ", " + bar[1]
-//        + ", sum: " + (bar[0] + bar[1]));
+    // bug("  barycentric coordinates of that point in this triangle: " + bar[0] + ", " + bar[1]
+    // + ", sum: " + (bar[0] + bar[1]));
     HalfEdge e1, e2, e3;
     HalfEdge n1, n2, n3, n1p, n2p, n3p;
     Triangle t1, t2, t3;
@@ -516,9 +544,9 @@ public class Mesh {
     // warn("Could not establish boundary!");
     // }
     // }
-//    snap(this, "addPointInside, before setting bounds");
+    // snap(this, "addPointInside, before setting bounds");
     maybeSetBoundaryEdges(n1, n2, n3);
-//    snap(this, "addPointInside, before repair");
+    // snap(this, "addPointInside, before repair");
     if (!isDelaunay(newVert, t1)) {
       repair(newVert, t1);
     }
@@ -529,8 +557,8 @@ public class Mesh {
       repair(newVert, t3);
     }
 
-//    snap(this, "addPointInside(): " + allPoints.size() + " points. triangle " + splitMe.id
-//        + ", vertex " + newVert.getID());
+    // snap(this, "addPointInside(): " + allPoints.size() + " points. triangle " + splitMe.id
+    // + ", vertex " + newVert.getID());
   }
 
   private void markBoundary(HalfEdge edge) {
@@ -540,7 +568,7 @@ public class Mesh {
   }
 
   private void repair(Pt vert, Triangle t) {
-//    bug("repair vertex " + vert.getID() + ", triangle " + t.id + t.getVertIds());
+    // bug("repair vertex " + vert.getID() + ", triangle " + t.id + t.getVertIds());
     if (sequenceMatters) {
       HalfEdge a, b, c, f;
       HalfEdge cursor = t.getEdge();
@@ -552,15 +580,16 @@ public class Mesh {
       f = b.getPair();
 
       if (b.isBoundary() || f.isBoundary()) {
-//        bug("Inserting on edge rather than flipping and destroying the boundary.");
+        // bug("Inserting on edge rather than flipping and destroying the boundary.");
         HalfEdge d = f.getNext();
         HalfEdge e = d.getNext();
         Pt intersection = Functions.getIntersectionPoint(new Line(c.getPoint(), d.getPoint()),
             new Line(a.getPoint(), e.getPoint()));
         addPointOnEdge(b, intersection);
-//        snap(this, "repair() with vertex " + vert.getID() + ", triangle " + t.id);
+        // snap(this, "repair() with vertex " + vert.getID() + ", triangle " + t.id);
       } else {
-//        bug("Not dealing with a boundary when repairing vertex " + vert.getID() + ", so flip away.");
+        // bug("Not dealing with a boundary when repairing vertex " + vert.getID() +
+        // ", so flip away.");
         flip(vert, t);
       }
     } else {
@@ -578,7 +607,7 @@ public class Mesh {
     Triangle w, x, y, z;
     HalfEdge cursor = t.getEdge();
     cursor = advance(cursor, vert);
-    
+
     c = cursor;
     a = c.getNext();
     b = a.getNext();
@@ -588,7 +617,7 @@ public class Mesh {
     w = d.getFace();
     x = a.getFace();
     Set<HalfEdge> boundaryEdges1 = findBoundaryEdges(a, d, e, c);
-    
+
     if (b.isBoundary() || f.isBoundary()) {
       warn("Flipping boundary! You should not do this!");
     }
@@ -612,7 +641,7 @@ public class Mesh {
     triangles.remove(x);
     triangles.add(y);
     triangles.add(z);
-    
+
     Set<HalfEdge> boundaryEdges2 = findBoundaryEdges(a, d, e, c);
     if (!boundaryEdges2.equals(boundaryEdges1)) {
       warn("Something got messed up with boundary edges.");
@@ -645,11 +674,12 @@ public class Mesh {
     Set<HalfEdge> bounds = new HashSet<HalfEdge>();
     for (HalfEdge ed : eds) {
       if (ed.isBoundary()) {
-//        bug("Boundary edge: " + ed.getPair().getPoint().getID() + " -> " + ed.getPoint().getID());
+        // bug("Boundary edge: " + ed.getPair().getPoint().getID() + " -> " +
+        // ed.getPoint().getID());
         bounds.add(ed);
       }
     }
-   return bounds;
+    return bounds;
   }
 
   // /**
