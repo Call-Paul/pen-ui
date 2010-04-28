@@ -13,6 +13,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.util.gui.Colors;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 
@@ -73,9 +74,17 @@ public class ColorBar extends JPanel {
 
   public Cursor getCursor() {
     DrawingBuffer db = new DrawingBuffer();
-    double where = (thickness / 2);
-    Pt hot = new Pt(where, where);
-    DrawingBufferRoutines.dot(db, hot, thickness / 2, 1.0, currentColor, currentColor);
+    double t2 = thickness / 2;
+    // double where = (thickness / 2);
+    Pt hot = new Pt(t2, t2);
+    //    DrawingBufferRoutines.dot(db, hot, t2, 1.0, Color.black, currentColor);
+    // if (thickness < 3) {
+    if (Colors.isDark(currentColor)) {
+      DrawingBufferRoutines.dot(db, hot, Math.max(t2, 1.5), 1.0, Color.white, currentColor);
+    } else {
+      DrawingBufferRoutines.dot(db, hot, Math.max(t2, 1.5), 1.0, Color.black, currentColor);
+    }
+    // }
     Image im = db.getImage();
     Cursor ret = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(im,
         new Point(hot.ix(), hot.iy()), "pen");
