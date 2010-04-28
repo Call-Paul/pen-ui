@@ -179,7 +179,6 @@ public class GestureTap extends GestureShapeTemplate {
    */
   private Pt scaleAndRotateWire(Primitive prim, Pt st) {
     Pt ret = null;
-//    bug("Doing scale/rotate thing on " + prim + " (" + Debug.num(prim.getLength()) + " px long)");
     if (prim.getSeq().getAttribute(Neanderthal.SCRAP) != null) {
       bug("Hmm, i'm about to manipulate a scrap sequence, and that isn't right.");
     }
@@ -224,7 +223,6 @@ public class GestureTap extends GestureShapeTemplate {
     data.getStructurePoints().add(st);
   }
 
-  @SuppressWarnings("unchecked")
   private int countTaps(Pt st, long time) {
     int ret = 0;
     List<Long> tapTimes = (List<Long>) st.getList("taps");
@@ -245,7 +243,6 @@ public class GestureTap extends GestureShapeTemplate {
     return ret;
   }
 
-  @SuppressWarnings("unchecked")
   private void addTap(Pt st, long time) {
     if (st.getList("taps") == null) {
       st.setList("taps", new ArrayList<Long>());

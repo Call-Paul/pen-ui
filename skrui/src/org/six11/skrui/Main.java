@@ -2,7 +2,6 @@ package org.six11.skrui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.KeyEvent;
@@ -48,7 +47,6 @@ import com.lowagie.text.pdf.PdfWriter;
 
 import org.json.JSONException;
 import org.six11.skrui.data.Journal;
-import org.six11.skrui.script.Scribbler2;
 import org.six11.skrui.ui.ColorBar;
 import org.six11.skrui.ui.DrawingSurface;
 import org.six11.util.Debug;
@@ -172,7 +170,6 @@ public class Main {
     makeInstance(args);
   }
 
-  @SuppressWarnings("unchecked")
   public static Class<SkruiScript> loadScript(String name) throws ClassNotFoundException {
     Class<SkruiScript> ret = null;
     String thisPackage = Main.class.getPackage().getName();
@@ -1070,7 +1067,6 @@ public class Main {
     fireChange();
   }
 
-  @SuppressWarnings("unused")
   private void setCurrentFile(File f) throws FileNotFoundException, IOException {
     if (f != null && f.exists()) {
       currentFile = f.getAbsoluteFile();

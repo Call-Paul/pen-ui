@@ -78,6 +78,7 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
     return ret;
   }
   
+  @SuppressWarnings("unused")
   private void bug(String what) {
     Debug.out("GestureRecognizerDomain", what);
   }

@@ -68,7 +68,6 @@ public class Recognition extends SkruiScript implements PrimitiveListener {
     return ret;
   }
 
-  @SuppressWarnings("unchecked")
   private Set<Primitive> getNear(Primitive source, double dist) {
     Set<Primitive> ret = new HashSet<Primitive>();
     Set<Pt> out = new HashSet<Pt>();

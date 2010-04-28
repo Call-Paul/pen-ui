@@ -6,8 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +25,6 @@ import org.six11.skrui.shape.Ellipse;
 import org.six11.skrui.shape.LineSegment;
 import org.six11.skrui.shape.Primitive;
 import org.six11.util.Debug;
-import org.six11.util.data.GaussianHat;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -48,7 +45,6 @@ public class Journal {
   Map<String, Class> missedPointAttributes;
   Map<String, Class> missedSequenceAttributes;
 
-  @SuppressWarnings("unchecked")
   public Journal(Main main) {
     this.main = main;
     this.pointMap = new HashMap<Integer, Pt>();
@@ -57,7 +53,6 @@ public class Journal {
     validSequenceAttributes.put("pen thickness", Double.class);
     validSequenceAttributes.put("pen color", Color.class);
     validSequenceAttributes.put(Neanderthal.SCRAP, Boolean.class);
-    // validSequenceAttributes.add(Neanderthal.PRIMITIVES);
 
     validPointAttributes = new HashMap<String, Class>();
     validPointAttributes.put("corner", Boolean.class);
@@ -125,7 +120,6 @@ public class Journal {
 
   public JSONObject makeJsonSequence(Sequence seq) throws JSONException {
     JSONObject jsonSeq = null;
-    // if (seq.getAttribute(Neanderthal.SCRAP) == null) {
     jsonSeq = new JSONObject();
     jsonSeq.put("id", seq.getId());
     JSONArray jsonPointArray = new JSONArray();
@@ -147,11 +141,9 @@ public class Journal {
         missedSequenceAttributes.put(att, seq.getAttribute(att).getClass());
       }
     }
-    // }
     return jsonSeq;
   }
 
-  @SuppressWarnings("unchecked")
   public Sequence makeSequence(JSONObject jsonSeq) throws JSONException {
     int id = jsonSeq.getInt("id");
     Sequence seq = new Sequence(id);

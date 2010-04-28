@@ -27,7 +27,6 @@ public abstract class SkruiScript {
     return script;
   }
 
-  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("DrawingScript", what);
   }
@@ -38,11 +37,11 @@ public abstract class SkruiScript {
   protected SkruiScript() {
 
   }
-    
+
   public Main getMain() {
     return main;
   }
-  
+
   protected BoundedParameter getParam(String key) {
     return main.getParam(key);
   }
@@ -56,8 +55,6 @@ public abstract class SkruiScript {
   }
 
   public abstract Map<String, BoundedParameter> initializeParameters(Arguments args);
-  
-  
 
   public static Map<String, BoundedParameter> copyParameters(Map<String, BoundedParameter> orig) {
     Map<String, BoundedParameter> ret = new HashMap<String, BoundedParameter>();
@@ -79,13 +76,14 @@ public abstract class SkruiScript {
    */
   public abstract void initialize();
 
-  public JSONObject getSaveData(Journal jnl) throws JSONException {
+  public JSONObject getSaveData(@SuppressWarnings("unused") Journal jnl) throws JSONException {
     bug("Script '" + getClass() + "' does not implement getSaveData()");
     return null;
   }
-  
-  public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
-    bug("Script '" + getClass() + "' does not implement openSaveData(JSONObject)");    
+
+  public void openSaveData(@SuppressWarnings("unused") Journal jnl,
+      @SuppressWarnings("unused") JSONObject job) throws JSONException {
+    bug("Script '" + getClass() + "' does not implement openSaveData(JSONObject)");
   }
 
   public Cursor getCursor() {

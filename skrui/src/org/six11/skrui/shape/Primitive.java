@@ -60,7 +60,6 @@ public abstract class Primitive implements Comparable<Primitive> {
    * @param cert
    *          the certainty that the user intended to draw what it is advertised to be.
    */
-  @SuppressWarnings("unchecked")
   public Primitive(Sequence seq, int startIdx, int endIdx, Certainty cert) {
     this(++ID_COUNTER, seq, startIdx, endIdx, cert);
   }

@@ -1,7 +1,6 @@
 package org.six11.skrui.mesh;
 
 import java.awt.Color;
-import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.io.BufferedReader;
 import java.io.File;
@@ -491,10 +490,6 @@ public class Mesh {
   }
 
   private void addPointInside(Triangle splitMe, Pt newVert) {
-    // bug("addPointInside() with triangle " + splitMe.id + ", vertex " + newVert.getID());
-    double[] bar = splitMe.getBarycentricCoordinates(newVert);
-    // bug("  barycentric coordinates of that point in this triangle: " + bar[0] + ", " + bar[1]
-    // + ", sum: " + (bar[0] + bar[1]));
     HalfEdge e1, e2, e3;
     HalfEdge n1, n2, n3, n1p, n2p, n3p;
     Triangle t1, t2, t3;
@@ -531,22 +526,7 @@ public class Mesh {
     triangles.add(t2);
     triangles.add(t3);
 
-    // if (sequenceMatters && allPoints.size() > 1) { // if order matters, mark a new edge as
-    // boundary
-    // Pt prevPt = allPoints.get(allPoints.size() - 2);
-    // if (e1.getPoint() == prevPt) {
-    // markBoundary(n1); // marks n1 and n1's pair
-    // } else if (e2.getPoint() == prevPt) {
-    // markBoundary(n2);
-    // } else if (e3.getPoint() == prevPt) {
-    // markBoundary(n3);
-    // } else {
-    // warn("Could not establish boundary!");
-    // }
-    // }
-    // snap(this, "addPointInside, before setting bounds");
     maybeSetBoundaryEdges(n1, n2, n3);
-    // snap(this, "addPointInside, before repair");
     if (!isDelaunay(newVert, t1)) {
       repair(newVert, t1);
     }
@@ -556,19 +536,14 @@ public class Mesh {
     if (triangles.contains(t3) && !isDelaunay(newVert, t3)) {
       repair(newVert, t3);
     }
-
-    // snap(this, "addPointInside(): " + allPoints.size() + " points. triangle " + splitMe.id
-    // + ", vertex " + newVert.getID());
   }
 
   private void markBoundary(HalfEdge edge) {
-    // bug("Marking boundary for edge and its pair.");
     edge.setBoundary(true);
     edge.getPair().setBoundary(true);
   }
 
   private void repair(Pt vert, Triangle t) {
-    // bug("repair vertex " + vert.getID() + ", triangle " + t.id + t.getVertIds());
     if (sequenceMatters) {
       HalfEdge a, b, c, f;
       HalfEdge cursor = t.getEdge();
@@ -580,16 +555,12 @@ public class Mesh {
       f = b.getPair();
 
       if (b.isBoundary() || f.isBoundary()) {
-        // bug("Inserting on edge rather than flipping and destroying the boundary.");
         HalfEdge d = f.getNext();
         HalfEdge e = d.getNext();
         Pt intersection = Functions.getIntersectionPoint(new Line(c.getPoint(), d.getPoint()),
             new Line(a.getPoint(), e.getPoint()));
         addPointOnEdge(b, intersection);
-        // snap(this, "repair() with vertex " + vert.getID() + ", triangle " + t.id);
       } else {
-        // bug("Not dealing with a boundary when repairing vertex " + vert.getID() +
-        // ", so flip away.");
         flip(vert, t);
       }
     } else {
@@ -616,7 +587,6 @@ public class Mesh {
     e = d.getNext();
     w = d.getFace();
     x = a.getFace();
-    Set<HalfEdge> boundaryEdges1 = findBoundaryEdges(a, d, e, c);
 
     if (b.isBoundary() || f.isBoundary()) {
       warn("Flipping boundary! You should not do this!");
@@ -642,45 +612,29 @@ public class Mesh {
     triangles.add(y);
     triangles.add(z);
 
-    Set<HalfEdge> boundaryEdges2 = findBoundaryEdges(a, d, e, c);
-    if (!boundaryEdges2.equals(boundaryEdges1)) {
-      warn("Something got messed up with boundary edges.");
-      warn("Set 1: ");
-      for (HalfEdge ed : boundaryEdges1) {
-        warn(ed.getVertexOrderString());
-      }
-      warn("Set 2: ");
-      for (HalfEdge ed : boundaryEdges2) {
-        warn(ed.getVertexOrderString());
-      }
-    }
     for (Pt pt : y.getPoints()) {
       if (triangles.contains(y) && !isDelaunay(pt, y)) {
-        // bug("(1) Flip triangle with verts " + y.getVertIds() + " using vert " + pt.getID()
-        // + ". Input triangle and vert: " + t.getVertIds() + ", " + vert.getID());
         repair(pt, y);
       }
     }
     for (Pt pt : z.getPoints()) {
       if (triangles.contains(z) && !isDelaunay(pt, z)) {
-        // bug("(2) Flip triangle with verts " + z.getVertIds() + " using vert " + pt.getID()
-        // + ". Input triangle and vert: " + t.getVertIds() + ", " + vert.getID());
         repair(pt, z);
       }
     }
   }
 
-  private Set<HalfEdge> findBoundaryEdges(HalfEdge... eds) {
-    Set<HalfEdge> bounds = new HashSet<HalfEdge>();
-    for (HalfEdge ed : eds) {
-      if (ed.isBoundary()) {
-        // bug("Boundary edge: " + ed.getPair().getPoint().getID() + " -> " +
-        // ed.getPoint().getID());
-        bounds.add(ed);
-      }
-    }
-    return bounds;
-  }
+//  private Set<HalfEdge> findBoundaryEdges(HalfEdge... eds) {
+//    Set<HalfEdge> bounds = new HashSet<HalfEdge>();
+//    for (HalfEdge ed : eds) {
+//      if (ed.isBoundary()) {
+//        // bug("Boundary edge: " + ed.getPair().getPoint().getID() + " -> " +
+//        // ed.getPoint().getID());
+//        bounds.add(ed);
+//      }
+//    }
+//    return bounds;
+//  }
 
   // /**
   // * returns true if one triangle is Inside, and the other is Outside.

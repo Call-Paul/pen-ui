@@ -111,7 +111,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     main.addSequenceListener(this);
   }
 
-  @SuppressWarnings("unchecked")
   public JSONObject getSaveData(Journal jnl) throws JSONException {
     JSONObject ret = new JSONObject();
 
@@ -362,7 +361,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public static SortedSet<Primitive> getPrimitiveSet(Sequence seq) {
     return (SortedSet<Primitive>) seq.getAttribute(Neanderthal.PRIMITIVES);
   }
@@ -370,7 +368,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   /**
    * For each point in the primitive, add the primitive to the point's primitive list.
    */
-  @SuppressWarnings("unchecked")
   private void addPrimitiveToPoints(Primitive prim) {
     for (int i = prim.getStartIdx(); i <= prim.getEndIdx(); i++) {
       Pt pt = prim.getSeq().get(i);
@@ -381,7 +378,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public static Set<Primitive> getPrimitives(Set<Pt> points) {
     // each point has a main sequence. that sequence has a list of primitives. a point may be in
     // zero, one, or more of them. Return all primitives related to the input points.
@@ -589,6 +585,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
   }
 
+  @SuppressWarnings("unused")
   private static String getIDList(Collection<Pt> points) {
     StringBuilder buf = new StringBuilder();
     for (Pt pt : points) {
@@ -612,7 +609,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
     // bug("Forgetting sequence " + seq.getId() + " with " + seq.size() + " points. There are now "
     // + forgottenSequences.size() + " forgotten sequences.");
-    makeScrap(seq, "Neanderthal forget(sequence)");
+    makeScrap(seq);
     if (getMain().getDrawingBufferForSequence(seq) != null) {
       getMain().getDrawingBufferForSequence(seq).setVisible(false);
     }
@@ -661,7 +658,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     Debug.out("Neanderthal", what);
   }
 
-  public void makeScrap(Sequence scrapMe, String reason) {
+  public void makeScrap(Sequence scrapMe) {
     // bug("Turning sequence " + scrapMe.getId() + " into scrap. Reason: " + reason);
     scrapMe.setAttribute(Neanderthal.SCRAP, "true");
   }

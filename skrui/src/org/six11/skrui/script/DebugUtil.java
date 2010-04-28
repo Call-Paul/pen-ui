@@ -231,7 +231,6 @@ public class DebugUtil {
     }
   }
 
-  @SuppressWarnings("unchecked")
   void drawParallelPerpendicular(Sequence seq) {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;

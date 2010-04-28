@@ -158,6 +158,7 @@ public abstract class ShapeTemplate {
     return ret;
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ShapeTemplate", what);
   }
