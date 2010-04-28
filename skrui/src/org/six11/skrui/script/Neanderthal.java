@@ -345,7 +345,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   }
 
   private void recordPrimitive(Primitive prim) {
-    bug("Recording primitive: " + prim.getShortStr());
     getEndPoints().add(prim.getSeq().get(prim.getStartIdx()));
     getEndPoints().add(prim.getSeq().get(prim.getEndIdx()));
     if (prim instanceof LineSegment) {

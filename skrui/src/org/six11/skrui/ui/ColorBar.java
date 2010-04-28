@@ -1,13 +1,20 @@
 package org.six11.skrui.ui;
 
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Point;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
+
+import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.Pt;
 
 /**
  * 
@@ -64,6 +71,17 @@ public class ColorBar extends JPanel {
     }
   }
 
+  public Cursor getCursor() {
+    DrawingBuffer db = new DrawingBuffer();
+    double where = (thickness / 2);
+    Pt hot = new Pt(where, where);
+    DrawingBufferRoutines.dot(db, hot, thickness / 2, 1.0, currentColor, currentColor);
+    Image im = db.getImage();
+    Cursor ret = java.awt.Toolkit.getDefaultToolkit().createCustomCursor(im,
+        new Point(hot.ix(), hot.iy()), "pen");
+    return ret;
+  }
+
   protected void whackThicknessForeground() {
     for (PenSquare ps : squares) {
       if (ps instanceof ThicknessSquare) {
@@ -89,7 +107,7 @@ public class ColorBar extends JPanel {
   public Color getCurrentColor() {
     return currentColor;
   }
-  
+
   public double getCurrentThickness() {
     return thickness;
   }

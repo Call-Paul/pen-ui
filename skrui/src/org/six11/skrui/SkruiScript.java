@@ -1,5 +1,6 @@
 package org.six11.skrui;
 
+import java.awt.Cursor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,6 +86,10 @@ public abstract class SkruiScript {
   
   public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
     bug("Script '" + getClass() + "' does not implement openSaveData(JSONObject)");    
+  }
+
+  public Cursor getCursor() {
+    return null;
   }
 
 }

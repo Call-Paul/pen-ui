@@ -2,6 +2,7 @@ package org.six11.skrui;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -161,6 +162,43 @@ public abstract class DrawingBufferRoutines {
     bug(seg.toString());
   }
 
+  public static void drawShape(DrawingBuffer db, List<Pt> corners, Color color, double thickness) {
+    if (db.isVisible() && corners.size() > 3) {
+      db.up();
+      GeneralPath gp = makePath(corners);
+      db.setColor(color);
+      db.setThickness(thickness);
+      db.down();
+      db.addShape(gp);
+      db.up();
+    }
+  }
+
+  public static void fillShape(DrawingBuffer db, List<Pt> corners, Color fillColor,
+      double borderThickness) {
+    if (db.isVisible() && corners.size() > 3) {
+      GeneralPath gp = makePath(corners);
+      db.up();
+      db.setFillColor(fillColor);
+      db.setFilling(true);
+      db.setColor(fillColor);
+      db.setThickness(borderThickness);
+      db.down();
+      db.addShape(gp);
+      db.up();
+      db.setFilling(false);
+    }
+  }
+  
+  public static GeneralPath makePath(List<Pt> corners) {
+    GeneralPath gp = new GeneralPath(GeneralPath.WIND_NON_ZERO, corners.size());
+    gp.moveTo(corners.get(0).getX(), corners.get(1).getY());
+    for (int i = 1; i < corners.size(); i++) {
+      gp.lineTo(corners.get(i).getX(), corners.get(i).getY());
+    }
+    return gp;
+  }
+
   public static void dot(DrawingBuffer db, Pt center, double radius, double thickness,
       Color borderColor, Color fillColor) {
     if (db.isVisible()) {
@@ -299,8 +337,8 @@ public abstract class DrawingBufferRoutines {
   }
 
   public static void mesh(DrawingBuffer db, Mesh mesh) {
-//    List<Pt> points = mesh.getPoints();
-//    dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
+    // List<Pt> points = mesh.getPoints();
+    // dots(db, points, 2.0, 0.6, Color.LIGHT_GRAY, Color.LIGHT_GRAY);
     Color cCentInside = new Color(0, 0, 255, 50);
     // Color cCentLegit = new Color(255, 0, 0, 50);
     Set<Triangle> inside = mesh.getInsideTriangles();
@@ -322,11 +360,11 @@ public abstract class DrawingBufferRoutines {
 
   public static void triangles(DrawingBuffer db, Set<Triangle> manyTriangles, Color color) {
     for (Triangle t : manyTriangles) {
-      if (t.getArea() > 10000) {
-        bug("This triangle is large: " + t + Debug.num(t.getArea()));
-      } else {
-        triangle(db, t, color);
-      }
+      // if (t.getArea() > 10000) {
+      // bug("This triangle is large: " + t + Debug.num(t.getArea()));
+      // } else {
+      triangle(db, t, color);
+      // }
     }
   }
 
@@ -463,5 +501,7 @@ public abstract class DrawingBufferRoutines {
     }
     System.out.println("-------------------------------------------------------------------------");
   }
+
+
 
 }

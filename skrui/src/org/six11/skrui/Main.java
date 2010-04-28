@@ -2,6 +2,7 @@ package org.six11.skrui;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.KeyEvent;
@@ -47,6 +48,7 @@ import com.lowagie.text.pdf.PdfWriter;
 
 import org.json.JSONException;
 import org.six11.skrui.data.Journal;
+import org.six11.skrui.script.Scribbler2;
 import org.six11.skrui.ui.ColorBar;
 import org.six11.skrui.ui.DrawingSurface;
 import org.six11.util.Debug;
@@ -133,6 +135,7 @@ public class Main {
   private Set<Action> anonActions = new HashSet<Action>();
   private Map<String, BoundedParameter> params = new HashMap<String, BoundedParameter>();
   private Map<String, SkruiScript> scripts = new HashMap<String, SkruiScript>();
+  private SkruiScript transientMode;
 
   public static void main(String[] in) throws IOException, JSONException {
     Arguments args = getArgumentSpec();
@@ -310,13 +313,15 @@ public class Main {
       }
       af.center();
       af.setVisible(true);
+      ds.setCursor(colorBar.getCursor());
     }
+
   }
 
   public Set<String> getScriptNames() {
     return scripts.keySet();
   }
-  
+
   public void setPenColor(Color pc) {
     penColor = pc;
   }
@@ -486,7 +491,7 @@ public class Main {
   }
 
   public void addFinishedSequenceNoninteractively(Sequence s) {
-//    bug("making a buffer and adding it to data structures.");
+    // bug("making a buffer and adding it to data structures.");
     DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
     seqToDrawBuf.put(s, buf);
     drawingBuffers.add(buf);
@@ -550,8 +555,10 @@ public class Main {
       public void propertyChange(PropertyChangeEvent evt) {
         if (evt.getPropertyName().equals("pen color")) {
           setPenColor((Color) evt.getNewValue());
+          whackCursor();
         } else if (evt.getPropertyName().equals("pen thickness")) {
           setPenThickness((Double) evt.getNewValue());
+          whackCursor();
         }
       }
     });
@@ -704,8 +711,8 @@ public class Main {
       timestamps.add(System.currentTimeMillis());
       if (timestamps.size() == 4) {
         Statistics diffs = new Statistics();
-        for (int idx=0; idx < timestamps.size() - 1; idx++) {
-          diffs.addData(timestamps.get(idx+1) - timestamps.get(idx));
+        for (int idx = 0; idx < timestamps.size() - 1; idx++) {
+          diffs.addData(timestamps.get(idx + 1) - timestamps.get(idx));
         }
         if (diffs.getMean() < 400) {
           db = new DrawingBuffer();
@@ -945,11 +952,14 @@ public class Main {
    * Returns a list of all cached drawing buffers.
    */
   public List<DrawingBuffer> getDrawingBuffers() {
-    if (combinedBuffers == null) {
+    if (combinedBuffers == null) { // Could use 'addAll' but looping helps with debugging sometimes
       combinedBuffers = new ArrayList<DrawingBuffer>();
       combinedBuffers.addAll(drawingBuffers);
-      combinedBuffers.addAll(namedBuffers.values());
-      for (List<DrawingBuffer> layer : layers.values()) {
+      for (String name : namedBuffers.keySet()) {
+        combinedBuffers.add(namedBuffers.get(name));
+      }
+      for (String name : layers.keySet()) {
+        List<DrawingBuffer> layer = layers.get(name);
         combinedBuffers.addAll(layer);
       }
     }
@@ -1133,5 +1143,27 @@ public class Main {
     }
     document.close();
     System.out.println("Wrote " + file.getAbsolutePath());
+  }
+
+  public void setTransientMode(SkruiScript skript) {
+    transientMode = skript;
+    whackCursor();
+  }
+
+  public SkruiScript getTransientMode() {
+    return transientMode;
+  }
+
+  public void clearTransientMode() {
+    transientMode = null;
+    whackCursor();
+  }
+
+  private void whackCursor() {
+    if (transientMode != null) {
+      ds.setCursor(transientMode.getCursor());
+    } else {
+      ds.setCursor(colorBar.getCursor());
+    }
   }
 }

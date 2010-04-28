@@ -1,13 +1,21 @@
 package org.six11.skrui.script;
 
+import java.awt.Color;
+import java.awt.Cursor;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
+import org.six11.skrui.mesh.Triangle;
+import org.six11.skrui.mesh.Where;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -40,6 +48,8 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   List<Pt> penPath;
   Mesh mesh;
   Pt lastDrag;
+
+  private double previousThickness;
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
@@ -87,7 +97,11 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   private void beginFill() {
     filling = true;
+    main.setTransientMode(this);
     data.forget(seq, false);
+    previousThickness = main.getPenThickness();
+    seq.setAttribute("pen thickness", 1.0);
+    main.setPenThickness(1.0);
     ConvexHull hull = new ConvexHull(getPossibleCorners());
     penPath = new ArrayList<Pt>(hull.getHullClosed());
     mesh = new Mesh();
@@ -97,7 +111,10 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
     }
     lastDrag = seq.getLast();
     draw(false);
-    bug("** FILLING **");
+  }
+  
+  public Cursor getCursor() {
+    return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
   }
 
   private void examine() {
@@ -206,9 +223,9 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   public void sendUp() {
     if (filling) {
-      bug("done filling");
       draw(true);
-      bug("** Finished doing mondo draw.");
+      main.setPenThickness(previousThickness);
+      main.clearTransientMode();
     }
     filling = false;
   }
@@ -218,26 +235,75 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   //
 
   private void draw(boolean done) {
-    DrawingBuffer db = new DrawingBuffer();
-    // DrawingBufferRoutines.dots(db, penPath, 2.0, 0.2, Color.BLACK, Color.BLUE);
-    // DrawingBufferRoutines.meshBoundary(db, mesh, Color.RED, 2.0);
-    // DrawingBufferRoutines.meshFiniteEdges(db, mesh, Color.GRAY, 1.0);
-    // DrawingBufferRoutines.dots(db, mesh.getPoints(), 2.0, 0.2, Color.BLACK, Color.GREEN);
     mesh.classifyTriangles();
-    DrawingBufferRoutines.triangles(db, mesh.getInsideTriangles(), main.getPenColor());
+
     if (done) {
-      data.forget(seq, false);
-      data.getRegions().add(mesh);
-      main.addToLayer("fill", db);
-      main.removeBuffer("scribble fill"); // the 'fill' layer will show it now---avoid double draw
+      drawFinalMesh();
     } else {
+      DrawingBuffer db = new DrawingBuffer();
+      DrawingBufferRoutines.triangles(db, mesh.getInsideTriangles(), main.getPenColor());
       main.addBuffer("scribble fill", db);
     }
   }
 
+  private void drawFinalMesh() {
+    data.forget(seq, false);
+    data.getRegions().add(mesh);
+    main.removeBuffer("scribble fill"); // the 'fill' layer will show it now---avoid double draw
+
+    Set<Triangle> explored = new HashSet<Triangle>();
+    HalfEdge e = getBoundaryEdge(explored);
+    while (e != null) {
+      HalfEdge cursor = e;
+      List<Pt> boundary = new ArrayList<Pt>();
+      do {
+        boundary.add(cursor.getPoint());
+        cursor = crawl(cursor, explored);
+      } while (cursor != e);
+      boundary.add(boundary.get(0));
+      DrawingBuffer shapeBuffer = new DrawingBuffer();
+      DrawingBufferRoutines.fill(shapeBuffer, boundary, main.getPenThickness(), main
+          .getPenColor(), main.getPenColor());
+      main.addToLayer("fill", shapeBuffer);
+      e = getBoundaryEdge(explored); // do it again if there's an unexplored boundary triangle.
+    }
+  }
+
+  private HalfEdge crawl(HalfEdge e, Set<Triangle> explored) {
+    HalfEdge cursor = e.getNext().getPair();
+    explored.add(cursor.getFace());
+    while (cursor.getFace().getMeshLocation() == Where.Inside) {
+      cursor = cursor.getNext().getPair();
+      if (cursor.getFace().getMeshLocation() == Where.Inside) {
+        explored.add(cursor.getFace());
+      }
+    }
+    cursor = cursor.getPair();
+    return cursor;
+  }
+
+  private HalfEdge getBoundaryEdge(Set<Triangle> explored) {
+    HalfEdge ret = null;
+    Set<Triangle> inside = mesh.getInsideTriangles();
+    Set<Triangle> unexplored = new HashSet<Triangle>(inside);
+    unexplored.removeAll(explored);
+    outside: {
+      for (Triangle t : unexplored) {
+        explored.add(t);
+        for (Triangle n : t.getAdjacentTriangles()) {
+          if (n.getMeshLocation() == Where.Outside) {
+            ret = t.getCommonEdge(n);
+            break outside;
+          }
+        }
+      }
+    }
+    return ret;
+  }
+
   private void expandRegion() {
     Pt here = seq.getLast();
-    if (lastDrag.distance(here) > 4 && (here.getTime() - lastDrag.getTime()) > 100) {
+    if (lastDrag.distance(here) > 4 && (here.getTime() - lastDrag.getTime()) > 10) {
       penPath.add(here);
       lastDrag = here;
       mesh.addPoint(here);

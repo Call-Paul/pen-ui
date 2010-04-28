@@ -65,6 +65,7 @@ public class DrawingSurface extends JComponent {
     Shape currentSeq = main.getCurrentSequenceShape(); // the in-progress scribble
     List<DrawingBuffer> buffers = main.getDrawingBuffers(); // finished visual elements
     Collections.sort(buffers, DrawingBuffer.sortByAge);
+    Components.antialias(g);
     for (DrawingBuffer buffer : buffers) {
       if (buffer.isVisible() && useCachedImages) {
         buffer.paste(g);
@@ -73,7 +74,6 @@ public class DrawingSurface extends JComponent {
       }
     }
     if (currentSeq != null && main.isCurrentSequenceShapeVisible()) {
-      Components.antialias(g);
       if (main.getPenColor() != null) {
         g.setColor(main.getPenColor());
       } else {
