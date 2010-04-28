@@ -189,7 +189,7 @@ public abstract class DrawingBufferRoutines {
       db.setFilling(false);
     }
   }
-  
+
   public static GeneralPath makePath(List<Pt> corners) {
     GeneralPath gp = new GeneralPath(GeneralPath.WIND_NON_ZERO, corners.size());
     gp.moveTo(corners.get(0).getX(), corners.get(1).getY());
@@ -201,21 +201,19 @@ public abstract class DrawingBufferRoutines {
 
   public static void dot(DrawingBuffer db, Pt center, double radius, double thickness,
       Color borderColor, Color fillColor) {
-    if (db.isVisible()) {
-      db.up();
-      if (fillColor != null) {
-        db.setFillColor(fillColor);
-        db.setFilling(true);
-      }
-      db.setColor(borderColor);
-      db.setThickness(thickness);
-      Circle circle = new Circle(center.x, center.y, radius);
-      db.down();
-      db.addShape(circle);
-      db.up();
-      if (fillColor != null) {
-        db.setFilling(false);
-      }
+    db.up();
+    if (fillColor != null) {
+      db.setFillColor(fillColor);
+      db.setFilling(true);
+    }
+    db.setColor(borderColor);
+    db.setThickness(thickness);
+    Circle circle = new Circle(center.x, center.y, radius);
+    db.down();
+    db.addShape(circle);
+    db.up();
+    if (fillColor != null) {
+      db.setFilling(false);
     }
   }
 
@@ -501,7 +499,5 @@ public abstract class DrawingBufferRoutines {
     }
     System.out.println("-------------------------------------------------------------------------");
   }
-
-
 
 }
