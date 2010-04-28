@@ -28,7 +28,7 @@ import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.*;
 
-public class Scribbler2 extends SkruiScript implements SequenceListener {
+public class Scribbler extends SkruiScript implements SequenceListener {
 
   /**
    * Reference to the mothership.
@@ -149,7 +149,7 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
       if (v1.mag() > (halfWindowPixels * 0.8) && v1.mag() > (halfWindowPixels * 0.8)) {
         double angle = Math.abs(Functions.getAngleBetween(v1, v2));
         if (angle < 1) {
-          seq.get(mid).setDouble("Scribbler2 corner value", angle);
+          seq.get(mid).setDouble("Scribbler corner value", angle);
           addPossibleCornerIndex(mid);
         }
       }
@@ -167,8 +167,8 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
       if (pl(idx, mostRecentIdx) < halfWindowPixels) {
         Pt mostRecent = seq.get(mostRecentIdx);
         Pt me = seq.get(idx);
-        if (mostRecent.getDouble("Scribbler2 corner value") > me
-            .getDouble("Scribbler2 corner value")) {
+        if (mostRecent.getDouble("Scribbler corner value") > me
+            .getDouble("Scribbler corner value")) {
           possibleCornerIndexes.remove(lastIdx);
           seq.get(lastIdx).setBoolean("scribble-actual-corner", false);
           possibleCornerIndexes.add(idx);
@@ -357,12 +357,12 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   }
 
   private static void bug(String what) {
-    Debug.out("Scribbler2", what);
+    Debug.out("Scribbler", what);
   }
 
   @Override
   public void initialize() {
-    bug("Scribbler2 initializing...");
+    bug("Scribbler initializing...");
     this.data = (Neanderthal) main.getScript("Neanderthal");
     data.addSequenceListener(this);
     possibleCornerIndexes = new ArrayList<Integer>();
@@ -372,12 +372,12 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
     linelike = new Statistics();
     linelike.setMaximumN(cornerNumThreshold);
 
-    bug("Scribbler2 initialized!");
+    bug("Scribbler initialized!");
   }
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
-    args.setProgramName("Scribbler2: scribble to fill regions.");
+    args.setProgramName("Scribbler: scribble to fill regions.");
     args.setDocumentationProgram("Detects scribble gestures that begins a fill operation.");
 
     Map<String, BoundedParameter> defs = getDefaultParameters();

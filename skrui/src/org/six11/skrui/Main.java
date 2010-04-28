@@ -90,7 +90,7 @@ public class Main {
   private static final String PROP_GRAPH_DIR = "graphDir";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
-      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler2", "--debugging",
+      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
       "--debug-color"
   };
 
