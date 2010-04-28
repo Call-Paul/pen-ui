@@ -73,8 +73,18 @@ public class DebugUtil {
       DrawingBuffer db = main.getBuffer(drawingBufferName);
       if (db == null) {
         db = new DrawingBuffer();
+        db.setComplainWhenDrawingToInvisibleBuffer(false);
         main.addBuffer(drawingBufferName, db);
-        db.setVisible(true);
+        try {
+          int num = Integer.parseInt(drawingBufferName);
+          if (num >= 0 && num <= 9) {
+            db.setVisible(false);
+            bug("Created debug buffer '" + drawingBufferName
+                + "' but it is currently invisible. Press its button to show it.");
+          }
+        } catch (NumberFormatException ex) {
+          db.setVisible(true);
+        }
       }
       db.setEmptyOK(true);
       List<Pt> suspects = new ArrayList<Pt>();
@@ -87,6 +97,10 @@ public class DebugUtil {
         DrawingBufferRoutines.dots(db, suspects, radius, 0.3, Color.BLACK, color);
       }
     }
+  }
+
+  private static void bug(String what) {
+    Debug.out("DebugUtil", what);
   }
 
   void drawDots(List<Pt> spots, String bufferName) {
