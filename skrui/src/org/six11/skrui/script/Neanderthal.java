@@ -14,7 +14,6 @@ import org.six11.skrui.data.LengthGraph;
 import org.six11.skrui.data.PointGraph;
 import org.six11.skrui.data.TimeGraph;
 import org.six11.skrui.domain.Shape;
-import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.shape.*;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
@@ -86,7 +85,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   /**
    * regions stores the scribble-filled regions.
    */
-  List<Mesh> regions;
+  List<Region> regions;
 
   DebugUtil debugUtil;
 
@@ -107,7 +106,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     tg = new TimeGraph();
     ag = new AngleGraph();
     lenG = new LengthGraph();
-    regions = new ArrayList<Mesh>();
+    regions = new ArrayList<Region>();
     main.addSequenceListener(this);
   }
 
@@ -192,19 +191,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // TODO: implement structureLine saving.
     
     // ---------------------------------------------- regions
-    JSONArray jsonRegions = job.optJSONArray("regions");
-    if (jsonRegions != null) {
-      for (int i=0; i < jsonRegions.length(); i++) {
-        JSONObject jsonMesh = jsonRegions.getJSONObject(i);
-        JSONArray jsonMeshPoints = jsonMesh.getJSONArray("points");
-        List<Pt> meshPoints = new ArrayList<Pt>();
-        for (int j=0; j < jsonMeshPoints.length(); j++) {
-          meshPoints.add(jnl.makeFullLonelyPoint(jsonMeshPoints.getJSONObject(j)));
-        }
-        Mesh mesh = new Mesh(meshPoints, true);
-        regions.add(mesh);
-      }
-    }
 //    if (regions.size() > 0) {
 //      JSONArray jsonRegions = new JSONArray();
 //      for (Mesh mesh : regions) {
@@ -249,7 +235,7 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     return lenG;
   }
   
-  public List<Mesh> getRegions() {
+  public List<Region> getRegions() {
     return regions;
   }
 

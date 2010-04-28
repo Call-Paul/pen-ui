@@ -12,6 +12,7 @@ import java.util.Set;
 import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
+import org.six11.skrui.shape.Region;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.CircleArc;
@@ -498,6 +499,18 @@ public abstract class DrawingBufferRoutines {
       System.out.println("   Pt " + rp.getID() + " at " + Debug.num(rp));
     }
     System.out.println("-------------------------------------------------------------------------");
+  }
+
+  public static void region(DrawingBuffer db, Region region) {
+    db.up();
+    db.setFillColor(region.getColor());
+    db.setFilling(true);
+    db.setColor(region.getColor());
+    db.setThickness(1.0);
+    db.down();
+    db.addShape(region);
+    db.up();
+    db.setFilling(false);
   }
 
 }

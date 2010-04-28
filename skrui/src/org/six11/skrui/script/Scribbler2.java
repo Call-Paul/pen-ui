@@ -1,5 +1,6 @@
 package org.six11.skrui.script;
 
+import java.awt.Color;
 import java.awt.Cursor;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,13 +9,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.data.Journal;
 import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
 import org.six11.skrui.mesh.Where;
+import org.six11.skrui.shape.Region;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -48,7 +54,7 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
   Mesh mesh;
   Pt lastDrag;
 
-  private double previousThickness;
+  private double previousThickness; // during a scribble-fill, this holds the pen thickness
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
@@ -74,7 +80,6 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
     linelike.clear();
 
     // clear the mesh-forming variables
-    // hull = null;
     mesh = null;
   }
 
@@ -111,7 +116,7 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
     lastDrag = seq.getLast();
     draw(false);
   }
-  
+
   public Cursor getCursor() {
     return Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
   }
@@ -247,9 +252,7 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   private void drawFinalMesh() {
     data.forget(seq, false);
-    data.getRegions().add(mesh);
     main.removeBuffer("scribble fill"); // the 'fill' layer will show it now---avoid double draw
-
     Set<Triangle> explored = new HashSet<Triangle>();
     HalfEdge e = getBoundaryEdge(explored);
     while (e != null) {
@@ -260,9 +263,10 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
         cursor = crawl(cursor, explored);
       } while (cursor != e);
       boundary.add(boundary.get(0));
+      Region region = new Region(boundary, main.getPenColor());
+      data.getRegions().add(region);
       DrawingBuffer shapeBuffer = new DrawingBuffer();
-      DrawingBufferRoutines.fill(shapeBuffer, boundary, main.getPenThickness(), main
-          .getPenColor(), main.getPenColor());
+      DrawingBufferRoutines.region(shapeBuffer, region);
       main.addToLayer("fill", shapeBuffer);
       e = getBoundaryEdge(explored); // do it again if there's an unexplored boundary triangle.
     }
@@ -312,48 +316,45 @@ public class Scribbler2 extends SkruiScript implements SequenceListener {
 
   //
 
-  //
-  // public JSONObject getSaveData(Journal jnl) throws JSONException {
-  // JSONObject ret = new JSONObject();
-  //    
-  // // ---------------------------------------------- regions
-  // if (data.getRegions().size() > 0) {
-  // JSONArray jsonRegions = new JSONArray();
-  // for (Mesh mesh : data.getRegions()) {
-  // List<Pt> meshPoints = mesh.getPoints();
-  // JSONObject jsonMesh = new JSONObject();
-  // JSONArray jsonMeshPoints = new JSONArray();
-  // for (Pt pt : meshPoints) {
-  // jsonMeshPoints.put(jnl.makeFullJsonPt(pt));
-  // }
-  // jsonMesh.put("points", jsonMeshPoints);
-  // jsonRegions.put(jsonMesh);
-  // }
-  // ret.put("regions", jsonRegions);
-  // }
-  //    
-  // return ret;
-  // }
-  //  
-  // public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
-  // JSONArray jsonRegions = job.getJSONArray("regions");
-  // for (int i=0; i < jsonRegions.length(); i++) {
-  // JSONObject jsonMesh = jsonRegions.getJSONObject(i);
-  // JSONArray jsonMeshPoints = jsonMesh.getJSONArray("points");
-  // List<Pt> meshPoints = new ArrayList<Pt>();
-  // for (int j=0; j < jsonMeshPoints.length(); j++) {
-  // meshPoints.add(jnl.makeFullLonelyPoint(jsonMeshPoints.getJSONObject(j)));
-  // }
-  // mesh = new Mesh(meshPoints, 0);
-  // // draw the mesh and add it to Neanderthal's regions list.
-  // DrawingBuffer db = new DrawingBuffer();
-  // // DrawingBufferRoutines.mesh(db, mesh, meshPoints, null);
-  // DrawingBufferRoutines.dots(db, meshPoints, 2.0, 0.2, Color.BLACK, Color.RED);
-  // main.addBuffer("scribble fill", db);
-  // data.getRegions().add(mesh);
-  // }
-  // }
-  //  
+  public JSONObject getSaveData(Journal jnl) throws JSONException {
+    JSONObject ret = new JSONObject();
+
+    // ---------------------------------------------- regions
+    if (data.getRegions().size() > 0) {
+      JSONArray jsonRegions = new JSONArray();
+      for (Region reg : data.getRegions()) {
+        JSONObject jsonRegion = new JSONObject();
+        JSONArray jsonRegionPoints = new JSONArray();
+        for (Pt pt : reg.getPoints()) {
+          jsonRegionPoints.put(jnl.makeFullJsonPt(pt));
+        }
+        jsonRegion.put("points", jsonRegionPoints);
+        jsonRegion.put("color", jnl.makeJsonObj(reg.getColor()));
+        jsonRegions.put(jsonRegion);
+      }
+      ret.put("regions", jsonRegions);
+    }
+
+    return ret;
+  }
+
+  public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
+    JSONArray jsonRegions = job.getJSONArray("regions");
+    for (int i = 0; i < jsonRegions.length(); i++) {
+      JSONObject jsonRegion = jsonRegions.getJSONObject(i);
+      JSONArray jsonRegionPoints = jsonRegion.getJSONArray("points");
+      List<Pt> regionPoints = new ArrayList<Pt>();
+      for (int j = 0; j < jsonRegionPoints.length(); j++) {
+        regionPoints.add(jnl.makeFullLonelyPoint(jsonRegionPoints.getJSONObject(j)));
+      }
+      Color color = Journal.makeColor(jsonRegion.getJSONObject("color"));
+      Region region = new Region(regionPoints, color);
+      DrawingBuffer db = new DrawingBuffer();
+      DrawingBufferRoutines.region(db, region);
+      main.addToLayer("fill", db);
+      data.getRegions().add(region);
+    }
+  }
 
   private static void bug(String what) {
     Debug.out("Scribbler2", what);
