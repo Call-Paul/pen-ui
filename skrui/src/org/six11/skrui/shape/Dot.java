@@ -1,7 +1,6 @@
 package org.six11.skrui.shape;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
-import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -13,7 +12,7 @@ public class Dot extends Primitive {
   /**
    * @param seq
    */
-  public Dot(Sequence seq, Certainty cert) {
+  public Dot(Stroke seq, Certainty cert) {
     super(seq, 0, seq.size() - 1, cert);
   }
 
@@ -22,7 +21,7 @@ public class Dot extends Primitive {
    * @param seq
    * @param cert
    */
-  public Dot(int primID, Sequence seq, Certainty cert) {
+  public Dot(int primID, Stroke seq, Certainty cert) {
     super(primID, seq, 0, seq.size() - 1, cert);
   }
 

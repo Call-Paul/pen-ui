@@ -52,8 +52,8 @@ public class GestureRecognizer extends SkruiScript implements SequenceListener, 
   }
   
   private void hideStructuredInk() {
-    if (getMain().getBuffer("structured") != null) {
-      getMain().getBuffer("structured").setVisible(false);
+    if (getMain().getDrawnStuff().getNamedBuffer("structured") != null) {
+      getMain().getDrawnStuff().getNamedBuffer("structured").setVisible(false);
       main.getDrawingSurface().repaint();
     }
   }
@@ -116,7 +116,7 @@ public class GestureRecognizer extends SkruiScript implements SequenceListener, 
         DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
       }
     }
-    getMain().addBuffer("structured", db);
+    main.getDrawnStuff().addNamedBuffer("structured", db);
   }
 
   @Override

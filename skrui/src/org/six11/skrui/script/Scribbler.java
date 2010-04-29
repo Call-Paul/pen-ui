@@ -14,6 +14,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.DrawnThing;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.data.Journal;
 import org.six11.skrui.mesh.HalfEdge;
@@ -21,6 +22,7 @@ import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
 import org.six11.skrui.mesh.Where;
 import org.six11.skrui.shape.Region;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -41,7 +43,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
   Statistics linelike;
   Statistics timestamps;
   boolean filling;
-  Sequence seq;
+  Stroke seq;
   int lastExaminedIndex;
   double halfWindowPixels = 10;
   List<Integer> possibleCornerIndexes;
@@ -58,7 +60,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
     SequenceEvent.Type type = seqEvent.getType();
-    Sequence seq = seqEvent.getSeq();
+    Stroke seq = (Stroke) seqEvent.getSeq();
     switch (type) {
       case BEGIN:
         sendDown(seq);
@@ -72,7 +74,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     }
   }
 
-  public void sendDown(Sequence seq) {
+  public void sendDown(Stroke seq) {
     // clear/set the gesture-detection variables
     this.seq = seq;
     lastExaminedIndex = -1;
@@ -167,8 +169,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
       if (pl(idx, mostRecentIdx) < halfWindowPixels) {
         Pt mostRecent = seq.get(mostRecentIdx);
         Pt me = seq.get(idx);
-        if (mostRecent.getDouble("Scribbler corner value") > me
-            .getDouble("Scribbler corner value")) {
+        if (mostRecent.getDouble("Scribbler corner value") > me.getDouble("Scribbler corner value")) {
           possibleCornerIndexes.remove(lastIdx);
           seq.get(lastIdx).setBoolean("scribble-actual-corner", false);
           possibleCornerIndexes.add(idx);
@@ -240,19 +241,18 @@ public class Scribbler extends SkruiScript implements SequenceListener {
 
   private void draw(boolean done) {
     mesh.classifyTriangles();
-
     if (done) {
       drawFinalMesh();
     } else {
       DrawingBuffer db = new DrawingBuffer();
       DrawingBufferRoutines.triangles(db, mesh.getInsideTriangles(), main.getPenColor());
-      main.addBuffer("scribble fill", db);
+      main.getDrawnStuff().addNamedBuffer("scribble fill", db);
     }
   }
 
   private void drawFinalMesh() {
     data.forget(seq, false);
-    main.removeBuffer("scribble fill"); // the 'fill' layer will show it now---avoid double draw
+    main.getDrawnStuff().removeNamedBuffer("scribble fill");
     Set<Triangle> explored = new HashSet<Triangle>();
     HalfEdge e = getBoundaryEdge(explored);
     while (e != null) {
@@ -264,10 +264,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
       } while (cursor != e);
       boundary.add(boundary.get(0));
       Region region = new Region(boundary, main.getPenColor());
-      data.getRegions().add(region);
-      DrawingBuffer shapeBuffer = new DrawingBuffer();
-      DrawingBufferRoutines.region(shapeBuffer, region);
-      main.addToLayer("fill", shapeBuffer);
+      addRegion(region);
       e = getBoundaryEdge(explored); // do it again if there's an unexplored boundary triangle.
     }
   }
@@ -314,20 +311,30 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     }
   }
 
-  //
+  private List<Region> getRegions() {
+    List<Region> ret = new ArrayList<Region>();
+    List<DrawnThing> manyThings = main.getDrawnStuff().getDrawnThings();
+    for (DrawnThing dt : manyThings) {
+      if (dt instanceof Region) {
+        ret.add((Region) dt);
+      }
+    }
+    return ret;
+  }
 
   public JSONObject getSaveData(Journal jnl) throws JSONException {
     JSONObject ret = new JSONObject();
-
     // ---------------------------------------------- regions
-    if (data.getRegions().size() > 0) {
+    List<Region> regions = getRegions();
+    if (regions.size() > 0) {
       JSONArray jsonRegions = new JSONArray();
-      for (Region reg : data.getRegions()) {
+      for (Region reg : regions) {
         JSONObject jsonRegion = new JSONObject();
         JSONArray jsonRegionPoints = new JSONArray();
         for (Pt pt : reg.getPoints()) {
           jsonRegionPoints.put(jnl.makeFullJsonPt(pt));
         }
+        jsonRegion.put("id", reg.getId());
         jsonRegion.put("points", jsonRegionPoints);
         jsonRegion.put("color", jnl.makeJsonObj(reg.getColor()));
         jsonRegions.put(jsonRegion);
@@ -339,22 +346,30 @@ public class Scribbler extends SkruiScript implements SequenceListener {
   }
 
   public void openSaveData(Journal jnl, JSONObject job) throws JSONException {
-    JSONArray jsonRegions = job.getJSONArray("regions");
-    for (int i = 0; i < jsonRegions.length(); i++) {
-      JSONObject jsonRegion = jsonRegions.getJSONObject(i);
-      JSONArray jsonRegionPoints = jsonRegion.getJSONArray("points");
-      List<Pt> regionPoints = new ArrayList<Pt>();
-      for (int j = 0; j < jsonRegionPoints.length(); j++) {
-        regionPoints.add(jnl.makeFullLonelyPoint(jsonRegionPoints.getJSONObject(j)));
+    JSONArray jsonRegions = job.optJSONArray("regions");
+    if (jsonRegions != null) {
+      for (int i = 0; i < jsonRegions.length(); i++) {
+        JSONObject jsonRegion = jsonRegions.getJSONObject(i);
+        JSONArray jsonRegionPoints = jsonRegion.getJSONArray("points");
+        List<Pt> regionPoints = new ArrayList<Pt>();
+        for (int j = 0; j < jsonRegionPoints.length(); j++) {
+          regionPoints.add(jnl.makeFullLonelyPoint(jsonRegionPoints.getJSONObject(j)));
+        }
+        Color color = Journal.makeColor(jsonRegion.getJSONObject("color"));
+        int id = jsonRegion.getInt("id");
+        Region region = new Region(id, regionPoints, color);
+        addRegion(region);
       }
-      Color color = Journal.makeColor(jsonRegion.getJSONObject("color"));
-      Region region = new Region(regionPoints, color);
-      DrawingBuffer db = new DrawingBuffer();
-      DrawingBufferRoutines.region(db, region);
-      main.addToLayer("fill", db);
-      data.getRegions().add(region);
     }
   }
+  
+  private void addRegion(Region region) {
+    DrawingBuffer db = new DrawingBuffer();
+    DrawingBufferRoutines.region(db, region);
+    region.setDrawingBuffer(db);
+    main.getDrawnStuff().add(region);
+  }
+
 
   private static void bug(String what) {
     Debug.out("Scribbler", what);

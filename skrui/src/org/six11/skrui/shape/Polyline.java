@@ -9,7 +9,6 @@ import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 
 /**
  * This basically MergeCF with my own modifications.
@@ -18,13 +17,13 @@ import org.six11.util.pen.Sequence;
  */
 public class Polyline {
 
-  Sequence seq;
+  Stroke seq;
   Set<Segment> segments;
   Animation ani; // TODO: remove this
 
   public final static double DUPLICATE_THRESHOLD = 15;
 
-  public Polyline(Sequence seq, Animation ani) {
+  public Polyline(Stroke seq, Animation ani) {
     this.seq = seq;
     this.ani = ani;
     segments = new HashSet<Segment>();
@@ -96,7 +95,7 @@ public class Polyline {
     return ret;
   }
 
-  private SortedSet<Integer> removeDupes(Collection<Integer> in, Sequence origin) {
+  private SortedSet<Integer> removeDupes(Collection<Integer> in, Stroke origin) {
     List<Integer> working = new ArrayList<Integer>();
     working.addAll(in);
     for (int i = 0; i < (working.size() - 1);) {
@@ -123,7 +122,7 @@ public class Polyline {
     return new TreeSet<Integer>(working);
   }
 
-  private boolean merge(SortedSet<Integer> candidates, Sequence seq, final int iterationNumber) {
+  private boolean merge(SortedSet<Integer> candidates, Stroke seq, final int iterationNumber) {
     boolean ret = true; // true means do it again. change to false when threshold is long enough
     SortedSet<Segment> segs = new TreeSet<Segment>();
     SortedSet<Segment> inTimeOrder = new TreeSet<Segment>(Segment.orderByPoints);

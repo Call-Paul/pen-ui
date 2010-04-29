@@ -19,13 +19,13 @@ import org.six11.skrui.domain.SimpleDomain;
 import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.shape.PrimitiveEvent;
 import org.six11.skrui.shape.PrimitiveListener;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 
 /**
  * This is a 'hello world' implementation of DrawingScript. To use it, just mention it on the Main
@@ -60,9 +60,9 @@ public class Recognition extends SkruiScript implements PrimitiveListener {
       ret.addAll(getNear(source, source.getLength()
           * main.getParam(K_COHORT_LENGTH_MULT).getDouble()));
     }
-    List<Sequence> timeRecent = data.getTimeGraph().getRecent(
+    List<Stroke> timeRecent = data.getTimeGraph().getRecent(
         main.getParam(K_COHORT_TIMEOUT).getInt());
-    for (Sequence s : timeRecent) {
+    for (Stroke s : timeRecent) {
       ret.addAll(Neanderthal.getPrimitiveSet(s));
     }
     return ret;
@@ -153,10 +153,10 @@ public class Recognition extends SkruiScript implements PrimitiveListener {
 
   private void drawNewShapes(Collection<Shape> newShapes) {
     if (newShapes.size() > 0) {
-      DrawingBuffer db = main.getBuffer("2");
+      DrawingBuffer db = main.getDrawnStuff().getNamedBuffer("2");
       if (db == null) {
         db = new DrawingBuffer();
-        main.addBuffer("2", db);
+        main.getDrawnStuff().addNamedBuffer("2", db);
       }
       for (Shape s : newShapes) {
         ShapeRenderer ren = domain.getRenderer(s.getName());

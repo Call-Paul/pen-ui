@@ -1,7 +1,6 @@
 package org.six11.skrui.shape;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
-import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -16,7 +15,7 @@ public class ArcSegment extends Primitive {
    * @param endIdx
    * @param cert
    */
-  public ArcSegment(Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public ArcSegment(Stroke seq, int startIdx, int endIdx, Certainty cert) {
     super(seq, startIdx, endIdx, cert);
   }
 
@@ -27,7 +26,7 @@ public class ArcSegment extends Primitive {
    * @param endIdx
    * @param cert
    */
-  public ArcSegment(int primID, Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public ArcSegment(int primID, Stroke seq, int startIdx, int endIdx, Certainty cert) {
     super(primID, seq, startIdx, endIdx, cert);
   }
 

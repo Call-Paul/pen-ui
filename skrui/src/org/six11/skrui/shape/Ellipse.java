@@ -1,7 +1,6 @@
 package org.six11.skrui.shape;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
-import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -16,7 +15,7 @@ public class Ellipse extends Primitive {
    * @param endIdx
    * @param cert
    */
-  public Ellipse(Sequence seq, Certainty cert) {
+  public Ellipse(Stroke seq, Certainty cert) {
     super(seq, 0, seq.size() - 1, cert);
   }
 
@@ -25,7 +24,7 @@ public class Ellipse extends Primitive {
    * @param seq
    * @param cert
    */
-  public Ellipse(int primID, Sequence seq, Certainty cert) {
+  public Ellipse(int primID, Stroke seq, Certainty cert) {
     super(primID, seq, 0, seq.size() - 1, cert);
   }
 

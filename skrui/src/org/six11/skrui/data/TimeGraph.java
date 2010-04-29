@@ -1,15 +1,10 @@
 package org.six11.skrui.data;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
-import org.six11.util.pen.Sequence;
-import org.six11.util.pen.SequenceIO;
 
 /**
  * 
@@ -18,27 +13,19 @@ import org.six11.util.pen.SequenceIO;
  */
 public class TimeGraph {
 
-  public static void main(String[] args) throws FileNotFoundException, IOException {
-    List<Sequence> strokes = SequenceIO.readAll(new BufferedReader(new FileReader(args[0])));
-    TimeGraph tg = new TimeGraph();
-    for (Sequence seq : strokes) {
-      tg.add(seq);
-    }
-  }
-
-  List<Sequence> sequences;
+  List<Stroke> sequences;
 
   public TimeGraph() {
-    sequences = new ArrayList<Sequence>();
+    sequences = new ArrayList<Stroke>();
   }
 
-  public void add(Sequence seq) {
+  public void add(Stroke seq) {
     if (seq.size() > 1) {
       sequences.add(seq);
     }
   }
   
-  public void remove(Sequence seq) {
+  public void remove(Stroke seq) {
     sequences.remove(seq);
   }
 
@@ -58,13 +45,13 @@ public class TimeGraph {
    * The return list is in chronological order: oldest first. The most recent sequence is always
    * returned in the last slot, no matter how long ago it was made.
    */
-  public List<Sequence> getRecent(double timeout) {
-    List<Sequence> ret = new ArrayList<Sequence>();
+  public List<Stroke> getRecent(double timeout) {
+    List<Stroke> ret = new ArrayList<Stroke>();
     if (sequences.size() > 1) {
       ret.add(sequences.get(sequences.size() - 1));
       for (int i = sequences.size() - 2; i >= 0; i--) {
-        Sequence prev = sequences.get(i);
-        Sequence next = sequences.get(i + 1);
+        Stroke prev = sequences.get(i);
+        Stroke next = sequences.get(i + 1);
         long elapsed = next.getFirst().getTime() - prev.getLast().getTime();
         if (elapsed < timeout) {
           ret.add(0, prev);

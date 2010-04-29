@@ -9,11 +9,11 @@ import java.util.SortedSet;
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.skrui.shape.LineSegment;
 import org.six11.skrui.shape.Primitive;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.Main;
 
@@ -67,14 +67,14 @@ public class DebugUtil {
     return sum;
   }
 
-  void drawDots(Sequence seq, String booleanPropertyName, String drawingBufferName, Color color,
+  void drawDots(Stroke seq, String booleanPropertyName, String drawingBufferName, Color color,
       double radius) {
     if (seq.size() > 1) {
-      DrawingBuffer db = main.getBuffer(drawingBufferName);
+      DrawingBuffer db = main.getDrawnStuff().getNamedBuffer(drawingBufferName);
       if (db == null) {
         db = new DrawingBuffer();
         db.setComplainWhenDrawingToInvisibleBuffer(false);
-        main.addBuffer(drawingBufferName, db);
+        main.getDrawnStuff().addNamedBuffer(drawingBufferName, db);
         try {
           int num = Integer.parseInt(drawingBufferName);
           if (num >= 0 && num <= 9) {
@@ -105,22 +105,22 @@ public class DebugUtil {
 
   void drawDots(List<Pt> spots, String bufferName) {
     if (spots.size() > 1) {
-      DrawingBuffer db = main.getBuffer(bufferName);
+      DrawingBuffer db = main.getDrawnStuff().getNamedBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.addBuffer(bufferName, db);
+        main.getDrawnStuff().addNamedBuffer(bufferName, db);
       }
       DrawingBufferRoutines.dots(db, spots, 2.5, 0.3, Color.BLACK, Color.PINK);
     }
   }
 
-  void drawDots(Sequence seq, boolean plain, boolean curvy, boolean slow, boolean both,
+  void drawDots(Stroke seq, boolean plain, boolean curvy, boolean slow, boolean both,
       boolean corner, String bufferName) {
     if (seq.size() > 1) {
-      DrawingBuffer db = main.getBuffer(bufferName);
+      DrawingBuffer db = main.getDrawnStuff().getNamedBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.addBuffer(bufferName, db);
+        main.getDrawnStuff().addNamedBuffer(bufferName, db);
         db.setVisible(false);
       }
       List<Pt> plainDots = new ArrayList<Pt>();
@@ -176,13 +176,13 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.addBuffer(name, db);
+      main.getDrawnStuff().addNamedBuffer(name, db);
     } else {
-      main.removeBuffer(name);
+      main.getDrawnStuff().removeNamedBuffer(name);
     }
   }
 
-  void drawSimilarLength(Sequence seq) {
+  void drawSimilarLength(Stroke seq) {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;
     Neanderthal data = (Neanderthal) main.getScript("Neanderthal");
@@ -200,13 +200,13 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.addBuffer("similength", db);
+      main.getDrawnStuff().addNamedBuffer("similength", db);
     } else {
-      main.removeBuffer("similength");
+      main.getDrawnStuff().removeNamedBuffer("similength");
     }
   }
 
-  void drawAdjacent(Sequence seq) {
+  void drawAdjacent(Stroke seq) {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;
     Neanderthal data = (Neanderthal) main.getScript("Neanderthal");
@@ -225,13 +225,13 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.addBuffer("adjacent", db);
+      main.getDrawnStuff().addNamedBuffer("adjacent", db);
     } else {
-      main.removeBuffer("adjacent");
+      main.getDrawnStuff().removeNamedBuffer("adjacent");
     }
   }
 
-  void drawParallelPerpendicular(Sequence seq) {
+  void drawParallelPerpendicular(Stroke seq) {
     DrawingBuffer db = new DrawingBuffer();
     boolean dirty = false;
     Neanderthal data = (Neanderthal) main.getScript("Neanderthal");
@@ -256,9 +256,9 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.addBuffer("paraperp", db);
+      main.getDrawnStuff().addNamedBuffer("paraperp", db);
     } else {
-      main.removeBuffer("paraperp");
+      main.getDrawnStuff().removeNamedBuffer("paraperp");
     }
   }
 }

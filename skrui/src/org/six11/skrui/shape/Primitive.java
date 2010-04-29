@@ -8,7 +8,6 @@ import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
 /**
@@ -19,7 +18,7 @@ import org.six11.util.pen.Vec;
 public abstract class Primitive implements Comparable<Primitive> {
   private static int ID_COUNTER = 0;
 
-  public Sequence seq;
+  public Stroke seq;
   int startIdx;
   int endIdx;
   Certainty cert;
@@ -60,11 +59,11 @@ public abstract class Primitive implements Comparable<Primitive> {
    * @param cert
    *          the certainty that the user intended to draw what it is advertised to be.
    */
-  public Primitive(Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public Primitive(Stroke seq, int startIdx, int endIdx, Certainty cert) {
     this(++ID_COUNTER, seq, startIdx, endIdx, cert);
   }
   
-  public Primitive(int id, Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public Primitive(int id, Stroke seq, int startIdx, int endIdx, Certainty cert) {
     this.id = id;
     this.seq = seq;
     this.startIdx = startIdx;
@@ -90,7 +89,7 @@ public abstract class Primitive implements Comparable<Primitive> {
     return (((Integer) id).compareTo(other.id));
   }
 
-  public Sequence getSeq() {
+  public Stroke getSeq() {
     return seq;
   }
 

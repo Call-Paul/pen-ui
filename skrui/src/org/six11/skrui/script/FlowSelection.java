@@ -20,6 +20,7 @@ import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Primitive;
 import org.six11.skrui.shape.PrimitiveEvent;
 import org.six11.skrui.shape.PrimitiveListener;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -28,7 +29,6 @@ import org.six11.util.data.FSM;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 import org.six11.util.pen.Vec;
@@ -44,11 +44,11 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   private static final String K_TICK = "fs-tick"; // 50
   private static final String K_MOVE_THRESHOLD = "fs-move-thresh"; // 10
 
-  Sequence flowSelectionStroke;
+  Stroke flowSelectionStroke;
   Pt dwellPoint;
   Pt dragPoint; // latest location of pen during a drag.
   Vec dragDelta; // latest change in location during drag.
-  List<Sequence> nearestSequences;
+  List<Stroke> nearestSequences;
   FSM fsm;
   Timer dwellTimer;
   Neanderthal data;
@@ -64,8 +64,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   }
 
   protected void enterReshape() {
-    for (Sequence seq : nearestSequences) {
-      DrawingBuffer hideMe = main.getDrawingBufferForSequence(seq);
+    for (Stroke seq : nearestSequences) {
+      DrawingBuffer hideMe = seq.getDrawingBuffer();
       if (hideMe != null) {
         hideMe.setVisible(false);
       }
@@ -73,14 +73,14 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   }
 
   protected void exitReshape() {
-    for (Sequence seq : nearestSequences) {
-      DrawingBuffer showMe = main.getDrawingBufferForSequence(seq);
+    for (Stroke seq : nearestSequences) {
+      DrawingBuffer showMe = seq.getDrawingBuffer();
       if (showMe != null) { // the fact that I must do this tells me there is another bug somewhere.
         showMe.setVisible(true);
         main.updateFinishedSequence(seq);
       }
     }
-    main.removeBuffer("fs buffer");
+    main.getDrawnStuff().removeNamedBuffer("fs buffer");
   }
 
   protected void reshape() {
@@ -89,7 +89,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       // First see if this is a hinged operation.
       Pt hinge = null;
       int numHinges = 0;
-      for (Sequence seq : nearestSequences) {
+      for (Stroke seq : nearestSequences) {
         for (Pt pt : seq) {
           if (pt.getBoolean("hinge", false)) {
             numHinges++;
@@ -102,7 +102,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       } else {
         move(db);
       }
-      main.addBuffer("fs buffer", db);
+      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
     }
   }
 
@@ -114,7 +114,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     double theta = Math.atan2(toDrag.getY(), toDrag.getX())
         - Math.atan2(toPrev.getY(), toPrev.getX());
     AffineTransform rot = Functions.getRotationInstance(hinge, theta);
-    for (Sequence seq : nearestSequences) {
+    for (Stroke seq : nearestSequences) {
       for (Pt pt : seq) {
         if (pt != hinge
             && pt.getDouble("fs strength", 0) > main.getParam(K_HINGE_THRESHOLD).getDouble()/* HINGE_THRESHOLD */) {
@@ -129,7 +129,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   }
 
   private void move(DrawingBuffer db) {
-    for (Sequence seq : nearestSequences) {
+    for (Stroke seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
       DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, getThickness(seq));
@@ -137,7 +137,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     }
   }
 
-  private double getThickness(Sequence seq) {
+  private double getThickness(Stroke seq) {
     double ret = 2.0;
     if (seq.getAttribute("pen thickness") != null) {
       ret = (java.lang.Double) seq.getAttribute("pen thickness");
@@ -145,7 +145,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     return ret;
   }
 
-  private void passReshapeMsg(int idx, Sequence seq, double dx, double dy, int dir) {
+  private void passReshapeMsg(int idx, Stroke seq, double dx, double dy, int dir) {
     Pt pt = seq.get(idx);
     double str = pt.getDouble("fs strength", 0);
     pt.setLocation(pt.getX() + (str * dx), pt.getY() + (str * dy));
@@ -182,8 +182,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       }
       Set<Pt> all = data.getAllPoints().getNear(dwellPoint, nTaps * 30);
       Set<Pt> near = new HashSet<Pt>();
-      Set<Sequence> sequences = Neanderthal.getSequences(Neanderthal.getPrimitives(all));
-      for (Sequence seq : sequences) {
+      Set<Stroke> sequences = Neanderthal.getSequences(Neanderthal.getPrimitives(all));
+      for (Stroke seq : sequences) {
         Pt pt = Functions.getNearestPoint(dwellPoint, seq);
         near.add(pt);
       }
@@ -192,12 +192,12 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       }
     }
     main.setCurrentSequenceShapeVisible(false);
-    Sequence scrapMe = dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE);
+    Stroke scrapMe = (Stroke) dwellPoint.getSequence(Neanderthal.MAIN_SEQUENCE);
     data.forget(scrapMe, false);
   }
 
   private void prepare(Pt pt) {
-    Sequence ns = pt.getSequence(Neanderthal.MAIN_SEQUENCE);
+    Stroke ns = (Stroke) pt.getSequence(Neanderthal.MAIN_SEQUENCE);
     if (!nearestSequences.contains(ns)) {
       nearestSequences.add(ns);
       int centerIdx = ns.indexOf(pt);
@@ -209,7 +209,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   /**
    * Sets the "fs effort" value on each point.
    */
-  private void passEffortMsg(int idx, Sequence seq, double effort, int dir) {
+  private void passEffortMsg(int idx, Stroke seq, double effort, int dir) {
     if (indexValid(idx, seq)) {
       Pt pt = seq.get(idx);
       pt.setDouble("fs effort", effort);
@@ -238,7 +238,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     }
   }
 
-  private double getEffortPenalty(int idx, Sequence seq) {
+  private double getEffortPenalty(int idx, Stroke seq) {
     double ret = 0;
     if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute("corner")) {
       ret = 130;
@@ -246,23 +246,23 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     return ret;
   }
 
-  private boolean indexValid(int idx, Sequence seq) {
+  private boolean indexValid(int idx, Stroke seq) {
     return idx >= 0 && idx < seq.size();
   }
 
   protected void growSelection() {
     DrawingBuffer db = new DrawingBuffer();
     long duration = System.currentTimeMillis() - fsStartTime;
-    for (Sequence seq : nearestSequences) {
+    for (Stroke seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passStrengthMsg(centerIdx, seq, duration, 0);
       assignHinge(seq);
       DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
     if (nearestSequences.size() > 0) {
-      main.addBuffer("fs buffer", db);
+      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
     } else {
-      main.removeBuffer("fs buffer");
+      main.getDrawnStuff().removeNamedBuffer("fs buffer");
     }
   }
 
@@ -273,7 +273,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
    * 
    * @return the number of hinges found.
    */
-  private int assignHinge(Sequence seq) {
+  private int assignHinge(Stroke seq) {
     int numHinges = 0;
     double hingeThresh = main.getParam(K_HINGE_THRESHOLD).getDouble();
     for (int i = 1; i < seq.size() - 1; i++) {
@@ -293,7 +293,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     return numHinges;
   }
 
-  private void passStrengthMsg(int idx, Sequence seq, long duration, int dir) {
+  private void passStrengthMsg(int idx, Stroke seq, long duration, int dir) {
     if (indexValid(idx, seq)) {
       Pt pt = seq.get(idx);
       double str = getStrength(pt.getDouble("fs effort"), duration, 0.1);
@@ -377,7 +377,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     this.data = (Neanderthal) main.getScript("Neanderthal");
     data.addSequenceListener(this);
     data.addPrimitiveListener(this);
-    nearestSequences = new ArrayList<Sequence>();
+    nearestSequences = new ArrayList<Stroke>();
     int timeout = main.getParam(K_TIMEOUT).getInt();
     dwellTimer = new Timer(timeout, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -573,7 +573,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     // might have already handled this particular event, and others might process it after we are
     // done. Be aware.
     SequenceEvent.Type type = seqEvent.getType();
-    Sequence seq = seqEvent.getSeq();
+    Stroke seq = (Stroke) seqEvent.getSeq();
     switch (type) {
       case BEGIN:
         flowSelectionStroke = seq;

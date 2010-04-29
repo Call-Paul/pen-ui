@@ -2,7 +2,6 @@ package org.six11.skrui.shape;
 
 import org.six11.skrui.script.Neanderthal.Certainty;
 import org.six11.util.Debug;
-import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -11,7 +10,7 @@ import org.six11.util.pen.Sequence;
  */
 public class LineSegment extends Primitive {
 
-  public LineSegment(Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public LineSegment(Stroke seq, int startIdx, int endIdx, Certainty cert) {
     super(seq, startIdx, endIdx, cert);
   }
 
@@ -22,7 +21,7 @@ public class LineSegment extends Primitive {
    * @param endIdx
    * @param cert
    */
-  public LineSegment(int primID, Sequence seq, int startIdx, int endIdx, Certainty cert) {
+  public LineSegment(int primID, Stroke seq, int startIdx, int endIdx, Certainty cert) {
     super(primID, seq, startIdx, endIdx, cert);
   }
 

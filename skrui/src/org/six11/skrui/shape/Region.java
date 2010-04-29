@@ -10,38 +10,66 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
 
+import org.six11.skrui.DrawnThing;
+import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 
 /**
  * 
- *
+ * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class Region implements Shape {
+public class Region implements Shape, DrawnThing {
 
+  private static int ID_COUNTER = 1;
   List<Pt> boundary;
   Color color;
   GeneralPath gp;
-  
-  public Region(List<Pt> boundaryPoints, Color color) {
+  final int id;
+  int stackOrder;
+  DrawingBuffer db;
+
+  /**
+   * Builds a Region that already has an ID. This should probably only be called when restoring from
+   * disk or similar.
+   */
+  public Region(int id, List<Pt> boundaryPoints, Color color) {
+    this.id = id;
     this.boundary = boundaryPoints;
     this.color = color;
     this.gp = new GeneralPath();
+    this.stackOrder = 0;
     gp.moveTo(boundary.get(0).getX(), boundary.get(0).getY());
-    for (int i=1; i < boundary.size(); i++) {
+    for (int i = 1; i < boundary.size(); i++) {
       Pt pt = boundary.get(i);
       gp.lineTo(pt.getX(), pt.getY());
     }
+    ID_COUNTER = Math.max(id+1, ID_COUNTER);
+  }
+
+  /**
+   * Build a new Region given the set of boundary points and color. The boundary points must loop
+   * back on itself---the first and last points must be at the same spot.
+   * 
+   * @param boundaryPoints
+   * @param color
+   */
+  public Region(List<Pt> boundaryPoints, Color color) {
+    this(ID_COUNTER, boundaryPoints, color);
   }
   
+  public int getId() {
+    return id;
+  }
+
   public Color getColor() {
     return color;
   }
-  
+
   public List<Pt> getPoints() {
     return boundary;
   }
-  
+
   public boolean contains(Point2D p) {
     return gp.contains(p);
   }
@@ -55,7 +83,7 @@ public class Region implements Shape {
   }
 
   public boolean contains(double x, double y, double w, double h) {
-    return gp.contains(x,y,w,h);
+    return gp.contains(x, y, w, h);
   }
 
   public Rectangle getBounds() {
@@ -79,7 +107,22 @@ public class Region implements Shape {
   }
 
   public boolean intersects(double x, double y, double w, double h) {
-    return intersects(x,y,w,h);
+    return intersects(x, y, w, h);
   }
 
+  public void setStackOrder(int stackOrder) {
+    this.stackOrder = stackOrder;
+  }
+  
+  public int getStackOrder() {
+    return this.stackOrder;
+  }
+
+  public DrawingBuffer getDrawingBuffer() {
+    return db;
+  }
+
+  public void setDrawingBuffer(DrawingBuffer buf) {
+    this.db = buf;
+  }
 }

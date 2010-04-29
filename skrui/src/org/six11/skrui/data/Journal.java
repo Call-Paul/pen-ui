@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +16,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+import org.six11.skrui.DrawnStuff;
+import org.six11.skrui.DrawnThing;
 import org.six11.skrui.Main;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.script.Neanderthal;
@@ -24,9 +27,9 @@ import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Ellipse;
 import org.six11.skrui.shape.LineSegment;
 import org.six11.skrui.shape.Primitive;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 
 /**
  * 
@@ -37,7 +40,7 @@ public class Journal {
 
   Main main;
   Map<Integer, Pt> pointMap;
-  Map<Integer, Sequence> seqMap;
+  Map<Integer, Stroke> seqMap;
 
   Map<String, Class> validPointAttributes;
   Map<String, Class> validSequenceAttributes;
@@ -48,7 +51,7 @@ public class Journal {
   public Journal(Main main) {
     this.main = main;
     this.pointMap = new HashMap<Integer, Pt>();
-    this.seqMap = new HashMap<Integer, Sequence>();
+    this.seqMap = new HashMap<Integer, Stroke>();
     validSequenceAttributes = new HashMap<String, Class>();
     validSequenceAttributes.put("pen thickness", Double.class);
     validSequenceAttributes.put("pen color", Color.class);
@@ -62,17 +65,19 @@ public class Journal {
   }
 
   public void save() throws JSONException, IOException {
-    List<Sequence> sequences = main.getSequences();
+    List<Stroke> sequences = main.getSequences();
     JSONObject sketch = new JSONObject();
     JSONArray jsonSequences = new JSONArray();
     sketch.put("sequences", jsonSequences);
-    bug("Saving " + sequences.size() + " sequences.");
-    for (Sequence seq : sequences) {
+
+    // [1] Persist the pen strokes
+    for (Stroke seq : sequences) {
       JSONObject jsonSeq = makeJsonSequence(seq);
       if (jsonSeq != null) {
         jsonSequences.put(jsonSeq);
       }
     }
+    // [2] Persist any script-related structures
     for (String scriptName : main.getScriptNames()) {
       SkruiScript script = main.getScript(scriptName);
       JSONObject scriptSave = script.getSaveData(this);
@@ -80,7 +85,18 @@ public class Journal {
         sketch.put(scriptName, scriptSave);
       }
     }
+    // [3] Must retain stacking order of pen strokes and other structures (like filled regions)
+    DrawnStuff ds = main.getDrawnStuff();
+    JSONArray jsonStackOrder = new JSONArray();
+    for (DrawnThing dt : ds.getDrawnThings()) {
+      jsonStackOrder.put(dt.getClass().getName() + " " + dt.getId());
+    }
+    sketch.put("stack order", jsonStackOrder);
+
+    // [4] Write the complete JSON string to the line.
     write(sketch);
+
+    // Debugging output below here:
     bug("Missed " + missedSequenceAttributes.size() + " sequence attributes:");
     for (String att : missedSequenceAttributes.keySet()) {
       bug("  " + att + ": " + missedSequenceAttributes.get(att));
@@ -95,13 +111,17 @@ public class Journal {
     File file = main.getCurrentFile();
     JSONTokener toks = new JSONTokener(new FileReader(file));
     JSONObject sketch = new JSONObject(toks);
+
+    // [1] Read pen strokes.
     JSONArray sequences = sketch.getJSONArray("sequences");
     for (int i = 0; i < sequences.length(); i++) {
       JSONObject jsonSeq = (JSONObject) sequences.get(i);
-      Sequence seq = makeSequence(jsonSeq);
+      Stroke seq = makeSequence(jsonSeq);
       mapSequence(seq.getId(), seq);
       main.addFinishedSequenceNoninteractively(seq);
     }
+
+    // [2] Read script-generated structures (e.g. filled regions)
     String[] names = JSONObject.getNames(sketch);
     for (String name : names) {
       SkruiScript script = main.getScript(name);
@@ -109,6 +129,15 @@ public class Journal {
         script.openSaveData(this, sketch.getJSONObject(name));
       }
     }
+
+    // [3] Ensure visual elements are drawn in correct stack order
+    JSONArray jsonStackOrder = sketch.getJSONArray("stack order");
+    List<String> order = new ArrayList<String>();
+    for (int i = 0; i < jsonStackOrder.length(); i++) {
+      String who = jsonStackOrder.getString(i);
+      order.add(who);
+    }
+    main.getDrawnStuff().setStackOrder(order);
   }
 
   private void write(JSONObject job) throws IOException, JSONException {
@@ -118,7 +147,7 @@ public class Journal {
     fw.close();
   }
 
-  public JSONObject makeJsonSequence(Sequence seq) throws JSONException {
+  public JSONObject makeJsonSequence(Stroke seq) throws JSONException {
     JSONObject jsonSeq = null;
     jsonSeq = new JSONObject();
     jsonSeq.put("id", seq.getId());
@@ -144,9 +173,9 @@ public class Journal {
     return jsonSeq;
   }
 
-  public Sequence makeSequence(JSONObject jsonSeq) throws JSONException {
+  public Stroke makeSequence(JSONObject jsonSeq) throws JSONException {
     int id = jsonSeq.getInt("id");
-    Sequence seq = new Sequence(id);
+    Stroke seq = new Stroke(id);
     for (String name : JSONObject.getNames(jsonSeq)) {
       if (validSequenceAttributes.containsKey(name)) {
         Class cls = validSequenceAttributes.get(name);
@@ -157,18 +186,14 @@ public class Journal {
         } else if (cls.equals(Color.class)) {
           Color color = makeColor(jsonSeq.getJSONObject(name));
           seq.setAttribute(name, color);
+        } else if (cls.equals(Integer.class)) {
+          seq.setAttribute(name, jsonSeq.getInt(name));
         } else {
           warn("Unable to deserialize sequence attribute '" + name + "' of type: " + cls);
         }
       }
     }
-    // double thickness = jsonSeq.getDouble("pen thickness");
-    // seq.setAttribute("pen thickness", thickness);
-    // Color color = makeColor(jsonSeq.getJSONObject("pen color"));
-    // seq.setAttribute("pen color", color);
-    // if (jsonSeq.optBoolean(Neanderthal.SCRAP)) {
-    // seq.setAttribute(Neanderthal.SCRAP, jsonSeq.optBoolean(Neanderthal.SCRAP));
-    // }
+
     JSONArray points = jsonSeq.getJSONArray("points");
     for (int i = 0; i < points.length(); i++) {
       Pt pt = makeFullPoint((JSONObject) points.get(i), seq);
@@ -177,11 +202,11 @@ public class Journal {
     return seq;
   }
 
-  public void mapSequence(int id, Sequence seq) {
+  public void mapSequence(int id, Stroke seq) {
     seqMap.put(id, seq);
   }
 
-  public Pt makeFullPoint(JSONObject jsonPt, Sequence seq) throws JSONException {
+  public Pt makeFullPoint(JSONObject jsonPt, Stroke seq) throws JSONException {
     Pt ret = makeFullLonelyPoint(jsonPt);
     if (seq != null) {
       ret.setAttribute(Neanderthal.MAIN_SEQUENCE, seq);
@@ -197,10 +222,10 @@ public class Journal {
 
   public Pt makeFullLonelyPoint(JSONObject jsonPt) throws JSONException {
     JSONArray ptData = jsonPt.getJSONArray("pt");
-    int id = ptData.getInt(0); // jsonPt.getInt("id");
-    double x = ptData.getDouble(1); // jsonPt.getDouble("x");
-    double y = ptData.getDouble(2); // jsonPt.getDouble("y");
-    long t = ptData.getLong(3); // jsonPt.getLong("t");
+    int id = ptData.getInt(0);
+    double x = ptData.getDouble(1);
+    double y = ptData.getDouble(2);
+    long t = ptData.getLong(3);
     Pt ret = new Pt(id, x, y, t);
     JSONObject attr = jsonPt.optJSONObject("attribs");
     if (attr != null) {
@@ -239,7 +264,7 @@ public class Journal {
     // 0=primID 1=seqID 2=startIdx 3=endIdx 4=cert 5=type
     int primID = jsonPrim.getInt(0);
     int sequenceID = jsonPrim.getInt(1);
-    Sequence seq = findSequence(sequenceID);
+    Stroke seq = findSequence(sequenceID);
     int startIdx = jsonPrim.getInt(2);
     int endIdx = jsonPrim.getInt(3);
     Certainty cert = makeCertainty(jsonPrim.getString(4));
@@ -360,8 +385,8 @@ public class Journal {
     System.out.println("*** Warning ***\t" + what);
   }
 
-  public Sequence findSequence(int seqId) {
-    Sequence ret = seqMap.get(seqId);
+  public Stroke findSequence(int seqId) {
+    Stroke ret = seqMap.get(seqId);
     if (ret == null) {
       bug("Could not find sequence: " + seqId);
     }

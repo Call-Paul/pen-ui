@@ -7,6 +7,7 @@ import java.util.Map;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
@@ -73,7 +74,9 @@ public class HelloScript extends SkruiScript implements SequenceListener {
       DrawingBuffer db = new DrawingBuffer();
       DrawingBufferRoutines.line(db, seqEvent.getSeq().getFirst(), seqEvent.getSeq().getLast(),
           Color.BLUE);
-      main.addBuffer(db);
+      Stroke str = (Stroke) seqEvent.getSeq(); 
+      str.setDrawingBuffer(db);
+      main.getDrawnStuff().add(str);
     }
   }
 

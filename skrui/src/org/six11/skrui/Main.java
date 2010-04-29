@@ -1,5 +1,8 @@
 package org.six11.skrui;
 
+import static java.awt.event.InputEvent.CTRL_MASK;
+import static java.awt.event.InputEvent.SHIFT_MASK;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -14,7 +17,6 @@ import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -27,15 +29,9 @@ import java.util.Set;
 import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
-import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import static java.awt.event.InputEvent.CTRL_MASK;
-import static java.awt.event.InputEvent.SHIFT_MASK;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -47,6 +43,7 @@ import com.lowagie.text.pdf.PdfWriter;
 
 import org.json.JSONException;
 import org.six11.skrui.data.Journal;
+import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.ColorBar;
 import org.six11.skrui.ui.DrawingSurface;
 import org.six11.util.Debug;
@@ -64,7 +61,6 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.HoverEvent;
 import org.six11.util.pen.HoverListener;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
@@ -74,41 +70,32 @@ import org.six11.util.pen.SequenceListener;
 public class Main {
 
   private static Set<Main> instances = new HashSet<Main>();
+
   private static final String ACTION_SAVE_AS = "save as";
   private static final String ACTION_SAVE = "save";
   private static final String ACTION_OPEN = "open";
   private static final String ACTION_SAVE_PDF = "save-pdf";
   private static final String ACTION_NEW = "new";
-  private static final String ACTION_GRAPH_SPEED = "graph speed";
-  private static final String ACTION_GRAPH_CURVATURE_ABS = "graph curvature (absolute value)";
-  private static final String ACTION_GRAPH_ANGLE_ABS = "graph angle (absolute value)";
-  private static final String ACTION_GRAPH_CURVATURE_SIGNED = "graph curvature (signed value)";
-  private static final String ACTION_GRAPH_ANGLE_SIGNED = "graph angle (signed value)";
 
   private static final String PROP_SKETCH_DIR = "sketchDir";
   private static final String PROP_PDF_DIR = "pdfDir";
-  private static final String PROP_GRAPH_DIR = "graphDir";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
       "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
       "--debug-color"
   };
 
-  private List<Sequence> pastSequences;
-  private Sequence seq;
+  private Stroke seq;
   private Color penColor;
   private double penThickness = 1;
 
   // The currentSeq and last index are for managing the currently-in-progress ink stroke
-  private GeneralPath gp;
+  private GeneralPath inProgSeqGP;
   private boolean gpVisible;
   private int lastCurrentSequenceIdx;
 
-  // change listeners are interested in visual changes
-  private List<ChangeListener> changeListeners;
-
-  private List<DrawingBuffer> combinedBuffers;
-  private List<DrawingBuffer> drawingBuffers;
+  // data structure holding past user-drawn things in order
+  private DrawnStuff drawnStuff;
 
   // sequence listeners are interested in pen activity
   private Set<SequenceListener> sequenceListeners;
@@ -117,10 +104,6 @@ public class Main {
   private Set<HoverListener> hoverListeners;
 
   private Map<String, List<Long>> whackData;
-  private Map<String, DrawingBuffer> namedBuffers;
-  private Map<String, List<DrawingBuffer>> layers;
-
-  private Map<Sequence, DrawingBuffer> seqToDrawBuf;
 
   private DrawingSurface ds;
   private ColorBar colorBar;
@@ -245,15 +228,11 @@ public class Main {
 
   private Main(Arguments args) throws JSONException {
     this.args = args;
-    drawingBuffers = new ArrayList<DrawingBuffer>();
-    namedBuffers = new HashMap<String, DrawingBuffer>();
+    drawnStuff = new DrawnStuff();
+    
     whackData = new HashMap<String, List<Long>>();
-    layers = new HashMap<String, List<DrawingBuffer>>();
-    pastSequences = new ArrayList<Sequence>();
     sequenceListeners = new HashSet<SequenceListener>();
     hoverListeners = new HashSet<HoverListener>();
-    seqToDrawBuf = new HashMap<Sequence, DrawingBuffer>();
-
     String title = "Skrui";
     if (args.hasValue("title")) {
       title = args.getValue("title");
@@ -312,7 +291,10 @@ public class Main {
       af.setVisible(true);
       ds.setCursor(colorBar.getCursor());
     }
-
+  }
+  
+  public DrawnStuff getDrawnStuff() {
+    return drawnStuff;
   }
 
   public Set<String> getScriptNames() {
@@ -331,7 +313,7 @@ public class Main {
    * Returns a reference to the currently in-progress scribble, suitable for efficient drawing.
    */
   public Shape getCurrentSequenceShape() {
-    return gp;
+    return inProgSeqGP;
   }
 
   public boolean isCurrentSequenceShapeVisible() {
@@ -350,26 +332,9 @@ public class Main {
     sequenceListeners.remove(lis);
   }
 
-  public void addBuffer(String name, DrawingBuffer buf) {
-    namedBuffers.put(name, buf);
-    combinedBuffers = null;
-    fireChange();
-  }
-
-  public void removeBuffer(String name) {
-    if (namedBuffers.containsKey(name)) {
-      namedBuffers.remove(name);
-      combinedBuffers = null;
-      fireChange();
-    }
-  }
-
-  public DrawingBuffer getDrawingBufferForSequence(Sequence s) {
-    return seqToDrawBuf.get(s);
-  }
-
-  public void updateFinishedSequence(Sequence s) {
-    DrawingBuffer db = getDrawingBufferForSequence(s);
+  @SuppressWarnings("null")
+  public void updateFinishedSequence(Stroke s) {
+    DrawingBuffer db = s.getDrawingBuffer();
     if (db != null) {
       db.setVisible(false);
     }
@@ -377,7 +342,6 @@ public class Main {
 
     if (s != null && s.size() > 1) {
       DrawingBuffer buf = new DrawingBuffer();
-      seqToDrawBuf.put(s, buf);
       if (s.getAttribute("pen color") != null) {
         buf.setColor((Color) s.getAttribute("pen color"));
       } else {
@@ -395,22 +359,15 @@ public class Main {
         buf.moveTo(pt.x, pt.y);
       }
       buf.up();
-      drawingBuffers.add(buf);
-      combinedBuffers = null;
-      pastSequences.add(s);
+      s.setDrawingBuffer(buf);
+      drawnStuff.add(s);
     }
   }
 
-  public void removeFinishedSequence(Sequence s) {
+  public void removeFinishedSequence(Stroke s) {
     if (s != null) {
-      drawingBuffers.remove(s);
-      pastSequences.remove(s);
-      combinedBuffers = null;
+      drawnStuff.remove(s);
     }
-  }
-
-  public DrawingBuffer getBuffer(String name) {
-    return namedBuffers.get(name);
   }
 
   public Color getPenColor() {
@@ -421,30 +378,8 @@ public class Main {
     return penThickness;
   }
 
-  public void addToLayer(String str, DrawingBuffer buf) {
-    if (!layers.containsKey(str)) {
-      layers.put(str, new ArrayList<DrawingBuffer>());
-    }
-    layers.get(str).add(buf);
-    combinedBuffers = null;
-    fireChange();
-  }
-
-  /**
-   * Registers a change listener, which is whacked every time some (potentially) visual aspect of
-   * the soup has changed and the GUI should be repainted.
-   */
-  public void addChangeListener(ChangeListener lis) {
-    if (changeListeners == null) {
-      changeListeners = new ArrayList<ChangeListener>();
-    }
-    if (!changeListeners.contains(lis)) {
-      changeListeners.add(lis);
-    }
-  }
-
   public void addRawInputBegin(int x, int y, long t) {
-    seq = new Sequence();
+    seq = new Stroke();
     if (penColor != null) {
       seq.setAttribute("pen color", penColor);
     }
@@ -452,9 +387,7 @@ public class Main {
 
     Pt pt = new Pt(x, y, t);
     seq.add(pt);
-
     gpVisible = true;
-    // addRawInputProgress(x, y, t);
     SequenceEvent sev = new SequenceEvent(this, seq, SequenceEvent.Type.BEGIN);
     fireSequenceEvent(sev);
   }
@@ -481,23 +414,18 @@ public class Main {
       }
       seq = null;
       lastCurrentSequenceIdx = 0;
-      gp = null;
+      inProgSeqGP = null;
       gpVisible = false;
-      fireChange();
     }
   }
 
-  public void addFinishedSequenceNoninteractively(Sequence s) {
-    // bug("making a buffer and adding it to data structures.");
+  public void addFinishedSequenceNoninteractively(Stroke s) {
     DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
-    seqToDrawBuf.put(s, buf);
-    drawingBuffers.add(buf);
-    combinedBuffers = null;
-    pastSequences.add(s);
-    fireChange();
+    s.setDrawingBuffer(buf);
+    drawnStuff.add(s);
   }
 
-  public void addFinishedSequence(Sequence s) {
+  public void addFinishedSequence(Stroke s) {
     if (s != null && s.size() > 1 && gpVisible) {
       addFinishedSequenceNoninteractively(s);
     }
@@ -529,15 +457,15 @@ public class Main {
       for (int i = lastCurrentSequenceIdx; i < seq.size(); i++) {
         Pt pt = seq.get(i);
         if (i == 0) {
-          gp = new GeneralPath();
-          gp.moveTo((float) pt.x, (float) pt.y);
+          inProgSeqGP = new GeneralPath();
+          inProgSeqGP.moveTo((float) pt.x, (float) pt.y);
         } else {
-          gp.lineTo((float) pt.x, (float) pt.y);
+          inProgSeqGP.lineTo((float) pt.x, (float) pt.y);
         }
         lastCurrentSequenceIdx = i;
       }
     }
-    fireChange();
+    ds.repaint();
   }
 
   private void fireSequenceEvent(SequenceEvent ev) {
@@ -655,49 +583,11 @@ public class Main {
     });
     pop.add(actions.get(ACTION_NEW));
 
-    // Graph operations
-    JMenu graphMenu = new JMenu("Graph");
-    actions.put(ACTION_GRAPH_SPEED, new NamedAction("Graph Speed") {
-      public void activate() {
-        graph("speed", false);
-      }
-    });
-    graphMenu.add(actions.get(ACTION_GRAPH_SPEED));
-
-    actions.put(ACTION_GRAPH_CURVATURE_ABS, new NamedAction("Graph Curvature (Absolute)") {
-      public void activate() {
-        graph("curvature", true);
-      }
-    });
-    graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE_ABS));
-
-    actions.put(ACTION_GRAPH_CURVATURE_SIGNED, new NamedAction("Graph Curvature (Signed)") {
-      public void activate() {
-        graph("curvature", false);
-      }
-    });
-    graphMenu.add(actions.get(ACTION_GRAPH_CURVATURE_SIGNED));
-
-    actions.put(ACTION_GRAPH_ANGLE_ABS, new NamedAction("Graph Angle") {
-      public void activate() {
-        graph("angle", true);
-      }
-    });
-    graphMenu.add(actions.get(ACTION_GRAPH_ANGLE_ABS));
-
-    actions.put(ACTION_GRAPH_ANGLE_SIGNED, new NamedAction("Graph Angle (Signed)") {
-      public void activate() {
-        graph("angle", false);
-      }
-    });
-    graphMenu.add(actions.get(ACTION_GRAPH_ANGLE_SIGNED));
-
-    pop.add(graphMenu);
     return pop;
   }
 
   protected void whackLayer(int i) {
-    DrawingBuffer db = getBuffer("" + i);
+    DrawingBuffer db = drawnStuff.getNamedBuffer("" + i);
     if (db != null) {
       boolean currentValue = db.isVisible();
       String key = "" + i;
@@ -713,14 +603,13 @@ public class Main {
         }
         if (diffs.getMean() < 400) {
           db = new DrawingBuffer();
-          addBuffer(key, db);
+          drawnStuff.addNamedBuffer(key, db);
         }
         timestamps.remove(0);
       }
       bug("Whacking layer " + key);
       db.setVisible(!currentValue);
       getDrawingSurface().repaint();
-
     } else {
       bug("Can't find buffer for layer: " + i);
     }
@@ -745,59 +634,15 @@ public class Main {
     }
   }
 
-  /**
-   * Writes numeric data to standard output suitable for graphing in GNUPlot.
-   * 
-   * @param attribute
-   *          the name of the attribute to graph. This must be set on each point in each sequence.
-   *          For example, "curvature" will give you the signed curvature at each point.
-   * @param useAbsValue
-   *          will cause the absolute value of each value to be output.
-   */
-  protected void graph(String attribute, boolean useAbsValue) {
-    int seqCount = 0;
-    File outFile = null;
-    File initialDir = maybeGetInitialDir(PROP_GRAPH_DIR);
-    JFileChooser chooser = FileUtil.makeFileChooser(initialDir, "graph", "Graph Files");
-    if (currentFile != null) {
-      String suggestedFileName = removeSuffix(currentFile.getName()) + "-" + attribute + ".graph";
-      chooser.setSelectedFile(new File(initialDir, suggestedFileName));
-    }
-    int result = chooser.showSaveDialog(ds);
-    if (result == JFileChooser.APPROVE_OPTION) {
-      outFile = chooser.getSelectedFile();
-      if (!outFile.getName().endsWith(".graph")) {
-        outFile = new File(outFile.getParentFile(), outFile.getName() + ".graph");
+  public List<Stroke> getSequences() {
+    List<DrawnThing> manyThings = drawnStuff.getDrawnThings();
+    List<Stroke> ret = new ArrayList<Stroke>();
+    for (DrawnThing dt : manyThings) {
+      if (dt instanceof Stroke) {
+        ret.add((Stroke)dt);
       }
     }
-    if (outFile != null) {
-      try {
-        FileWriter out = new FileWriter(outFile);
-        for (Sequence seq : getSequences()) {
-          out.write("# Sequence " + seqCount + "\n");
-          int ptCount = 0;
-          for (Pt pt : seq) {
-            if (useAbsValue) {
-              out.write(ptCount + " " + Math.abs(pt.getDouble(attribute)) + "\n");
-            } else {
-              out.write(ptCount + " " + pt.getDouble(attribute) + "\n");
-            }
-            ptCount++;
-          }
-          seqCount++;
-        }
-        out.close();
-        System.out.println("Wrote " + outFile.getAbsolutePath());
-        prefs.setProperty(PROP_GRAPH_DIR, outFile.getParentFile().getAbsolutePath());
-        prefs.save();
-      } catch (IOException ex) {
-        ex.printStackTrace();
-      }
-    }
-  }
-
-  public List<Sequence> getSequences() {
-    return pastSequences;
+    return ret;
   }
 
   public void setProperty(String key, String value) {
@@ -813,14 +658,6 @@ public class Main {
 
   public String getProperty(String key) {
     return prefs.getProperty(key);
-  }
-
-  private static String removeSuffix(String name) {
-    String ret = name;
-    if (name.lastIndexOf(".") > 0) {
-      ret = name.substring(0, name.lastIndexOf("."));
-    }
-    return ret;
   }
 
   public void savePdf(String filenameNoDotPdf, boolean overwrite) {
@@ -856,9 +693,8 @@ public class Main {
       FileOutputStream out;
       try {
         out = new FileOutputStream(outFile);
-        List<DrawingBuffer> layers = getDrawingBuffers();
         BoundingBox bb = new BoundingBox();
-        for (DrawingBuffer layer : layers) {
+        for (DrawingBuffer layer : drawnStuff.getDrawingBuffers()) {
           layer.update();
           bb.add(layer.getBoundingBox());
         }
@@ -886,7 +722,7 @@ public class Main {
           }
           db.drawToGraphics(null);
           bb.add(db.getBoundingBox());
-          addBuffer(db);
+          drawnStuff.addNamedBuffer("arguments", db);
         }
 
         int w = bb.getWidthInt();
@@ -921,48 +757,6 @@ public class Main {
     }
   }
 
-  /**
-   * Adds a complete visual element: perhaps a raw Sequence, but it could be something else such as
-   * a filled region or a rectified shape.
-   */
-  public void addBuffer(DrawingBuffer buf) {
-    if (!drawingBuffers.contains(buf)) {
-      drawingBuffers.add(buf);
-      combinedBuffers = null;
-    }
-    fireChange();
-  }
-
-  /**
-   * Fires a simple event indicating some (potentially) visual aspect of the data has changed.
-   */
-  public void fireChange() {
-    if (changeListeners != null) {
-      ChangeEvent ev = new ChangeEvent(this);
-      for (ChangeListener cl : changeListeners) {
-        cl.stateChanged(ev);
-      }
-    }
-  }
-
-  /**
-   * Returns a list of all cached drawing buffers.
-   */
-  public List<DrawingBuffer> getDrawingBuffers() {
-    if (combinedBuffers == null) { // Could use 'addAll' but looping helps with debugging sometimes
-      combinedBuffers = new ArrayList<DrawingBuffer>();
-      combinedBuffers.addAll(drawingBuffers);
-      for (String name : namedBuffers.keySet()) {
-        combinedBuffers.add(namedBuffers.get(name));
-      }
-      for (String name : layers.keySet()) {
-        List<DrawingBuffer> layer = layers.get(name);
-        combinedBuffers.addAll(layer);
-      }
-    }
-    return combinedBuffers;
-  }
-
   public BufferedImage getContentImage() {
     BufferedImage image = new BufferedImage(ds.getWidth(), ds.getHeight(),
         BufferedImage.TYPE_INT_ARGB);
@@ -977,8 +771,7 @@ public class Main {
         BufferedImage.TYPE_INT_ARGB);
     Graphics2D g = image.createGraphics();
     Components.antialias(g);
-    List<DrawingBuffer> all = getDrawingBuffers();
-    for (DrawingBuffer buf : all) {
+    for (DrawingBuffer buf : drawnStuff.getDrawingBuffers()) {
       buf.paste(g);
     }
     return image;
@@ -1061,10 +854,7 @@ public class Main {
 
   public void clearDrawing() {
     seq = null;
-    drawingBuffers = new ArrayList<DrawingBuffer>();
-    combinedBuffers = null;
-    pastSequences.clear();
-    fireChange();
+    drawnStuff.clear();
   }
 
   private void setCurrentFile(File f) throws FileNotFoundException, IOException {

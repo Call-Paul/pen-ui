@@ -11,7 +11,6 @@ import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 
 public class Segment implements Comparable<Segment> {
   public int start;
@@ -20,9 +19,9 @@ public class Segment implements Comparable<Segment> {
   Type type;
   public Certainty lineCertainty;
   public Certainty arcCertainty;
-  public Sequence seq;
+  public Stroke seq;
 
-  public Segment(int start, int end, Sequence seq) {
+  public Segment(int start, int end, Stroke seq) {
     this.start = start;
     this.end = end;
     this.lineCertainty = Certainty.Unknown;

@@ -45,7 +45,7 @@ public class DrawingSurface extends JComponent {
         repaint();
       }
     };
-    main.addChangeListener(cl);
+    main.getDrawnStuff().addChangeListener(cl);
   }
 
   /**
@@ -63,8 +63,7 @@ public class DrawingSurface extends JComponent {
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Shape currentSeq = main.getCurrentSequenceShape(); // the in-progress scribble
-    List<DrawingBuffer> buffers = main.getDrawingBuffers(); // finished visual elements
-    Collections.sort(buffers, DrawingBuffer.sortByAge);
+    List<DrawingBuffer> buffers = main.getDrawnStuff().getDrawingBuffers(); 
     Components.antialias(g);
     for (DrawingBuffer buffer : buffers) {
       if (buffer.isVisible() && useCachedImages) {
