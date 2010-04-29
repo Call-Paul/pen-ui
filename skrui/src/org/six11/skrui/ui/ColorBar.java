@@ -13,6 +13,7 @@ import java.util.List;
 import javax.swing.JPanel;
 
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.util.Debug;
 import org.six11.util.gui.Colors;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
@@ -38,16 +39,13 @@ public class ColorBar extends JPanel {
     ColorSquare black = new ColorSquare(this, Color.BLACK, fullDist);
     squares.add(black);
     squares.add(new ColorSquare(this, Color.BLUE, fullDist));
-    squares.add(new ColorSquare(this, Color.CYAN, fullDist));
     squares.add(new ColorSquare(this, Color.GREEN, fullDist));
     squares.add(new ColorSquare(this, Color.LIGHT_GRAY, fullDist));
-    squares.add(new ColorSquare(this, Color.MAGENTA, fullDist));
-    squares.add(new ColorSquare(this, Color.ORANGE, fullDist));
-    squares.add(new ColorSquare(this, Color.PINK, fullDist));
     squares.add(new ColorSquare(this, Color.RED, fullDist));
     squares.add(new ColorSquare(this, Color.WHITE, fullDist));
-    squares.add(new ColorSquare(this, Color.YELLOW, fullDist));
     squares.add(new ColorSquare(this, null, fullDist));
+    squares.add(new UndoSquare(this, 40));
+    
     currentColor = black.getColor();
 
     PropertyChangeListener handler = new PropertyChangeListener() {
@@ -62,6 +60,8 @@ public class ColorBar extends JPanel {
           thickness = (Double) ev.getNewValue();
           firePropertyChange(new PropertyChangeEvent(this, "pen thickness", oldThickness, ev
               .getNewValue()));
+        } else if (ev.getPropertyName().equals("undoEvent")) {
+          firePropertyChange(ev); // relay
         }
       }
     };
@@ -72,6 +72,10 @@ public class ColorBar extends JPanel {
     }
   }
 
+  private static void bug(String what) {
+    Debug.out("ColorBar", what);
+  }
+  
   public Cursor getCursor() {
     DrawingBuffer db = new DrawingBuffer();
     double t2 = thickness / 2;

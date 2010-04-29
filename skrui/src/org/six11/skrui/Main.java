@@ -484,6 +484,16 @@ public class Main {
         } else if (evt.getPropertyName().equals("pen thickness")) {
           setPenThickness((Double) evt.getNewValue());
           whackCursor();
+        } else if (evt.getPropertyName().equals("undoEvent")) {
+          if (evt.getNewValue().equals("undo")) {
+            drawnStuff.undo();
+          } else if (evt.getNewValue().equals("redo")) {
+            drawnStuff.redo();
+          } else {
+            bug("eh? " + evt.getNewValue());
+          }
+        } else {
+          bug("Got weird property event: " + evt.getPropertyName());
         }
       }
     });

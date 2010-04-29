@@ -22,12 +22,14 @@ public class DrawnStuff {
   private List<ChangeListener> changeListeners;
 
   private List<DrawnThing> things;
+  private List<DrawnThing> redoList;
   private Map<String, DrawingBuffer> namedBuffers;
   private transient List<DrawingBuffer> cachedBufferList;
   private transient boolean dirty;
 
   public DrawnStuff() {
     this.things = new ArrayList<DrawnThing>();
+    this.redoList = new ArrayList<DrawnThing>();
     this.namedBuffers = new HashMap<String, DrawingBuffer>();
     this.cachedBufferList = new ArrayList<DrawingBuffer>();
     this.dirty = false;
@@ -35,7 +37,12 @@ public class DrawnStuff {
 
   public void add(DrawnThing thing) {
     things.add(thing);
+    branchRedo();
     fireChange();
+  }
+
+  private void branchRedo() {
+    redoList.clear();
   }
 
   public void remove(DrawnThing thing) {
@@ -151,5 +158,21 @@ public class DrawnStuff {
     }
     things = newWorldOrder;
     fireChange();
+  }
+
+  public void redo() {
+    if (redoList.size() > 0) {
+      DrawnThing dt = redoList.remove(redoList.size() - 1);
+      things.add(dt);
+      fireChange();
+    }
+  }
+
+  public void undo() {
+    if (things.size() > 0) {
+      DrawnThing dt = things.remove(things.size() - 1);
+      redoList.add(dt);
+      fireChange();
+    }
   }
 }

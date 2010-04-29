@@ -289,9 +289,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-    if (main.getScript("Scribbler") != null) {
-      debugUtil.drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
-    }
+//    if (main.getScript("Scribbler") != null) {
+//      debugUtil.drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
+//    }
     debugUtil.drawDots(seq, "buggy", "1", Color.BLUE, 2.5);
     debugUtil.drawDots(seq, "corner", "2", Color.RED, 3.5);
     // drawDots(seq, true, true, true, false, false, "4");
