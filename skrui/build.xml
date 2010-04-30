@@ -11,7 +11,7 @@
 	<property name="javadoc.output.dir" value="${build.dir}/docs" />
 	<property name="jar.output" value="${build.dir}/${shortName}.jar" />
 
-	<!-- ==================== Compilation Classpath =========================== -->           
+	<!-- ==================== Compilation Classpath =========================== -->
 
 	<path id="compile.classpath">
 		<fileset dir="lib">
@@ -57,12 +57,14 @@
 		<genjar jarfile="${jar.output}">
 			<library jar="lib/iText-2.1.4.jar" />
 			<class name="org.six11.skrui.Main" />
-			<class name="org.six11.skrui.Batch" />
+
 			<!-- The SkruiScripts are loaded via reflection (barf) so I have to include them explicitly. -->
-			<class name="org.six11.skrui.CornerFinder" />
-			<class name="org.six11.skrui.PrettyPrinterSegments" />
-			<class name="org.six11.skrui.script.HelloScript" />
-			
+			<class name="org.six11.skrui.script.FlowSelection" />
+			<class name="org.six11.skrui.script.GestureRecognizer" />
+			<class name="org.six11.skrui.script.Neanderthal" />
+			<class name="org.six11.skrui.script.Recognition" />
+			<class name="org.six11.skrui.script.Scribbler" />
+
 			<classpath>
 				<fileset dir="lib">
 					<include name="*.jar" />
@@ -99,6 +101,25 @@
 
 	</target>
 
+	  
+	  <target name="jarBundle" depends="jar" description="Builds SKRUI Draw.app">
+
+	    <taskdef name="jarbundler"
+	             classpath="lib/jarbundler-2.1.0.jar" 
+	             classname="net.sourceforge.jarbundler.JarBundler"/>
+
+	    <jarbundler dir="${build.dir}" verbose="true" showPlist="true"
+	                name="SKRUI Draw"
+	                mainclass="org.six11.skrui.Main"
+	                jar="${jar.output}"
+	                icon="icons/skrui-draw.icns"
+	                version="0.2-dev"
+	    			arguments="Neanderthal FlowSelection Scribbler GestureRecognizer" 
+	    			bundleid="org.six11.skrui" 
+	    			jvmversion="1.6+"
+	  				/>
+	  </target>
+	                
 
 	<!-- ==================== Run Target ===================================== -->
 
