@@ -1,15 +1,8 @@
 package org.six11.skrui.ui;
 
-import java.awt.Color;
-import java.awt.Rectangle;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.six11.skrui.DrawingBufferRoutines;
 import org.six11.util.Debug;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 
 /**
@@ -38,6 +31,10 @@ public class UndoSquare extends PenSquare {
     markerSet = false;
   }
 
+  public void up() {
+    // nothing
+  }
+  
   @Override
   public void go(Pt pt) {
     if (!markerSet) {
@@ -61,15 +58,13 @@ public class UndoSquare extends PenSquare {
 
 
   
+  @SuppressWarnings("unused")
   private final void bug(String what) {
     Debug.out("UndoSquare", what);
   }
   
   protected void fireUndo(String dir) {
-    PropertyChangeEvent ev = new PropertyChangeEvent(this, "undoEvent", null, dir);
-    for (PropertyChangeListener pcl : pcls) {
-      pcl.propertyChange(ev);
-    }
+    firePCE(new PropertyChangeEvent(this, "undoEvent", null, dir));
   }
 
 }

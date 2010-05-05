@@ -1,11 +1,10 @@
 package org.six11.skrui.ui;
 
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,9 +21,7 @@ import org.six11.util.pen.Pt;
 public class ThicknessSquare extends PenSquare {
 
   private static double offset = 10;
-
   double min, max, current;
-  DrawingBuffer db;
   Pt lastDrag = null;
   Color fg;
 
@@ -34,6 +31,11 @@ public class ThicknessSquare extends PenSquare {
     this.max = max;
     this.current = current;
     this.fg = Color.BLACK;
+    addComponentListener(new ComponentAdapter() {
+      public void componentResized(ComponentEvent e) {
+        whackUI();
+      }
+    });
   }
 
   @Override
@@ -44,8 +46,7 @@ public class ThicknessSquare extends PenSquare {
           && Math.max(lastDrag.getX(), pt.getX()) >= midX) {
         double averageY = (lastDrag.getY() + pt.getY()) / 2;
         current = calcValue(averageY);
-        db = null;
-        repaint();
+        whackUI();
         firePenThicknessChange();
       }
     }
@@ -53,21 +54,11 @@ public class ThicknessSquare extends PenSquare {
   }
 
   private void firePenThicknessChange() {
-    PropertyChangeEvent ev = new PropertyChangeEvent(this, "thickness", null, current);
-    for (PropertyChangeListener pcl : pcls) {
-      pcl.propertyChange(ev);
-    }
+    firePCE(new PropertyChangeEvent(this, "thickness", null, current));
   }
-
-  @Override
-  public void paintComponent(Graphics g) {
-    if (db == null) {
-      initDB();
-    }
-    Graphics2D g2 = (Graphics2D) g;
-    g2.setPaint(Color.WHITE);
-    g2.fill(getBounds());
-    g.drawImage(db.getImage(), 0, 0, null);
+  
+  public void up() {
+    // nothing
   }
   
   public void down() {
@@ -76,11 +67,10 @@ public class ThicknessSquare extends PenSquare {
   
   public void setColor(Color c) {
     this.fg = c;
-    db = null;
-    repaint();
+    whackUI();
   }
 
-  private void initDB() {
+  protected void initDB() {
     db = new DrawingBuffer();
     Rectangle r = getBounds();
 
@@ -97,7 +87,7 @@ public class ThicknessSquare extends PenSquare {
     sliderThing.add(sliderThing.get(0));
     DrawingBufferRoutines.fill(db, sliderThing, 1.0, Color.BLACK, fg);
     DrawingBufferRoutines.dot(db, new Pt(maxX, botY), current / 2, 1, fg, fg);
-    DrawingBufferRoutines.line(db, sliderThing.get(0), new Pt(midX, botY), Color.RED, 1.2);
+    DrawingBufferRoutines.line(db, new Pt(midX, 0), new Pt(midX, r.getHeight()), Color.RED, 1.2);
   }
 
   private double calcValue(double y) {

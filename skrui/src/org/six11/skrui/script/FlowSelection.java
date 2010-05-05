@@ -55,12 +55,57 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   long fsStartTime;
   List<Dot> taps;
   Timer tapTimer;
+  Timer coolTimer;
 
   protected void idle() {
     dragPoint = null;
     dragDelta = null;
     flowSelectionStroke = null;
     dwellPoint = null;
+    drawFlowSelectionEffect();
+    coolTimer.restart();
+  }
+  
+  protected void exitIdle() {
+    coolTimer.stop();
+  }
+
+  private void cool() {
+    List<Stroke> cooledSequences = new ArrayList<Stroke>();
+    if (nearestSequences.size() > 0) {
+      for (Stroke str : nearestSequences) {
+        boolean stillSelected = false;
+        for (Pt pt : str) {
+          double selStr = pt.getDouble("fs strength");
+          selStr = Math.max(0, selStr - 0.005);
+          pt.setDouble("fs strength", selStr);
+          if (selStr > 0) {
+            stillSelected = true;
+          }
+        }
+        if (!stillSelected) {
+          cooledSequences.add(str);
+        }
+      }
+      for (Stroke seq : cooledSequences) {
+        nearestSequences.remove(seq);
+      }
+    } else {
+      coolTimer.stop(); // nothing more to cool.
+    }
+    drawFlowSelectionEffect();
+  }
+  
+  private void drawFlowSelectionEffect() {
+    if (nearestSequences.size() > 0) {
+      DrawingBuffer db = new DrawingBuffer();
+      for (Stroke seq : nearestSequences) {
+        DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
+      }
+      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
+    } else {
+      main.getDrawnStuff().removeNamedBuffer("fs buffer");
+    }
   }
 
   protected void enterReshape() {
@@ -80,7 +125,6 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
         main.updateFinishedSequence(seq);
       }
     }
-    main.getDrawnStuff().removeNamedBuffer("fs buffer");
   }
 
   protected void reshape() {
@@ -123,7 +167,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
           pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
         }
       }
-      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, getThickness(seq));
+      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute("pen color"),
+          getThickness(seq));
       DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
   }
@@ -132,8 +177,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     for (Stroke seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
-      DrawingBufferRoutines.lines(db, seq.getPoints(), Color.BLACK, getThickness(seq));
-      DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
+      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute("pen color"),
+          getThickness(seq));
     }
   }
 
@@ -168,18 +213,20 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   protected void startSelection() {
     fsStartTime = System.currentTimeMillis();
-    nearestSequences.clear();
-    // bug("Selecting with " + taps.size() + " preceding pen taps.");
+    if (taps.size() != 1) {
+      clearFSData(true, true);
+    } else {
+      clearFSData(false, true);
+    }
 
-    if (taps.size() == 0) {
+    for (Dot tap : taps) {
+      data.forget(tap, false);
+    }
+    if (taps.size() < 2) {
       Pt nearestPt = data.getAllPoints().getNearest(dwellPoint);
       prepare(nearestPt);
     } else {
-      // bug("multi-select mode!");
       int nTaps = taps.size();
-      for (Dot tap : taps) {
-        data.forget(tap, false);
-      }
       Set<Pt> all = data.getAllPoints().getNear(dwellPoint, nTaps * 30);
       Set<Pt> near = new HashSet<Pt>();
       Set<Stroke> sequences = Neanderthal.getSequences(Neanderthal.getPrimitives(all));
@@ -196,12 +243,30 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     data.forget(scrapMe, false);
   }
 
+  private void clearFSData(boolean resetStrength, boolean clearList) {
+    // set the selection strength to zero for all sequences in our list, then clear the list.
+
+    for (Stroke seq : nearestSequences) {
+      if (resetStrength) {
+        for (Pt pt : seq) {
+          pt.setDouble("fs strength", 0);
+        }
+      }
+      seq.clearNamedPoint("flow select center");
+    }
+    if (clearList) {
+      nearestSequences.clear();
+    }
+  }
+
   private void prepare(Pt pt) {
     Stroke ns = (Stroke) pt.getSequence(Neanderthal.MAIN_SEQUENCE);
     if (!nearestSequences.contains(ns)) {
       nearestSequences.add(ns);
       int centerIdx = ns.indexOf(pt);
       passEffortMsg(centerIdx, ns, 0, 0);
+      // clear the existing center, if any.
+      ns.clearNamedPoint("flow select center");
       ns.setNamedPoint("flow select center", pt);
     }
   }
@@ -251,19 +316,14 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   }
 
   protected void growSelection() {
-    DrawingBuffer db = new DrawingBuffer();
     long duration = System.currentTimeMillis() - fsStartTime;
     for (Stroke seq : nearestSequences) {
       int centerIdx = seq.getNamedPointIndex("flow select center");
       passStrengthMsg(centerIdx, seq, duration, 0);
       assignHinge(seq);
-      DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
-    if (nearestSequences.size() > 0) {
-      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
-    } else {
-      main.getDrawnStuff().removeNamedBuffer("fs buffer");
-    }
+
+    drawFlowSelectionEffect();
   }
 
   /**
@@ -401,11 +461,26 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     tapTimer.stop();
     tapTimer.setRepeats(false);
 
+    coolTimer = new Timer(3000, new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+        cool();        
+      }
+    });
+    coolTimer.stop();
+    coolTimer.setInitialDelay(3000);
+    coolTimer.setDelay(20);
+    coolTimer.setRepeats(true);
+    
     fsm = new FSM("Flow Selection");
     fsm.addState("idle");
     fsm.setStateEntryCode("idle", new Runnable() {
       public void run() {
         idle();
+      }
+    });
+    fsm.setStateExitCode("idle", new Runnable() {
+      public void run() {
+        exitIdle();
       }
     });
     fsm.addState("draw");

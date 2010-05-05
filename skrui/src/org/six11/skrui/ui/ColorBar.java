@@ -35,18 +35,18 @@ public class ColorBar extends JPanel {
     double fullDist = 100;
     squares = new ArrayList<PenSquare>();
     this.thickness = 4.0;
+    currentColor = Color.BLACK;
     squares.add(new ThicknessSquare(0.05, 24.0, thickness));
-    ColorSquare black = new ColorSquare(this, Color.BLACK, fullDist);
-    squares.add(black);
-    squares.add(new ColorSquare(this, Color.BLUE, fullDist));
-    squares.add(new ColorSquare(this, Color.GREEN, fullDist));
-    squares.add(new ColorSquare(this, Color.LIGHT_GRAY, fullDist));
-    squares.add(new ColorSquare(this, Color.RED, fullDist));
-    squares.add(new ColorSquare(this, Color.WHITE, fullDist));
+    squares.add(new ColorSquare(this, new Color(000, 000, 000), fullDist)); // black
+    squares.add(new ColorSquare(this, new Color(255, 255, 255), fullDist)); // white
+    squares.add(new ColorSquare(this, new Color(255, 000, 000), fullDist)); // red
+    squares.add(new ColorSquare(this, new Color(000, 255, 000), fullDist)); // green
+    squares.add(new ColorSquare(this, new Color(000, 000, 255), fullDist)); // blue
+    squares.add(new ColorSquare(this, new Color(000, 255, 255), fullDist)); // g+b = cyan
+    squares.add(new ColorSquare(this, new Color(255, 000, 255), fullDist)); // r+b = magenta
+    squares.add(new ColorSquare(this, new Color(255, 255, 000), fullDist)); // r+g = yellow
     squares.add(new ColorSquare(this, null, fullDist));
     squares.add(new UndoSquare(this, 40));
-    
-    currentColor = black.getColor();
 
     PropertyChangeListener handler = new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent ev) {
@@ -72,6 +72,7 @@ public class ColorBar extends JPanel {
     }
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ColorBar", what);
   }
