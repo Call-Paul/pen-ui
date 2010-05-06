@@ -41,6 +41,14 @@ public class DrawnStuff {
     fireChange();
   }
 
+  public DrawnThing getMostRecentThing() {
+    DrawnThing ret = null;
+    if (things.size() > 0) {
+      ret = things.get(things.size() - 1);
+    }
+    return ret;
+  }
+  
   private void branchRedo() {
     redoList.clear();
   }

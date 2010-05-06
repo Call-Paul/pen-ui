@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,8 @@ import javax.swing.Timer;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.DrawnStuff;
+import org.six11.skrui.DrawnThing;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Primitive;
@@ -28,7 +31,9 @@ import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.FSM;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 import org.six11.util.pen.Vec;
@@ -56,16 +61,65 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   List<Dot> taps;
   Timer tapTimer;
   Timer coolTimer;
+  private boolean selecting;
 
   protected void idle() {
     dragPoint = null;
     dragDelta = null;
-    flowSelectionStroke = null;
     dwellPoint = null;
+    flowSelectionStroke = null;
+    selecting = false;
     drawFlowSelectionEffect();
     coolTimer.restart();
   }
-  
+
+  private void detectOverdraw(Stroke recent) {
+    if (!selecting && nearestSequences.size() > 0) {
+      Collection<Primitive> prims = (Collection<Primitive>) recent
+          .getAttribute(Neanderthal.PRIMITIVES);
+      boolean ok = true;
+      for (Primitive prim : prims) {
+        if (prim instanceof Dot) {
+          ok = false;
+        }
+      }
+      if (ok) {
+        handleOverdraw(recent);
+      }
+    }
+  }
+
+  private void handleOverdraw(Stroke raw) {
+
+    Sequence overstroke = Functions.getSpline(raw, raw.size() / 4, 1);
+    boolean didOverdraw = false;
+    for (Stroke seq : nearestSequences) {
+      // if the overdrawn stroke is near the selected sequence, change its shape.
+      double dist = Functions.getMinDistBetweenSequences(overstroke, seq);
+      if (dist < 40) {
+        handleOverdraw(overstroke, seq);
+        didOverdraw = true;
+      }
+    }
+    if (didOverdraw) {
+      data.forget(raw, false);
+    }
+  }
+
+  private void handleOverdraw(Sequence overstroke, Stroke selected) {
+    // for all selected points in the sequence, find the nearest point on the overstroke.
+    enterReshape();
+    for (Pt pt : selected) {
+      if (pt.getDouble("fs strength") > 0) {
+        Pt f = Functions.getNearestPointOnSequence(pt, overstroke);
+        Vec v = new Vec(pt, f).getScaled(pt.getDouble("fs strength"));
+        Pt n = v.add(pt);
+        pt.setLocation(n);
+      }
+    }
+    exitReshape();
+  }
+
   protected void exitIdle() {
     coolTimer.stop();
   }
@@ -95,7 +149,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     }
     drawFlowSelectionEffect();
   }
-  
+
   private void drawFlowSelectionEffect() {
     if (nearestSequences.size() > 0) {
       DrawingBuffer db = new DrawingBuffer();
@@ -213,6 +267,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   protected void startSelection() {
     fsStartTime = System.currentTimeMillis();
+    selecting = true;
     if (taps.size() != 1) {
       clearFSData(true, true);
     } else {
@@ -231,7 +286,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       Set<Pt> near = new HashSet<Pt>();
       Set<Stroke> sequences = Neanderthal.getSequences(Neanderthal.getPrimitives(all));
       for (Stroke seq : sequences) {
-        Pt pt = Functions.getNearestPoint(dwellPoint, seq);
+        Pt pt = Functions.getNearestPointOnSequence(dwellPoint, seq);
         near.add(pt);
       }
       for (Pt pt : near) {
@@ -463,14 +518,14 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
     coolTimer = new Timer(3000, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
-        cool();        
+        cool();
       }
     });
     coolTimer.stop();
     coolTimer.setInitialDelay(3000);
     coolTimer.setDelay(20);
     coolTimer.setRepeats(true);
-    
+
     fsm = new FSM("Flow Selection");
     fsm.addState("idle");
     fsm.setStateEntryCode("idle", new Runnable() {
@@ -659,6 +714,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
         break;
       case END:
         dwellTimer.stop();
+        detectOverdraw(seq);
         fsm.addEvent("up");
         break;
     }

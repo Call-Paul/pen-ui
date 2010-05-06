@@ -300,7 +300,8 @@ public abstract class DrawingBufferRoutines {
         double b = seq.get(i + 1).getDouble("fs strength", 0);
         double c = (a + b) / 2;
         if (c > 0) {
-          Color color = new Color(1f, 1 - (float) c, 1 - (float) c, (float) c);
+          Color color = Functions.eq(c, 1, 0.05) ? Color.green // nearly full str = Green
+              : new Color(1f, 1 - (float) c, 1 - (float) c, (float) c); // partial str = Red+Alpha
           line(db, pt, seq.get(i + 1), color, thick);
         }
         if (pt.getBoolean("hinge", false)) {
