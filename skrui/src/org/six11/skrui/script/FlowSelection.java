@@ -16,8 +16,6 @@ import javax.swing.Timer;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
-import org.six11.skrui.DrawnStuff;
-import org.six11.skrui.DrawnThing;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Primitive;
@@ -31,7 +29,6 @@ import org.six11.util.args.Arguments.ValueType;
 import org.six11.util.data.FSM;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.SequenceEvent;
@@ -48,6 +45,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   private static final String K_TIMEOUT = "fs-timeout"; // 900
   private static final String K_TICK = "fs-tick"; // 50
   private static final String K_MOVE_THRESHOLD = "fs-move-thresh"; // 10
+  public static final double OVERDRAW_NEARNESS_THRESHOLD = 40.0;
+  private static final double OVERDRAW_EFFECT_MULTIPLE = 0.5;
 
   Stroke flowSelectionStroke;
   Pt dwellPoint;
@@ -96,7 +95,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     for (Stroke seq : nearestSequences) {
       // if the overdrawn stroke is near the selected sequence, change its shape.
       double dist = Functions.getMinDistBetweenSequences(overstroke, seq);
-      if (dist < 40) {
+      if (dist < OVERDRAW_NEARNESS_THRESHOLD) {
         handleOverdraw(overstroke, seq);
         didOverdraw = true;
       }
@@ -112,7 +111,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     for (Pt pt : selected) {
       if (pt.getDouble("fs strength") > 0) {
         Pt f = Functions.getNearestPointOnSequence(pt, overstroke);
-        Vec v = new Vec(pt, f).getScaled(pt.getDouble("fs strength"));
+        Vec v = new Vec(pt, f).getScaled(pt.getDouble("fs strength") * OVERDRAW_EFFECT_MULTIPLE);
         Pt n = v.add(pt);
         pt.setLocation(n);
       }

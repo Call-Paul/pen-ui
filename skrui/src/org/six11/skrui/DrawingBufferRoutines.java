@@ -12,6 +12,7 @@ import java.util.Set;
 import org.six11.skrui.mesh.HalfEdge;
 import org.six11.skrui.mesh.Mesh;
 import org.six11.skrui.mesh.Triangle;
+import org.six11.skrui.script.FlowSelection;
 import org.six11.skrui.shape.Region;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
@@ -294,6 +295,9 @@ public abstract class DrawingBufferRoutines {
 
   public static void flowSelectEffect(DrawingBuffer db, Sequence seq, double thick) {
     if (seq.getPoints().size() > 0) {
+      // each sequence might have several 'stretches' of selected areas. keep track of them.
+      List<List<Pt>> stretches = new ArrayList<List<Pt>>();
+      Pt prev = null;
       for (int i = 0; i < seq.getPoints().size() - 1; i++) {
         Pt pt = seq.get(i);
         double a = pt.getDouble("fs strength", 0);
@@ -311,6 +315,26 @@ public abstract class DrawingBufferRoutines {
         } else if (pt.getBoolean("corner", false) && a > 0) {
           dot(db, pt, 3.0, 0.3, Color.BLACK, Color.BLUE);
         }
+        // now attend to the stretches of selected points
+        if (prev != null && prev.getDouble("fs strength", 0) == 0
+            && pt.getDouble("fs strength", 0) > 0) {
+          // start a new selected area
+          List<Pt> stretch = new ArrayList<Pt>();
+          stretch.add(pt);
+          stretches.add(stretch);
+        } else if (pt.getDouble("fs strength", 0) > 0) {
+          if (prev == null) {
+            List<Pt> stretch = new ArrayList<Pt>();
+            stretches.add(stretch);
+          }
+          stretches.get(stretches.size() - 1).add(pt);
+        }
+        prev = pt;
+      }
+      
+      Color strColor = new Color(255, 0, 0, 64);
+      for (List<Pt> stretch : stretches) {
+        lines(db, stretch, strColor, 2* FlowSelection.OVERDRAW_NEARNESS_THRESHOLD);
       }
     }
   }
