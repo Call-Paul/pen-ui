@@ -16,6 +16,7 @@ import javax.swing.Timer;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.DrawingBufferRoutines;
+import org.six11.skrui.Main;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.shape.Dot;
 import org.six11.skrui.shape.Primitive;
@@ -48,6 +49,12 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   public static final double OVERDRAW_NEARNESS_THRESHOLD = 40.0;
   private static final double OVERDRAW_EFFECT_MULTIPLE = 0.5;
 
+  public final static String STR = "fs strength";
+  public final static String FSBUF = "fs buffer";
+  public final static String HINGE = "hinge";
+  public final static String FSCENTER = "flow select center";
+  public final static String FSEFFORT = "fs effort";
+  
   Stroke flowSelectionStroke;
   Pt dwellPoint;
   Pt dragPoint; // latest location of pen during a drag.
@@ -74,6 +81,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   private void detectOverdraw(Stroke recent) {
     if (!selecting && nearestSequences.size() > 0) {
+      // 1. If the recent stroke could conceivably be seen as a dot, forget it.
       Collection<Primitive> prims = (Collection<Primitive>) recent
           .getAttribute(Neanderthal.PRIMITIVES);
       boolean ok = true;
@@ -83,40 +91,71 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
         }
       }
       if (ok) {
-        handleOverdraw(recent);
+        // 2. If it's not a dot, then see if any part of the drawn stroke comes 'close' to a
+        // selected point.
+        Sequence overstroke = Functions.getSpline(recent, recent.size() / 4, 1);
+        boolean didOverdraw = false;
+        List<List<Pt>> patches = extractSelectedPatches();
+        for (List<Pt> patch : patches) {
+          double dist = Functions.getMinDistBetween(patch, recent.getPoints());
+          if (dist < OVERDRAW_NEARNESS_THRESHOLD) {
+            handleOverdraw(overstroke, patch, OVERDRAW_EFFECT_MULTIPLE);
+            didOverdraw = true;
+          }
+        }
+        if (didOverdraw) {
+          data.forget(recent, false);
+        }
       }
     }
   }
 
-  private void handleOverdraw(Stroke raw) {
-
-    Sequence overstroke = Functions.getSpline(raw, raw.size() / 4, 1);
-    boolean didOverdraw = false;
-    for (Stroke seq : nearestSequences) {
-      // if the overdrawn stroke is near the selected sequence, change its shape.
-      double dist = Functions.getMinDistBetweenSequences(overstroke, seq);
-      if (dist < OVERDRAW_NEARNESS_THRESHOLD) {
-        handleOverdraw(overstroke, seq);
-        didOverdraw = true;
-      }
-    }
-    if (didOverdraw) {
-      data.forget(raw, false);
-    }
-  }
-
-  private void handleOverdraw(Sequence overstroke, Stroke selected) {
-    // for all selected points in the sequence, find the nearest point on the overstroke.
+  /**
+   * @param overstroke
+   *          is the spline that we're tweening towards
+   * @param patch
+   *          is the list of points that should move (excluding those already handled)
+   */
+  private void handleOverdraw(Sequence overstroke, List<Pt> patch, double dampener) {
+    List<Pt> tweenTo = Functions.getSequenceTweenTarget(patch, overstroke.getPoints());
     enterReshape();
-    for (Pt pt : selected) {
-      if (pt.getDouble("fs strength") > 0) {
-        Pt f = Functions.getNearestPointOnSequence(pt, overstroke);
-        Vec v = new Vec(pt, f).getScaled(pt.getDouble("fs strength") * OVERDRAW_EFFECT_MULTIPLE);
-        Pt n = v.add(pt);
-        pt.setLocation(n);
+    for (int i = 0; i < patch.size(); i++) {
+      Pt pt = patch.get(i);
+      Pt yonder = tweenTo.get(i);
+      // if yonder is an endpoint of overstroke, do not move this point. We only want to move
+      // points that are 'under' the overstroke.
+      if (!yonder.isSameLocation(overstroke.getFirst())
+          && !yonder.isSameLocation(overstroke.getLast())) {
+        Vec v = new Vec(pt, yonder).getScaled(pt.getDouble(STR) * dampener);
+        pt.setLocation(v.add(pt));
       }
     }
     exitReshape();
+  }
+
+  /**
+   * Extract the selected regions from nearestSequences. Each patch is a sequence of points on the
+   * same pen stroke that have positive flow selection strength.
+   */
+  private List<List<Pt>> extractSelectedPatches() {
+    List<List<Pt>> ret = new ArrayList<List<Pt>>();
+    for (Stroke seq : nearestSequences) {
+      Pt prev = null;
+      for (Pt pt : seq) {
+        // start patch when moving from an unselected to selected, or if the first point is selected
+        if (prev != null && prev.getDouble(STR, 0) == 0 && pt.getDouble(STR, 0) > 0) {
+          ret.add(new ArrayList<Pt>());
+        } else if (prev == null && pt.getDouble(STR, 0) > 0) {
+          ret.add(new ArrayList<Pt>());
+        }
+        // add pt to current patch if it has positive selection strength
+        if (pt.getDouble(STR, 0) > 0) {
+          ret.get(ret.size() - 1).add(pt);
+        }
+        prev = pt;
+      }
+    }
+    return ret;
   }
 
   protected void exitIdle() {
@@ -129,9 +168,9 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       for (Stroke str : nearestSequences) {
         boolean stillSelected = false;
         for (Pt pt : str) {
-          double selStr = pt.getDouble("fs strength");
+          double selStr = pt.getDouble(STR);
           selStr = Math.max(0, selStr - 0.005);
-          pt.setDouble("fs strength", selStr);
+          pt.setDouble(STR, selStr);
           if (selStr > 0) {
             stillSelected = true;
           }
@@ -155,9 +194,9 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       for (Stroke seq : nearestSequences) {
         DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
       }
-      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
+      main.getDrawnStuff().addNamedBuffer(FSBUF, db);
     } else {
-      main.getDrawnStuff().removeNamedBuffer("fs buffer");
+      main.getDrawnStuff().removeNamedBuffer(FSBUF);
     }
   }
 
@@ -188,7 +227,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       int numHinges = 0;
       for (Stroke seq : nearestSequences) {
         for (Pt pt : seq) {
-          if (pt.getBoolean("hinge", false)) {
+          if (pt.getBoolean(HINGE, false)) {
             numHinges++;
             hinge = pt;
           }
@@ -199,7 +238,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       } else {
         move(db);
       }
-      main.getDrawnStuff().addNamedBuffer("fs buffer", db);
+      main.getDrawnStuff().addNamedBuffer(FSBUF, db);
     }
   }
 
@@ -213,14 +252,13 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     AffineTransform rot = Functions.getRotationInstance(hinge, theta);
     for (Stroke seq : nearestSequences) {
       for (Pt pt : seq) {
-        if (pt != hinge
-            && pt.getDouble("fs strength", 0) > main.getParam(K_HINGE_THRESHOLD).getDouble()/* HINGE_THRESHOLD */) {
+        if (pt != hinge && pt.getDouble(STR, 0) > main.getParam(K_HINGE_THRESHOLD).getDouble()/* HINGE_THRESHOLD */) {
           rot.transform(pt, pt);
           Vec toPt = new Vec(hinge, pt).getScaled(scale);
           pt.setLocation(hinge.getX() + toPt.getX(), hinge.getY() + toPt.getY());
         }
       }
-      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute("pen color"),
+      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute(Main.PEN_COLOR),
           getThickness(seq));
       DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
     }
@@ -228,24 +266,24 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   private void move(DrawingBuffer db) {
     for (Stroke seq : nearestSequences) {
-      int centerIdx = seq.getNamedPointIndex("flow select center");
+      int centerIdx = seq.getNamedPointIndex(FSCENTER);
       passReshapeMsg(centerIdx, seq, dragDelta.getX(), dragDelta.getY(), 0);
-      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute("pen color"),
+      DrawingBufferRoutines.lines(db, seq.getPoints(), (Color) seq.getAttribute(Main.PEN_COLOR),
           getThickness(seq));
     }
   }
 
   private double getThickness(Stroke seq) {
     double ret = 2.0;
-    if (seq.getAttribute("pen thickness") != null) {
-      ret = (java.lang.Double) seq.getAttribute("pen thickness");
+    if (seq.getAttribute(Main.PEN_THICKNESS) != null) {
+      ret = (java.lang.Double) seq.getAttribute(Main.PEN_THICKNESS);
     }
     return ret;
   }
 
   private void passReshapeMsg(int idx, Stroke seq, double dx, double dy, int dir) {
     Pt pt = seq.get(idx);
-    double str = pt.getDouble("fs strength", 0);
+    double str = pt.getDouble(STR, 0);
     pt.setLocation(pt.getX() + (str * dx), pt.getY() + (str * dy));
     if (dir == 0) {
       int nextIdx = idx + 1;
@@ -303,10 +341,10 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     for (Stroke seq : nearestSequences) {
       if (resetStrength) {
         for (Pt pt : seq) {
-          pt.setDouble("fs strength", 0);
+          pt.setDouble(STR, 0);
         }
       }
-      seq.clearNamedPoint("flow select center");
+      seq.clearNamedPoint(FSCENTER);
     }
     if (clearList) {
       nearestSequences.clear();
@@ -320,18 +358,18 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       int centerIdx = ns.indexOf(pt);
       passEffortMsg(centerIdx, ns, 0, 0);
       // clear the existing center, if any.
-      ns.clearNamedPoint("flow select center");
-      ns.setNamedPoint("flow select center", pt);
+      ns.clearNamedPoint(FSCENTER);
+      ns.setNamedPoint(FSCENTER, pt);
     }
   }
 
   /**
-   * Sets the "fs effort" value on each point.
+   * Sets the FSEFFORT value on each point.
    */
   private void passEffortMsg(int idx, Stroke seq, double effort, int dir) {
     if (indexValid(idx, seq)) {
       Pt pt = seq.get(idx);
-      pt.setDouble("fs effort", effort);
+      pt.setDouble(FSEFFORT, effort);
       double penalty = getEffortPenalty(idx, seq);
       if (dir == 0) {
         int nextIdx = idx + 1;
@@ -359,7 +397,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   private double getEffortPenalty(int idx, Stroke seq) {
     double ret = 0;
-    if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute("corner")) {
+    if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute(Neanderthal.CORNER)) {
       ret = 130;
     }
     return ret;
@@ -372,7 +410,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   protected void growSelection() {
     long duration = System.currentTimeMillis() - fsStartTime;
     for (Stroke seq : nearestSequences) {
-      int centerIdx = seq.getNamedPointIndex("flow select center");
+      int centerIdx = seq.getNamedPointIndex(FSCENTER);
       passStrengthMsg(centerIdx, seq, duration, 0);
       assignHinge(seq);
     }
@@ -392,16 +430,16 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     double hingeThresh = main.getParam(K_HINGE_THRESHOLD).getDouble();
     for (int i = 1; i < seq.size() - 1; i++) {
       Pt pt = seq.get(i);
-      if (pt.hasAttribute("corner") && pt.getDouble("fs strength", 0) > hingeThresh) {
-        double left = seq.get(i - 1).getDouble("fs strength", 0);
-        double right = seq.get(i + 1).getDouble("fs strength", 0);
+      if (pt.hasAttribute(Neanderthal.CORNER) && pt.getDouble(STR, 0) > hingeThresh) {
+        double left = seq.get(i - 1).getDouble(STR, 0);
+        double right = seq.get(i + 1).getDouble(STR, 0);
         double min = Math.min(left, right);
-        pt.setBoolean("hinge", (min < hingeThresh / 2));
+        pt.setBoolean(HINGE, (min < hingeThresh / 2));
         if (min < hingeThresh / 2) {
           numHinges++;
         }
       } else {
-        pt.setBoolean("hinge", false);
+        pt.setBoolean(HINGE, false);
       }
     }
     return numHinges;
@@ -410,8 +448,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   private void passStrengthMsg(int idx, Stroke seq, long duration, int dir) {
     if (indexValid(idx, seq)) {
       Pt pt = seq.get(idx);
-      double str = getStrength(pt.getDouble("fs effort"), duration, 0.1);
-      pt.setDouble("fs strength", Math.max(str, pt.getDouble("fs strength", 0)));
+      double str = getStrength(pt.getDouble(FSEFFORT), duration, 0.1);
+      pt.setDouble(STR, Math.max(str, pt.getDouble(STR, 0)));
       if (dir == 0) {
         passStrengthMsg(idx + 1, seq, duration, 1);
         passStrengthMsg(idx - 1, seq, duration, -1);
@@ -508,7 +546,6 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     taps = new ArrayList<Dot>();
     tapTimer = new Timer(2 * timeout, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        // bug("No more taps. I had: " + taps.size());
         taps.clear();
       }
     });
@@ -618,7 +655,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       @Override
       public void doAfterTransition() {
         setDwellPoint();
-        // bug("smoothing...");
+        smooth();
       }
     });
 
@@ -632,7 +669,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
     fsm.addTransition(new FSM.Transition("dwell", "smooth", "smooth") {
       @Override
       public void doAfterTransition() {
-        bug("smoothing...");
+        smooth();
       }
     });
 
@@ -643,6 +680,17 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       }
     });
     bug("Flow Selection initialized.");
+  }
+
+  protected void smooth() {
+    List<List<Pt>> patches = extractSelectedPatches();
+    for (List<Pt> patch : patches) {
+      // make a spline based on a downsample of the patch
+      Sequence spline = Functions
+          .getSplineAuthentic(patch, (int) Math.ceil(patch.size() / 10), 1.0);
+      handleOverdraw(spline, patch, 0.05);
+    }
+    drawFlowSelectionEffect();
   }
 
   @Override

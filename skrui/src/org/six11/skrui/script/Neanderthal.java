@@ -30,9 +30,12 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public static final String SCRAP = "Sequence already dealt with";
   public static final String MAIN_SEQUENCE = "main sequence";
   public static final String PRIMITIVES = "primitives";
+  public static final String CORNER = "corner";
+  
   //
   // ---------------------------------------------------------------------- Member declarations.
   //
+
 
   //
   // Accounting information for all ink related to drawing.

@@ -79,6 +79,9 @@ public class Main {
 
   private static final String PROP_SKETCH_DIR = "sketchDir";
   private static final String PROP_PDF_DIR = "pdfDir";
+  
+  public static final String PEN_COLOR = "pen color";
+  public static final String PEN_THICKNESS = "pen thickness";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
       "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
