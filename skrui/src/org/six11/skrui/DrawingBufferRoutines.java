@@ -1,6 +1,7 @@
 package org.six11.skrui;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.geom.GeneralPath;
 import java.util.ArrayList;
@@ -30,6 +31,8 @@ import org.six11.util.pen.Vec;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public abstract class DrawingBufferRoutines {
+  
+  public static Font defaultFont = new Font("sansserif", Font.PLAIN, 11);
 
   public static void rect(DrawingBuffer db, Pt where, double sx, double sy, Color borderColor,
       Color fillColor, double borderThickness) {
@@ -254,10 +257,14 @@ public abstract class DrawingBufferRoutines {
   }
 
   public static void text(DrawingBuffer db, Pt location, String msg, Color color) {
+    text(db, location, msg, color, defaultFont);
+  }
+
+  public static void text(DrawingBuffer db, Pt location, String msg, Color color, Font font) {
     db.up();
     db.moveTo(location.x, location.y);
     db.down();
-    db.addText(msg, color);
+    db.addText(msg, color, font);
     db.up();
   }
 
@@ -331,10 +338,10 @@ public abstract class DrawingBufferRoutines {
         }
         prev = pt;
       }
-      
+
       Color strColor = new Color(255, 0, 0, 64);
       for (List<Pt> stretch : stretches) {
-        lines(db, stretch, strColor, 2* FlowSelection.OVERDRAW_NEARNESS_THRESHOLD);
+        lines(db, stretch, strColor, 2 * FlowSelection.OVERDRAW_NEARNESS_THRESHOLD);
       }
     }
   }

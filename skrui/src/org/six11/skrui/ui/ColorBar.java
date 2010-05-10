@@ -46,7 +46,7 @@ public class ColorBar extends JPanel {
     squares.add(new ColorSquare(this, new Color(255, 000, 255), fullDist)); // r+b = magenta
     squares.add(new ColorSquare(this, new Color(255, 255, 000), fullDist)); // r+g = yellow
     squares.add(new ColorSquare(this, null, fullDist));
-    squares.add(new UndoSquare(this, 40));
+    squares.add(new UndoSquare(this, 30));
 
     PropertyChangeListener handler = new PropertyChangeListener() {
       public void propertyChange(PropertyChangeEvent ev) {

@@ -75,7 +75,7 @@ public class Mesh {
     if (feelingSnappy && outDir != null && baseName != null) {
       DrawingBuffer db = new DrawingBuffer();
       if (msg != null) {
-        db.addText(msg, Color.BLACK);
+        db.addText(msg, Color.BLACK, DrawingBufferRoutines.defaultFont);
       }
       DrawingBufferRoutines.meshDebug(db, mesh);
       try {

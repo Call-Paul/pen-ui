@@ -3,8 +3,11 @@ package org.six11.skrui.ui;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
@@ -26,7 +29,7 @@ import org.six11.util.pen.Pt;
  */
 public abstract class PenSquare extends JPanel {
   protected DrawingBuffer db;
-
+  protected Font font = new Font("sansserif", Font.PLAIN, 9);
   private List<PropertyChangeListener> pcls;
 
   public PenSquare() {
@@ -53,6 +56,11 @@ public abstract class PenSquare extends JPanel {
         go(new Pt(ev));
       }
     });
+    addComponentListener(new ComponentAdapter() {
+      public void componentResized(ComponentEvent e) {
+        whackUI();
+      }
+    });
     setPreferredSize(new Dimension(50, 80));
     setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
   }
@@ -74,6 +82,9 @@ public abstract class PenSquare extends JPanel {
     Graphics2D g2 = (Graphics2D) g;
     g2.setPaint(getBackground());
     g2.fill(getVisibleRect());
+    if (this instanceof UndoSquare) {
+      bug("paintComponent... db null ?" + (db == null));
+    }
     if (db != null) {
       db.paste(g2);
     }

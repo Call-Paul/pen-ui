@@ -720,7 +720,7 @@ public class Main {
             if (chars > 80) {
               db.moveTo(20, yCursor);
               db.down();
-              db.addText(buf.toString().trim(), Color.BLACK);
+              db.addText(buf.toString().trim(), Color.BLACK, DrawingBufferRoutines.defaultFont);
               db.up();
               yCursor = yCursor + 16;
               buf.setLength(0);
@@ -730,7 +730,7 @@ public class Main {
           if (buf.length() > 0) {
             db.moveTo(20, yCursor);
             db.down();
-            db.addText(buf.toString().trim(), Color.BLACK);
+            db.addText(buf.toString().trim(), Color.BLACK, DrawingBufferRoutines.defaultFont);
             db.up();
           }
           db.drawToGraphics(null);

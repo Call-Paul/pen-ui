@@ -72,8 +72,8 @@ public class ThicknessSquare extends PenSquare {
 
   protected void initDB() {
     db = new DrawingBuffer();
-    Rectangle r = getBounds();
-
+//    Rectangle r = getBounds();
+    Rectangle r = new Rectangle(getWidth(), getHeight());
     double midX = r.getCenterX();
     double topY = offset;
     double botY = r.getHeight() - offset;
