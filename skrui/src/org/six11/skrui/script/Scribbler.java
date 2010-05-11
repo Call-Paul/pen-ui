@@ -112,7 +112,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     penPath = new ArrayList<Pt>(hull.getHullClosed());
     mesh = new Mesh();
     mesh.setSequenceMatters(true);
-    for (Pt hp : hull.getHull()) {
+    for (Pt hp : hull.getHullClosed()) {
       mesh.addPoint(hp);
     }
     lastDrag = seq.getLast();

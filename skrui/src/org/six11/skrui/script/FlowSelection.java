@@ -54,7 +54,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
   public final static String HINGE = "hinge";
   public final static String FSCENTER = "flow select center";
   public final static String FSEFFORT = "fs effort";
-  
+
   Stroke flowSelectionStroke;
   Pt dwellPoint;
   Pt dragPoint; // latest location of pen during a drag.
@@ -397,9 +397,10 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   private double getEffortPenalty(int idx, Stroke seq) {
     double ret = 0;
-    if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute(Neanderthal.CORNER)) {
-      ret = 130;
-    }
+    // TODO: Figure out another way of passing effort, because this is not very nice.
+//    if (idx > 0 && idx < seq.size() - 1 && seq.get(idx).hasAttribute(Neanderthal.CORNER)) {
+//      ret = 130;
+//    }
     return ret;
   }
 
@@ -434,9 +435,23 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
         double left = seq.get(i - 1).getDouble(STR, 0);
         double right = seq.get(i + 1).getDouble(STR, 0);
         double min = Math.min(left, right);
-        pt.setBoolean(HINGE, (min < hingeThresh / 2));
-        if (min < hingeThresh / 2) {
-          numHinges++;
+        boolean isHinge = min < (hingeThresh / 2);
+        if (isHinge) {
+          // also ensure that all points to the strongly selected side are selected > 0
+          int dir = left > right ? -1 : 1;
+          for (int j = i; j < seq.size() && j >= 0; j = j + dir) {
+            if (seq.get(j).getDouble(STR, 0) <= 0) {
+              isHinge = false;
+//              bug("Hingeyness denied.");
+              break;
+            }
+          }
+        }
+        if (isHinge) {
+          pt.setBoolean(HINGE, isHinge);
+          if (isHinge) {
+            numHinges++;
+          }
         }
       } else {
         pt.setBoolean(HINGE, false);
