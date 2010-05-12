@@ -31,11 +31,10 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   public static final String MAIN_SEQUENCE = "main sequence";
   public static final String PRIMITIVES = "primitives";
   public static final String CORNER = "corner";
-  
+
   //
   // ---------------------------------------------------------------------- Member declarations.
   //
-
 
   //
   // Accounting information for all ink related to drawing.
@@ -256,6 +255,25 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     }
   }
 
+  public void reprocessStroke(Stroke modified, boolean processAgain) {
+    // first, completely remove traces of this stroke and related derived objects (e.g. primitives)
+    Set<Primitive> prims = (Set<Primitive>) modified.getAttribute(PRIMITIVES);
+    for (Primitive p : prims) {
+      getAngleGraph().remove(p);
+      getLengthGraph().remove(p);
+      getEndPoints().remove(p.getStartPt());
+      getEndPoints().remove(p.getEndPt());
+    }
+    getTimeGraph().remove(modified);
+    for (Pt die : modified) {
+      getAllPoints().remove(die);
+    }
+    // next, if asked, process this stroke like it just happened
+    if (processAgain) {
+      processFinishedSequence(modified);
+    }
+  }
+
   private void processFinishedSequence(Stroke seq) {
     bug("processing... " + (seq.getAttribute(SCRAP) != null ? " (this is a scrap sequence!)" : ""));
     getTimeGraph().add(seq);
@@ -292,9 +310,9 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
     // drawParallelPerpendicular(seq);
     // drawAdjacent(seq);
     // drawSimilarLength(seq);
-//    if (main.getScript("Scribbler") != null) {
-//      debugUtil.drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
-//    }
+    // if (main.getScript("Scribbler") != null) {
+    // debugUtil.drawDots(((Scribbler) main.getScript("Scribbler")).getPossibleCorners(), "7");
+    // }
     debugUtil.drawDots(seq, "buggy", "1", Color.BLUE, 2.5);
     debugUtil.drawDots(seq, "corner", "2", Color.RED, 3.5);
     // drawDots(seq, true, true, true, false, false, "4");

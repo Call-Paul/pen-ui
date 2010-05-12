@@ -11,6 +11,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 
 import org.six11.skrui.DrawnThing;
+import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 
@@ -68,6 +69,23 @@ public class Region implements Shape, DrawnThing {
 
   public List<Pt> getPoints() {
     return boundary;
+  }
+  
+  public int undo() {
+    bug("Undo!");
+    return 0;
+  }
+  
+  public void redo() {
+    bug("Redo!");
+  }
+  
+  public void snap() {
+    bug("Snap!");
+  }
+
+  public static void bug(String what) {
+    Debug.out("Region", what);
   }
 
   public boolean contains(Point2D p) {

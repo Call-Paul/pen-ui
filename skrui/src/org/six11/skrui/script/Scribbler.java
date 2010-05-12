@@ -246,7 +246,7 @@ public class Scribbler extends SkruiScript implements SequenceListener {
     } else {
       DrawingBuffer db = new DrawingBuffer();
       DrawingBufferRoutines.triangles(db, mesh.getInsideTriangles(), main.getPenColor());
-      main.getDrawnStuff().addNamedBuffer("scribble fill", db);
+      main.getDrawnStuff().addNamedBuffer("scribble fill", db, true);
     }
   }
 

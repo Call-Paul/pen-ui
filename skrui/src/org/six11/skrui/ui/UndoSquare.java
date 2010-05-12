@@ -1,10 +1,7 @@
 package org.six11.skrui.ui;
 
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Rectangle;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.geom.Rectangle2D;
 import java.beans.PropertyChangeEvent;
 
@@ -66,7 +63,6 @@ public class UndoSquare extends PenSquare {
   }
 
   protected void initDB() {
-    bug("UndoSquare initDB");
     db = new DrawingBuffer();
     Rectangle r = getVisibleRect(); // new Rectangle(getWidth(), getHeight());
     double thirdY = r.getHeight() / 3;

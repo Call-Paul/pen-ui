@@ -194,7 +194,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       for (Stroke seq : nearestSequences) {
         DrawingBufferRoutines.flowSelectEffect(db, seq, getThickness(seq));
       }
-      main.getDrawnStuff().addNamedBuffer(FSBUF, db);
+      main.getDrawnStuff().addNamedBuffer(FSBUF, db, true);
     } else {
       main.getDrawnStuff().removeNamedBuffer(FSBUF);
     }
@@ -211,11 +211,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
 
   protected void exitReshape() {
     for (Stroke seq : nearestSequences) {
-      DrawingBuffer showMe = seq.getDrawingBuffer();
-      if (showMe != null) { // the fact that I must do this tells me there is another bug somewhere.
-        showMe.setVisible(true);
-        main.updateFinishedSequence(seq);
-      }
+      main.getDrawnStuff().edit(seq);
     }
   }
 
@@ -238,7 +234,7 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       } else {
         move(db);
       }
-      main.getDrawnStuff().addNamedBuffer(FSBUF, db);
+      main.getDrawnStuff().addNamedBuffer(FSBUF, db, true);
     }
   }
 
@@ -394,7 +390,8 @@ public class FlowSelection extends SkruiScript implements SequenceListener, Prim
       }
     }
   }
-
+  
+  @SuppressWarnings("unused") 
   private double getEffortPenalty(int idx, Stroke seq) {
     double ret = 0;
     // TODO: Figure out another way of passing effort, because this is not very nice.

@@ -231,7 +231,7 @@ public class Main {
 
   private Main(Arguments args) throws JSONException {
     this.args = args;
-    drawnStuff = new DrawnStuff();
+    drawnStuff = new DrawnStuff(this);
     
     whackData = new HashMap<String, List<Long>>();
     sequenceListeners = new HashSet<SequenceListener>();
@@ -342,27 +342,8 @@ public class Main {
       db.setVisible(false);
     }
     removeFinishedSequence(s);
-
+    s.redraw();
     if (s != null && s.size() > 1) {
-      DrawingBuffer buf = new DrawingBuffer();
-      if (s.getAttribute("pen color") != null) {
-        buf.setColor((Color) s.getAttribute("pen color"));
-      } else {
-        buf.setColor(DrawingBuffer.getBasicPen().color);
-      }
-      if (s.getAttribute("pen thickness") != null) {
-        buf.setThickness((Double) s.getAttribute("pen thickness"));
-      } else {
-        buf.setThickness(DrawingBuffer.getBasicPen().thickness);
-      }
-      buf.up();
-      buf.moveTo(s.get(0).x, s.get(0).y);
-      buf.down();
-      for (Pt pt : s) {
-        buf.moveTo(pt.x, pt.y);
-      }
-      buf.up();
-      s.setDrawingBuffer(buf);
       drawnStuff.add(s);
     }
   }
@@ -616,7 +597,7 @@ public class Main {
         }
         if (diffs.getMean() < 400) {
           db = new DrawingBuffer();
-          drawnStuff.addNamedBuffer(key, db);
+          drawnStuff.addNamedBuffer(key, db, false);
         }
         timestamps.remove(0);
       }
@@ -735,7 +716,7 @@ public class Main {
           }
           db.drawToGraphics(null);
           bb.add(db.getBoundingBox());
-          drawnStuff.addNamedBuffer("arguments", db);
+          drawnStuff.addNamedBuffer("arguments", db, false);
         }
 
         int w = bb.getWidthInt();

@@ -116,7 +116,7 @@ public class GestureRecognizer extends SkruiScript implements SequenceListener, 
         DrawingBufferRoutines.dot(db, center, 3.0, 0.3, veryLightGray, veryLightGray);
       }
     }
-    main.getDrawnStuff().addNamedBuffer("structured", db);
+    main.getDrawnStuff().addNamedBuffer("structured", db, true);
   }
 
   @Override

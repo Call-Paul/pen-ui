@@ -19,17 +19,16 @@ import org.six11.skrui.shape.PrimitiveEvent;
 import org.six11.skrui.shape.PrimitiveListener;
 import org.six11.util.Debug;
 
-
 /**
  * 
- *
+ * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class GestureRecognizerDomain extends Domain implements PrimitiveListener {
 
   int largestChain = 0;
   List<Set<Primitive>> primitives;
-  
+
   public GestureRecognizerDomain(Neanderthal data) {
     super("Gesture Recognizer", data);
     primitives = new ArrayList<Set<Primitive>>();
@@ -39,7 +38,6 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
     addShapeTemplate(tap);
   }
 
-  
   private void detect(GestureShapeTemplate st) {
     if (st.getSlotTypes().size() <= primitives.size()) {
       int offset = primitives.size() - st.getSlotTypes().size();
@@ -56,14 +54,13 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
         List<Shape> results = st.apply(new HashSet<Primitive>(matches));
         if (results.size() > 0) {
           for (Shape s : results) {
-//            bug(" --> " + s);
             st.trigger(data, s, matches);
           }
         }
       }
     }
   }
-  
+
   /**
    * Try to find a primitive of type st.getSlotTypes(i) in the primitives list in position i.
    */
@@ -77,12 +74,12 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
     }
     return ret;
   }
-  
+
   @SuppressWarnings("unused")
   private void bug(String what) {
     Debug.out("GestureRecognizerDomain", what);
   }
-  
+
   public void handlePrimitiveEvent(PrimitiveEvent ev) {
     SortedSet<Primitive> all = ev.getPrims();
     SortedSet<Primitive> cotemp = new TreeSet<Primitive>(Primitive.sortByIndex);
@@ -108,19 +105,18 @@ public class GestureRecognizerDomain extends Domain implements PrimitiveListener
     }
 
   }
-  
+
   public void addShapeTemplate(ShapeTemplate st) {
     templates.add(st);
     largestChain = Math.max(largestChain, st.getSlotTypes().size());
   }
-//  public GestureRecognizer(Neanderthal data) {
-//    super("Gesture Recognizer", data);
-//    primitives = new ArrayList<Set<Primitive>>();
-//    GestureCross cross = new GestureCross(this); 
-//    addShapeTemplate(cross);
-//    GestureTap tap = new GestureTap(this);
-//    addShapeTemplate(tap);
-//  }
-
+  // public GestureRecognizer(Neanderthal data) {
+  // super("Gesture Recognizer", data);
+  // primitives = new ArrayList<Set<Primitive>>();
+  // GestureCross cross = new GestureCross(this);
+  // addShapeTemplate(cross);
+  // GestureTap tap = new GestureTap(this);
+  // addShapeTemplate(tap);
+  // }
 
 }

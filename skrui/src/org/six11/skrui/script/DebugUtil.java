@@ -74,7 +74,7 @@ public class DebugUtil {
       if (db == null) {
         db = new DrawingBuffer();
         db.setComplainWhenDrawingToInvisibleBuffer(false);
-        main.getDrawnStuff().addNamedBuffer(drawingBufferName, db);
+        main.getDrawnStuff().addNamedBuffer(drawingBufferName, db, false);
         try {
           int num = Integer.parseInt(drawingBufferName);
           if (num >= 0 && num <= 9) {
@@ -108,7 +108,7 @@ public class DebugUtil {
       DrawingBuffer db = main.getDrawnStuff().getNamedBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.getDrawnStuff().addNamedBuffer(bufferName, db);
+        main.getDrawnStuff().addNamedBuffer(bufferName, db, false);
       }
       DrawingBufferRoutines.dots(db, spots, 2.5, 0.3, Color.BLACK, Color.PINK);
     }
@@ -120,7 +120,7 @@ public class DebugUtil {
       DrawingBuffer db = main.getDrawnStuff().getNamedBuffer(bufferName);
       if (db == null) {
         db = new DrawingBuffer();
-        main.getDrawnStuff().addNamedBuffer(bufferName, db);
+        main.getDrawnStuff().addNamedBuffer(bufferName, db, false);
         db.setVisible(false);
       }
       List<Pt> plainDots = new ArrayList<Pt>();
@@ -176,7 +176,7 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawnStuff().addNamedBuffer(name, db);
+      main.getDrawnStuff().addNamedBuffer(name, db, false);
     } else {
       main.getDrawnStuff().removeNamedBuffer(name);
     }
@@ -200,7 +200,7 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawnStuff().addNamedBuffer("similength", db);
+      main.getDrawnStuff().addNamedBuffer("similength", db, false);
     } else {
       main.getDrawnStuff().removeNamedBuffer("similength");
     }
@@ -225,7 +225,7 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawnStuff().addNamedBuffer("adjacent", db);
+      main.getDrawnStuff().addNamedBuffer("adjacent", db, false);
     } else {
       main.getDrawnStuff().removeNamedBuffer("adjacent");
     }
@@ -256,7 +256,7 @@ public class DebugUtil {
       }
     }
     if (dirty) {
-      main.getDrawnStuff().addNamedBuffer("paraperp", db);
+      main.getDrawnStuff().addNamedBuffer("paraperp", db, false);
     } else {
       main.getDrawnStuff().removeNamedBuffer("paraperp");
     }

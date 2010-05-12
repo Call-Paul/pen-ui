@@ -96,7 +96,7 @@ public abstract class DrawingBufferRoutines {
   }
 
   public static void bug(String what) {
-    Debug.out("DrawwingBufferRoutines", what);
+    Debug.out("DrawingBufferRoutines", what);
   }
 
   public static void line(DrawingBuffer db, Pt start, Pt end, Color color, double thick) {

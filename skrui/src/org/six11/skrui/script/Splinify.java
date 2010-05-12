@@ -82,7 +82,7 @@ public class Splinify extends SkruiScript implements SequenceListener {
       DrawingBufferRoutines.lines(db, interp, Color.BLUE, 1.8);
       // The following tests named access to drawing buffers.
       main.getDrawnStuff().removeNamedBuffer("splines");
-      main.getDrawnStuff().addNamedBuffer("splines", db);
+      main.getDrawnStuff().addNamedBuffer("splines", db, false);
     }
   }
   

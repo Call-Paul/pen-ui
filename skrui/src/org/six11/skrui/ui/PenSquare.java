@@ -82,9 +82,6 @@ public abstract class PenSquare extends JPanel {
     Graphics2D g2 = (Graphics2D) g;
     g2.setPaint(getBackground());
     g2.fill(getVisibleRect());
-    if (this instanceof UndoSquare) {
-      bug("paintComponent... db null ?" + (db == null));
-    }
     if (db != null) {
       db.paste(g2);
     }

@@ -2,13 +2,16 @@ package org.six11.skrui;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.six11.util.Debug;
+import org.six11.skrui.script.Neanderthal;
+import org.six11.skrui.shape.Stroke;
 import org.six11.util.pen.DrawingBuffer;
 
 /**
@@ -22,39 +25,70 @@ public class DrawnStuff {
   private List<ChangeListener> changeListeners;
 
   private List<DrawnThing> things;
+  private List<DrawnThing> editList;
   private List<DrawnThing> redoList;
   private Map<String, DrawingBuffer> namedBuffers;
+  private Set<String> transientBufferNames;
   private transient List<DrawingBuffer> cachedBufferList;
   private transient boolean dirty;
+  private Main main;
 
-  public DrawnStuff() {
+  public DrawnStuff(Main main) {
+    this.main = main;
     this.things = new ArrayList<DrawnThing>();
     this.redoList = new ArrayList<DrawnThing>();
+    this.editList = new ArrayList<DrawnThing>();
     this.namedBuffers = new HashMap<String, DrawingBuffer>();
+    this.transientBufferNames = new HashSet<String>();
     this.cachedBufferList = new ArrayList<DrawingBuffer>();
     this.dirty = false;
   }
 
+  /**
+   * Add a new thing to the list of drawn stuff. This simply calls edit(thing).
+   */
   public void add(DrawnThing thing) {
-    things.add(thing);
-    branchRedo();
+    edit(thing);
+  }
+
+  /**
+   * Records the fact that a thing has been manipulated. If this is a newly made thing it is added
+   * to the end of the drawing list. It also is added to the end of the edit list (for undo/redo
+   * porpoises), and a snapshot is taken (thing.snap()).
+   */
+  public void edit(DrawnThing thing) {
+    if (!things.contains(thing)) {
+      things.add(thing);
+    } else {
+      maybeReprocess(thing, true);
+    }
+    editList.add(thing);
+    thing.snap();
+    redoList.clear();
     fireChange();
+  }
+
+  private void maybeReprocess(DrawnThing thing, boolean thingIsVisible) {
+    if (main.getScript("Neanderthal") != null) {
+      if (thing instanceof Stroke) {
+        Neanderthal data = (Neanderthal) main.getScript("Neanderthal");
+        data.reprocessStroke((Stroke) thing, thingIsVisible);
+      }
+    }
   }
 
   public DrawnThing getMostRecentThing() {
     DrawnThing ret = null;
-    if (things.size() > 0) {
-      ret = things.get(things.size() - 1);
+    if (editList.size() > 0) {
+      ret = editList.get(editList.size() - 1);
     }
     return ret;
-  }
-  
-  private void branchRedo() {
-    redoList.clear();
   }
 
   public void remove(DrawnThing thing) {
     things.remove(thing);
+    editList.remove(thing);
+    redoList.remove(thing);
     fireChange();
   }
 
@@ -74,10 +108,6 @@ public class DrawnStuff {
     return namedBuffers.get(name);
   }
 
-  private static void bug(String what) {
-    Debug.out("DrawnStuff", what);
-  }
-
   public List<DrawingBuffer> getDrawingBuffers() {
     if (dirty) {
       cachedBufferList.clear();
@@ -94,16 +124,31 @@ public class DrawnStuff {
   public void clear() {
     namedBuffers.clear();
     things.clear();
+    editList.clear();
+    redoList.clear();
     fireChange();
   }
 
-  public void addNamedBuffer(String name, DrawingBuffer db) {
+  public void addNamedBuffer(String name, DrawingBuffer db, boolean isTransient) {
     namedBuffers.put(name, db);
+    if (isTransient) {
+      transientBufferNames.add(name);
+    } else {
+      transientBufferNames.remove(name); // in case it was there before.
+    }
     fireChange();
   }
 
   public void removeNamedBuffer(String name) {
     namedBuffers.remove(name);
+    fireChange();
+  }
+
+  public void removeTransientBuffers() {
+    for (String name : transientBufferNames) {
+      namedBuffers.remove(name);
+    }
+    transientBufferNames.clear();
     fireChange();
   }
 
@@ -158,8 +203,6 @@ public class DrawnStuff {
       }
     }
     if (things.size() > 0) {
-      bug("Warning: could not assign stack order for " + things.size()
-          + " items. They were not in the given stack order.");
       for (DrawnThing dt : things) {
         newWorldOrder.add(dt);
       }
@@ -171,16 +214,31 @@ public class DrawnStuff {
   public void redo() {
     if (redoList.size() > 0) {
       DrawnThing dt = redoList.remove(redoList.size() - 1);
-      things.add(dt);
+      dt.redo();
+      if (!things.contains(dt)) {
+        things.add(dt);
+        maybeReprocess(dt, true);
+      }
+      editList.add(dt);
+      main.getDrawnStuff().removeTransientBuffers();
       fireChange();
     }
   }
 
   public void undo() {
     if (things.size() > 0) {
-      DrawnThing dt = things.remove(things.size() - 1);
+      DrawnThing dt = editList.remove(editList.size() - 1);
+      int remaining = dt.undo();
+      if (remaining == 0) {
+        things.remove(dt);
+        maybeReprocess(dt, false);
+      } else {
+        maybeReprocess(dt, true);
+      }
       redoList.add(dt);
+      main.getDrawnStuff().removeTransientBuffers();
       fireChange();
     }
   }
+
 }
