@@ -166,7 +166,7 @@ public class Journal {
         } else {
           bug("makeJsonSequence: '" + att + "': avoiding null value)");
         }
-      } else {
+      } else if (seq.getAttribute(att) != null) {
         missedSequenceAttributes.put(att, seq.getAttribute(att).getClass());
       }
     }
