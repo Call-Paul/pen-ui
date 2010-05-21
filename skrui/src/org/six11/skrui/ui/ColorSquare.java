@@ -96,14 +96,14 @@ public class ColorSquare extends PenSquare {
       db.setEmptyOK(true); // didn't draw anything, and that's ok.
     }
 
-    if (color == null) {
-      String msg = "Alpha";
-      Rectangle2D vis = getVisibleRect();
-      Rectangle2D textBlock = DrawingBuffer.getTextBounds(msg, font);
-      Pt where = new Pt(vis.getCenterX() - textBlock.getWidth() / 2, vis.getCenterY()
-          + textBlock.getHeight() / 2);
-      DrawingBufferRoutines.text(db, where, msg, Color.BLACK, font);
-    }
+//    if (color == null) {
+//      String msg = "Alpha";
+//      Rectangle2D vis = getVisibleRect();
+//      Rectangle2D textBlock = DrawingBuffer.getTextBounds(msg, font);
+//      Pt where = new Pt(vis.getCenterX() - textBlock.getWidth() / 2, vis.getCenterY()
+//          + textBlock.getHeight() / 2);
+//      DrawingBufferRoutines.text(db, where, msg, Color.BLACK, font);
+//    }
   }
 
   protected void fireColorChange() {
@@ -163,7 +163,6 @@ public class ColorSquare extends PenSquare {
     fadeTimer.restart();
     fading.add(fadeMe);
     penPath.clear();
-
     whackUI();
   }
 

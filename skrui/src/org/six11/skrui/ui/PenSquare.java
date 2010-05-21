@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Paint;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
@@ -31,6 +32,7 @@ public abstract class PenSquare extends JPanel {
   protected DrawingBuffer db;
   protected Font font = new Font("sansserif", Font.PLAIN, 9);
   private List<PropertyChangeListener> pcls;
+  protected Paint customBackgroundPaint = null; // subclass set this in lieu of getBackground()
 
   public PenSquare() {
     pcls = new ArrayList<PropertyChangeListener>();
@@ -80,13 +82,19 @@ public abstract class PenSquare extends JPanel {
       initDB();
     }
     Graphics2D g2 = (Graphics2D) g;
-    g2.setPaint(getBackground());
+    if (customBackgroundPaint == null) {
+      g2.setPaint(getBackground());
+    } else {
+      g2.setPaint(Color.WHITE);
+      g2.fill(getVisibleRect());
+      g2.setPaint(customBackgroundPaint);
+    }
     g2.fill(getVisibleRect());
     if (db != null) {
       db.paste(g2);
     }
   }
-  
+
   @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("PenSquare", what);

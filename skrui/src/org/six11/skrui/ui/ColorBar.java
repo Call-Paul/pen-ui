@@ -45,7 +45,8 @@ public class ColorBar extends JPanel {
     squares.add(new ColorSquare(this, new Color(000, 255, 255), fullDist)); // g+b = cyan
     squares.add(new ColorSquare(this, new Color(255, 000, 255), fullDist)); // r+b = magenta
     squares.add(new ColorSquare(this, new Color(255, 255, 000), fullDist)); // r+g = yellow
-    squares.add(new ColorSquare(this, null, fullDist)); // alpha
+    AlphaSquare alpha = new AlphaSquare(this, fullDist); 
+    squares.add(alpha); // alpha
     squares.add(new UndoSquare(this, 30));
 
     PropertyChangeListener handler = new PropertyChangeListener() {
@@ -70,6 +71,7 @@ public class ColorBar extends JPanel {
       sq.addPropertyChangeListener(handler);
       add(sq);
     }
+
   }
 
   @SuppressWarnings("unused")
@@ -94,9 +96,13 @@ public class ColorBar extends JPanel {
 
   protected void whackThicknessForeground() {
     for (PenSquare ps : squares) {
-      if (ps instanceof ThicknessSquare) {
+      if (ps instanceof ThicknessSquare) { // obviously this is dumb.
         ((ThicknessSquare) ps).setColor(currentColor);
       }
+      if (ps instanceof AlphaSquare) { // obviously this is dumb.
+        ((AlphaSquare) ps).whackUI();
+      }
+
     }
   }
 

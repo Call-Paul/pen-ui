@@ -293,8 +293,6 @@ public abstract class DrawingBufferRoutines {
     Pt head1 = cross.getTranslated(outward.getX(), outward.getY());
     outward = outward.getFlip();
     Pt head2 = cross.getTranslated(outward.getX(), outward.getY());
-    bug("Draw lines: " + Debug.num(start) + " " + Debug.num(tip) + " " + Debug.num(head1) + " "
-        + Debug.num(head2));
     line(db, new Line(start, tip), color, thick);
     line(db, new Line(head1, tip), color, thick);
     line(db, new Line(head2, tip), color, thick);
