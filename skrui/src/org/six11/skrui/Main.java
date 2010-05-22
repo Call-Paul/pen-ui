@@ -5,8 +5,11 @@ import static java.awt.event.InputEvent.SHIFT_MASK;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -19,6 +22,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,12 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.swing.Action;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JPopupMenu;
-import javax.swing.JRootPane;
-import javax.swing.KeyStroke;
+import javax.swing.*;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -79,7 +80,7 @@ public class Main {
 
   private static final String PROP_SKETCH_DIR = "sketchDir";
   private static final String PROP_PDF_DIR = "pdfDir";
-  
+
   public static final String PEN_COLOR = "pen color";
   public static final String PEN_THICKNESS = "pen thickness";
 
@@ -87,6 +88,10 @@ public class Main {
       "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
       "--debug-color"
   };
+
+  private static final String PROP_MUZZLE_HELP = "muzzleHelp";
+
+  private static boolean firstInstance = true;
 
   private Stroke seq;
   private Color penColor;
@@ -226,13 +231,14 @@ public class Main {
         }
       }
     });
+    firstInstance = false;
     return inst;
   }
 
   private Main(Arguments args) throws JSONException {
     this.args = args;
     drawnStuff = new DrawnStuff(this);
-    
+
     whackData = new HashMap<String, List<Long>>();
     sequenceListeners = new HashSet<SequenceListener>();
     hoverListeners = new HashSet<HoverListener>();
@@ -293,9 +299,68 @@ public class Main {
       af.center();
       af.setVisible(true);
       ds.setCursor(colorBar.getCursor());
+      if (firstInstance) {
+        String muzzle = getProperty(PROP_MUZZLE_HELP);
+        if (muzzle == null || "No".equals(muzzle)) {
+          showNewbieHelp();
+        }
+      }
     }
   }
-  
+
+  private void showNewbieHelp() {
+    final JDialog help = new JDialog(af, "Welcome to Skrui Draw", false);
+    JPanel helpPanel = new JPanel();
+    String msg = "Howdy. Thanks for downloading Skrui Draw.\n\n"
+        + "This is a research system to explore interaction techniques and interface widgets "
+        + "that are appropriate for pen input. If you are using a mouse with Skrui Draw, you "
+        + "will probably be disappointed.\n\n" //
+        + "You can click the \"Show Homepage\" button below to visit the home page, which has "
+        + "current documentation of Skrui Draw's current and planned features.";
+    final JCheckBox muzzleCB = new JCheckBox("Don't show this friendly message again.");
+    JTextArea msgText = new JTextArea(msg);
+    msgText.setWrapStyleWord(true);
+    msgText.setLineWrap(true);
+    helpPanel.setLayout(new BorderLayout());
+    JScrollPane textScroller = new JScrollPane(msgText, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+        JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+    helpPanel.add(textScroller, BorderLayout.CENTER);
+    JPanel dismissPanel = new JPanel();
+    dismissPanel.setLayout(new BorderLayout());
+    dismissPanel.add(muzzleCB, BorderLayout.NORTH);
+    JPanel buttons = new JPanel();
+    JButton homePageButton = new JButton("Show Homepage");
+    homePageButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        try {
+          Desktop.getDesktop().browse(new URI("http://six11.org/skrui"));
+        } catch (IOException ex) {
+          ex.printStackTrace();
+        } catch (URISyntaxException ex) {
+          ex.printStackTrace();
+        }
+      }
+    });
+    buttons.add(homePageButton);
+    JButton whatever = new JButton("Start Sketching!");
+    whatever.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        boolean shouldMuzzle = muzzleCB.getModel().isSelected();
+        setProperty(PROP_MUZZLE_HELP, shouldMuzzle ? "Yes" : "No");
+        help.setVisible(false);
+      }
+    });
+    buttons.add(whatever);
+    dismissPanel.add(buttons, BorderLayout.SOUTH);
+    helpPanel.add(dismissPanel, BorderLayout.SOUTH);
+
+    help.add(helpPanel);
+    help.setSize(380, 260);
+    Components.centerComponent(help);
+
+    help.setVisible(true);
+  }
+
   public DrawnStuff getDrawnStuff() {
     return drawnStuff;
   }
@@ -633,7 +698,7 @@ public class Main {
     List<Stroke> ret = new ArrayList<Stroke>();
     for (DrawnThing dt : manyThings) {
       if (dt instanceof Stroke) {
-        ret.add((Stroke)dt);
+        ret.add((Stroke) dt);
       }
     }
     return ret;
