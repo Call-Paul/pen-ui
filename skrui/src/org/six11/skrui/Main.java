@@ -44,6 +44,7 @@ import com.lowagie.text.pdf.PdfWriter;
 
 import org.json.JSONException;
 import org.six11.skrui.data.Journal;
+import org.six11.skrui.script.PrintRecognizer;
 import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.ColorBar;
 import org.six11.skrui.ui.DrawingSurface;
@@ -320,7 +321,8 @@ public class Main {
       JButton trainerButton = new JButton("Handwriting Recognizer");
       trainerButton.addActionListener(new ActionListener() {
         public void actionPerformed(ActionEvent e) {
-
+          PrintRecognizer pr = (PrintRecognizer) getScript("PrintRecognizer");
+          pr.showUI();
         }
       });
       ret.add(trainerButton);
