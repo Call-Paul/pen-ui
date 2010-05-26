@@ -6,6 +6,7 @@ import static java.awt.event.InputEvent.SHIFT_MASK;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
+import java.awt.FlowLayout;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.event.ActionEvent;
@@ -291,6 +292,10 @@ public class Main {
       setPenThickness(colorBar.getCurrentThickness());
       af.add(colorBar, BorderLayout.NORTH);
       af.add(ds, BorderLayout.CENTER);
+      JPanel lameButtonBar = makeLameButtonBar();
+      if (lameButtonBar != null) {
+        af.add(lameButtonBar, BorderLayout.SOUTH);
+      }
       if (args.hasFlag("big")) {
         af.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
       } else {
@@ -306,6 +311,26 @@ public class Main {
         }
       }
     }
+  }
+
+  private JPanel makeLameButtonBar() {
+    JPanel ret = new JPanel();
+    boolean addedSomething = false;
+    ret.setLayout(new FlowLayout());
+    if (getScript("PrintRecognizer") != null) {
+      JButton trainerButton = new JButton("Handwriting Recognizer");
+      trainerButton.addActionListener(new ActionListener() {
+        public void actionPerformed(ActionEvent e) {
+
+        }
+      });
+      ret.add(trainerButton);
+      addedSomething = true;
+    }
+    if (addedSomething == false) {
+      ret = null;
+    }
+    return ret;
   }
 
   private void showNewbieHelp() {
