@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -86,8 +85,8 @@ public class Main {
   public static final String PEN_THICKNESS = "pen thickness";
 
   private static final String[] DEFAULT_COMMAND_LINE_ARGS = {
-      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "--debugging",
-      "--debug-color"
+      "Neanderthal", "FlowSelection", "GestureRecognizer", "Scribbler", "PrintRecognizer",
+      "--debugging", "--debug-color"
   };
 
   private static final String PROP_MUZZLE_HELP = "muzzleHelp";
