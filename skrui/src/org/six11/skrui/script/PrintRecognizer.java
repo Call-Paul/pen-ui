@@ -8,6 +8,7 @@ import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -17,12 +18,14 @@ import javax.swing.JTextField;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.charrec.NBestHit;
+import org.six11.skrui.charrec.RasterDisplay;
 import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.LooseDrawingSurface;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
+import org.six11.util.data.GaussianHat;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Placeholder;
@@ -71,6 +74,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
   // //
   ApplicationFrame af;
   LooseDrawingSurface lds;
+  Random random = new Random(System.currentTimeMillis());
 
   @Override
   public void initialize() {
@@ -100,12 +104,18 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
     nBestPanel.setLayout(new FlowLayout());
     String chars = "RAHBPQO";
     for (int i = 0; i < chars.length(); i++) {
-      nBestPanel.add(new NBestHit("" + chars.charAt(i), 0.83434289347));//new JButton("" + chars.charAt(i)));
+      nBestPanel.add(new NBestHit("" + chars.charAt(i), 0.83434289347));// new JButton("" +
+                                                                        // chars.charAt(i)));
     }
     JPanel featureImagePanel = new JPanel();
-    featureImagePanel.setLayout(new GridLayout(1, 5));
+    GridLayout grid = new GridLayout(1, 5);
+    grid.setHgap(6);
+    grid.setVgap(6);
+    featureImagePanel.setLayout(grid);
     for (int i = 1; i <= 5; i++) {
-      featureImagePanel.add(new Holder(new Placeholder(new Dimension(48, 48), "img " + i)));
+      RasterDisplay rastah = new RasterDisplay();
+      rastah.setData(getDebugRaster(24));
+      featureImagePanel.add(new Holder(rastah));
     }
     JPanel inputPanel = new JPanel();
     inputPanel.setLayout(new FlowLayout());
@@ -125,31 +135,35 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
     // ----------------------------------- "Recognition Results:" label at top right
     fe.add(resultsLabel, "reco label");
     fe.addRule(ROOT, N, "reco label", N);
-//    fe.addRule(ROOT, E, "reco label", E);
     fe.addRule("lds", E, "reco label", W);
 
     // ----------------------------------- nBest list below recognition results label
     fe.add(nBestPanel, "nBest");
     fe.addRule("reco label", S, "nBest", N);
     fe.addRule("lds", E, "nBest", W);
-//    fe.addRule(ROOT, E, "nBest", E);
 
     // ----------------------------------- feature images can stretch a bit between nBest and input
     fe.add(featureImagePanel, "features");
     fe.addRule("lds", E, "features", W);
     fe.addRule("nBest", S, "features", N);
     fe.addRule("input", N, "features", S);
-//    fe.addRule(ROOT, E, "features", E);
 
     // ----------------------------------- input with text box and Save button at bottom right
     fe.add(inputPanel, "input");
     fe.addRule("lds", E, "input", W);
     fe.addRule(ROOT, S, "input", S);
-//    fe.addRule(ROOT, E, "input", E);
 
     af.add(fe);
-    af.setSize(500, 180);
+    af.setSize(640, 210);
     Components.centerComponent(af);
+  }
+
+  private double[] getDebugRaster(int n) {
+    double[] ret = new double[n * n];
+    for (int i = 0; i < n * n; i++) {
+      ret[i] = random.nextDouble();
+    }
+    return ret;
   }
 
   public void recognize() {

@@ -11,6 +11,7 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 
 import org.six11.util.Debug;
+import org.six11.util.gui.Components;
 
 /**
  * 
@@ -19,7 +20,12 @@ import org.six11.util.Debug;
  */
 public class NBestHit extends JPanel {
 
+  /**
+   * This is the timeout for a click. 600 ms is long, when compared to how long an average mouse
+   * click lasts.
+   */
   private static final int CLICK_TIMEOUT = 600;
+
   String label;
   String confidence;
   int labelWidth;
@@ -28,10 +34,14 @@ public class NBestHit extends JPanel {
   Font labelFont;
   Font confFont;
   int totalWidth;
+
+  // variables dealing with the marching ants
   boolean penHover;
   Stroke[] borderStrokes;
   int antPhase;
   Timer antTimer;
+
+  // variables dealing with marching ants and the pen-friendly click
   boolean down;
   long downTime;
 
@@ -104,6 +114,7 @@ public class NBestHit extends JPanel {
 
   protected void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
+    Components.antialias(g);
     Rectangle rec = getVisibleRect();
     g.setColor(Color.WHITE);
     g.fill(rec);
