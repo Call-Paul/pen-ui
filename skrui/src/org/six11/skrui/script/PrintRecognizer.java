@@ -3,6 +3,8 @@ package org.six11.skrui.script;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.HashMap;
@@ -18,7 +20,9 @@ import javax.swing.JTextField;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.charrec.NBestHit;
+import org.six11.skrui.charrec.OuyangRecognizer;
 import org.six11.skrui.charrec.RasterDisplay;
+import org.six11.skrui.charrec.OuyangRecognizer.Callback;
 import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.LooseDrawingSurface;
 import org.six11.util.Debug;
@@ -40,7 +44,7 @@ import static org.six11.util.layout.FrontEnd.S;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
-public class PrintRecognizer extends SkruiScript implements SequenceListener {
+public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -74,11 +78,15 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
   // //
   ApplicationFrame af;
   LooseDrawingSurface lds;
+  OuyangRecognizer symbolRecognizer;
+  JTextField inputText;
   Random random = new Random(System.currentTimeMillis());
 
   @Override
   public void initialize() {
     bug("PrintRecognizer is alive!");
+    symbolRecognizer = new OuyangRecognizer(); // TODO: supply a database
+    symbolRecognizer.addCallback(this);
   }
 
   public void showUI() {
@@ -104,8 +112,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
     nBestPanel.setLayout(new FlowLayout());
     String chars = "RAHBPQO";
     for (int i = 0; i < chars.length(); i++) {
-      nBestPanel.add(new NBestHit("" + chars.charAt(i), 0.83434289347));// new JButton("" +
-                                                                        // chars.charAt(i)));
+      nBestPanel.add(new NBestHit("" + chars.charAt(i), random.nextDouble()));
     }
     JPanel featureImagePanel = new JPanel();
     GridLayout grid = new GridLayout(1, 5);
@@ -120,8 +127,17 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
     JPanel inputPanel = new JPanel();
     inputPanel.setLayout(new FlowLayout());
     inputPanel.add(new JLabel("Label:"));
-    inputPanel.add(new JTextField(5));
-    inputPanel.add(new JButton("Save"));
+    inputText = new JTextField(5);
+    JButton saveButton = new JButton("Save");
+    saveButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        bug("Not really saving yet. Implement this.");
+        inputText.setText("");
+        lds.clear();
+      }
+    });
+    inputPanel.add(inputText);
+    inputPanel.add(saveButton);
 
     FrontEnd fe = new FrontEnd();
 
@@ -168,7 +184,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
 
   public void recognize() {
     List<Stroke> strokes = lds.getStrokes();
-    bug("Attempt recognition involving the " + strokes.size() + " strokes in the drawing area.");
+    symbolRecognizer.recognize(strokes);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
@@ -191,5 +207,14 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
       }
     }
     return params;
+  }
+
+  @Override
+  public void recognitionBegun() {
+    bug("Oh yay");
+  }
+
+  public void recognitionComplete() {
+    bug("Done and done.");
   }
 }
