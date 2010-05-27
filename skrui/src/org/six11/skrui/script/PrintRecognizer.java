@@ -1,6 +1,5 @@
 package org.six11.skrui.script;
 
-import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -17,6 +16,7 @@ import javax.swing.JTextField;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.SkruiScript;
+import org.six11.skrui.charrec.NBestHit;
 import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.LooseDrawingSurface;
 import org.six11.util.Debug;
@@ -100,7 +100,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener {
     nBestPanel.setLayout(new FlowLayout());
     String chars = "RAHBPQO";
     for (int i = 0; i < chars.length(); i++) {
-      nBestPanel.add(new JButton("" + chars.charAt(i)));
+      nBestPanel.add(new NBestHit("" + chars.charAt(i), 0.83434289347));//new JButton("" + chars.charAt(i)));
     }
     JPanel featureImagePanel = new JPanel();
     featureImagePanel.setLayout(new GridLayout(1, 5));

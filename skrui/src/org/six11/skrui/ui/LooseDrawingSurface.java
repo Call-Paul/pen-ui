@@ -123,11 +123,11 @@ public class LooseDrawingSurface extends JComponent {
     AffineTransform before = new AffineTransform(g.getTransform());
     drawBorderAndBackground(g);
     g.setTransform(before);
-    paintContent(g, true);
+    paintContent(g);
     g.setTransform(before);
   }
 
-  public void paintContent(Graphics2D g, boolean useCachedImages) {
+  public void paintContent(Graphics2D g) {
     Components.antialias(g);
     g.setColor(Color.BLACK);
     g.setStroke(Strokes.get(4.5f));
@@ -139,7 +139,7 @@ public class LooseDrawingSurface extends JComponent {
     }
   }
 
-  // @SuppressWarnings("unused")
+  @SuppressWarnings("unused")
   private void bug(String what) {
     Debug.out("LooseDrawingSurface", what);
   }
