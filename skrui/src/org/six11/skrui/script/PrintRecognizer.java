@@ -79,7 +79,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
   LooseDrawingSurface lds;
   OuyangRecognizer symbolRecognizer;
   JTextField inputText;
-  RasterDisplay[] rasters;
+  Map<String, RasterDisplay> rasters;
   Random random = new Random(System.currentTimeMillis());
   
   @Override
@@ -115,17 +115,25 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
       nBestPanel.add(new NBestHit("" + chars.charAt(i), random.nextDouble()));
     }
     JPanel featureImagePanel = new JPanel();
-    GridLayout grid = new GridLayout(1, 5);
+    
+    rasters = new HashMap<String, RasterDisplay>();
+    rasters.put("present", new RasterDisplay(24, "As Drawn"));
+    rasters.put("endpoint", new RasterDisplay(24, "End Points"));
+    rasters.put("dir0", new RasterDisplay(24, "0 degrees"));
+    rasters.put("dir1", new RasterDisplay(24, "45 degrees"));
+    rasters.put("dir2", new RasterDisplay(24, "90 degrees"));
+    rasters.put("dir3", new RasterDisplay(24, "135 degrees"));
+    GridLayout grid = new GridLayout(1, rasters.size());
     grid.setHgap(6);
     grid.setVgap(6);
     featureImagePanel.setLayout(grid);
-    rasters = new RasterDisplay[5];
-    for (int i = 1; i <= 5; i++) {
-      RasterDisplay rastah = new RasterDisplay();
-      rastah.setData(getDebugRaster(24));
-      featureImagePanel.add(new Holder(rastah));
-      rasters[i-1] = rastah;
-    }
+    featureImagePanel.add(new Holder(rasters.get("present")));
+    featureImagePanel.add(new Holder(rasters.get("endpoint")));
+    featureImagePanel.add(new Holder(rasters.get("dir0")));
+    featureImagePanel.add(new Holder(rasters.get("dir1")));
+    featureImagePanel.add(new Holder(rasters.get("dir2")));
+    featureImagePanel.add(new Holder(rasters.get("dir3")));
+
     JPanel inputPanel = new JPanel();
     inputPanel.setLayout(new FlowLayout());
     inputPanel.add(new JLabel("Label:"));
@@ -172,7 +180,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
     fe.addRule(ROOT, S, "input", S);
 
     af.add(fe);
-    af.setSize(640, 210);
+    af.setSize(740, 210);
     Components.centerComponent(af);
   }
 
@@ -212,16 +220,17 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
   }
 
   public void recognitionBegun() {
-    bug("Oh yay");
+    
   }
 
-  public void recognitionComplete(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
+  public void recognitionComplete(double[] present, double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
       double[] dir3) {
-    rasters[0].setData(endpoint);
-    rasters[1].setData(dir0);
-    rasters[2].setData(dir1);
-    rasters[3].setData(dir2);
-    rasters[4].setData(dir3);
+    rasters.get("present").setData(present);
+    rasters.get("endpoint").setData(endpoint);
+    rasters.get("dir0").setData(dir0);
+    rasters.get("dir1").setData(dir1);
+    rasters.get("dir2").setData(dir2);
+    rasters.get("dir3").setData(dir3);
     bug("Got recognition complete data");
   }
 }

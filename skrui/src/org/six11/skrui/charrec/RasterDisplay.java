@@ -7,6 +7,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 
 import javax.swing.JPanel;
+import javax.swing.ToolTipManager;
 
 import org.six11.util.gui.Components;
 import org.six11.util.pen.Functions;
@@ -14,10 +15,15 @@ import org.six11.util.pen.Functions;
 public class RasterDisplay extends JPanel {
 
   double[] raster;
+  String name;
   int n; // the size of a row and column in the raster. (rasters are square)
 
-  public RasterDisplay() {
-    setPreferredSize(new Dimension(128, 128));
+  public RasterDisplay(int gridSize, String name) {
+    this.name = name;
+    setToolTipText(name);
+    ToolTipManager.sharedInstance().setInitialDelay(200);
+    ToolTipManager.sharedInstance().setReshowDelay(2000);
+    setPreferredSize(new Dimension(4 * gridSize, 4 * gridSize));
   }
 
   /**
@@ -33,7 +39,7 @@ public class RasterDisplay extends JPanel {
     }
     this.n = (int) Math.rint(nDouble);
     this.raster = raster;
-    setPreferredSize(new Dimension(n * 4, n* 4));
+    setPreferredSize(new Dimension(n * 4, n * 4));
     repaint();
   }
 
@@ -42,11 +48,11 @@ public class RasterDisplay extends JPanel {
   }
 
   protected void paintComponent(Graphics g1) {
+    Graphics2D g = (Graphics2D) g1;
+    Components.antialias(g);
+    g.setColor(Color.BLACK);
+    g.fill(getVisibleRect());
     if (n > 0 && raster != null) {
-      Graphics2D g = (Graphics2D) g1;
-      Components.antialias(g);
-      g.setColor(Color.WHITE);
-      g.fill(getVisibleRect());
       double totW = getBounds().getWidth();
       double totH = getBounds().getHeight();
       double w = totW / n;
@@ -66,7 +72,7 @@ public class RasterDisplay extends JPanel {
     if (v < 0 || v > 1) {
       err("Found cell value out of range: " + v);
     }
-    float f = (float) v;
+    float f = (float) Math.sqrt(v);
     return new Color(f, f, f);
   }
 }
