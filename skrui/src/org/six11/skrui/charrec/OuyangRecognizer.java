@@ -6,7 +6,6 @@ import java.util.List;
 import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
-import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
@@ -57,29 +56,31 @@ public class OuyangRecognizer {
     // Populate the 24x24 feature images. Each point in the normalized, transformed list maps to one
     // of these grid locations (unless either x or y coordinate is beyond a threshold, meaning it is
     // too many standard deviations away from the mean.
-    double[] present = new double[24 * 24];
-    double[] endpoint = new double[24 * 24];
-    double[] dir0 = new double[24 * 24];
-    double[] dir1 = new double[24 * 24];
-    double[] dir2 = new double[24 * 24];
-    double[] dir3 = new double[24 * 24];
+    int gridSize = 24;
+    int arraySize = gridSize * gridSize;
+    double[] present = new double[arraySize];
+    double[] endpoint = new double[arraySize];
+    double[] dir0 = new double[arraySize];
+    double[] dir1 = new double[arraySize];
+    double[] dir2 = new double[arraySize];
+    double[] dir3 = new double[arraySize];
     double t = 1.3;
-    double gridLower = 0;
-    double gridUpper = 24;
     for (List<Pt> seq : normalized) {
       for (Pt pt : seq) {
         double percentX = getPercent(-t, t, pt.getX());
         double percentY = getPercent(-t, t, pt.getY());
         if (percentX < 1 && percentY < 1) {
-          int gridX = getGridIndex(gridLower, gridUpper, percentX);
-          int gridY = getGridIndex(gridLower, gridUpper, percentY);
+          int gridX = getGridIndex(0, gridSize, percentX);
+          int gridY = getGridIndex(0, gridSize, percentY);
           int idx = gridY * 24 + gridX;
-          present[idx] = 1;
-          endpoint[idx] = Math.max(endpoint[idx], pt.getDouble("endpoint"));
-          dir0[idx] = Math.max(dir0[idx], pt.getDouble("dir0"));
-          dir1[idx] = Math.max(dir1[idx], pt.getDouble("dir1"));
-          dir2[idx] = Math.max(dir2[idx], pt.getDouble("dir2"));
-          dir3[idx] = Math.max(dir3[idx], pt.getDouble("dir3"));
+          if (idx >= 0 && idx < arraySize) { // rarely a point will be outside the range. 
+            present[idx] = 1;
+            endpoint[idx] = Math.max(endpoint[idx], pt.getDouble("endpoint"));
+            dir0[idx] = Math.max(dir0[idx], pt.getDouble("dir0"));
+            dir1[idx] = Math.max(dir1[idx], pt.getDouble("dir1"));
+            dir2[idx] = Math.max(dir2[idx], pt.getDouble("dir2"));
+            dir3[idx] = Math.max(dir3[idx], pt.getDouble("dir3"));
+          }
         }
       }
     }

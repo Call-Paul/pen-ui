@@ -184,14 +184,6 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
     Components.centerComponent(af);
   }
 
-  private double[] getDebugRaster(int n) {
-    double[] ret = new double[n * n];
-    for (int i = 0; i < n * n; i++) {
-      ret[i] = random.nextDouble();
-    }
-    return ret;
-  }
-
   public void recognize() {
     List<Stroke> strokes = lds.getStrokes();
     symbolRecognizer.recognize(strokes);

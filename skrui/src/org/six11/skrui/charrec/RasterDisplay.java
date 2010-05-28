@@ -39,7 +39,6 @@ public class RasterDisplay extends JPanel {
     }
     this.n = (int) Math.rint(nDouble);
     this.raster = raster;
-    //  setPreferredSize(new Dimension(n * 4, n * 4));
     repaint();
   }
 
@@ -72,7 +71,7 @@ public class RasterDisplay extends JPanel {
     if (v < 0 || v > 1) {
       err("Found cell value out of range: " + v);
     }
-    float f = (float) Math.sqrt(v);
+    float f = (float) v; // Math.sqrt(v);
     return new Color(f, f, f);
   }
 }

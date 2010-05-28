@@ -56,6 +56,7 @@ public class MNISTReader {
       numImagesRead++;
 
       // At this point, 'label' and 'image' agree and you can do whatever you like with them.
+      handleLabeledImage(label, image);
 
       if (numLabelsRead % 10 == 0) {
         System.out.print(".");
@@ -76,6 +77,10 @@ public class MNISTReader {
     long seconds = (elapsed / 1000) - (minutes * 60);
     System.out
         .println("Read " + numLabelsRead + " samples in " + minutes + " m " + seconds + " s ");
+  }
+
+  private static void handleLabeledImage(byte label, int[][] image) {
+    // Do whatever floats your boat, trips your trigger, or otherwise makes for an optimal experience.
   }
 
 }
