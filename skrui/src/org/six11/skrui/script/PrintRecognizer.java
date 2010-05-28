@@ -29,10 +29,8 @@ import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.args.Arguments.ArgType;
 import org.six11.util.args.Arguments.ValueType;
-import org.six11.util.data.GaussianHat;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Components;
-import org.six11.util.gui.Placeholder;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.layout.Holder;
 
@@ -44,7 +42,8 @@ import static org.six11.util.layout.FrontEnd.S;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
-public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
+public class PrintRecognizer extends SkruiScript implements SequenceListener,
+    Callback {
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -80,8 +79,9 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
   LooseDrawingSurface lds;
   OuyangRecognizer symbolRecognizer;
   JTextField inputText;
+  RasterDisplay[] rasters;
   Random random = new Random(System.currentTimeMillis());
-
+  
   @Override
   public void initialize() {
     bug("PrintRecognizer is alive!");
@@ -119,10 +119,12 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     grid.setHgap(6);
     grid.setVgap(6);
     featureImagePanel.setLayout(grid);
+    rasters = new RasterDisplay[5];
     for (int i = 1; i <= 5; i++) {
       RasterDisplay rastah = new RasterDisplay();
       rastah.setData(getDebugRaster(24));
       featureImagePanel.add(new Holder(rastah));
+      rasters[i-1] = rastah;
     }
     JPanel inputPanel = new JPanel();
     inputPanel.setLayout(new FlowLayout());
@@ -209,12 +211,17 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     return params;
   }
 
-  @Override
   public void recognitionBegun() {
     bug("Oh yay");
   }
 
-  public void recognitionComplete() {
-    bug("Done and done.");
+  public void recognitionComplete(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
+      double[] dir3) {
+    rasters[0].setData(endpoint);
+    rasters[1].setData(dir0);
+    rasters[2].setData(dir1);
+    rasters[3].setData(dir2);
+    rasters[4].setData(dir3);
+    bug("Got recognition complete data");
   }
 }
