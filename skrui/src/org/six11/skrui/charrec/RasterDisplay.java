@@ -39,7 +39,7 @@ public class RasterDisplay extends JPanel {
     }
     this.n = (int) Math.rint(nDouble);
     this.raster = raster;
-    setPreferredSize(new Dimension(n * 4, n * 4));
+    //  setPreferredSize(new Dimension(n * 4, n * 4));
     repaint();
   }
 

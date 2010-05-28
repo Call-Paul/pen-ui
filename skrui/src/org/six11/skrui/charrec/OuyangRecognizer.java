@@ -83,7 +83,7 @@ public class OuyangRecognizer {
         }
       }
     }
-    
+
     // Blur each feature image with a gaussian kernel
     double[] karl = getGaussianBlurKernel(3, 1.0);
     blur(present, karl);
@@ -92,10 +92,39 @@ public class OuyangRecognizer {
     blur(dir1, karl);
     blur(dir2, karl);
     blur(dir3, karl);
-    
+    present = downsample(present);
+    endpoint = downsample(endpoint);
+    dir0 = downsample(dir0);
+    dir1 = downsample(dir1);
+    dir2 = downsample(dir2);
+    dir3 = downsample(dir3);
     for (Callback c : friends) {
       c.recognitionComplete(present, endpoint, dir0, dir1, dir2, dir3);
     }
+  }
+
+  private double[] downsample(double[] in) {
+    int inN = (int) Math.rint(Math.sqrt(in.length));
+    int outN = inN / 2;
+    double[] ret = new double[outN * outN];
+    int retIdx = 0;
+    for (int i = 0; i < in.length; i++) {
+      int x = i % inN;
+      int y = i / inN;
+      if (x % 2 == 0 && y % 2 == 0) {
+        double v = Statistics.maximum(//
+            val(in, inN, x, y), //
+            val(in, inN, x + 1, y), //
+            val(in, inN, x, y + 1), //
+            val(in, inN, x + 1, y + 1));
+        ret[retIdx++] = v;
+      }
+    }
+    return ret;
+  }
+
+  private double val(double[] in, int inN, int x, int y) {
+    return in[(y * inN) + x];
   }
 
   private double getPercent(double lower, double upper, double sample) {
@@ -183,7 +212,7 @@ public class OuyangRecognizer {
     int inN = (int) Math.rint(Math.sqrt(in.length));
     int h = kN / 2; // e.g. 5 / 2 == 2
     double[] result = new double[in.length];
-    for (int inIdx=0; inIdx < in.length; inIdx++) {
+    for (int inIdx = 0; inIdx < in.length; inIdx++) {
       int inX = inIdx % inN;
       int inY = inIdx / inN;
       double cellValue = 0;
@@ -203,7 +232,7 @@ public class OuyangRecognizer {
     }
     System.arraycopy(result, 0, in, 0, in.length);
   }
-  
+
   private double[] getGaussianBlurKernel(int n, double sigma) {
     double[] ret = new double[n * n];
     int baseNum = (n / 2) - 1;
