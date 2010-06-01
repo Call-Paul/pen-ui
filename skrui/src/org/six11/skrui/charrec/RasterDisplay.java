@@ -71,7 +71,11 @@ public class RasterDisplay extends JPanel {
     if (v < 0 || v > 1) {
       err("Found cell value out of range: " + v);
     }
-    float f = (float) v; // Math.sqrt(v);
+    float f = (float) v;
     return new Color(f, f, f);
+  }
+
+  public double[] getData() {
+    return raster;
   }
 }

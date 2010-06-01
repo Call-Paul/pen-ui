@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,8 +43,7 @@ import static org.six11.util.layout.FrontEnd.S;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
-public class PrintRecognizer extends SkruiScript implements SequenceListener,
-    Callback {
+public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -81,12 +81,17 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
   JTextField inputText;
   Map<String, RasterDisplay> rasters;
   Random random = new Random(System.currentTimeMillis());
-  
+
   @Override
   public void initialize() {
     bug("PrintRecognizer is alive!");
     symbolRecognizer = new OuyangRecognizer(); // TODO: supply a database
     symbolRecognizer.addCallback(this);
+    if (main.getProperty("symbolCorpusFile") == null) {
+      main.setProperty("symbolCorpusFile", new File("symbol-corpus.data").getAbsolutePath());
+    }
+    String fileName = main.getProperty("symbolCorpusFile");
+    symbolRecognizer.setCorpus(new File(fileName));
   }
 
   public void showUI() {
@@ -115,7 +120,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
       nBestPanel.add(new NBestHit("" + chars.charAt(i), random.nextDouble()));
     }
     JPanel featureImagePanel = new JPanel();
-    
+
     rasters = new HashMap<String, RasterDisplay>();
     rasters.put("present", new RasterDisplay(24, "As Drawn"));
     rasters.put("endpoint", new RasterDisplay(24, "End Points"));
@@ -141,7 +146,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
     JButton saveButton = new JButton("Save");
     saveButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        bug("Not really saving yet. Implement this.");
+        saveLabeledSymbol();
         inputText.setText("");
         lds.clear();
       }
@@ -184,6 +189,20 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
     Components.centerComponent(af);
   }
 
+  protected void saveLabeledSymbol() {
+    String label = inputText.getText();
+    List<Stroke> strokes = lds.getStrokes();
+    if (label.length() > 0 && strokes.size() > 0) {
+      double[] endpoint = rasters.get("endpoint").getData();
+      double[] dir0 = rasters.get("dir0").getData();
+      double[] dir1 = rasters.get("dir1").getData();
+      double[] dir2 = rasters.get("dir2").getData();
+      double[] dir3 = rasters.get("dir3").getData();
+
+      symbolRecognizer.store(label, endpoint, dir0, dir1, dir2, dir3);
+    }
+  }
+
   public void recognize() {
     List<Stroke> strokes = lds.getStrokes();
     symbolRecognizer.recognize(strokes);
@@ -212,11 +231,11 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener,
   }
 
   public void recognitionBegun() {
-    
+
   }
 
-  public void recognitionComplete(double[] present, double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
-      double[] dir3) {
+  public void recognitionComplete(double[] present, double[] endpoint, double[] dir0,
+      double[] dir1, double[] dir2, double[] dir3) {
     rasters.get("present").setData(present);
     rasters.get("endpoint").setData(endpoint);
     rasters.get("dir0").setData(dir0);

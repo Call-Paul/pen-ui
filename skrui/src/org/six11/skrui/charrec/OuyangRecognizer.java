@@ -1,7 +1,16 @@
 package org.six11.skrui.charrec;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
@@ -17,9 +26,12 @@ public class OuyangRecognizer {
   private static Vec fortyFive = new Vec(1, 1).getUnitVector();
   private static Vec ninety = new Vec(0, 1);
   private static Vec oneThirtyFive = new Vec(-1, 1).getUnitVector();
+  private Map<String, List<double[]>> symbols;
+  private File corpus;
 
   public OuyangRecognizer() {
     friends = new ArrayList<Callback>();
+    symbols = new HashMap<String, List<double[]>>();
   }
 
   public interface Callback {
@@ -73,7 +85,7 @@ public class OuyangRecognizer {
           int gridX = getGridIndex(0, gridSize, percentX);
           int gridY = getGridIndex(0, gridSize, percentY);
           int idx = gridY * 24 + gridX;
-          if (idx >= 0 && idx < arraySize) { // rarely a point will be outside the range. 
+          if (idx >= 0 && idx < arraySize) { // rarely a point will be outside the range.
             present[idx] = 1;
             endpoint[idx] = Math.max(endpoint[idx], pt.getDouble("endpoint"));
             dir0[idx] = Math.max(dir0[idx], pt.getDouble("dir0"));
@@ -84,6 +96,11 @@ public class OuyangRecognizer {
         }
       }
     }
+    checkNaN(endpoint);
+    checkNaN(dir0);
+    checkNaN(dir1);
+    checkNaN(dir2);
+    checkNaN(dir3);
 
     // Blur each feature image with a gaussian kernel
     double[] karl = getGaussianBlurKernel(3, 1.0);
@@ -99,9 +116,96 @@ public class OuyangRecognizer {
     dir1 = downsample(dir1);
     dir2 = downsample(dir2);
     dir3 = downsample(dir3);
+    double[] input = makeMasterVector(endpoint, dir0, dir1, dir2, dir3);
+
+    // Now we have the feature images for the recently drawn symbol. Try to match it against the
+    // symbols we know about.
+    Statistics scores = new Statistics();
+    String bestLabel = null;
+    double bestScore = Double.MAX_VALUE;
+    for (String key : symbols.keySet()) {
+      List<double[]> inst = symbols.get(key);
+      for (int instIdx = 0; instIdx < inst.size(); instIdx++) {
+        double[] data = inst.get(instIdx); // data is 5x the length of the feature images.
+        int len = endpoint.length; // all feature images are the same length
+        double[] dataPatch = new double[9];
+        double[] inputPatch = new double[9];
+        double sumOfMinScores = 0;
+        for (int i = 0; i < len; i++) {
+          // compare the 3x3 patch around input[i] with the nine patches in the vicinity of data[i]
+          // do this for all five feature images.
+          double minScore = Double.MAX_VALUE;
+          for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+              double patchDifference = 0;
+              for (int featureNumber = 0; featureNumber < 5; featureNumber++) {
+                fillPatch(input, len * featureNumber, len, i, 0, 0, inputPatch);
+                fillPatch(data, len * featureNumber, len, i, dx, dy, dataPatch);
+                double diff = comparePatches(inputPatch, dataPatch);
+                patchDifference = patchDifference + diff;
+                // bug(dx + ", " + dy + ", " + featureNumber + ": " + Debug.num(diff));
+              }
+              minScore = Math.min(minScore, patchDifference);
+            }
+          }
+          sumOfMinScores = sumOfMinScores + minScore;
+          // bug("Minimum difference for patch " + i + " is: " + Debug.num(minScore));
+        }
+        bug(" ** Grand total difference for '" + key + "' (" + (instIdx + 1) + "/" + inst.size()
+            + "): " + sumOfMinScores);
+        if (Double.isNaN(sumOfMinScores)) {
+          bug("Got NaN comparing these vectors: ");
+          bug(Debug.num(input));
+          bug(Debug.num(data));
+        }
+        scores.addData(sumOfMinScores);
+        if (sumOfMinScores < bestScore) {
+          bestScore = sumOfMinScores;
+          bestLabel = key;
+        }
+      }
+    }
+    double percent = (1 - bestScore / scores.getMax()) * 100;
+    bug("Final verdict: '" + bestLabel + "' " + Debug.num(percent) + "%");
+
     for (Callback c : friends) {
       c.recognitionComplete(present, endpoint, dir0, dir1, dir2, dir3);
     }
+  }
+
+  private void checkNaN(double[] numbers) {
+    for (int i = 0; i < numbers.length; i++) {
+      if (Double.isNaN(numbers[i])) {
+        new RuntimeException("Found NaN. Check stacktrace.").printStackTrace();
+        System.exit(0);
+      }
+    }
+  }
+
+  private double comparePatches(double[] srcPatch, double[] destPatch) {
+    double sum = 0;
+    // StringBuilder buf = new StringBuilder();
+    for (int i = 0; i < srcPatch.length; i++) {
+      // buf.append("(" + Debug.num(srcPatch[i]) + " - " + Debug.num(destPatch[i]) + ") ");
+      double diff = srcPatch[i] - destPatch[i];
+      sum = sum + (diff * diff);
+    }
+    // bug(buf.toString() + ": " + Debug.num(sum));
+    return sum;
+  }
+
+  private void fillPatch(double[] data, int offset, int featureLength, int i, int dx, int dy,
+      double[] patch) {
+    int idx = 0;
+    int border = offset + featureLength;
+    int x = (i % featureLength) + dx;
+    int y = (i / featureLength) + dy;
+    if (x < 0 || y < 0 || x >= border || y >= border) {
+      patch[idx] = 0;
+    } else {
+      patch[idx] = data[offset + ((y * featureLength) + x)];
+    }
+    idx++;
   }
 
   private double[] downsample(double[] in) {
@@ -138,16 +242,23 @@ public class OuyangRecognizer {
 
   private void computeInitialFeatureValues(List<Pt> seq, Statistics xData, Statistics yData) {
     // set the four direction features for all non-endpoints, and keep stats on where points are
+    boolean repair = false;
     for (int i = 1; i < seq.size() - 1; i++) {
       Pt prev = seq.get(i - 1);
       Pt here = seq.get(i);
       Pt next = seq.get(i + 1);
-      Vec dir = new Vec(prev, next).getUnitVector();
-      computeAngle(here, dir, zero, "dir0");
-      computeAngle(here, dir, fortyFive, "dir1");
-      computeAngle(here, dir, ninety, "dir2");
-      computeAngle(here, dir, oneThirtyFive, "dir3");
       here.setDouble("endpoint", 0.0); // record that this is not an endpoint
+      Vec dir = new Vec(prev, next).getUnitVector();
+      if (Double.isNaN(dir.getX()) || Double.isNaN(dir.getY())) {
+        // rarely, prev and next are the same point. So leave the values null for now, and
+        // fill it in later using the average of neighbors.
+        repair = true;
+      } else {
+        computeAngle(here, dir, zero, "dir0");
+        computeAngle(here, dir, fortyFive, "dir1");
+        computeAngle(here, dir, ninety, "dir2");
+        computeAngle(here, dir, oneThirtyFive, "dir3");
+      }
       xData.addData(here.getX());
       yData.addData(here.getY());
     }
@@ -155,6 +266,24 @@ public class OuyangRecognizer {
     copyAttribs(seq.get(seq.size() - 2), seq.get(seq.size() - 1), "dir0", "dir1", "dir2", "dir3");
     copyAttribs(seq.get(1), seq.get(0), "dir0", "dir1", "dir2", "dir3");
 
+    // repair damage from the rare NaN silliness.
+    if (repair) {
+      bug("Repairing damage from NaN silliness...");
+      String[] names = new String[] {
+          "dir0", "dir1", "dir2", "dir3"
+      };
+      for (int i = 1; i < seq.size() - 1; i++) {
+        Pt pt = seq.get(i);
+        for (String name : names) {
+          if (!pt.hasAttribute(name)) {
+            bug(" ... repairing " + name);
+            double prevVal = seq.get(i - 1).getDouble(name);
+            double nextVal = seq.get(i + 1).getDouble(name);
+            pt.setDouble(name, (prevVal + nextVal) / 2);
+          }
+        }
+      }
+    }
     // record the first and last points as endpoints.
     seq.get(0).setDouble("endpoint", 1.0);
     seq.get(seq.size() - 1).setDouble("endpoint", 1.0);
@@ -175,25 +304,23 @@ public class OuyangRecognizer {
 
   private void computeAngle(Pt pt, Vec dir, Vec cardinal, String attribName) {
     double angle = Functions.getAngleBetween(cardinal, dir);
-    String bugString = null; // "dir2";
-    if (attribName.equals(bugString)) {
-      bug("Angle: " + Debug.num(angle));
-    }
     if (Math.abs(angle) > Math.PI / 2) {
       dir = dir.getFlip();
-      if (attribName.equals(bugString)) {
-        bug("Flipping, because angle was: " + Debug.num(angle));
-      }
       angle = Functions.getAngleBetween(cardinal, dir);
+    }
+    if (Double.isNaN(angle)) {
+      bug("Found NaN in computing angle: " + Debug.num(pt) + ", " + Debug.num(dir) + ", "
+          + Debug.num(cardinal) + ", " + attribName);
+      System.exit(0);
     }
     double difference = Math.abs(angle);
     double featureValue = Math.max(0, 1 - difference / (Math.PI / 4));
-    if (attribName.equals(bugString)) {
-      bug("Difference: " + Debug.num(difference));
-      bug("Feature Value: " + Debug.num(featureValue));
+    if (Double.isNaN(featureValue)) {
+      bug("Found NaN in computing featureValue: " + Debug.num(pt) + ", " + Debug.num(dir) + ", "
+          + Debug.num(cardinal) + ", " + attribName);
+      System.exit(0);
     }
     pt.setDouble(attribName, featureValue);
-
   }
 
   private static void bug(String what) {
@@ -232,6 +359,7 @@ public class OuyangRecognizer {
       result[inIdx] = Math.min(Math.max(0, cellValue), 1);
     }
     System.arraycopy(result, 0, in, 0, in.length);
+    checkNaN(in);
   }
 
   private double[] getGaussianBlurKernel(int n, double sigma) {
@@ -262,5 +390,68 @@ public class OuyangRecognizer {
     double ret = left * expVal;
     return ret;
   }
+  
+  public void setCorpus(File f) {
+    corpus = f;
+    if (corpus.exists() && corpus.canRead()) {
+      try {
+        DataInputStream in = new DataInputStream(new FileInputStream(corpus));
+        int numRead = 0;
+        while (in.available() > 0) {
+          String label = in.readUTF();
+          int len = in.readInt();
+          double[] master = new double[len];
+          for (int i=0; i < len; i++) {
+            master[i] = in.readDouble();
+          }
+          remember(label, master);
+          numRead++;
+        }
+        bug("Read " + numRead + " symbols from " + corpus.getAbsolutePath());
+      } catch (FileNotFoundException ex) {
+        ex.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
 
+  public void store(String label, double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
+      double[] dir3) {
+    double[] master = makeMasterVector(endpoint, dir0, dir1, dir2, dir3);
+    remember(label, master);
+    if (corpus != null) {
+      try {
+        DataOutputStream out = new DataOutputStream(new FileOutputStream(corpus, true));
+        out.writeUTF(label);
+        out.writeInt(master.length);
+        for (double val : master) {
+          out.writeDouble(val);
+        }
+      } catch (FileNotFoundException ex) {
+        ex.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
+  private void remember(String label, double[] master) {
+    if (!symbols.containsKey(label)) {
+      symbols.put(label, new ArrayList<double[]>());
+    }
+    symbols.get(label).add(master);
+  }
+
+  private double[] makeMasterVector(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
+      double[] dir3) {
+    int len = endpoint.length;
+    double[] master = new double[endpoint.length * len];
+    System.arraycopy(endpoint, 0, master, len * 0, len);
+    System.arraycopy(dir0, 0, master, len * 1, len);
+    System.arraycopy(dir1, 0, master, len * 2, len);
+    System.arraycopy(dir2, 0, master, len * 3, len);
+    System.arraycopy(dir3, 0, master, len * 4, len);
+    return master;
+  }
 }
