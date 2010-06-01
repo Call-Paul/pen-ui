@@ -21,8 +21,10 @@ import javax.swing.JTextField;
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.SkruiScript;
 import org.six11.skrui.charrec.NBestHit;
+import org.six11.skrui.charrec.NBestList;
 import org.six11.skrui.charrec.OuyangRecognizer;
 import org.six11.skrui.charrec.RasterDisplay;
+import org.six11.skrui.charrec.NBestList.NBest;
 import org.six11.skrui.charrec.OuyangRecognizer.Callback;
 import org.six11.skrui.shape.Stroke;
 import org.six11.skrui.ui.LooseDrawingSurface;
@@ -44,6 +46,8 @@ import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
 
 public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
+
+  private static int N_BEST_DISPLAY = 5;
 
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
@@ -80,6 +84,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
   OuyangRecognizer symbolRecognizer;
   JTextField inputText;
   Map<String, RasterDisplay> rasters;
+  NBestHit[] bestHits;
   Random random = new Random(System.currentTimeMillis());
 
   @Override
@@ -115,9 +120,16 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     JLabel resultsLabel = new JLabel("Recognition Results:");
     JPanel nBestPanel = new JPanel();
     nBestPanel.setLayout(new FlowLayout());
-    String chars = "RAHBPQO";
-    for (int i = 0; i < chars.length(); i++) {
-      nBestPanel.add(new NBestHit("" + chars.charAt(i), random.nextDouble()));
+    ActionListener clickez = new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        setUserLabel(e.getActionCommand());
+      }
+    };
+    bestHits = new NBestHit[N_BEST_DISPLAY];
+    for (int i = 0; i < N_BEST_DISPLAY; i++) {
+      bestHits[i] = new NBestHit("?", 0, false);
+      bestHits[i].addActionListener(clickez);
+      nBestPanel.add(bestHits[i]);
     }
     JPanel featureImagePanel = new JPanel();
 
@@ -148,6 +160,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
       public void actionPerformed(ActionEvent e) {
         saveLabeledSymbol();
         inputText.setText("");
+        inputText.requestFocus();
         lds.clear();
       }
     });
@@ -187,6 +200,10 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     af.add(fe);
     af.setSize(740, 210);
     Components.centerComponent(af);
+  }
+  
+  protected void setUserLabel(String val) {
+    inputText.setText(val);
   }
 
   protected void saveLabeledSymbol() {
@@ -235,13 +252,21 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
   }
 
   public void recognitionComplete(double[] present, double[] endpoint, double[] dir0,
-      double[] dir1, double[] dir2, double[] dir3) {
+      double[] dir1, double[] dir2, double[] dir3, NBestList nBestList) {
     rasters.get("present").setData(present);
     rasters.get("endpoint").setData(endpoint);
     rasters.get("dir0").setData(dir0);
     rasters.get("dir1").setData(dir1);
     rasters.get("dir2").setData(dir2);
     rasters.get("dir3").setData(dir3);
-    bug("Got recognition complete data");
+    List<NBest> best = nBestList.getNBest(N_BEST_DISPLAY);
+    for (int i = 0; i < N_BEST_DISPLAY; i++) {
+      if (i >= best.size()) {
+        bestHits[i].setData("?", 0);
+      } else {
+        NBest b = best.get(i);
+        bestHits[i].setData(b.label, b.score);
+      }
+    }
   }
 }

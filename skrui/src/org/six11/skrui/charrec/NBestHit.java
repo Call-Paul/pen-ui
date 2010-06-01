@@ -1,11 +1,21 @@
 package org.six11.skrui.charrec;
 
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JPanel;
 import javax.swing.Timer;
@@ -27,7 +37,8 @@ public class NBestHit extends JPanel {
   private static final int CLICK_TIMEOUT = 600;
 
   String label;
-  String confidence;
+  String score;
+  boolean scoreIsPercent;
   int labelWidth;
   int confWidth;
   int fontHeight;
@@ -44,19 +55,13 @@ public class NBestHit extends JPanel {
   // variables dealing with marching ants and the pen-friendly click
   boolean down;
   long downTime;
+  
+  // listeners for psudoclicks
+  List<ActionListener> actionListeners;
 
-  public NBestHit(String label, double confidence) {
-    this.label = label;
-    this.confidence = Debug.num(100d * confidence) + "%";
-    this.labelFont = new Font("Monospaced", Font.BOLD, 16);
-    FontMetrics fm = getFontMetrics(labelFont);
-    labelWidth = fm.stringWidth(label);
-    fontHeight = fm.getHeight(); // not totally correct
-    this.confFont = new Font("Monospaced", Font.PLAIN, 12);
-    fm = getFontMetrics(confFont);
-    confWidth = fm.stringWidth(this.confidence);
-    totalWidth = labelWidth + confWidth + 6;
-    setPreferredSize(new Dimension(totalWidth + 8, fontHeight + 6));
+  public NBestHit(String label, double score, boolean scoreIsPercent) {
+    this.scoreIsPercent = scoreIsPercent;
+    setData(label, score);
     int antSize = 3;
     antTimer = new Timer(1000 / 10, new ActionListener() {
       public void actionPerformed(ActionEvent e) {
@@ -100,14 +105,47 @@ public class NBestHit extends JPanel {
           long now = System.currentTimeMillis();
           // this is in lieu of a mouse click event, which is not dependable with pens
           if ((now - downTime) < CLICK_TIMEOUT) {
-            bug("click");
+            reportClick();
           }
           repaint();
         }
       }
     });
+    actionListeners = new ArrayList<ActionListener>();
+  }
+  
+  public void addActionListener(ActionListener al) {
+    actionListeners.add(al);
   }
 
+  protected void reportClick() {
+    ActionEvent ev = new ActionEvent(this, 0, label);
+    for (ActionListener al : actionListeners) {
+      al.actionPerformed(ev);
+    }
+  }
+
+  public void setData(String label, double score) {
+    this.label = label;
+    if (scoreIsPercent) {
+      this.score = Debug.num(100d * score) + "%";
+    } else {
+      this.score = Debug.num(score);
+    }
+    this.labelFont = new Font("Monospaced", Font.BOLD, 16);
+    FontMetrics fm = getFontMetrics(labelFont);
+    labelWidth = fm.stringWidth(label);
+    fontHeight = fm.getHeight(); // not totally correct
+    this.confFont = new Font("Monospaced", Font.PLAIN, 12);
+    fm = getFontMetrics(confFont);
+    confWidth = fm.stringWidth(this.score);
+    totalWidth = labelWidth + confWidth + 6;
+    setPreferredSize(new Dimension(totalWidth + 8, fontHeight + 6));
+    revalidate();
+    repaint();
+  }
+
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("NBestHit", what);
   }
@@ -132,7 +170,7 @@ public class NBestHit extends JPanel {
     curX = curX + labelWidth + 5;
     g.setFont(confFont);
     g.setColor(Color.GRAY);
-    g.drawString(confidence, (float) curX, (float) curY);
+    g.drawString(score, (float) curX, (float) curY);
   }
 
   private void marchAntBorder() {

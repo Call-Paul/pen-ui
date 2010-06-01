@@ -38,7 +38,7 @@ public class OuyangRecognizer {
     public void recognitionBegun();
 
     public void recognitionComplete(double[] present, double[] endpoint, double[] dir0,
-        double[] dir1, double[] dir2, double[] dir3);
+        double[] dir1, double[] dir2, double[] dir3, NBestList nBestList);
   }
 
   public void addCallback(Callback friend) {
@@ -46,6 +46,7 @@ public class OuyangRecognizer {
   }
 
   public void recognize(List<Stroke> strokes) {
+    long start = System.currentTimeMillis();
     for (Callback c : friends) {
       c.recognitionBegun();
     }
@@ -120,9 +121,10 @@ public class OuyangRecognizer {
 
     // Now we have the feature images for the recently drawn symbol. Try to match it against the
     // symbols we know about.
+    NBestList nBestList = new NBestList(true);
     Statistics scores = new Statistics();
-    String bestLabel = null;
-    double bestScore = Double.MAX_VALUE;
+    // double bestScore = Double.MAX_VALUE;
+    int numSymbols = 0;
     for (String key : symbols.keySet()) {
       List<double[]> inst = symbols.get(key);
       for (int instIdx = 0; instIdx < inst.size(); instIdx++) {
@@ -139,38 +141,38 @@ public class OuyangRecognizer {
             for (int dy = -1; dy <= 1; dy++) {
               double patchDifference = 0;
               for (int featureNumber = 0; featureNumber < 5; featureNumber++) {
-                fillPatch(input, len * featureNumber, len, i, 0, 0, inputPatch);
-                fillPatch(data, len * featureNumber, len, i, dx, dy, dataPatch);
+                fillPatch(input, featureNumber, len, i, 0, 0, inputPatch);
+                fillPatch(data, featureNumber, len, i, dx, dy, dataPatch);
                 double diff = comparePatches(inputPatch, dataPatch);
                 patchDifference = patchDifference + diff;
-                // bug(dx + ", " + dy + ", " + featureNumber + ": " + Debug.num(diff));
               }
               minScore = Math.min(minScore, patchDifference);
             }
           }
           sumOfMinScores = sumOfMinScores + minScore;
-          // bug("Minimum difference for patch " + i + " is: " + Debug.num(minScore));
         }
-        bug(" ** Grand total difference for '" + key + "' (" + (instIdx + 1) + "/" + inst.size()
-            + "): " + sumOfMinScores);
         if (Double.isNaN(sumOfMinScores)) {
           bug("Got NaN comparing these vectors: ");
           bug(Debug.num(input));
           bug(Debug.num(data));
         }
+        numSymbols++;
+        nBestList.addScore(key, sumOfMinScores);
         scores.addData(sumOfMinScores);
-        if (sumOfMinScores < bestScore) {
-          bestScore = sumOfMinScores;
-          bestLabel = key;
-        }
+        // if (sumOfMinScores < bestScore) {
+        // bestScore = sumOfMinScores;
+        // }
       }
     }
-    double percent = (1 - bestScore / scores.getMax()) * 100;
-    bug("Final verdict: '" + bestLabel + "' " + Debug.num(percent) + "%");
 
     for (Callback c : friends) {
-      c.recognitionComplete(present, endpoint, dir0, dir1, dir2, dir3);
+      c.recognitionComplete(present, endpoint, dir0, dir1, dir2, dir3, nBestList);
     }
+    long finish = System.currentTimeMillis();
+    long elapsed = finish - start;
+    double perSym = (double) elapsed / (double) numSymbols;
+    bug("Took " + elapsed + " ms total to examine " + numSymbols + " symbols. ("
+        + Debug.num(perSym) + " ms per symbol)");
   }
 
   private void checkNaN(double[] numbers) {
@@ -184,28 +186,53 @@ public class OuyangRecognizer {
 
   private double comparePatches(double[] srcPatch, double[] destPatch) {
     double sum = 0;
-    // StringBuilder buf = new StringBuilder();
     for (int i = 0; i < srcPatch.length; i++) {
-      // buf.append("(" + Debug.num(srcPatch[i]) + " - " + Debug.num(destPatch[i]) + ") ");
       double diff = srcPatch[i] - destPatch[i];
       sum = sum + (diff * diff);
     }
-    // bug(buf.toString() + ": " + Debug.num(sum));
     return sum;
   }
 
-  private void fillPatch(double[] data, int offset, int featureLength, int i, int dx, int dy,
-      double[] patch) {
-    int idx = 0;
-    int border = offset + featureLength;
-    int x = (i % featureLength) + dx;
-    int y = (i / featureLength) + dy;
-    if (x < 0 || y < 0 || x >= border || y >= border) {
-      patch[idx] = 0;
-    } else {
-      patch[idx] = data[offset + ((y * featureLength) + x)];
+  /**
+   * 
+   * @param data
+   *          the 720-element long vector of data for a single sample. It is composed of the five
+   *          feature images that are 144 cells. Think of them as being arranged in a 12x12 grid.
+   * @param featureNumber
+   *          Indicates the particular feature image to read. This should be [0..5).
+   * @param featureIndex
+   *          Indexes a cell inside a particular feature image in the range [0..144)
+   * @param dx
+   *          An offset in the x dimension within a 12x12 grid. In the range [-1..1].
+   * @param dy
+   *          Like dx but for y.
+   * @param patch
+   *          The nine values in the 3x3 vicinity of the target pixel are put here.
+   */
+  private void fillPatch(double[] data, int featureNumber, int featureLength, int featureIndex,
+      int dx, int dy, double[] patch) {
+    // bug("fillPatch(double[" + data.length + "]@" + data.hashCode() + ", " + featureNumber + ", "
+    // + featureLength + ", " + featureIndex + ", " + dx + ", " + dy + ", double[" + patch.length
+    // + "]@" + patch.hashCode());
+
+    int base = featureNumber * featureLength; // a multiple of 144
+    int nextBase = base + featureLength;
+    int gridSize = (int) Math.rint(Math.sqrt(featureLength));
+    int c = base + featureIndex;
+    int t = c + dx + (gridSize * dy);
+
+    int patchIdx = 0;
+    for (int i = -1; i <= 1; i++) {
+      for (int j = -1; j <= 1; j++) {
+        int pixel = t + i + (gridSize * j);
+        if (pixel < base || pixel >= nextBase) { // out of bounds for this 12x12 grid
+          patch[patchIdx] = 0;
+        } else {
+          patch[patchIdx] = data[pixel];
+        }
+        patchIdx = patchIdx + 1;
+      }
     }
-    idx++;
   }
 
   private double[] downsample(double[] in) {
@@ -390,8 +417,9 @@ public class OuyangRecognizer {
     double ret = left * expVal;
     return ret;
   }
-  
+
   public void setCorpus(File f) {
+    long start = System.currentTimeMillis();
     corpus = f;
     if (corpus.exists() && corpus.canRead()) {
       try {
@@ -401,13 +429,18 @@ public class OuyangRecognizer {
           String label = in.readUTF();
           int len = in.readInt();
           double[] master = new double[len];
-          for (int i=0; i < len; i++) {
+          for (int i = 0; i < len; i++) {
             master[i] = in.readDouble();
           }
           remember(label, master);
           numRead++;
         }
-        bug("Read " + numRead + " symbols from " + corpus.getAbsolutePath());
+        long finished = System.currentTimeMillis();
+        long elapsed = finished - start;
+        int s = (int) elapsed / 1000;
+        int ms = (int) elapsed % 1000;
+        bug("Read " + numRead + " symbols from " + corpus.getAbsolutePath() + " in " + s + " s "
+            + ms + " ms");
       } catch (FileNotFoundException ex) {
         ex.printStackTrace();
       } catch (IOException ex) {
@@ -446,7 +479,7 @@ public class OuyangRecognizer {
   private double[] makeMasterVector(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
       double[] dir3) {
     int len = endpoint.length;
-    double[] master = new double[endpoint.length * len];
+    double[] master = new double[5 * len];
     System.arraycopy(endpoint, 0, master, len * 0, len);
     System.arraycopy(dir0, 0, master, len * 1, len);
     System.arraycopy(dir1, 0, master, len * 2, len);
