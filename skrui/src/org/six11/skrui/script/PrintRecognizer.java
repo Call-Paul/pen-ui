@@ -48,7 +48,7 @@ import org.six11.util.pen.SequenceListener;
 public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
 
   private static int N_BEST_DISPLAY = 5;
-  
+
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
     args.setProgramName("Handwriting (print) recognizer");
@@ -97,7 +97,11 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     }
     String fileName = main.getProperty("symbolCorpusFile");
     symbolRecognizer.setCorpus(new File(fileName));
-    symbolRecognizer.calculatePrincipleComponents();
+    if (symbolRecognizer.getNumSymbols() > 100) {
+      symbolRecognizer.calculatePrincipleComponents();
+    } else {
+      bug("Not enough symbols to calculate PCA. Need " + (100 - symbolRecognizer.getNumSymbols()) + " more.");
+    }
   }
 
   public void showUI() {
@@ -203,7 +207,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     af.setSize(740, 210);
     Components.centerComponent(af);
   }
-  
+
   protected void setUserLabel(String val) {
     inputText.setText(val);
   }

@@ -29,14 +29,16 @@ public class OuyangRecognizer {
   private static Vec fortyFive = new Vec(1, 1).getUnitVector();
   private static Vec ninety = new Vec(0, 1);
   private static Vec oneThirtyFive = new Vec(-1, 1).getUnitVector();
-  private Map<String, List<double[]>> symbols;
+  private Map<String, List<Sample>> symbols;
   private int numSymbols;
+  private int nextID;
   private File corpus;
 
   public OuyangRecognizer() {
     friends = new ArrayList<Callback>();
-    symbols = new HashMap<String, List<double[]>>();
+    symbols = new HashMap<String, List<Sample>>();
     numSymbols = 0;
+    nextID = 1;
   }
 
   public interface Callback {
@@ -131,9 +133,10 @@ public class OuyangRecognizer {
     // double bestScore = Double.MAX_VALUE;
     int numSymbols = 0;
     for (String key : symbols.keySet()) {
-      List<double[]> inst = symbols.get(key);
+      List<Sample> inst = symbols.get(key);
       for (int instIdx = 0; instIdx < inst.size(); instIdx++) {
-        double[] data = inst.get(instIdx); // data is 5x the length of the feature images.
+        Sample sample = inst.get(instIdx); // data is 5x the length of the feature images.
+        double[] data = sample.getData();
         int len = endpoint.length; // all feature images are the same length
         double[] dataPatch = new double[9];
         double[] inputPatch = new double[9];
@@ -164,9 +167,6 @@ public class OuyangRecognizer {
         numSymbols++;
         nBestList.addScore(key, sumOfMinScores);
         scores.addData(sumOfMinScores);
-        // if (sumOfMinScores < bestScore) {
-        // bestScore = sumOfMinScores;
-        // }
       }
     }
 
@@ -431,8 +431,8 @@ public class OuyangRecognizer {
     double[][] mondo = new double[numSymbols][allFeatureLength];
     int symbolIdx = 0;
     for (String key : symbols.keySet()) {
-      for (double[] symbolData : symbols.get(key)) {
-        System.arraycopy(symbolData, 0, mondo[symbolIdx], 0, allFeatureLength);
+      for (Sample sample : symbols.get(key)) {
+        System.arraycopy(sample.getData(), 0, mondo[symbolIdx], 0, allFeatureLength);
         symbolIdx++;
       }
     }
@@ -458,13 +458,9 @@ public class OuyangRecognizer {
         DataInputStream in = new DataInputStream(new FileInputStream(corpus));
         int numRead = 0;
         while (in.available() > 0) {
-          String label = in.readUTF();
-          int len = in.readInt();
-          double[] master = new double[len];
-          for (int i = 0; i < len; i++) {
-            master[i] = in.readDouble();
-          }
-          remember(label, master);
+          Sample sample = Sample.readSample(in);
+          remember(sample);
+          nextID = Math.max(nextID, sample.getID()) + 1;
           numRead++;
         }
         long finished = System.currentTimeMillis();
@@ -481,31 +477,48 @@ public class OuyangRecognizer {
     }
   }
 
+  /**
+   * Stores a 720-element long feature vector to disk. The format is as follows:
+   * 
+   * <ul>
+   * <li>An integer ID for this particular record. This must be unique among all other records.</li>
+   * <li>A UTF string indicating what the feature vector represents, e.g. 'a' or 'xor gate'.
+   * (variable length)</li>
+   * <li>The length of the array N (should be 720, but conceivably could change)</li>
+   * <li>N unsigned short values representing the values [0..2^16). These are indexes into a lookup
+   * table that has 2^16 doubles in the range 0..1.</li>
+   * </ul>
+   * 
+   * @param label
+   * @param endpoint
+   * @param dir0
+   * @param dir1
+   * @param dir2
+   * @param dir3
+   */
   public void store(String label, double[] endpoint, double[] dir0, double[] dir1, double[] dir2,
       double[] dir3) {
     double[] master = makeMasterVector(endpoint, dir0, dir1, dir2, dir3);
-    remember(label, master);
+    Sample thisSample = new Sample(nextID, label, master);
+    remember(thisSample);
     if (corpus != null) {
       try {
         DataOutputStream out = new DataOutputStream(new FileOutputStream(corpus, true));
-        out.writeUTF(label);
-        out.writeInt(master.length);
-        for (double val : master) {
-          out.writeDouble(val);
-        }
+        thisSample.write(out);
       } catch (FileNotFoundException ex) {
         ex.printStackTrace();
       } catch (IOException ex) {
         ex.printStackTrace();
       }
     }
+    nextID++;
   }
 
-  private void remember(String label, double[] master) {
-    if (!symbols.containsKey(label)) {
-      symbols.put(label, new ArrayList<double[]>());
+  private void remember(Sample sample) {
+    if (!symbols.containsKey(sample.getLabel())) {
+      symbols.put(sample.getLabel(), new ArrayList<Sample>());
     }
-    symbols.get(label).add(master);
+    symbols.get(sample.getLabel()).add(sample);
     numSymbols = numSymbols + 1;
   }
 
@@ -519,5 +532,9 @@ public class OuyangRecognizer {
     System.arraycopy(dir2, 0, master, len * 3, len);
     System.arraycopy(dir3, 0, master, len * 4, len);
     return master;
+  }
+
+  public int getNumSymbols() {
+    return numSymbols;
   }
 }
