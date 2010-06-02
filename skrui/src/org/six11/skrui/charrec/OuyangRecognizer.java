@@ -18,8 +18,11 @@ import org.six11.util.data.Statistics;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
+import org.six11.util.math.PCA;
 
 public class OuyangRecognizer {
+
+  public static int DOWNSAMPLE_GRID_SIZE = 12;
 
   private List<Callback> friends;
   private static Vec zero = new Vec(1, 0);
@@ -27,11 +30,13 @@ public class OuyangRecognizer {
   private static Vec ninety = new Vec(0, 1);
   private static Vec oneThirtyFive = new Vec(-1, 1).getUnitVector();
   private Map<String, List<double[]>> symbols;
+  private int numSymbols;
   private File corpus;
 
   public OuyangRecognizer() {
     friends = new ArrayList<Callback>();
     symbols = new HashMap<String, List<double[]>>();
+    numSymbols = 0;
   }
 
   public interface Callback {
@@ -418,6 +423,33 @@ public class OuyangRecognizer {
     return ret;
   }
 
+  public void calculatePrincipleComponents() {
+    // Make a mondo-matrix using all the data (!) in the symbol table and get the first 120
+    // principle components.
+    int featureLength = DOWNSAMPLE_GRID_SIZE * DOWNSAMPLE_GRID_SIZE;
+    int allFeatureLength = featureLength * 5;
+    double[][] mondo = new double[numSymbols][allFeatureLength];
+    int symbolIdx = 0;
+    for (String key : symbols.keySet()) {
+      for (double[] symbolData : symbols.get(key)) {
+        System.arraycopy(symbolData, 0, mondo[symbolIdx], 0, allFeatureLength);
+        symbolIdx++;
+      }
+    }
+    PCA pca = new PCA(mondo);
+    int totalComps = pca.getNumComponents();
+    List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(120);
+    bug("Generated " + totalComps + " principle components.");
+    bug("Here are the principle components:");
+    int pcCount = 0;
+    for (PCA.PrincipleComponent pc : bestComps) {
+      System.out.println(pcCount + ", " + Debug.num(pc.eigenValue, 6));
+    }
+
+    // TODO: project the original data (mondo) into the new coordinate space and store the result on
+    // disk since that is a very long operation to perform.
+  }
+
   public void setCorpus(File f) {
     long start = System.currentTimeMillis();
     corpus = f;
@@ -474,6 +506,7 @@ public class OuyangRecognizer {
       symbols.put(label, new ArrayList<double[]>());
     }
     symbols.get(label).add(master);
+    numSymbols = numSymbols + 1;
   }
 
   private double[] makeMasterVector(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,

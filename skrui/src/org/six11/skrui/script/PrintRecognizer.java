@@ -48,7 +48,7 @@ import org.six11.util.pen.SequenceListener;
 public class PrintRecognizer extends SkruiScript implements SequenceListener, Callback {
 
   private static int N_BEST_DISPLAY = 5;
-
+  
   public static Arguments getArgumentSpec() {
     Arguments args = new Arguments();
     args.setProgramName("Handwriting (print) recognizer");
@@ -97,6 +97,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     }
     String fileName = main.getProperty("symbolCorpusFile");
     symbolRecognizer.setCorpus(new File(fileName));
+    symbolRecognizer.calculatePrincipleComponents();
   }
 
   public void showUI() {
@@ -134,12 +135,13 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     JPanel featureImagePanel = new JPanel();
 
     rasters = new HashMap<String, RasterDisplay>();
-    rasters.put("present", new RasterDisplay(24, "As Drawn"));
-    rasters.put("endpoint", new RasterDisplay(24, "End Points"));
-    rasters.put("dir0", new RasterDisplay(24, "0 degrees"));
-    rasters.put("dir1", new RasterDisplay(24, "45 degrees"));
-    rasters.put("dir2", new RasterDisplay(24, "90 degrees"));
-    rasters.put("dir3", new RasterDisplay(24, "135 degrees"));
+    int gridSize = OuyangRecognizer.DOWNSAMPLE_GRID_SIZE * 2;
+    rasters.put("present", new RasterDisplay(gridSize, "As Drawn"));
+    rasters.put("endpoint", new RasterDisplay(gridSize, "End Points"));
+    rasters.put("dir0", new RasterDisplay(gridSize, "0 degrees"));
+    rasters.put("dir1", new RasterDisplay(gridSize, "45 degrees"));
+    rasters.put("dir2", new RasterDisplay(gridSize, "90 degrees"));
+    rasters.put("dir3", new RasterDisplay(gridSize, "135 degrees"));
     GridLayout grid = new GridLayout(1, rasters.size());
     grid.setHgap(6);
     grid.setVgap(6);
