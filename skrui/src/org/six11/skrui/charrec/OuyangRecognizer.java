@@ -9,9 +9,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import Jama.Matrix;
+
+import org.six11.skrui.charrec.NBestList.NBest;
 import org.six11.skrui.shape.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
@@ -22,6 +29,18 @@ import org.six11.util.math.PCA;
 
 public class OuyangRecognizer {
 
+  //  
+  // public static void main(String[] args) {
+  // double[] val = new double[args.length];
+  // for (int i=0; i < args.length; i++) {
+  // val[i] = Double.parseDouble(args[i]);
+  // }
+  // new OuyangRecognizer().createColumnVector(val);
+  // }
+  //  
+
+  private static final int PCA_COMPONENTS = 120;
+
   public static int DOWNSAMPLE_GRID_SIZE = 12;
 
   private List<Callback> friends;
@@ -30,6 +49,9 @@ public class OuyangRecognizer {
   private static Vec ninety = new Vec(0, 1);
   private static Vec oneThirtyFive = new Vec(-1, 1).getUnitVector();
   private Map<String, List<Sample>> symbols;
+  private Matrix pcaSpace; // the pca-derived coordinate system.
+  private Map<String, Dendogram> dendograms;
+
   private int numSymbols;
   private int nextID;
   private File corpus;
@@ -126,48 +148,58 @@ public class OuyangRecognizer {
     dir3 = downsample(dir3);
     double[] input = makeMasterVector(endpoint, dir0, dir1, dir2, dir3);
 
+    Set<Sample> topCandidates = null;
+    if (pcaSpace != null && dendograms != null) {
+      Matrix inputPcaCoords = pcaSpace.times(createColumnVector(input)).transpose();
+      double[] inputPcaCoordsArray = inputPcaCoords.getRowPackedCopy();
+      topCandidates = searchDendograms(10, inputPcaCoordsArray);
+      for (Sample cand : topCandidates) {
+        bug("candidate: " + cand);
+      }
+    } else {
+      topCandidates = new HashSet<Sample>();
+      for (String key : symbols.keySet()) {
+        List<Sample> instances = symbols.get(key);
+        topCandidates.addAll(instances);
+      }
+    }
     // Now we have the feature images for the recently drawn symbol. Try to match it against the
     // symbols we know about.
-    NBestList nBestList = new NBestList(true);
+
+    NBestList nBestList = new NBestList(true, 10);
     Statistics scores = new Statistics();
-    // double bestScore = Double.MAX_VALUE;
-    int numSymbols = 0;
-    for (String key : symbols.keySet()) {
-      List<Sample> inst = symbols.get(key);
-      for (int instIdx = 0; instIdx < inst.size(); instIdx++) {
-        Sample sample = inst.get(instIdx); // data is 5x the length of the feature images.
-        double[] data = sample.getData();
-        int len = endpoint.length; // all feature images are the same length
-        double[] dataPatch = new double[9];
-        double[] inputPatch = new double[9];
-        double sumOfMinScores = 0;
-        for (int i = 0; i < len; i++) {
-          // compare the 3x3 patch around input[i] with the nine patches in the vicinity of data[i]
-          // do this for all five feature images.
-          double minScore = Double.MAX_VALUE;
-          for (int dx = -1; dx <= 1; dx++) {
-            for (int dy = -1; dy <= 1; dy++) {
-              double patchDifference = 0;
-              for (int featureNumber = 0; featureNumber < 5; featureNumber++) {
-                fillPatch(input, featureNumber, len, i, 0, 0, inputPatch);
-                fillPatch(data, featureNumber, len, i, dx, dy, dataPatch);
-                double diff = comparePatches(inputPatch, dataPatch);
-                patchDifference = patchDifference + diff;
-              }
-              minScore = Math.min(minScore, patchDifference);
+
+    for (Sample sample : topCandidates) {
+      double[] data = sample.getData();
+      int len = endpoint.length; // all feature images are the same length
+      double[] dataPatch = new double[9];
+      double[] inputPatch = new double[9];
+      double sumOfMinScores = 0;
+      for (int i = 0; i < len; i++) {
+        // compare the 3x3 patch around input[i] with the nine patches in the vicinity of data[i]
+        // do this for all five feature images.
+        double minScore = Double.MAX_VALUE;
+        for (int dx = -1; dx <= 1; dx++) {
+          for (int dy = -1; dy <= 1; dy++) {
+            double patchDifference = 0;
+            for (int featureNumber = 0; featureNumber < 5; featureNumber++) {
+              fillPatch(input, featureNumber, len, i, 0, 0, inputPatch);
+              fillPatch(data, featureNumber, len, i, dx, dy, dataPatch);
+              double diff = comparePatches(inputPatch, dataPatch);
+              patchDifference = patchDifference + diff;
             }
+            minScore = Math.min(minScore, patchDifference);
           }
-          sumOfMinScores = sumOfMinScores + minScore;
         }
-        if (Double.isNaN(sumOfMinScores)) {
-          bug("Got NaN comparing these vectors: ");
-          bug(Debug.num(input));
-          bug(Debug.num(data));
-        }
-        numSymbols++;
-        nBestList.addScore(key, sumOfMinScores);
-        scores.addData(sumOfMinScores);
+        sumOfMinScores = sumOfMinScores + minScore;
       }
+      if (Double.isNaN(sumOfMinScores)) {
+        bug("Got NaN comparing these vectors: ");
+        bug(Debug.num(input));
+        bug(Debug.num(data));
+      }
+      nBestList.addScore(sample, sumOfMinScores);
+      scores.addData(sumOfMinScores);
     }
 
     for (Callback c : friends) {
@@ -178,6 +210,24 @@ public class OuyangRecognizer {
     double perSym = (double) elapsed / (double) numSymbols;
     bug("Took " + elapsed + " ms total to examine " + numSymbols + " symbols. ("
         + Debug.num(perSym) + " ms per symbol)");
+  }
+
+  private Set<Sample> searchDendograms(int n, double[] inputPcaCoordsArray) {
+    NBestList nBest = new NBestList(true, n);
+    for (String label : dendograms.keySet()) {
+      Dendogram dendo = dendograms.get(label);
+      dendo.search(inputPcaCoordsArray, nBest);
+    }
+    Set<Sample> bestSamples = new HashSet<Sample>();
+    for (NBest b : nBest.getNBest()) {
+      bestSamples.add(b.sample);
+    }
+    return bestSamples;
+  }
+
+  private Matrix createColumnVector(double[] input) {
+    Matrix ret = new Matrix(input, input.length);
+    return ret;
   }
 
   private void checkNaN(double[] numbers) {
@@ -430,24 +480,54 @@ public class OuyangRecognizer {
     int allFeatureLength = featureLength * 5;
     double[][] mondo = new double[numSymbols][allFeatureLength];
     int symbolIdx = 0;
+    SortedSet<Sample> allSamples = new TreeSet<Sample>();
     for (String key : symbols.keySet()) {
       for (Sample sample : symbols.get(key)) {
-        System.arraycopy(sample.getData(), 0, mondo[symbolIdx], 0, allFeatureLength);
-        symbolIdx++;
+        allSamples.add(sample);
       }
     }
-    PCA pca = new PCA(mondo);
-    int totalComps = pca.getNumComponents();
-    List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(120);
-    bug("Generated " + totalComps + " principle components.");
-    bug("Here are the principle components:");
-    int pcCount = 0;
-    for (PCA.PrincipleComponent pc : bestComps) {
-      System.out.println(pcCount + ", " + Debug.num(pc.eigenValue, 6));
+    for (Sample s : allSamples) {
+      System.arraycopy(s.getData(), 0, mondo[symbolIdx], 0, allFeatureLength);
+      symbolIdx++;
     }
 
-    // TODO: project the original data (mondo) into the new coordinate space and store the result on
-    // disk since that is a very long operation to perform.
+    bug("Performing PCA on " + mondo.length + " records with " + mondo[0].length + " dimensions...");
+    PCA pca = new PCA(mondo);
+    bug("... done");
+    int totalComps = pca.getNumComponents();
+    List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(PCA_COMPONENTS);
+    bug("Generated " + totalComps + " principle components.");
+    double[][] matrixAdjusted = PCA.getMeanAdjusted(mondo, pca.getMeans());
+    Matrix adjustedInput = new Matrix(matrixAdjusted).transpose();
+    pcaSpace = PCA.getDominantComponentsMatrix(bestComps).transpose();
+    bug("Projecting data into PCA-space...");
+    Matrix xformedData = pcaSpace.times(adjustedInput).transpose();
+    bug("... done");
+    // now each row in xformedData is the coordinate for all samples
+    Sample[] allSamplesArray = allSamples.toArray(new Sample[allSamples.size()]);
+    for (int i = 0; i < allSamplesArray.length; i++) {
+      Sample thisSample = allSamplesArray[i];
+      thisSample.setPCACoordinate(xformedData.getArray()[i]);
+    }
+    bug("Populating dendograms...");
+    long dendoStart = System.currentTimeMillis();
+    dendograms = new HashMap<String, Dendogram>();
+    for (Sample sample : allSamples) {
+      if (dendograms.get(sample.getLabel()) == null) {
+        dendograms.put(sample.getLabel(), new Dendogram());
+      }
+      dendograms.get(sample.getLabel()).add(sample);
+    }
+    for (String key : dendograms.keySet()) {
+      Dendogram dendo = dendograms.get(key);
+      long start = System.currentTimeMillis();
+      bug("Clustering '" + key + "' (" + dendo.size() + " instances) ...");
+      dendo.computeClusters();
+      long end = System.currentTimeMillis();
+      bug("... done (" + (end - start) + " ms)");
+    }
+    long dendoEnd = System.currentTimeMillis();
+    bug("Done populating " + dendograms.size() + " dendograms (" + (dendoEnd - dendoStart) + " ms)");
   }
 
   public void setCorpus(File f) {

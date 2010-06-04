@@ -1,52 +1,73 @@
 package org.six11.skrui.charrec;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.six11.util.Debug;
+
 public class NBestList {
 
-  SortedSet<NBest> nBestList;
+  List<NBest> nBestList;
   boolean smallerIsBetter;
+  int maxSize;
 
-  public NBestList(boolean smallerIsBetter) {
-    nBestList = new TreeSet<NBest>();
+  public NBestList(boolean smallerIsBetter, int maxSize) {
+    this.nBestList = new ArrayList<NBest>();
     this.smallerIsBetter = smallerIsBetter;
+    this.maxSize = maxSize;
   }
 
-  public void addScore(String label, double score) {
-    nBestList.add(new NBest(label, score));
+  public void addScore(Sample sample, double score) {
+    NBest addMe = new NBest(sample, score);
+    int where = Collections.binarySearch(nBestList, addMe);
+    if (where < 0) {
+      where = -(where + 1); // completely dumb. Thanks, Sun.
+      nBestList.add(where, addMe);
+      while (nBestList.size() >= maxSize) {
+        nBestList.remove(nBestList.size() - 1);
+      }
+    }
+  }
+
+  private static void bug(String what) {
+    Debug.out("NBestList", what);
+  }
+
+  public List<NBest> getNBest() {
+    return nBestList;
   }
 
   public List<NBest> getNBest(int n) {
     List<NBest> ret = new ArrayList<NBest>();
-    Set<String> labels = new HashSet<String>();
-    for (NBest hit : nBestList) {
-      if (!labels.contains(hit.label)) {
-        labels.add(hit.label);
-        ret.add(hit);
-      }
-      if (ret.size() == n) {
-        break;
-      }
+    for (int i = 0; i < Math.min(n, nBestList.size()); i++) {
+      ret.add(nBestList.get(i));
     }
     return ret;
   }
-  
+
+  /**
+   * Note: check with size() first to ensure the list has elements.
+   */
+  public NBest getWorst() {
+    return nBestList.get(nBestList.size() - 1);
+  }
+
   public int size() {
     return nBestList.size();
   }
 
   public class NBest implements Comparable<NBest> {
 
-    public String label;
+    public Sample sample;
     public double score;
 
-    private NBest(String label, double score) {
-      this.label = label;
+    private NBest(Sample sample, double score) {
+      this.sample = sample;
       this.score = score;
     }
 
@@ -66,6 +87,10 @@ public class NBestList {
         }
       }
       return ret;
+    }
+
+    public String toString() {
+      return sample.toString() + " score: " + Debug.num(score);
     }
   }
 

@@ -271,7 +271,7 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
         bestHits[i].setData("?", 0);
       } else {
         NBest b = best.get(i);
-        bestHits[i].setData(b.label, b.score);
+        bestHits[i].setData(b.sample.getLabel(), b.score);
       }
     }
   }

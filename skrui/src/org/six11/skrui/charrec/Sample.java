@@ -10,12 +10,13 @@ import java.io.IOException;
  * 
  * @author Gabe Johnson
  */
-public class Sample {
+public class Sample implements Comparable<Sample> {
 
   private static ClampdLookupTable clampd = new ClampdLookupTable();
   private int id;
   private String label;
   private double[] data;
+  private double[] pcaCoordinate;
 
   public Sample(int id, String label, double[] master) {
     this.id = id;
@@ -33,6 +34,10 @@ public class Sample {
   
   public double[] getData() {
     return data;
+  }
+  
+  public String toString() {
+    return "Sample[" + id + ": " + label + "]";
   }
 
   public static Sample readSample(DataInputStream in) throws IOException {
@@ -56,5 +61,43 @@ public class Sample {
       out.writeShort(clampdIndex);
     }
   }
+
+  public int compareTo(Sample o) {
+    int ret = 0;
+    if (id < o.id) {
+      ret = -1;
+    } else if (id > o.id){
+      ret = 1;
+    }
+    return ret;
+  }
+
+  public void setPCACoordinate(double[] coord) {
+    this.pcaCoordinate = coord;
+  }
+  
+  public double[] getPCACoordinate() {
+    return pcaCoordinate;
+  }
+
+  public double pcaSquaredDist(double[] otherCoord) {
+    return pcaSquaredDist(pcaCoordinate, otherCoord);
+  }
+
+  public double pcaSquaredDist(Sample sample) {
+    return pcaSquaredDist(pcaCoordinate, sample.pcaCoordinate);
+  }
+  
+  public static double pcaSquaredDist(double[] v1, double[] v2) {
+    double sum = 0;
+    for (int i=0; i < v1.length; i++) {
+      double us = v1[i];
+      double them = v2[i];
+      double compDist = (them - us) * (them - us); 
+      sum = sum + compDist;
+    }
+    return sum;
+  }
+  
   
 }
