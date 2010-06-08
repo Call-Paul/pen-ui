@@ -39,7 +39,7 @@ public class OuyangRecognizer {
   // }
   //  
 
-  private static final int PCA_COMPONENTS = 120;
+  private static final int PCA_COMPONENTS = 128;
 
   public static int DOWNSAMPLE_GRID_SIZE = 12;
 
@@ -50,6 +50,8 @@ public class OuyangRecognizer {
   private static Vec oneThirtyFive = new Vec(-1, 1).getUnitVector();
   private Map<String, List<Sample>> symbols;
   private Matrix pcaSpace; // the pca-derived coordinate system.
+  private int pcaSpaceN; // number of samples used to derive pcaSpace.
+  private double[] dimensionMeans;
   private Map<String, Dendogram> dendograms;
 
   private int numSymbols;
@@ -153,9 +155,6 @@ public class OuyangRecognizer {
       Matrix inputPcaCoords = pcaSpace.times(createColumnVector(input)).transpose();
       double[] inputPcaCoordsArray = inputPcaCoords.getRowPackedCopy();
       topCandidates = searchDendograms(10, inputPcaCoordsArray);
-      for (Sample cand : topCandidates) {
-        bug("candidate: " + cand);
-      }
     } else {
       topCandidates = new HashSet<Sample>();
       for (String key : symbols.keySet()) {
@@ -473,41 +472,31 @@ public class OuyangRecognizer {
     return ret;
   }
 
-  public void calculatePrincipleComponents() {
+  public void loadOrCalculatePrincipleComponents(double[][] mondo, SortedSet<Sample> allSamples,
+      File pcaFile) {
     // Make a mondo-matrix using all the data (!) in the symbol table and get the first 120
     // principle components.
-    int featureLength = DOWNSAMPLE_GRID_SIZE * DOWNSAMPLE_GRID_SIZE;
-    int allFeatureLength = featureLength * 5;
-    double[][] mondo = new double[numSymbols][allFeatureLength];
-    int symbolIdx = 0;
-    SortedSet<Sample> allSamples = new TreeSet<Sample>();
-    for (String key : symbols.keySet()) {
-      for (Sample sample : symbols.get(key)) {
-        allSamples.add(sample);
-      }
-    }
-    for (Sample s : allSamples) {
-      System.arraycopy(s.getData(), 0, mondo[symbolIdx], 0, allFeatureLength);
-      symbolIdx++;
+    boolean pcaFileOK = loadPrincipleComponents(pcaFile);
+    if (!pcaFileOK) {
+      calculatePrincipleComponents(mondo, pcaFile);
+    } else {
+      // have to calculate dimension means, which would have been taken care of if we run
+      // calculatePrincipleComponents.
+      calculateDimensionMeans(mondo);
     }
 
-    bug("Performing PCA on " + mondo.length + " records with " + mondo[0].length + " dimensions...");
-    PCA pca = new PCA(mondo);
-    bug("... done");
-    int totalComps = pca.getNumComponents();
-    List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(PCA_COMPONENTS);
-    bug("Generated " + totalComps + " principle components.");
-    double[][] matrixAdjusted = PCA.getMeanAdjusted(mondo, pca.getMeans());
-    Matrix adjustedInput = new Matrix(matrixAdjusted).transpose();
-    pcaSpace = PCA.getDominantComponentsMatrix(bestComps).transpose();
-    bug("Projecting data into PCA-space...");
-    Matrix xformedData = pcaSpace.times(adjustedInput).transpose();
-    bug("... done");
+    bug("pcaSpace: " + pcaSpace.getRowDimension() + " x " + pcaSpace.getColumnDimension());
+    bug("dimensionMeans: " + dimensionMeans.length + " elements");
+
+    // The old way of getting transformed data:
+    // Matrix xformedData = pcaSpace.times(adjustedInput).transpose();
+
     // now each row in xformedData is the coordinate for all samples
     Sample[] allSamplesArray = allSamples.toArray(new Sample[allSamples.size()]);
+    bug("allSamplesArray: " + allSamplesArray.length + " elements");
     for (int i = 0; i < allSamplesArray.length; i++) {
       Sample thisSample = allSamplesArray[i];
-      thisSample.setPCACoordinate(xformedData.getArray()[i]);
+      calculatePCACoordinate(thisSample);
     }
     bug("Populating dendograms...");
     long dendoStart = System.currentTimeMillis();
@@ -520,14 +509,132 @@ public class OuyangRecognizer {
     }
     for (String key : dendograms.keySet()) {
       Dendogram dendo = dendograms.get(key);
-      long start = System.currentTimeMillis();
-      bug("Clustering '" + key + "' (" + dendo.size() + " instances) ...");
+
       dendo.computeClusters();
-      long end = System.currentTimeMillis();
-      bug("... done (" + (end - start) + " ms)");
+      bug("Clustered '" + key + "': " + dendo.size() + " instances. Radius: " + dendo.getRadius());
     }
     long dendoEnd = System.currentTimeMillis();
     bug("Done populating " + dendograms.size() + " dendograms (" + (dendoEnd - dendoStart) + " ms)");
+  }
+
+  private void calculatePCACoordinate(Sample sample) {
+    sample.setDimensionMeans(dimensionMeans);
+    double[] meanAdjustedRowVec = sample.getDataMinusMean();
+    Matrix meanAdjustedColVec = new Matrix(meanAdjustedRowVec, meanAdjustedRowVec.length);
+    Matrix xformedData = pcaSpace.times(meanAdjustedColVec).transpose();
+    sample.setPCACoordinate(xformedData.getArray()[0]);
+  }
+
+  private void calculateDimensionMeans(double[][] mondo) {
+    int numDimensions = mondo[0].length;
+    int numSamples = mondo.length;
+    dimensionMeans = new double[numDimensions];
+
+    for (int dimIdx = 0; dimIdx < numDimensions; dimIdx++) {
+      for (int sampIdx = 0; sampIdx < numSamples; sampIdx++) {
+        dimensionMeans[dimIdx] = dimensionMeans[dimIdx] + mondo[sampIdx][dimIdx];
+      }
+    }
+    for (int i = 0; i < dimensionMeans.length; i++) {
+      dimensionMeans[i] = dimensionMeans[i] / numSamples;
+    }
+  }
+
+  private void calculatePrincipleComponents(double[][] mondo, File pcaFile) {
+    bug("Performing PCA on " + mondo.length + " records with " + mondo[0].length + " dimensions...");
+    PCA pca = new PCA(mondo);
+    bug("... done");
+    List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(PCA_COMPONENTS);
+    dimensionMeans = pca.getMeans();
+    double[][] matrixAdjusted = PCA.getMeanAdjusted(mondo, pca.getMeans());
+    Matrix adjustedInput = new Matrix(matrixAdjusted).transpose();
+    pcaSpace = PCA.getDominantComponentsMatrix(bestComps).transpose();
+    if (pcaFile != null) {
+      writePCACoordinateSystem(mondo.length, pcaFile);
+    }
+    bug("... done");
+  }
+
+  private boolean loadPrincipleComponents(File pcaFile) {
+    boolean pcaFileOK = false;
+
+    if (pcaFile != null && pcaFile.canRead()) {
+      // int (numOrigRecords), int (row), int (col), double* (data)
+      try {
+        DataInputStream pcaIn = new DataInputStream(new FileInputStream(pcaFile));
+        pcaSpaceN = pcaIn.readInt();
+        if (needPCAUpdate()) {
+          bug("Loading PCA coordinates isn't an option because the corpus has grown too much.");
+          pcaFileOK = false;
+        } else {
+          int rows = pcaIn.readInt();
+          int cols = pcaIn.readInt();
+          double[][] pcaSpaceData = new double[rows][cols];
+          for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+              pcaSpaceData[i][j] = pcaIn.readDouble();
+            }
+          }
+          pcaSpace = new Matrix(pcaSpaceData);
+          pcaFileOK = true;
+        }
+        pcaIn.close();
+      } catch (FileNotFoundException ex) {
+        ex.printStackTrace();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+    return pcaFileOK;
+  }
+
+  private void writePCACoordinateSystem(int numOriginalRecords, File pcaFile) {
+    bug("Writing " + pcaSpace.getRowDimension() + " x " + pcaSpace.getColumnDimension()
+        + " PCA coordinate space to disk...");
+    try {
+      DataOutputStream pcaOut = new DataOutputStream(new FileOutputStream(pcaFile));
+      pcaOut.writeInt(numOriginalRecords);
+      pcaOut.writeInt(pcaSpace.getRowDimension());
+      pcaOut.writeInt(pcaSpace.getColumnDimension());
+      double[][] rawPca = pcaSpace.getArray();
+      for (int i = 0; i < rawPca.length; i++) {
+        for (int j = 0; j < rawPca[i].length; j++) {
+          pcaOut.writeDouble(rawPca[i][j]);
+        }
+      }
+      pcaOut.close();
+      bug("Wrote " + pcaOut.size() + " bytes to PCA file " + pcaFile.getAbsolutePath());
+    } catch (FileNotFoundException ex) {
+      bug("Can not find file: " + pcaFile.getAbsolutePath()
+          + ": so I am not writing pca data to disk.");
+      ex.printStackTrace();
+    } catch (IOException ex) {
+      bug("File " + pcaFile.getAbsolutePath() + " exists but I can not write to it.");
+      ex.printStackTrace();
+    }
+  }
+
+  public double[][] makeMondo() {
+    int featureLength = DOWNSAMPLE_GRID_SIZE * DOWNSAMPLE_GRID_SIZE;
+    int allFeatureLength = featureLength * 5;
+    double[][] mondo = new double[numSymbols][allFeatureLength];
+    return mondo;
+  }
+
+  public SortedSet<Sample> fillMondoData(double[][] mondo) {
+    int allFeatureLength = mondo[0].length;
+    int symbolIdx = 0;
+    SortedSet<Sample> allSamples = new TreeSet<Sample>();
+    for (String key : symbols.keySet()) {
+      for (Sample sample : symbols.get(key)) {
+        allSamples.add(sample);
+      }
+    }
+    for (Sample s : allSamples) {
+      System.arraycopy(s.getData(), 0, mondo[symbolIdx], 0, allFeatureLength);
+      symbolIdx++;
+    }
+    return allSamples;
   }
 
   public void setCorpus(File f) {
@@ -598,8 +705,27 @@ public class OuyangRecognizer {
     if (!symbols.containsKey(sample.getLabel())) {
       symbols.put(sample.getLabel(), new ArrayList<Sample>());
     }
+    if (pcaSpace != null && dimensionMeans != null) {
+      if (needPCAUpdate()) {
+        bug("The corpus has grown more than 10% since the PCA coordinates were last calculated.");
+        bug("Restarting the application would make things happier.");
+        bug("pcaSpaceN: " + pcaSpaceN);
+        bug("numSymbols: " + numSymbols);
+        bug("numSymbols * 1.1: " + (numSymbols * 1.1));
+      }
+      calculatePCACoordinate(sample);
+      if (dendograms.get(sample.getLabel()) == null) {
+        dendograms.put(sample.getLabel(), new Dendogram());
+      }
+      dendograms.get(sample.getLabel()).add(sample);
+      dendograms.get(sample.getLabel()).computeClusters();
+    }
     symbols.get(sample.getLabel()).add(sample);
     numSymbols = numSymbols + 1;
+  }
+  
+  private boolean needPCAUpdate() {
+    return (pcaSpaceN * 1.1) < numSymbols;
   }
 
   private double[] makeMasterVector(double[] endpoint, double[] dir0, double[] dir1, double[] dir2,

@@ -16,6 +16,7 @@ public class Sample implements Comparable<Sample> {
   private int id;
   private String label;
   private double[] data;
+  private double[] dataMinusMean;
   private double[] pcaCoordinate;
 
   public Sample(int id, String label, double[] master) {
@@ -98,6 +99,15 @@ public class Sample implements Comparable<Sample> {
     }
     return sum;
   }
+
+  public void setDimensionMeans(double[] dimensionMeans) {
+    dataMinusMean = new double[data.length];
+    for (int i=0; i < dimensionMeans.length; i++) {
+      dataMinusMean[i] = data[i] - dimensionMeans[i];
+    }
+  }
   
-  
+  public double[] getDataMinusMean() {
+    return dataMinusMean;
+  }
 }

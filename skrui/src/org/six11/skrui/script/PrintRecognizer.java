@@ -12,11 +12,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.SortedSet;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import org.six11.skrui.BoundedParameter;
 import org.six11.skrui.SkruiScript;
@@ -24,6 +26,7 @@ import org.six11.skrui.charrec.NBestHit;
 import org.six11.skrui.charrec.NBestList;
 import org.six11.skrui.charrec.OuyangRecognizer;
 import org.six11.skrui.charrec.RasterDisplay;
+import org.six11.skrui.charrec.Sample;
 import org.six11.skrui.charrec.NBestList.NBest;
 import org.six11.skrui.charrec.OuyangRecognizer.Callback;
 import org.six11.skrui.shape.Stroke;
@@ -95,12 +98,19 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
     if (main.getProperty("symbolCorpusFile") == null) {
       main.setProperty("symbolCorpusFile", new File("symbol-corpus.data").getAbsolutePath());
     }
+    if (main.getProperty("pcaFile") == null) {
+      main.setProperty("pcaFile", new File("pca-coordinates.data").getAbsolutePath());
+    }
     String fileName = main.getProperty("symbolCorpusFile");
     symbolRecognizer.setCorpus(new File(fileName));
-    if (symbolRecognizer.getNumSymbols() > 100) {
-      symbolRecognizer.calculatePrincipleComponents();
+    File pcaFile = new File(main.getProperty("pcaFile"));
+    if (symbolRecognizer.getNumSymbols() > 10) {
+      double[][] mondo = symbolRecognizer.makeMondo();
+      SortedSet<Sample> allSamples = symbolRecognizer.fillMondoData(mondo);
+      symbolRecognizer.loadOrCalculatePrincipleComponents(mondo, allSamples, pcaFile);
     } else {
-      bug("Not enough symbols to calculate PCA. Need " + (100 - symbolRecognizer.getNumSymbols()) + " more.");
+      bug("Not enough symbols to calculate PCA. Need " + (100 - symbolRecognizer.getNumSymbols())
+          + " more.");
     }
   }
 
@@ -221,14 +231,25 @@ public class PrintRecognizer extends SkruiScript implements SequenceListener, Ca
       double[] dir1 = rasters.get("dir1").getData();
       double[] dir2 = rasters.get("dir2").getData();
       double[] dir3 = rasters.get("dir3").getData();
-
       symbolRecognizer.store(label, endpoint, dir0, dir1, dir2, dir3);
     }
   }
 
   public void recognize() {
-    List<Stroke> strokes = lds.getStrokes();
-    symbolRecognizer.recognize(strokes);
+    final List<Stroke> strokes = lds.getStrokes();
+    Runnable runner = new Runnable() {
+      public void run() {
+        try {
+          symbolRecognizer.recognize(strokes);
+        } catch (Exception ex) {
+          bug("Got exception on following stroke input: ");
+          for (Stroke stroke : lds.getStrokes()) {
+            bug("  " + Debug.num(stroke));
+          }
+        }
+      }
+    };
+    SwingUtilities.invokeLater(runner);
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {

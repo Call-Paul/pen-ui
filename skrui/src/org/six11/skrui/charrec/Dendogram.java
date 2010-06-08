@@ -109,7 +109,6 @@ public class Dendogram {
   }
 
   private Set<Sample> samples;
-  private boolean clustersCalculated = false;
   private List<Cluster> rankedClusters;
 
   public Dendogram() {
@@ -118,18 +117,12 @@ public class Dendogram {
   }
 
   public void add(Sample s) {
-    if (clustersCalculated) {
-      bug("Warning: adding sample '" + s.getLabel()
-          + "' to dendogram after clusters have been established. Bad!");
-    }
     samples.add(s);
   }
 
   public void computeClusters() {
-    if (clustersCalculated) {
-      bug("Warning: calculating clusters again. Bad!");
-    }
     List<Cluster> remainingClusters = new ArrayList<Cluster>();
+    rankedClusters.clear();
     for (Sample s : samples) {
       Cluster cluster = new Cluster(0, s);
       remainingClusters.add(cluster);
@@ -139,9 +132,7 @@ public class Dendogram {
     while (remainingClusters.size() > 1) {
       merge(nextRank, remainingClusters);
       nextRank++;
-      bug("Assigned rank " + nextRank + ". " + remainingClusters.size() + " remaining clusters.");
     }
-    clustersCalculated = true;
   }
 
   private static void bug(String what) {
@@ -213,5 +204,9 @@ public class Dendogram {
         numAvoided = numAvoided + cluster.points.length;
       }
     }
+  }
+
+  public double getRadius() {
+    return rankedClusters.get(0).radius;
   }
 }
