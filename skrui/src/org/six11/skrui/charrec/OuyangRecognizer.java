@@ -7,14 +7,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 import Jama.Matrix;
 
@@ -507,14 +500,39 @@ public class OuyangRecognizer {
       }
       dendograms.get(sample.getLabel()).add(sample);
     }
+    List<Dendogram> sortedBySize = new ArrayList<Dendogram>();
+    Comparator<Dendogram> dendoSorter = new Comparator<Dendogram>() {
+      public int compare(Dendogram o1, Dendogram o2) {
+        int ret = 0;
+        if (o1.size() > o2.size()) {
+          ret = -1;
+        } else if (o1.size() < o2.size()) {
+          ret = 1;
+        }
+        return ret;
+      }
+    };
     for (String key : dendograms.keySet()) {
       Dendogram dendo = dendograms.get(key);
-
       dendo.computeClusters();
-      bug("Clustered '" + key + "': " + dendo.size() + " instances. Radius: " + dendo.getRadius());
+      sortedBySize.add(dendo);
     }
+    Collections.sort(sortedBySize, dendoSorter);
+    for (Dendogram dendo : sortedBySize) {
+      bug(dendo.getClusters(1)[0].exemplar.getLabel() + ": " + dendo.size() + " "
+          + makeStars(dendo.size()));
+    }
+
     long dendoEnd = System.currentTimeMillis();
     bug("Done populating " + dendograms.size() + " dendograms (" + (dendoEnd - dendoStart) + " ms)");
+  }
+
+  private String makeStars(int size) {
+    StringBuilder buf = new StringBuilder();
+    for (int i = 0; i < size; i++) {
+      buf.append("*");
+    }
+    return buf.toString();
   }
 
   private void calculatePCACoordinate(Sample sample) {
@@ -723,7 +741,7 @@ public class OuyangRecognizer {
     symbols.get(sample.getLabel()).add(sample);
     numSymbols = numSymbols + 1;
   }
-  
+
   private boolean needPCAUpdate() {
     return (pcaSpaceN * 1.1) < numSymbols;
   }
