@@ -1,0 +1,58 @@
+
+	     == SKRUI Draw color picker usability test ==
+
+I've built a cartooning environment called SKRUI Draw that I've been
+using as a platform for developing sketch-based interaction
+techniques. It has several experimental techniques, but the one I want
+to focus on for this study is the color picker.
+
+To use the color picker, the user issues a ``stir'' gesture that
+begins inside a colored region with the stylus. The color gradually
+tweens from the starting color to the region's color. The rate of
+change is a function of the pen's path length. This allows the user to
+issue a short stir to change the color only a small amount, but to
+change the color completely with a long gesture. As the user stirs, a
+visual trail is left indicating the current color. The trails slowly
+disappear over time by making the trail increasingly transparent. The
+on-screen stylus cursor also changes to reflect the new
+color. Hovering the stylus near existing work can help the user
+determine if the color is satisfactory.
+
+CHI is due on September 19th---if we are going to do this (and have a
+paper that we are comfortable with submitting with our real names on!)
+we will have to move very quickly.
+
+We could run a study that compares how effectively users can pick
+colors with (a) standard color choosers, and (b) the experimental
+``stir'' approach.
+
+There are several possible factors to consider:
+
+  * Mouse or stylus?
+  * Is the user comfortable with paint/drawing programs?
+  * Is the user comfortable with tablet/pen hardware?
+
+We might constrain the study to only involve test participants that
+are graphic artists (or similar) that are comfortable with using a
+stylus. If we could locate a Cintiq that would help immeasurably,
+because having the input and output device be the same would remove a
+potentially confounding factor. (Actually, it probably would help
+measurably, but I don't want to measure that.)
+
+The study might be structured like this: We give the user some
+physical paint swatches (like the kind you get in the paint section of
+a hardware store) and ask them to use a widget to choose that color as
+closely as possible. We would measure three things: (a) how long it
+took the user to choose the color, (b) how closely the chosen color
+matches the target color, and (c) the user's attitude about the color
+chooser.
+
+A secondary task might be to give the user a hardcopy of a simple,
+single-panel cartoon or cartoon-like image and ask them to draw
+it. This would situate the color chooser in a more realistic task and
+would let the user give a more informed response when we ask them
+about their attitude.
+
+We would need to give users a chance to play with each of the color
+pickers before we begin measuring their use, especially the stirring
+method since it will be totally new to them.
