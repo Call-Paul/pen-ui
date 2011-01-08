@@ -25,13 +25,16 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.six11.util.Debug;
+import static org.six11.util.Debug.num;
 import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Components;
 import org.six11.util.io.Preferences;
+import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.HoverEvent;
 import org.six11.util.pen.HoverListener;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
@@ -72,11 +75,15 @@ public class Main {
   private Set<Action> anonActions = new HashSet<Action>();
 
   public static void main(String[] in) throws IOException {
+    Debug.useColor = false;
     Arguments args = getArgumentSpec();
     args.parseArguments(in);
     args.validate();
-    Debug.enabled = args.hasFlag("debugging");
+    Debug.enabled = args.hasFlag("debug");
     Debug.useColor = args.hasFlag("debug-color");
+    if (Debug.enabled) {
+      bug("debugging enabled!");
+    }
     makeInstance(args);
   }
 
@@ -113,21 +120,20 @@ public class Main {
   }
 
   private Main(Arguments args) {
+    bug("Making Main instance");
     this.args = args;
-    drawnStuff = new DrawnStuff(); //new ArrayList<DrawnThing>();
+    drawnStuff = new DrawnStuff(); // new ArrayList<DrawnThing>();
     sequenceListeners = new HashSet<SequenceListener>();
     hoverListeners = new HashSet<HoverListener>();
     af = new ApplicationFrame("Skrui Fab");
     af.setNoQuitOnClose();
     ds = new DrawingSurface(this);
-
+    makeAnonActions();
     attachKeyboardAccelerators(af.getRootPane());
     af.setLayout(new BorderLayout());
-
     setPenColor(Color.BLACK);
     setPenThickness(2.4f);
     af.add(ds, BorderLayout.CENTER);
-
     if (args.hasFlag("big")) {
       af.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
     } else {
@@ -135,8 +141,10 @@ public class Main {
     }
     af.center();
     af.setVisible(true);
+    new SillyChocoTest(this).tmpMakeConstrainedDrawing();
+    ds.repaint();
   }
-
+  
   public DrawnStuff getDrawnStuff() {
     return drawnStuff;
   }
@@ -251,8 +259,10 @@ public class Main {
 
   public void addRawInputEnd() {
     if (seq == null) {
+      bug("seq is null, bailing");
       return;
     } else {
+      bug("adding finished sequence");
       addFinishedSequence(seq);
       if (seq != null) {
         SequenceEvent sev = new SequenceEvent(this, seq, SequenceEvent.Type.END);
@@ -274,6 +284,7 @@ public class Main {
   public void addFinishedSequence(Stroke s) {
     if (s != null && s.size() > 1 && gpVisible) {
       addFinishedSequenceNoninteractively(s);
+      bug("Line from " + num(s.getFirst()) + " to " + num(s.getLast()));
     }
   }
 
@@ -317,6 +328,50 @@ public class Main {
   private void fireSequenceEvent(SequenceEvent ev) {
     for (SequenceListener lis : sequenceListeners) {
       lis.handleSequenceEvent(ev);
+    }
+  }
+
+  /**
+   * Add actions to the anonActions list, which are accessed only via key presses.
+   */
+  private void makeAnonActions() {
+    // pressing 0..9 whacks a visible layer, which are all debugging things.
+    for (int i = 0; i < 10; i++) {
+      final int which = i;
+      anonActions.add(new NamedAction("Whack Layer " + i, KeyStroke.getKeyStroke("" + which)) {
+        public void activate() {
+          whackLayer(which);
+        }
+      });
+    }
+  }
+
+  protected void whackLayer(int i) {
+    DrawingBuffer db = drawnStuff.getNamedBuffer("" + i);
+    if (db != null) {
+      boolean currentValue = db.isVisible();
+      //      String key = "" + i;
+      //      if (!whackData.containsKey(key)) {
+      //        whackData.put(key, new ArrayList<Long>());
+      //      }
+      //      List<Long> timestamps = whackData.get(key);
+      //      timestamps.add(System.currentTimeMillis());
+      //      if (timestamps.size() == 4) {
+      //        Statistics diffs = new Statistics();
+      //        for (int idx = 0; idx < timestamps.size() - 1; idx++) {
+      //          diffs.addData(timestamps.get(idx + 1) - timestamps.get(idx));
+      //        }
+      //        if (diffs.getMean() < 400) {
+      //          db = new DrawingBuffer();
+      //          drawnStuff.addNamedBuffer(key, db, false);
+      //        }
+      //        timestamps.remove(0);
+      //      }
+      bug("Whacking layer " + i + ". It should be " + (currentValue ? "not shown" : "shown"));
+      db.setVisible(!currentValue);
+      getDrawingSurface().repaint();
+    } else {
+      bug("Can't find buffer for layer: " + i);
     }
   }
 

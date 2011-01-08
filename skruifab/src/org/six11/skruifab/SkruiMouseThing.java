@@ -2,6 +2,7 @@ package org.six11.skruifab;
 
 import java.awt.event.MouseEvent;
 
+import org.six11.util.Debug;
 import org.six11.util.pen.HoverEvent;
 import org.six11.util.pen.MouseThing;
 
@@ -40,5 +41,10 @@ public class SkruiMouseThing extends MouseThing {
 
   public void mouseExited(MouseEvent ev) {
     main.addHover(ev.getX(), ev.getY(), ev.getWhen(), HoverEvent.Type.Out);
+  }
+  
+  @SuppressWarnings("unused")
+  private static void bug(String what) {
+    Debug.out("SkruiMouseThing", what);
   }
 }
