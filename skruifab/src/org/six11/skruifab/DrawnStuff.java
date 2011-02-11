@@ -12,8 +12,8 @@ import javax.swing.event.ChangeListener;
 import org.six11.util.pen.DrawingBuffer;
 
 /**
- * Represents a layer of drawn elements. Each element is a DrawnThing implementation. Anonymous
- * elements are kept in an ordered list that represents painting order.
+ * Holds layers of drawn elements. Each element is a DrawnThing implementation. Anonymous elements
+ * are kept in an ordered list that represents painting order.
  * 
  * Named elements may also be provided but these are considered transient (will not be persisted).
  * Named buffers are really useful for debugging.
@@ -24,28 +24,54 @@ public class DrawnStuff {
   private List<ChangeListener> changeListeners;
 
   private List<DrawnThing> things;
-  private List<DrawnThing> editList;
-  private List<DrawnThing> redoList;
+  //  private List<DrawnThing> editList;
+  //  private List<DrawnThing> redoList;
   private Map<String, DrawingBuffer> namedBuffers;
   private Set<String> transientBufferNames;
   private transient List<DrawingBuffer> cachedBufferList;
   private transient boolean dirty;
+  private Map<String, List<DrawnThing>> layers;
+  private List<String> layerNamesInOrder;
 
   public DrawnStuff() {
     this.things = new ArrayList<DrawnThing>();
-    this.redoList = new ArrayList<DrawnThing>();
-    this.editList = new ArrayList<DrawnThing>();
+    //    this.redoList = new ArrayList<DrawnThing>();
+    //    this.editList = new ArrayList<DrawnThing>();
     this.namedBuffers = new HashMap<String, DrawingBuffer>();
     this.transientBufferNames = new HashSet<String>();
     this.cachedBufferList = new ArrayList<DrawingBuffer>();
+    this.layers = new HashMap<String, List<DrawnThing>>();
+    this.layerNamesInOrder = new ArrayList<String>();
     this.dirty = false;
   }
 
   /**
-   * Add a new thing to the list of drawn stuff. This simply calls edit(thing).
+   * Add a new thing to the list of drawn stuff. This defers to addToLayer(), using the 'on top'
+   * layer, or makes a default layer if there isn't one yet.
    */
   public void add(DrawnThing thing) {
-    edit(thing);
+    if (layerNamesInOrder.isEmpty()) {
+      addLayer("default layer");
+    }
+    addToLayer(layerNamesInOrder.get(0), thing);
+  }
+
+  /**
+   * Create a layer and put it "on top".
+   */
+  public void addLayer(String layerName) {
+    List<DrawnThing> layerData = new ArrayList<DrawnThing>();
+    layers.put(layerName, layerData);
+    layerNamesInOrder.add(0, layerName);
+  }
+
+  public void addToLayer(String layerName, DrawnThing thing) {
+    if (!layers.containsKey(layerName)) {
+      addLayer(layerName);
+    }
+    layers.get(layerName).add(thing);
+    // TODO: not messing with editlist or undo/redo until I figure out wth I'm doing with that.
+    fireChange();
   }
 
   /**
@@ -57,22 +83,10 @@ public class DrawnStuff {
     if (!things.contains(thing)) {
       things.add(thing);
     }
-    editList.add(thing);
+    //    editList.add(thing);
     thing.snap();
-    redoList.clear();
+    //    redoList.clear();
     fireChange();
-  }
-
-  /**
-   * Returns the element on the top of the edit list, if any. It returns null if nothing has been
-   * drawn.
-   */
-  public DrawnThing getMostRecentThing() {
-    DrawnThing ret = null;
-    if (editList.size() > 0) {
-      ret = editList.get(editList.size() - 1);
-    }
-    return ret;
   }
 
   /**
@@ -80,8 +94,8 @@ public class DrawnStuff {
    */
   public void remove(DrawnThing thing) {
     things.remove(thing);
-    editList.remove(thing);
-    redoList.remove(thing);
+    //    editList.remove(thing);
+    //    redoList.remove(thing);
     fireChange();
   }
 
@@ -110,6 +124,11 @@ public class DrawnStuff {
       for (DrawingBuffer db : namedBuffers.values()) {
         cachedBufferList.add(db);
       }
+      for (String layerName : layerNamesInOrder) {
+        for (DrawnThing layerData : layers.get(layerName)) {
+          cachedBufferList.add(layerData.getDrawingBuffer());
+        }
+      }
     }
     return cachedBufferList;
   }
@@ -117,8 +136,8 @@ public class DrawnStuff {
   public void clear() {
     namedBuffers.clear();
     things.clear();
-    editList.clear();
-    redoList.clear();
+    //    editList.clear();
+    //    redoList.clear();
     fireChange();
   }
 
@@ -168,65 +187,6 @@ public class DrawnStuff {
     }
     if (!changeListeners.contains(lis)) {
       changeListeners.add(lis);
-    }
-  }
-
-  /**
-   * Sets the stack order of anonymous drawn things with a list of strings formatted as
-   * "className id".
-   */
-  public void setStackOrder(List<String> order) {
-    List<DrawnThing> newWorldOrder = new ArrayList<DrawnThing>();
-    for (String who : order) {
-      int space = who.indexOf(" ");
-      String className = who.substring(0, space);
-      int id = Integer.parseInt(who.substring(space + 1));
-      DrawnThing extracted = null;
-      for (DrawnThing dt : things) {
-        if (dt.getClass().getName().equals(className)) {
-          if (dt.getId() == id) {
-            extracted = dt;
-            break;
-          }
-        }
-      }
-      if (extracted != null) {
-        things.remove(extracted);
-        newWorldOrder.add(extracted);
-      }
-    }
-    if (things.size() > 0) {
-      for (DrawnThing dt : things) {
-        newWorldOrder.add(dt);
-      }
-    }
-    things = newWorldOrder;
-    fireChange();
-  }
-
-  public void redo() {
-    if (redoList.size() > 0) {
-      DrawnThing dt = redoList.remove(redoList.size() - 1);
-      dt.redo();
-      if (!things.contains(dt)) {
-        things.add(dt);
-      }
-      editList.add(dt);
-      removeTransientBuffers();
-      fireChange();
-    }
-  }
-
-  public void undo() {
-    if (things.size() > 0) {
-      DrawnThing dt = editList.remove(editList.size() - 1);
-      int remaining = dt.undo();
-      if (remaining == 0) {
-        things.remove(dt);
-      }
-      redoList.add(dt);
-      removeTransientBuffers();
-      fireChange();
     }
   }
 

@@ -3,13 +3,13 @@ package org.six11.skruifab;
 import org.six11.util.pen.DrawingBuffer;
 
 /**
- * Represents an item that can be drawn on the screen. It is generally the result of a single user
- * action (such as drawing a stroke or filling a region).
+ * Represents a DrawingBuffer that can be drawn on the screen, and can be undone. It is generally
+ * the result of a single user action (such as drawing a stroke or filling a region).
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public interface DrawnThing {
-  
+
   /**
    * Sets this thing's drawing buffer.
    */

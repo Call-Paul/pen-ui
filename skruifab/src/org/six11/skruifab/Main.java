@@ -25,7 +25,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.six11.util.Debug;
-import static org.six11.util.Debug.num;
 import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Components;
@@ -34,7 +33,6 @@ import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.HoverEvent;
 import org.six11.util.pen.HoverListener;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
@@ -65,6 +63,8 @@ public class Main {
   private Set<HoverListener> hoverListeners;
 
   private List<ChangeListener> changeListeners;
+
+  private List<Stroke> uninterpreted;
 
   private DrawingSurface ds;
   private DrawnStuff drawnStuff;
@@ -123,6 +123,7 @@ public class Main {
     bug("Making Main instance");
     this.args = args;
     drawnStuff = new DrawnStuff(); // new ArrayList<DrawnThing>();
+    uninterpreted = new ArrayList<Stroke>();
     sequenceListeners = new HashSet<SequenceListener>();
     hoverListeners = new HashSet<HoverListener>();
     af = new ApplicationFrame("Skrui Fab");
@@ -141,10 +142,11 @@ public class Main {
     }
     af.center();
     af.setVisible(true);
-    new SillyChocoTest(this).tmpMakeConstrainedDrawing();
+//    new SillyChocoTest(this).tmpMakeConstrainedDrawing();
+    new SillyChocoTest(this).tmpMakeStairs();
     ds.repaint();
   }
-  
+
   public DrawnStuff getDrawnStuff() {
     return drawnStuff;
   }
@@ -263,11 +265,9 @@ public class Main {
       return;
     } else {
       bug("adding finished sequence");
-      addFinishedSequence(seq);
-      if (seq != null) {
-        SequenceEvent sev = new SequenceEvent(this, seq, SequenceEvent.Type.END);
-        fireSequenceEvent(sev);
-      }
+      addUninterpretedSequence(seq);
+      SequenceEvent sev = new SequenceEvent(this, seq, SequenceEvent.Type.END);
+      fireSequenceEvent(sev);
       seq = null;
       lastCurrentSequenceIdx = 0;
       inProgSeqGP = null;
@@ -275,16 +275,12 @@ public class Main {
     }
   }
 
-  public void addFinishedSequenceNoninteractively(Stroke s) {
-    DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
-    s.setDrawingBuffer(buf);
-    drawnStuff.add(s);
-  }
-
-  public void addFinishedSequence(Stroke s) {
+  public void addUninterpretedSequence(Stroke s) {
     if (s != null && s.size() > 1 && gpVisible) {
-      addFinishedSequenceNoninteractively(s);
-      bug("Line from " + num(s.getFirst()) + " to " + num(s.getLast()));
+      DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
+      s.setDrawingBuffer(buf);
+      drawnStuff.add(s);
+      uninterpreted.add(s);
     }
   }
 
@@ -350,24 +346,7 @@ public class Main {
     DrawingBuffer db = drawnStuff.getNamedBuffer("" + i);
     if (db != null) {
       boolean currentValue = db.isVisible();
-      //      String key = "" + i;
-      //      if (!whackData.containsKey(key)) {
-      //        whackData.put(key, new ArrayList<Long>());
-      //      }
-      //      List<Long> timestamps = whackData.get(key);
-      //      timestamps.add(System.currentTimeMillis());
-      //      if (timestamps.size() == 4) {
-      //        Statistics diffs = new Statistics();
-      //        for (int idx = 0; idx < timestamps.size() - 1; idx++) {
-      //          diffs.addData(timestamps.get(idx + 1) - timestamps.get(idx));
-      //        }
-      //        if (diffs.getMean() < 400) {
-      //          db = new DrawingBuffer();
-      //          drawnStuff.addNamedBuffer(key, db, false);
-      //        }
-      //        timestamps.remove(0);
-      //      }
-      bug("Whacking layer " + i + ". It should be " + (currentValue ? "not shown" : "shown"));
+      bug("Layer " + i + " should now be " + (currentValue ? "not shown" : "shown"));
       db.setVisible(!currentValue);
       getDrawingSurface().repaint();
     } else {

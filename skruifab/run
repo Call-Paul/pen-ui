@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 cpmunge () {
         if ! echo $CP | /usr/bin/egrep -q "(^|:)$1($|:)" ; then
            if [ "$2" = "after" ] ; then
@@ -24,11 +22,7 @@ addjars () {
 addjars lib
 cpmunge build/classes
 
-if [ $# == 1 ] ; then
-    prog=$1
-    shift
-else
-    prog=org.six11.skruifab.Main
-fi
+prog=$1
+shift
 
 java -classpath $CP $prog $@
