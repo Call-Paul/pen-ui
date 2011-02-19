@@ -19,11 +19,11 @@ public class CCircle extends Geom {
   }
 
   public String getDebugString() {
-    return "Circle: " + slots.get("Center") + ", " + slots.get("Distance");
+    return getName() + " Circle: " + slots.get("Center") + ", " + slots.get("Distance");
   }
 
   public String getHumanReadableName() {
-    return "circle";
+    return "circle " + getName();
   }
 
   public CircleArc getCircle() {
@@ -87,5 +87,9 @@ public class CCircle extends Geom {
   public Geom intersectPointSet(CPointSet ptset) {
     bug("Geom.intersectPointSet not implemented yet!");
     return null;
+  }
+
+  public boolean isDiscrete() {
+    return true;
   }
 }

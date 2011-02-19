@@ -36,4 +36,9 @@ public class Nothing extends Geom {
     return this;
   }
 
+  @Override
+  public boolean isDiscrete() {
+    return true;
+  }
+
 }

@@ -20,7 +20,7 @@ public class CVec extends Geom {
   }
 
   public String getDebugString() {
-    return slots.get("Dir").toString();
+    return getName() + " " + slots.get("Dir").toString();
   }
   
   public void offer(Vec dir) {
@@ -29,7 +29,7 @@ public class CVec extends Geom {
   }
 
   public String getHumanReadableName() {
-    return "dir";
+    return "dir " + getName();
   }
 
   public Vec getDir() {
@@ -50,5 +50,10 @@ public class CVec extends Geom {
 
   public Geom intersectPointSet(CPointSet ptset) {
     return new Nothing();
+  }
+
+  @Override
+  public boolean isDiscrete() {
+    return true;
   }
 }

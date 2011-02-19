@@ -101,11 +101,11 @@ public class CLine extends Geom {
   }
 
   public String getDebugString() {
-    return "Line; " + slots.get("PtA") + ", " + slots.get("PtB") + ", " + slots.get("Dir");
+    return getName() + " Line; " + slots.get("PtA") + ", " + slots.get("PtB") + ", " + slots.get("Dir");
   }
 
   public String getHumanReadableName() {
-    return "line";
+    return "line " + getName();
   }
 
   public Geom intersectCircle(CCircle circIntersect) {
@@ -115,6 +115,11 @@ public class CLine extends Geom {
   public Geom intersectPointSet(CPointSet ptset) {
     bug("Geom.intersectPointSet not implemented yet!");
     return null;
+  }
+
+  @Override
+  public boolean isDiscrete() {
+    return true;
   }
 
 }

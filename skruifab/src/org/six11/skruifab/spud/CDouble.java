@@ -27,7 +27,7 @@ public class CDouble extends Geom {
   }
 
   public String getDebugString() {
-    return "CDouble: " + slots.get("Double");
+    return getName() + " CDouble: " + slots.get("Double");
   }
 
   public Geom intersectCircle(CCircle circ) {
@@ -47,7 +47,12 @@ public class CDouble extends Geom {
   }
 
   public String getHumanReadableName() {
-    return "double";
+    return "double " + getName();
+  }
+
+  @Override
+  public boolean isDiscrete() {
+    return true;
   }
 
 }

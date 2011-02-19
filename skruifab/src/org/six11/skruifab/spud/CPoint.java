@@ -23,7 +23,7 @@ public class CPoint extends Geom {
   }
 
   public String getHumanReadableName() {
-    return "point";
+    return "point " + getName();
   }
 
   public String getDebugString() {
@@ -35,16 +35,18 @@ public class CPoint extends Geom {
     } else {
       ret = "<unknown>";
     }
-    return ret;
+    return getName() + " " + ret;
   }
 
   public void offer(CLine line) {
+    bug("Adding line to this point's solution space...");
     solutionSpace.add(line);
     solveSolutionSpace();
+    bug("After taking line to solution space, am I solved? " + solved);
   }
 
   private void solveSolutionSpace() {
-    Geom restrictedSolutionSpace = intersectSolutionSpaces();
+    Geom restrictedSolutionSpace = getSolutionSpace();
     if (restrictedSolutionSpace instanceof CPoint) {
       bug("Based on intersecting the elements of my solution space list I got the point:"
           + ((CPoint) restrictedSolutionSpace).getPt());
@@ -91,6 +93,11 @@ public class CPoint extends Geom {
       }
     }
     return ret;
+  }
+
+  @Override
+  public boolean isDiscrete() {
+    return true;
   }
 
 }

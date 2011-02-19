@@ -19,7 +19,7 @@ public class CPointSet extends Geom {
   }
 
   public String getHumanReadableName() {
-    return "pointset";
+    return "pointset " + getName();
   }
   
   public void offer(Pt[] points) {
@@ -29,8 +29,7 @@ public class CPointSet extends Geom {
   }
 
   public String getDebugString() {
-    bug("Geom.getDebugString not implemented yet!");
-    return null;
+    return getName() + " pointset with " + size() + " points";
   }
 
   public Geom intersectCircle(CCircle circ) {
@@ -49,6 +48,14 @@ public class CPointSet extends Geom {
     return (Pt[]) slots.get("Points").value;
   }
 
+  public int size() {
+    int ret = 0;
+    if (slots.get("Points").valid) {
+      ret =  getPoints().length;
+    }
+    return ret;
+  }
+  
   public Geom intersectPointSet(CPointSet ptset) {
     List<Pt> overlap = new ArrayList<Pt>();
     for (Pt myPoint : getPoints()) {
@@ -64,6 +71,11 @@ public class CPointSet extends Geom {
       ret.offer(overlap.toArray(new Pt[overlap.size()]));
     }
     return ret;
+  }
+
+  @Override
+  public boolean isDiscrete() {
+    return true;
   }
 
 }

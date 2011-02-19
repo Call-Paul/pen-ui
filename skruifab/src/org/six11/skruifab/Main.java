@@ -142,9 +142,8 @@ public class Main {
     }
     af.center();
     af.setVisible(true);
-//    new SillyChocoTest(this).tmpMakeConstrainedDrawing();
-//    new SillyChocoTest(this).tmpMakeStairs();
-    new SillySpudTest(this).makeStairs();
+
+    new SillySpudTest(this).tmpMakeConstrainedDrawing();
     ds.repaint();
   }
 

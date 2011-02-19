@@ -13,6 +13,7 @@ import org.six11.util.pen.Vec;
 
 public abstract class Geom extends Node {
 
+  String name;
   Map<String, Slot> slots;
   List<Constraint> relatedConstraints;
   Set<Geom> solutionSpace;
@@ -21,6 +22,20 @@ public abstract class Geom extends Node {
     this.slots = new HashMap<String, Slot>();
     this.relatedConstraints = new ArrayList<Constraint>();
     this.solutionSpace = new HashSet<Geom>();
+  }
+  
+  public String getName() {
+    String ret = null;
+    if (name == null) {
+      ret = "<no name>";
+    } else {
+      ret = "<" + name + ">";
+    }
+    return ret;
+  }
+  
+  public void setName(String name) {
+    this.name = name;
   }
 
   public void addConstraint(Constraint c) {
@@ -44,37 +59,33 @@ public abstract class Geom extends Node {
 
   public abstract String getDebugString();
 
-  //  private static void bug(String what) {
-  //    Debug.out("Geom", what);
-  //  }
-
-  public void offer(@SuppressWarnings("unused") CLine line) {
+  public void offer(CLine line) {
     bug("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
-  public void offer(@SuppressWarnings("unused") Pt data) {
+  public void offer(Pt data) {
     bug("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
-  public void offer(@SuppressWarnings("unused") Pt[] data) {
+  public void offer(Pt[] data) {
     bug("Warning: offer(Pt[]) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
-  public void offer(@SuppressWarnings("unused") Vec dir) {
+  public void offer(Vec dir) {
     bug("Warning: offer(Vec) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
-  public void offer(@SuppressWarnings("unused") CircleArc circle) {
+  public void offer(CircleArc circle) {
     bug("Warning: offer(CircleArc) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
-  
-  public void offer(@SuppressWarnings("unused") CCircle circle) {
+
+  public void offer(CCircle circle) {
     bug("Warning: offer(CCircle) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
 
-  public void offer(@SuppressWarnings("unused") double amt) {
+  public void offer(double amt) {
     bug("Warning: offer(double) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
@@ -103,10 +114,20 @@ public abstract class Geom extends Node {
     return ret;
   }
 
-  protected Geom intersectSolutionSpaces() {
+  public Geom getSolutionSpace() {
     bug("Intersecting solution space of " + solutionSpace.size() + " items...");
     Geom space = new Infinity();
+    Set<Geom> nondiscrete = new HashSet<Geom>();
     for (Geom thing : solutionSpace) {
+      if (!thing.isDiscrete()) {
+        nondiscrete.add(thing);
+      } else {
+        bug("  " + space.getHumanReadableName() + " x " + thing.getHumanReadableName() + " ==> ");
+        space = thing.intersect(space);
+        bug("      " + space.getHumanReadableName());
+      }
+    }
+    for (Geom thing : nondiscrete) {
       bug("  " + space.getHumanReadableName() + " x " + thing.getHumanReadableName() + " ==> ");
       space = thing.intersect(space);
       bug("      " + space.getHumanReadableName());
@@ -114,6 +135,21 @@ public abstract class Geom extends Node {
     bug("Solution space is: " + space.getHumanReadableName());
     return space;
   }
+
+  /**
+   * A discrete geometric element is one for which there is a closed-form, finite, discrete formula.
+   * This includes points, lines, circles, pointsets, and the like. A non-discrete geometric element
+   * represents a geometric region in which a solution might be, such as a half-plane (e.g. points
+   * above a certain line) or 'near points' that are used as a reference to decide which point among
+   * a discrete set should be used.
+   * 
+   * When intersecting a bunch of geometries, the discrete and non-discrete elements are kept
+   * separate until a single discrete item remains. It is then intersected with each non-discrete
+   * element.
+   * 
+   * @return
+   */
+  public abstract boolean isDiscrete();
 
   public Geom intersect(Geom other) {
     Geom ret = null;
@@ -137,7 +173,6 @@ public abstract class Geom extends Node {
             + other.getClass().getSimpleName());
       }
     }
-
     return ret;
   }
 
@@ -146,7 +181,7 @@ public abstract class Geom extends Node {
   public abstract Geom intersectPoint(CPoint pt);
 
   public abstract Geom intersectPointSet(CPointSet ptset);
-  
+
   public abstract Geom intersectLine(CLine line);
 
 }

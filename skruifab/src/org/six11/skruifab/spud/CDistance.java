@@ -14,6 +14,10 @@ public class CDistance extends Constraint {
     geometry.put("Circle", null);
   }
 
+  public CDistance(CPoint a, CPoint b, double d) {
+    this(a, b, new CDouble(d));
+  }
+
   public void solve() {
     bug("Attempting to solve distance constraint");
     CPoint ptA = (CPoint) geometry.get("PtA");
@@ -40,7 +44,7 @@ public class CDistance extends Constraint {
   }
 
   public String getHumanReadableName() {
-    return "distance-constraint";
+    return "distance-constraint ";
   }
 
 }

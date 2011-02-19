@@ -26,6 +26,7 @@ public abstract class Constraint extends Node {
 
   public void solveSafely() {
     if (!isSolved()) {
+      bug("Solving " + getHumanReadableName());
       solve();
     }
   }

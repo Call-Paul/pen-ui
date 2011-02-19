@@ -19,11 +19,11 @@ public class Infinity extends Geom {
   public String getHumanReadableName() {
     return "infinity";
   }
-  
+
   public Geom intersectPoint(CPoint pt) {
     return pt;
   }
-  
+
   public Geom intersectLine(CLine line) {
     return line;
   }
@@ -36,6 +36,13 @@ public class Infinity extends Geom {
     return ptset;
   }
 
-
+  /**
+   * Yeah, it is a little odd to say that infinity is discrete. I'm no mathematician. But it does
+   * jive with how the code works, and that's all that matters.
+   */
+  @Override
+  public boolean isDiscrete() {
+    return true;
+  }
 
 }
