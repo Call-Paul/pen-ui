@@ -15,7 +15,6 @@ public class CPerpendicularLines extends Constraint {
   }
 
   public void solve() {
-    bug("Attempting to solve perpendicular lines constraint");
     CLine lineA = (CLine) geometry.get("lineA");
     CLine lineB = (CLine) geometry.get("lineB");
     if (lineA.isSlotValid("Dir") && !lineB.isSlotValid("Dir")) {

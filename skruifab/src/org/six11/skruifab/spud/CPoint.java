@@ -39,17 +39,13 @@ public class CPoint extends Geom {
   }
 
   public void offer(CLine line) {
-    bug("Adding line to this point's solution space...");
     solutionSpace.add(line);
     solveSolutionSpace();
-    bug("After taking line to solution space, am I solved? " + solved);
   }
 
   private void solveSolutionSpace() {
     Geom restrictedSolutionSpace = getSolutionSpace();
     if (restrictedSolutionSpace instanceof CPoint) {
-      bug("Based on intersecting the elements of my solution space list I got the point:"
-          + ((CPoint) restrictedSolutionSpace).getPt());
       offer(((CPoint) restrictedSolutionSpace).getPt());
     }
   }

@@ -3,7 +3,6 @@ package org.six11.skruifab.spud;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 
 /**
@@ -24,7 +23,6 @@ public class CPointSet extends Geom {
   
   public void offer(Pt[] points) {
     slots.get("Points").value = points;
-    bug("Populated CPointSet with points: " + Debug.num(points, " "));
     solved = true;
   }
 

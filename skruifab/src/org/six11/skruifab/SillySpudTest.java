@@ -7,6 +7,7 @@ import java.util.HashSet;
 import org.six11.skruifab.spud.CCircle;
 import org.six11.skruifab.spud.CDistance;
 import org.six11.skruifab.spud.CLine;
+import org.six11.skruifab.spud.CNearPoint;
 import org.six11.skruifab.spud.CPerpendicularLines;
 import org.six11.skruifab.spud.CPoint;
 import org.six11.skruifab.spud.CPointAlongSegment;
@@ -56,6 +57,7 @@ public class SillySpudTest {
     ab.setName("ab");
     CLine abMidC = new CLine();
     abMidC.setName("abMidC");
+    CNearPoint near = new CNearPoint(new Pt(275, 150));
     model.addConstraint(new CPointOnLine(ab, a));
     model.addConstraint(new CPointOnLine(ab, b));
     model.addConstraint(new CPointAlongSegment(a, b, abMid, 0.5));
@@ -63,6 +65,7 @@ public class SillySpudTest {
     model.addConstraint(new CPointOnLine(abMidC, c));
     model.addConstraint(new CDistance(abMid, c, 50.0));
     model.addConstraint(new CPerpendicularLines(ab, abMidC));
+    c.addSolutionSpaceHint(near); // constr. points can have a hint that says roughly where they are
     model.solve();
 
     DrawingBuffer testBuffer = new DrawingBuffer();

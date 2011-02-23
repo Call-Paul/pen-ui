@@ -15,7 +15,6 @@ public class CParallelLines extends Constraint {
   }
 
   public void solve() {
-    bug("Attempting to solve parallel lines constraint");
     CLine lineA = (CLine) geometry.get("lineA");
     CLine lineB = (CLine) geometry.get("lineB");
     if (lineA.isSlotValid("Dir") && !lineB.isSlotValid("Dir")) {

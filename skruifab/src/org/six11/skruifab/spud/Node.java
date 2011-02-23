@@ -23,5 +23,9 @@ public abstract class Node {
   protected void bug(String what) {
     Debug.out(getClass().getSimpleName(), what);
   }
+  
+  protected void warn(String what) {
+    Debug.out(getClass().getSimpleName(), "** WARNING ** " + what);
+  }
 
 }

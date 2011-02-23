@@ -23,7 +23,7 @@ public abstract class Geom extends Node {
     this.relatedConstraints = new ArrayList<Constraint>();
     this.solutionSpace = new HashSet<Geom>();
   }
-  
+
   public String getName() {
     String ret = null;
     if (name == null) {
@@ -33,7 +33,7 @@ public abstract class Geom extends Node {
     }
     return ret;
   }
-  
+
   public void setName(String name) {
     this.name = name;
   }
@@ -60,33 +60,33 @@ public abstract class Geom extends Node {
   public abstract String getDebugString();
 
   public void offer(CLine line) {
-    bug("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
+    warn("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
   public void offer(Pt data) {
-    bug("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
+    warn("Warning: offer(Pt) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
   public void offer(Pt[] data) {
-    bug("Warning: offer(Pt[]) not implemented by " + getClass().getSimpleName() + ". Override it!");
+    warn("Warning: offer(Pt[]) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
   public void offer(Vec dir) {
-    bug("Warning: offer(Vec) not implemented by " + getClass().getSimpleName() + ". Override it!");
+    warn("Warning: offer(Vec) not implemented by " + getClass().getSimpleName() + ". Override it!");
   }
 
   public void offer(CircleArc circle) {
-    bug("Warning: offer(CircleArc) not implemented by " + getClass().getSimpleName()
+    warn("Warning: offer(CircleArc) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
 
   public void offer(CCircle circle) {
-    bug("Warning: offer(CCircle) not implemented by " + getClass().getSimpleName()
+    warn("Warning: offer(CCircle) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
 
   public void offer(double amt) {
-    bug("Warning: offer(double) not implemented by " + getClass().getSimpleName()
+    warn("Warning: offer(double) not implemented by " + getClass().getSimpleName()
         + ". Override it!");
   }
 
@@ -114,25 +114,23 @@ public abstract class Geom extends Node {
     return ret;
   }
 
+  public void addSolutionSpaceHint(CNearPoint pt) {
+    solutionSpace.add(pt);
+  }
+
   public Geom getSolutionSpace() {
-    bug("Intersecting solution space of " + solutionSpace.size() + " items...");
     Geom space = new Infinity();
     Set<Geom> nondiscrete = new HashSet<Geom>();
     for (Geom thing : solutionSpace) {
       if (!thing.isDiscrete()) {
         nondiscrete.add(thing);
       } else {
-        bug("  " + space.getHumanReadableName() + " x " + thing.getHumanReadableName() + " ==> ");
         space = thing.intersect(space);
-        bug("      " + space.getHumanReadableName());
       }
     }
     for (Geom thing : nondiscrete) {
-      bug("  " + space.getHumanReadableName() + " x " + thing.getHumanReadableName() + " ==> ");
       space = thing.intersect(space);
-      bug("      " + space.getHumanReadableName());
     }
-    bug("Solution space is: " + space.getHumanReadableName());
     return space;
   }
 
@@ -167,9 +165,9 @@ public abstract class Geom extends Node {
       ret = intersectPointSet((CPointSet) other);
     } else {
       if (other == null) {
-        bug("Warning: I don't know how to intersect " + getClass().getSimpleName() + " and " + null);
+        warn("Warning: I don't know how to intersect " + getClass().getSimpleName() + " and " + null);
       } else {
-        bug("Warning: I don't know how to intersect " + getClass().getSimpleName() + " and "
+        warn("Warning: I don't know how to intersect " + getClass().getSimpleName() + " and "
             + other.getClass().getSimpleName());
       }
     }

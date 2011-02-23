@@ -37,16 +37,14 @@ public class ConstraintModel {
     int lastUnsolved = countUnsolved();
     boolean progress;
     do {
-      bug(" - - - * - - * - * - * * Another solve() iteration: lastUnsolved = " + lastUnsolved
-          + " * * - * - * - - * - - -");
       solveRound();
       int thisUnsolved = countUnsolved();
       progress = thisUnsolved < lastUnsolved;
       lastUnsolved = thisUnsolved;
     } while (lastUnsolved > 0 && progress);
     long endTime = System.currentTimeMillis();
-    bug("Constraint model solve() complete with " + lastUnsolved + " unsolved variables in "
-        + (endTime - startTime) + " millis.");
+    bug("solve() complete: " + (endTime - startTime) + " ms, " + lastUnsolved
+        + " unsolved variables");
   }
 
   private int countUnsolved() {
@@ -72,7 +70,7 @@ public class ConstraintModel {
     int round = 1;
     for (Constraint c : constraints) {
       c.solveSafely();
-      bug("End of round " + round + ": " + getMondoDebugString());
+      //      bug("End of round " + round + ": " + getMondoDebugString());
       round++;
     }
   }

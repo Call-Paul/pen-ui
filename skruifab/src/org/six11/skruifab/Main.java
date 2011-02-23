@@ -3,7 +3,10 @@ package org.six11.skruifab;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.Shape;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.GeneralPath;
@@ -21,9 +24,11 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
+import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.six11.skruifab.gui.GraphicMessage;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
@@ -144,6 +149,17 @@ public class Main {
     af.setVisible(true);
 
     new SillySpudTest(this).tmpMakeConstrainedDrawing();
+    ds.addMessage(GraphicMessage
+        .makeStandard("This is a standard message that should wrap onto a couple lines."));
+    Timer tmpTimer = new Timer(2000, new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+        ds.addMessage(GraphicMessage.makeStandard("Here's a message. " + System.currentTimeMillis()));
+      }
+    });
+    tmpTimer.setRepeats(true);
+    tmpTimer.setDelay(2000);
+    tmpTimer.start();
+
     ds.repaint();
   }
 

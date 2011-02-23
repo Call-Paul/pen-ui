@@ -75,17 +75,17 @@ public class CCircle extends Geom {
   }
   
   public Geom intersectCircle(CCircle circ) {
-    bug("Geom.intersectCircle not implemented yet!");
+    warn("Geom.intersectCircle not implemented yet!");
     return null;
   }
 
   public Geom intersectPoint(CPoint pt) {
-    bug("Geom.intersectPoint not implemented yet!");
+    warn("Geom.intersectPoint not implemented yet!");
     return null;
   }
 
   public Geom intersectPointSet(CPointSet ptset) {
-    bug("Geom.intersectPointSet not implemented yet!");
+    warn("Geom.intersectPointSet not implemented yet!");
     return null;
   }
 

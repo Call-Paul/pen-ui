@@ -15,16 +15,13 @@ public class CPointOnLine extends Constraint {
   }
 
   public void solve() {
-    bug("Attempting to solve point-on-line");
     CPoint pt = (CPoint) geometry.get("pt");
     CLine line = (CLine) geometry.get("line");
     if (known(pt)) {
       // point is known, so offer it to the line.
-      bug("point known.");
       line.offer(pt.getPt());
     }
     if (known(line)) {
-      bug("line known.");
       // line is known, so that constrains where the point can be.
       pt.offer(line);
     }

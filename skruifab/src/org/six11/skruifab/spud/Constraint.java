@@ -26,7 +26,6 @@ public abstract class Constraint extends Node {
 
   public void solveSafely() {
     if (!isSolved()) {
-      bug("Solving " + getHumanReadableName());
       solve();
     }
   }
@@ -35,11 +34,6 @@ public abstract class Constraint extends Node {
     boolean ret = true;
     for (Geom g : geothings) {
       ret = (g != null && g.isSolved());
-      if (g == null) {
-        bug("This one is null.");
-      } else {
-        bug("is " + g.getDebugString() + " known?" + ret);
-      }
       if (!ret) {
         break;
       }

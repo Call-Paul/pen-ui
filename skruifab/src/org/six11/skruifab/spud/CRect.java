@@ -41,28 +41,28 @@ public class CRect extends Geom {
   @Override
   public boolean isDiscrete() {
     // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".isDiscrete not yet implemented.");
+    warn(getClass().getSimpleName() + ".isDiscrete not yet implemented.");
     return false;
   }
 
   @Override
   public Geom intersectCircle(CCircle circ) {
     // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".intersectCircle not yet implemented.");
+    warn(getClass().getSimpleName() + ".intersectCircle not yet implemented.");
     return null;
   }
 
   @Override
   public Geom intersectPoint(CPoint pt) {
     // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".intersectPoint not yet implemented.");
+    warn(getClass().getSimpleName() + ".intersectPoint not yet implemented.");
     return null;
   }
 
   @Override
   public Geom intersectPointSet(CPointSet ptset) {
     // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".intersectPointSet not yet implemented.");
+    warn(getClass().getSimpleName() + ".intersectPointSet not yet implemented.");
     return null;
   }
 

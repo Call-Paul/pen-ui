@@ -65,7 +65,6 @@ public class CLine extends Geom {
     } else {
       ret = new Nothing();
     }
-    bug("Line/Line intersection gives : " + ret.getDebugString());
     return ret;
   }
 
@@ -113,7 +112,7 @@ public class CLine extends Geom {
   }
 
   public Geom intersectPointSet(CPointSet ptset) {
-    bug("Geom.intersectPointSet not implemented yet!");
+    warn("Geom.intersectPointSet not implemented yet!");
     return null;
   }
 

@@ -9,6 +9,11 @@ public class CNearPoint extends Geom {
     addSlot("Pt");
   }
   
+  public CNearPoint(Pt pt) {
+    this();
+    offer(pt);
+  }
+  
   public void offer(Pt data) {
     slots.get("Pt").setValue(data);
     solved = true;
@@ -32,9 +37,7 @@ public class CNearPoint extends Geom {
 
   @Override
   public Geom intersectCircle(CCircle circ) {
-    // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".intersectCircle not yet implemented.");
-    return null;
+    return circ;
   }
 
   @Override
@@ -64,7 +67,7 @@ public class CNearPoint extends Geom {
   @Override
   public Geom intersectLine(CLine line) {
     // TODO Auto-generated method stub
-    bug(getClass().getSimpleName() + ".intersectLine not yet implemented.");
+    warn(getClass().getSimpleName() + ".intersectLine not yet implemented.");
     return null;
   }
 
