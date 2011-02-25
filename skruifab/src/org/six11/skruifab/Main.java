@@ -3,10 +3,7 @@ package org.six11.skruifab;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
 import java.awt.Shape;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.GeneralPath;
@@ -24,10 +21,10 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
-import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.six11.skruifab.analysis.MergeCF;
 import org.six11.skruifab.gui.GraphicMessage;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
@@ -41,6 +38,7 @@ import org.six11.util.pen.HoverListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
+import static org.six11.util.Debug.num;
 
 /**
  * 
@@ -51,6 +49,12 @@ public class Main {
   public static final String PEN_THICKNESS = "pen thickness";
 
   private static Set<Main> instances = new HashSet<Main>();
+
+  private static Map<String, Integer> debuggingBufferKeyBinds = new HashMap<String, Integer>();
+  static {
+    debuggingBufferKeyBinds.put("corners", 1);
+    // ... and others go here ...
+  }
 
   private Stroke seq;
   private Color penColor;
@@ -149,17 +153,7 @@ public class Main {
     af.setVisible(true);
 
     new SillySpudTest(this).tmpMakeConstrainedDrawing();
-    ds.addMessage(GraphicMessage
-        .makeStandard("This is a standard message that should wrap onto a couple lines."));
-    Timer tmpTimer = new Timer(2000, new ActionListener() {
-      public void actionPerformed(ActionEvent ev) {
-        ds.addMessage(GraphicMessage.makeStandard("Here's a message. " + System.currentTimeMillis()));
-      }
-    });
-    tmpTimer.setRepeats(true);
-    tmpTimer.setDelay(2000);
-    tmpTimer.start();
-
+    ds.addMessage(GraphicMessage.makeStandard("Skrui Fab Alpha"));
     ds.repaint();
   }
 
@@ -223,7 +217,6 @@ public class Main {
     sequenceListeners.remove(lis);
   }
 
-  @SuppressWarnings("null")
   public void updateFinishedSequence(Stroke s) {
     DrawingBuffer db = s.getDrawingBuffer();
     if (db != null) {
@@ -297,7 +290,28 @@ public class Main {
       s.setDrawingBuffer(buf);
       drawnStuff.add(s);
       uninterpreted.add(s);
+      interpret();
+      visual("Stroke: " + s.size() + " points, " + num(s.length()) + " arc length");
     }
+  }
+
+  private void interpret() {
+    DrawingBuffer cornerBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("corners")
+        .toString());
+    for (Stroke s : uninterpreted) {
+      if (!s.hasAttribute(MergeCF.CORNERS_FOUND)) {
+        MergeCF.analyze(s); // annotates individual points with CORNER among other things
+        int numCorners = 0;
+        for (Pt pt : s) {
+          if (pt.getBoolean(MergeCF.CORNER)) {
+            numCorners++;
+            DrawingBufferRoutines.dot(cornerBuf, pt, 3, 0.8, Color.BLACK, Color.RED);
+          }
+        }
+        visual(numCorners + " corners: ");
+      }
+    }
+
   }
 
   public void addHover(int x, int y, long when, HoverEvent.Type type) {
@@ -349,9 +363,16 @@ public class Main {
   private void makeAnonActions() {
     // pressing 0..9 whacks a visible layer, which are all debugging things.
     for (int i = 0; i < 10; i++) {
+      drawnStuff.addNamedBuffer("" + i, new DrawingBuffer(), false);
+      drawnStuff.getNamedBuffer("" + i).setVisible(false);
+      drawnStuff.getNamedBuffer("" + i).setHumanReadableName("" + i);
+      drawnStuff.getNamedBuffer("" + i).setComplainWhenDrawingToInvisibleBuffer(false);
       final int which = i;
       anonActions.add(new NamedAction("Whack Layer " + i, KeyStroke.getKeyStroke("" + which)) {
         public void activate() {
+          if (drawnStuff.getNamedBuffer("" + which) == null) {
+            drawnStuff.addNamedBuffer("" + which, new DrawingBuffer(), false);
+          }
           whackLayer(which);
         }
       });
@@ -362,11 +383,13 @@ public class Main {
     DrawingBuffer db = drawnStuff.getNamedBuffer("" + i);
     if (db != null) {
       boolean currentValue = db.isVisible();
-      bug("Layer " + i + " should now be " + (currentValue ? "not shown" : "shown"));
+      String msg = (!currentValue ? "Show" : "Hide") + " layer " + i
+          + (db.hasHumanReadableName() ? " (" + db.getHumanReadableName() + ")" : "");
+      visual(msg);
       db.setVisible(!currentValue);
       getDrawingSurface().repaint();
     } else {
-      bug("Can't find buffer for layer: " + i);
+      visual("Can't find buffer for layer: " + i);
     }
   }
 
@@ -453,6 +476,11 @@ public class Main {
 
   public static void warn(String what) {
     System.out.println("  **WARNING**  " + what);
+  }
+
+  public void visual(String what) {
+    bug(what);
+    ds.addMessage(GraphicMessage.makeStandard(what));
   }
 
 }

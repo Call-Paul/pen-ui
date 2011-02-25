@@ -28,7 +28,7 @@ public class GraphicMessage {
   }
 
   public static GraphicMessage makeStandard(String msg) {
-    return new GraphicMessage(msg, Color.BLACK, Color.LIGHT_GRAY, SMALL_FONT, 160);
+    return new GraphicMessage(msg, Color.BLACK, new Color(240, 240, 240), SMALL_FONT, 160);
   }
 
   long timeCreated;
@@ -76,12 +76,11 @@ public class GraphicMessage {
     }
     w = w + hpad * 2f;
     h = h + vpad * 2f;
-    bug("Entire block of text requires rectangle of size: " + w + " x " + h);
     BufferedImage ret = new BufferedImage((int) Math.ceil(w), (int) Math.ceil(h),
         BufferedImage.TYPE_INT_ARGB);
     Graphics2D g = (Graphics2D) ret.getGraphics();
     Components.antialias(g);
-    Rectangle2D bounds = new Rectangle2D.Double(0, 0, w-1, h-1);
+    Rectangle2D bounds = new Rectangle2D.Double(0, 0, w - 1, h - 1);
     g.setStroke(new BasicStroke(1.5f));
     g.setColor(bgColor);
     g.fill(bounds);

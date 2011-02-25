@@ -4,3 +4,7 @@ gabe
 johnson
 hpad
 msg
+wolin
+paulson
+hammond
+eurographics

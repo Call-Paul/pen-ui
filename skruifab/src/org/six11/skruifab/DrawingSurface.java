@@ -117,7 +117,7 @@ public class DrawingSurface extends JComponent {
     AffineTransform before = new AffineTransform(g.getTransform());
     drawBorderAndBackground(g);
     g.setTransform(before);
-    paintContent(g, true);
+    paintContent(g, false); // was TRUE. if the world starts burning down change this back
     g.setTransform(before);
     drawMessages(g);
   }
@@ -144,9 +144,7 @@ public class DrawingSurface extends JComponent {
     float alpha = 1f;
     if (age > 3000) {
       alpha = 1f - ((float) (age - 3000) / (float) 4000);
-//      alpha = alpha * alpha;
     }
-//    bug("alpha: " + Debug.num(alpha));
     float[] scale = new float[] {
         1f, 1f, 1f, alpha
     };
@@ -155,7 +153,6 @@ public class DrawingSurface extends JComponent {
     };
     RescaleOp transpOp = new RescaleOp(scale, offset, null);
     g.drawImage(msgImage, transpOp, (int) x, (int) y);
-    //    g.drawImage(msgImage, (int) x, (int) y, null);
   }
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {

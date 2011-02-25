@@ -69,6 +69,7 @@ public class SillySpudTest {
     model.solve();
 
     DrawingBuffer testBuffer = new DrawingBuffer();
+    testBuffer.setHumanReadableName("Constraint Debug Layer");
     DrawingBufferRoutines.line(testBuffer, new Line(a.getPt(), b.getPt()), Color.BLACK, 1.4);
     DrawingBufferRoutines.dot(testBuffer, a.getPt(), 3, 0.5, Color.BLACK, Color.RED);
     DrawingBufferRoutines.dot(testBuffer, b.getPt(), 3, 0.5, Color.BLACK, Color.GREEN);
@@ -106,8 +107,6 @@ public class SillySpudTest {
       }
     } else {
       bug("abMidC is not solved. :(");
-      
-//      abMidC.intersect(new CRect());
     }
     main.getDrawnStuff().addNamedBuffer("2", testBuffer, true);
   }

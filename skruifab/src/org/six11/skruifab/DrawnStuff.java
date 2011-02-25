@@ -9,6 +9,8 @@ import java.util.Set;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 
 /**
@@ -24,8 +26,6 @@ public class DrawnStuff {
   private List<ChangeListener> changeListeners;
 
   private List<DrawnThing> things;
-  //  private List<DrawnThing> editList;
-  //  private List<DrawnThing> redoList;
   private Map<String, DrawingBuffer> namedBuffers;
   private Set<String> transientBufferNames;
   private transient List<DrawingBuffer> cachedBufferList;
@@ -35,8 +35,6 @@ public class DrawnStuff {
 
   public DrawnStuff() {
     this.things = new ArrayList<DrawnThing>();
-    //    this.redoList = new ArrayList<DrawnThing>();
-    //    this.editList = new ArrayList<DrawnThing>();
     this.namedBuffers = new HashMap<String, DrawingBuffer>();
     this.transientBufferNames = new HashSet<String>();
     this.cachedBufferList = new ArrayList<DrawingBuffer>();
@@ -188,6 +186,10 @@ public class DrawnStuff {
     if (!changeListeners.contains(lis)) {
       changeListeners.add(lis);
     }
+  }
+
+  private static void bug(String what) {
+    Debug.out("DrawnStuff", what);
   }
 
 }
