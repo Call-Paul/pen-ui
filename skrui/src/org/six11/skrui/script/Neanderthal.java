@@ -229,7 +229,6 @@ public class Neanderthal extends SkruiScript implements SequenceListener {
   }
 
   public void handleSequenceEvent(SequenceEvent seqEvent) {
-
     SequenceEvent.Type type = seqEvent.getType();
     Stroke seq = (Stroke) seqEvent.getSeq();
     switch (type) {

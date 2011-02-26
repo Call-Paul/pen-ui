@@ -2,11 +2,7 @@ package org.six11.skrui.charrec;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 
 import org.six11.util.Debug;
 
@@ -34,6 +30,7 @@ public class NBestList {
     }
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("NBestList", what);
   }

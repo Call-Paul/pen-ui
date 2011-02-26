@@ -36,5 +36,4 @@ public interface DrawnThing {
    * adds to the current state stack. Second, it removes all elements from the redo stack.
    */
   public void snap();
-
 }

@@ -1,7 +1,5 @@
 package org.six11.skrui.charrec;
 
-import java.util.Random;
-
 import org.six11.util.Debug;
 
 /**
@@ -18,32 +16,7 @@ public class ClampdLookupTable {
   private static double incr = 1.0 / (double) (boundary - 1);
   double[] table;
 
-  public static void main(String[] args) {
-    ClampdLookupTable clam = new ClampdLookupTable();
-    int LOTS = 1000000;
-    // try it two ways: first, do not use a lookup table, but get the value of 1,000,000 int
-    // indices. second, use the lookup table to get the value of 1,000,000 int indices
-    Random rand = new Random(System.currentTimeMillis());
-    int[] index = new int[LOTS];
-    for (int i=0; i < index.length; i++) {
-      index[i] = rand.nextInt(boundary);
-    }
-    long startA = System.nanoTime();
-    for (int i=0; i < index.length; i++) {
-      // convert index[i] from the 0-2^16 space to 0..1 double-space
-      double result = (double) index[i] / boundary;
-//      bug(index[i] + " --> " + Debug.num(result));
-    }
-    long endA = System.nanoTime();
-    long startB = System.nanoTime();
-    for (int i=0; i < index.length; i++) {
-      clam.get(index[i]);
-    }
-    long endB = System.nanoTime();
-    bug("Elapsed time (calculating every time): " + (endA - startA));
-    bug("Elapsed time (using lookup table):     " + (endB - startB));
-  }
-
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("ClampdLookupTable", what);
   }

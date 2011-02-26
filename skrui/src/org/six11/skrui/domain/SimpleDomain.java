@@ -26,6 +26,7 @@ public class SimpleDomain extends Domain {
     templates.add(triangle);
     templates.add(rectangle);
     templates.add(arrow);
+    bug("Added triangle, rectangle, and arrow to the simple domain.");
 
     addRenderer(triangle.name, new ShapeRenderer() {
       public void draw(DrawingBuffer db, Shape s) {

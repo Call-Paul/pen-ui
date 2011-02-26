@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.Stack;
 
 import org.six11.util.Debug;
@@ -135,6 +134,7 @@ public class Dendogram {
     }
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("Dendogram", what);
   }

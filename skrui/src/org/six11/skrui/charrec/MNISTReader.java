@@ -79,6 +79,7 @@ public class MNISTReader {
         .println("Read " + numLabelsRead + " samples in " + minutes + " m " + seconds + " s ");
   }
 
+  @SuppressWarnings("unused") 
   private static void handleLabeledImage(byte label, int[][] image) {
     // Do whatever floats your boat, trips your trigger, or otherwise makes for an optimal experience.
   }

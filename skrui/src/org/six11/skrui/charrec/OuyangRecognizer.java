@@ -22,16 +22,6 @@ import org.six11.util.math.PCA;
 
 public class OuyangRecognizer {
 
-  //  
-  // public static void main(String[] args) {
-  // double[] val = new double[args.length];
-  // for (int i=0; i < args.length; i++) {
-  // val[i] = Double.parseDouble(args[i]);
-  // }
-  // new OuyangRecognizer().createColumnVector(val);
-  // }
-  //  
-
   private static final int PCA_COMPONENTS = 128;
 
   public static int DOWNSAMPLE_GRID_SIZE = 12;
@@ -560,12 +550,17 @@ public class OuyangRecognizer {
 
   private void calculatePrincipleComponents(double[][] mondo, File pcaFile) {
     bug("Performing PCA on " + mondo.length + " records with " + mondo[0].length + " dimensions...");
+    
+    // 1. calculate all the principle components
     PCA pca = new PCA(mondo);
-    bug("... done");
+    
+    // 2. Retain only the "best" components (that have the greatest variance)
     List<PCA.PrincipleComponent> bestComps = pca.getDominantComponents(PCA_COMPONENTS);
+    
+    // 3. Store the dimension means
     dimensionMeans = pca.getMeans();
-    double[][] matrixAdjusted = PCA.getMeanAdjusted(mondo, pca.getMeans());
-    Matrix adjustedInput = new Matrix(matrixAdjusted).transpose();
+    
+    // 4. Set the pca coordinate space and save it to disk
     pcaSpace = PCA.getDominantComponentsMatrix(bestComps).transpose();
     if (pcaFile != null) {
       writePCACoordinateSystem(mondo.length, pcaFile);
