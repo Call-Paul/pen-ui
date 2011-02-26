@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.six11.skruifab.Stroke;
 import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;

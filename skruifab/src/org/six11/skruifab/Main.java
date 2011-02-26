@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.geom.GeneralPath;
@@ -11,6 +13,7 @@ import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -24,8 +27,11 @@ import javax.swing.KeyStroke;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.six11.skruifab.analysis.Analyzer;
 import org.six11.skruifab.analysis.MergeCF;
+import org.six11.skruifab.analysis.Stroke;
 import org.six11.skruifab.gui.GraphicMessage;
+import org.six11.skruifab.gui.PenButton;
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
@@ -52,7 +58,8 @@ public class Main {
 
   private static Map<String, Integer> debuggingBufferKeyBinds = new HashMap<String, Integer>();
   static {
-    debuggingBufferKeyBinds.put("corners", 1);
+    debuggingBufferKeyBinds.put("all points", 1);
+    debuggingBufferKeyBinds.put("corners", 2);
     // ... and others go here ...
   }
 
@@ -82,6 +89,9 @@ public class Main {
   private Arguments args;
   private Map<String, Action> actions = new HashMap<String, Action>();
   private Set<Action> anonActions = new HashSet<Action>();
+  private Analyzer analyzer;
+
+  private SketchHUD hud;
 
   public static void main(String[] in) throws IOException {
     Debug.useColor = false;
@@ -135,6 +145,7 @@ public class Main {
     uninterpreted = new ArrayList<Stroke>();
     sequenceListeners = new HashSet<SequenceListener>();
     hoverListeners = new HashSet<HoverListener>();
+    analyzer = new Analyzer();
     af = new ApplicationFrame("Skrui Fab");
     af.setNoQuitOnClose();
     ds = new DrawingSurface(this);
@@ -149,11 +160,23 @@ public class Main {
     } else {
       af.setSize(500, 400);
     }
+    hud = new SketchHUD();
+    af.setGlassPane(hud);
+    hud.setVisible(true);
+    bug("Added SketchHUD to application frame");
     af.center();
-    af.setVisible(true);
 
+    PenButton interpretButton = new PenButton("interpret");
+    interpretButton.setSize(30, 30);
+    interpretButton.addActionListner(new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+        interpret();
+      }
+    });
+    hud.addButton(interpretButton);
+    af.setVisible(true);
     new SillySpudTest(this).tmpMakeConstrainedDrawing();
-    ds.addMessage(GraphicMessage.makeStandard("Skrui Fab Alpha"));
+    hud.addMessage(GraphicMessage.makeStandard("Skrui Fab Alpha"));
     ds.repaint();
   }
 
@@ -288,6 +311,8 @@ public class Main {
     if (s != null && s.size() > 1 && gpVisible) {
       DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
       s.setDrawingBuffer(buf);
+      analyzer.processFinishedSequence(s);
+      drawDebuggingLayers();
       drawnStuff.add(s);
       uninterpreted.add(s);
       interpret();
@@ -296,6 +321,8 @@ public class Main {
   }
 
   private void interpret() {
+    // interpret the uninterpreted strokes in context of the structured model.
+    bug("Interpret.");
     DrawingBuffer cornerBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("corners")
         .toString());
     for (Stroke s : uninterpreted) {
@@ -393,6 +420,24 @@ public class Main {
     }
   }
 
+  private void drawDebuggingLayers() {
+    DrawingBuffer buf;
+    // corners?
+    buf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("corners") + "");
+    if (buf.isVisible()) {
+      // TODO: draw corners.
+    }
+
+    // all points?
+    buf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("all points") + "");
+    if (buf.isVisible()) {
+      Collection<Pt> all = analyzer.getAllPoints().getPoints();
+      for (Pt pt : all) {
+        DrawingBufferRoutines.dot(buf, pt, 3.0, 0.5, Color.BLACK, Color.LIGHT_GRAY);
+      }
+    }
+  }
+
   public DrawingSurface getDrawingSurface() {
     return ds;
   }
@@ -480,7 +525,7 @@ public class Main {
 
   public void visual(String what) {
     bug(what);
-    ds.addMessage(GraphicMessage.makeStandard(what));
+    hud.addMessage(GraphicMessage.makeStandard(what));
   }
 
 }

@@ -1,10 +1,12 @@
-package org.six11.skruifab;
+package org.six11.skruifab.analysis;
 
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.six11.skruifab.DrawnThing;
+import org.six11.skruifab.Main;
 import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;

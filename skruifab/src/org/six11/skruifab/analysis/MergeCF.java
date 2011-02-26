@@ -2,7 +2,6 @@ package org.six11.skruifab.analysis;
 
 import java.util.*;
 
-import org.six11.skruifab.Stroke;
 import org.six11.util.Debug;
 import org.six11.util.data.Statistics;
 import org.six11.util.pen.Pt;
