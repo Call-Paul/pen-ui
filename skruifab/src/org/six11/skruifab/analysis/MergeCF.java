@@ -24,6 +24,9 @@ public class MergeCF {
   public final static String CURVY = "curvy";
   public final static String SLOW = "slow";
   public final static String SPEED = "speed";
+  public final static String SEGMENTS = "segments";
+  public final static String CORNER_INDICES = "corner indices";
+  public final static String CORNERS = "corners";
   
   public final static double DUPLICATE_THRESHOLD = 15;
 
@@ -35,6 +38,13 @@ public class MergeCF {
       segments.add(s);
     }
     seq.setAttribute(CORNERS_FOUND, true);
+    seq.setAttribute(SEGMENTS, segments);
+    seq.setAttribute(CORNER_INDICES, corners);
+    List<Pt> cornerPoints = new ArrayList<Pt>();
+    for (int idx : corners) {
+      cornerPoints.add(seq.get(idx));
+    }
+    seq.setAttribute(CORNERS, cornerPoints);
     return segments;
   }
 
@@ -78,14 +88,13 @@ public class MergeCF {
       // throughout. Segment length from corners i, j is curvilinear distance of j minus that of i.
       seq.calculateCurvilinearDistances();
 
-      // perform the CFMerge
+      // perform the MergeCM al gore rythym
       merge(candidates, seq, 1);
 
       // Explain to the world which points are the corners.
       for (int idx : candidates) {
         seq.get(idx).setBoolean(CORNER, true);
       }
-
       ret.addAll(candidates);
     }
     return ret;

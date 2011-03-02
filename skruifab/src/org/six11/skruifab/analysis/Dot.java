@@ -1,5 +1,9 @@
 package org.six11.skruifab.analysis;
 
+import org.six11.util.pen.Functions;
+import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
+
 /**
  * 
  * 
@@ -33,4 +37,8 @@ public class Dot extends Primitive {
     return "D";
   }
 
+  public Pt getCentroid() {
+    Sequence dotPoints = seq.getSubSequence(getStartIdx(), getEndIdx());
+    return Functions.getMean(dotPoints.getPoints());
+  }
 }

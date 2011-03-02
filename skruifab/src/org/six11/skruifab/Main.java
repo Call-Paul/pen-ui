@@ -28,6 +28,11 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.six11.skruifab.analysis.Analyzer;
+import org.six11.skruifab.analysis.ArcSegment;
+import org.six11.skruifab.analysis.Certainty;
+import org.six11.skruifab.analysis.Dot;
+import org.six11.skruifab.analysis.Ellipse;
+import org.six11.skruifab.analysis.LineSegment;
 import org.six11.skruifab.analysis.MergeCF;
 import org.six11.skruifab.analysis.Stroke;
 import org.six11.skruifab.gui.GraphicMessage;
@@ -44,6 +49,8 @@ import org.six11.util.pen.HoverListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.SequenceEvent;
 import org.six11.util.pen.SequenceListener;
+
+import sun.security.action.GetLongAction;
 import static org.six11.util.Debug.num;
 
 /**
@@ -60,6 +67,8 @@ public class Main {
   static {
     debuggingBufferKeyBinds.put("all points", 1);
     debuggingBufferKeyBinds.put("corners", 2);
+    debuggingBufferKeyBinds.put("primitives", 3);
+
     // ... and others go here ...
   }
 
@@ -158,7 +167,7 @@ public class Main {
     if (args.hasFlag("big")) {
       af.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
     } else {
-      af.setSize(500, 400);
+      af.setSize(800, 600);
     }
     hud = new SketchHUD();
     af.setGlassPane(hud);
@@ -175,8 +184,7 @@ public class Main {
     });
     hud.addButton(interpretButton);
     af.setVisible(true);
-    new SillySpudTest(this).tmpMakeConstrainedDrawing();
-    hud.addMessage(GraphicMessage.makeStandard("Skrui Fab Alpha"));
+    hud.addMessage(GraphicMessage.makeImportant("Skrui Fab Alpha"));
     ds.repaint();
   }
 
@@ -311,34 +319,83 @@ public class Main {
     if (s != null && s.size() > 1 && gpVisible) {
       DrawingBuffer buf = DrawingBufferRoutines.makeSequenceBuffer(s);
       s.setDrawingBuffer(buf);
-      analyzer.processFinishedSequence(s);
       drawDebuggingLayers();
       drawnStuff.add(s);
       uninterpreted.add(s);
-      interpret();
-      visual("Stroke: " + s.size() + " points, " + num(s.length()) + " arc length");
     }
   }
 
   private void interpret() {
     // interpret the uninterpreted strokes in context of the structured model.
     bug("Interpret.");
+    interpretCorners(); // identifies corners and calculates speed and curvature of each point
+    interpretPrimitives(); // finds dots, lines, circles, and other primitive shapes.
+  }
+
+  private void interpretPrimitives() {
+    DrawingBuffer primBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("primitives")
+        .toString());
+    for (Stroke s : uninterpreted) {
+      if (!s.hasAttribute(Analyzer.PRIMITIVES)) {
+        analyzer.processFinishedSequence(s);
+
+        // everything below here is just debug messages and drawing. It can eventually be removed.
+        //
+        // Dots
+        Set<Dot> dots = s.getDots();
+        for (Dot dot : dots) {
+          Color c = dot.getCert() == Certainty.Yes ? Color.BLUE : Color.LIGHT_GRAY;
+          DrawingBufferRoutines.text(primBuf, dot.getCentroid().getTranslated(6, 4),
+              dot.getShortStr(), c);
+          DrawingBufferRoutines.dot(primBuf, dot.getCentroid(), 4, 1, Color.BLACK, c);
+        }
+
+        // Ellipses
+        Set<Ellipse> ellipses = s.getEllipses();
+        for (Ellipse ellie : ellipses) {
+          bug("Ellipse!");
+          Color c = ellie.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
+          DrawingBufferRoutines.text(primBuf, ellie.getStartPt().getTranslated(6, 4),
+              ellie.getShortStr(), c);
+          DrawingBufferRoutines.rotatedEllipse(primBuf, ellie.getRotatedEllipse(), c, 4.5);
+        }
+
+        // Lines
+        Set<LineSegment> lsegs = s.getLineSegments();
+        for (LineSegment seg : lsegs) {
+          bug("Line Segment!");
+          Color c = seg.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
+          DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4),
+              seg.getShortStr(), c);
+          DrawingBufferRoutines.line(primBuf, seg.getStartPt(), seg.getEndPt(), c, 4.5);
+        }
+
+        // Arcs
+        Set<ArcSegment> asegs = s.getArcSegments();
+        for (ArcSegment seg : asegs) {
+          bug("Arc Segment!");
+          Color c = seg.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
+          DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4),
+              seg.getShortStr(), c);
+          DrawingBufferRoutines.arc(primBuf, seg.getCircleArc(), c, 4.0);
+        }
+      }
+    }
+
+  }
+
+  private void interpretCorners() {
     DrawingBuffer cornerBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("corners")
         .toString());
     for (Stroke s : uninterpreted) {
       if (!s.hasAttribute(MergeCF.CORNERS_FOUND)) {
         MergeCF.analyze(s); // annotates individual points with CORNER among other things
-        int numCorners = 0;
-        for (Pt pt : s) {
-          if (pt.getBoolean(MergeCF.CORNER)) {
-            numCorners++;
-            DrawingBufferRoutines.dot(cornerBuf, pt, 3, 0.8, Color.BLACK, Color.RED);
-          }
+        for (Pt pt : s.getCorners()) {
+          DrawingBufferRoutines.dot(cornerBuf, pt, 3, 0.8, Color.BLACK, Color.RED);
         }
-        visual(numCorners + " corners: ");
+        visual(s.getCorners().size() + " corners: ");
       }
     }
-
   }
 
   public void addHover(int x, int y, long when, HoverEvent.Type type) {

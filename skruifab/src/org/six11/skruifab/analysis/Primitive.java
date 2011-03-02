@@ -75,6 +75,8 @@ public abstract class Primitive implements Comparable<Primitive> {
     if (seq.getAttribute(Analyzer.PRIMITIVES) != null) {
       Set<Primitive> primitives = (Set<Primitive>) seq.getAttribute(Analyzer.PRIMITIVES);
       primitives.add(this);
+    } else {
+      warn("Stroke has no PRIMITIVES attribute");
     }
     ID_COUNTER = Math.max(id, ID_COUNTER);
   }
@@ -214,4 +216,7 @@ public abstract class Primitive implements Comparable<Primitive> {
     return geometryLine;
   }
 
+  public void warn(String what) {
+    Debug.out(getClass().getSimpleName(), "** Warning ** " + what);
+  }
 }

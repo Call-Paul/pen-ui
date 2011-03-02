@@ -1,5 +1,7 @@
 package org.six11.skruifab.analysis;
 
+import org.six11.util.pen.RotatedEllipse;
+
 /**
  * 
  *
@@ -7,6 +9,8 @@ package org.six11.skruifab.analysis;
  */
 public class Ellipse extends Primitive {
 
+  RotatedEllipse rotatedEllipse;
+  
   /**
    * @param seq
    * @param startIdx
@@ -24,6 +28,14 @@ public class Ellipse extends Primitive {
    */
   public Ellipse(int primID, Stroke seq, Certainty cert) {
     super(primID, seq, 0, seq.size() - 1, cert);
+  }
+  
+  public RotatedEllipse getRotatedEllipse() {
+    return rotatedEllipse;
+  }
+  
+  public void setRotatedEllipse(RotatedEllipse re) {
+    this.rotatedEllipse = re;
   }
 
   @Override

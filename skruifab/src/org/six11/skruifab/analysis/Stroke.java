@@ -2,7 +2,9 @@ package org.six11.skruifab.analysis;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import org.six11.skruifab.DrawnThing;
@@ -138,6 +140,78 @@ public class Stroke extends Sequence implements DrawnThing {
     }
     buf.up();
     setDrawingBuffer(buf);
+  }
+
+  /**
+   * Gives the set of primitives held in the Analyzer.PRIMITIVES attribute. <b>This will be null if
+   * the stroke hasn't been analyzed so it is wise to test for nullness.</b>
+   * 
+   * @return
+   */
+  public Set<Primitive> getPrimitives() {
+    Set<Primitive> primitives = (Set<Primitive>) getAttribute(Analyzer.PRIMITIVES);
+    return primitives;
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<Pt> getCorners() {
+    return (List<Pt>) getAttribute(MergeCF.CORNERS);
+  }
+  
+  public Set<Segment> getSegments() {
+    return (Set<Segment>) getAttribute(MergeCF.SEGMENTS);
+  }
+  
+  public Set<LineSegment> getLineSegments() {
+    Set<LineSegment> ret = new HashSet<LineSegment>();
+    Set<Primitive> prims = getPrimitives();
+    if (prims != null) {
+      for (Primitive p : prims) {
+        if (p instanceof LineSegment) {
+          ret.add((LineSegment) p);
+        }
+      }
+    }
+    return ret;
+  }
+  
+  public Set<ArcSegment> getArcSegments() {
+    Set<ArcSegment> ret = new HashSet<ArcSegment>();
+    Set<Primitive> prims = getPrimitives();
+    if (prims != null) {
+      for (Primitive p : prims) {
+        if (p instanceof ArcSegment) {
+          ret.add((ArcSegment) p);
+        }
+      }
+    }
+    return ret;
+  }
+  
+  public Set<Dot> getDots() {
+    Set<Dot> ret = new HashSet<Dot>();
+    Set<Primitive> prims = getPrimitives();
+    if (prims != null) {
+      for (Primitive p : prims) {
+        if (p instanceof Dot) {
+          ret.add((Dot) p);
+        }
+      }
+    }
+    return ret;
+  }
+  
+  public Set<Ellipse> getEllipses() {
+    Set<Ellipse> ret = new HashSet<Ellipse>();
+    Set<Primitive> prims = getPrimitives();
+    if (prims != null) {
+      for (Primitive p : prims) {
+        if (p instanceof Ellipse) {
+          ret.add((Ellipse) p);
+        }
+      }
+    }
+    return ret;
   }
 
   public static void bug(String what) {

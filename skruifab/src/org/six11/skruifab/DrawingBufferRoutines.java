@@ -3,17 +3,20 @@ package org.six11.skruifab;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Rectangle;
+import java.awt.Shape;
 import java.awt.geom.GeneralPath;
 import java.util.Collection;
 import java.util.List;
 
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
@@ -66,8 +69,8 @@ public abstract class DrawingBufferRoutines {
     Sequence spline = new Sequence();
     int last = ctrl.size() - 1;
     for (int i = 0; i < last; i++) {
-      Functions.getSplinePatch(ctrl.get(Math.max(0, i - 1)), ctrl.get(i), ctrl.get(i + 1), ctrl
-          .get(Math.min(last, i + 2)), spline, numSteps);
+      Functions.getSplinePatch(ctrl.get(Math.max(0, i - 1)), ctrl.get(i), ctrl.get(i + 1),
+          ctrl.get(Math.min(last, i + 2)), spline, numSteps);
     }
     db.up();
     if (lineColor != null) {
@@ -120,11 +123,16 @@ public abstract class DrawingBufferRoutines {
   }
 
   public static void arc(DrawingBuffer db, CircleArc arc, Color color) {
+    arc(db, arc, color, 1.0);
+  }
+
+  public static void arc(DrawingBuffer db, CircleArc arc, Color color, double thickness) {
     db.up();
     Pt s = arc.start;
     Pt m = arc.mid;
     Pt e = arc.end;
     db.setColor(color);
+    db.setThickness(thickness);
     db.down();
     db.circleTo(s.x, s.y, m.x, m.y, e.x, e.y);
     db.up();
@@ -156,6 +164,37 @@ public abstract class DrawingBufferRoutines {
       db.up();
       db.setFilling(false);
     }
+  }
+
+  public static void drawShape(DrawingBuffer db, Shape shape, Color color, double thickness) {
+    if (db.isVisible()) {
+      db.up();
+      db.setColor(color);
+      db.setThickness(thickness);
+      db.down();
+      db.addShape(shape);
+      db.up();
+    }
+  }
+
+  public static void fillShape(DrawingBuffer db, Shape shape, Color fillColor,
+      double borderThickness) {
+    if (db.isVisible()) {
+      db.up();
+      db.setFillColor(fillColor);
+      db.setFilling(true);
+      db.setColor(fillColor);
+      db.setThickness(borderThickness);
+      db.down();
+      db.addShape(shape);
+      db.up();
+      db.setFilling(false);
+    }
+  }
+
+  public static void rotatedEllipse(DrawingBuffer db, RotatedEllipse re, Color color,
+      double borderThickness) {
+    drawShape(db, new ShapeFactory.RotatedEllipseShape(re, 200), color, borderThickness);
   }
 
   public static GeneralPath makePath(List<Pt> corners) {

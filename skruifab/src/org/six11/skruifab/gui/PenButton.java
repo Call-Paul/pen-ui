@@ -64,14 +64,12 @@ public class PenButton extends JPanel {
     }
     addMouseListener(new MouseAdapter() {
       public void mouseEntered(MouseEvent ev) {
-        bug("In " + hashCode());
         penHover = true;
         antTimer.restart();
         getParent().repaint();
       }
 
       public void mouseExited(MouseEvent ev) {
-        bug("Out " + hashCode());
         penHover = false;
         antTimer.stop();
         getParent().repaint();
@@ -129,6 +127,7 @@ public class PenButton extends JPanel {
     g.draw(borderRec);
   }
 
+  @SuppressWarnings("unused")
   private static void bug(String what) {
     Debug.out("PenButton", what);
   }

@@ -1,5 +1,7 @@
 package org.six11.skruifab.analysis;
 
+import org.six11.util.pen.CircleArc;
+
 /**
  * 
  *
@@ -7,6 +9,8 @@ package org.six11.skruifab.analysis;
  */
 public class ArcSegment extends Primitive {
 
+  CircleArc circleArc;
+  
   /**
    * @param seq
    * @param startIdx
@@ -37,5 +41,14 @@ public class ArcSegment extends Primitive {
   public String shortTypeStr() {
     return "A";
   }
-
+  
+  public CircleArc getCircleArc() {
+    if (circleArc == null) {
+      int a = getStartIdx();
+      int b = getEndIdx();
+      int c = (a + b) / 2;
+      circleArc = new CircleArc(getStartPt(), seq.get(c), getEndPt());
+    }
+    return circleArc;
+  }
 }
