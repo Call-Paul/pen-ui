@@ -188,6 +188,19 @@ public class Stroke extends Sequence implements DrawnThing {
     return ret;
   }
   
+  public Set<EllipseSegment> getEllipseSegments() {
+    Set<EllipseSegment> ret = new HashSet<EllipseSegment>();
+    Set<Primitive> prims = getPrimitives();
+    if (prims != null) {
+      for (Primitive p : prims) {
+        if (p instanceof EllipseSegment) {
+          ret.add((EllipseSegment) p);
+        }
+      }
+    }
+    return ret;
+  }
+  
   public Set<Dot> getDots() {
     Set<Dot> ret = new HashSet<Dot>();
     Set<Primitive> prims = getPrimitives();

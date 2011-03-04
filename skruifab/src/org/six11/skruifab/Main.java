@@ -32,6 +32,7 @@ import org.six11.skruifab.analysis.ArcSegment;
 import org.six11.skruifab.analysis.Certainty;
 import org.six11.skruifab.analysis.Dot;
 import org.six11.skruifab.analysis.Ellipse;
+import org.six11.skruifab.analysis.EllipseSegment;
 import org.six11.skruifab.analysis.LineSegment;
 import org.six11.skruifab.analysis.MergeCF;
 import org.six11.skruifab.analysis.Stroke;
@@ -41,6 +42,7 @@ import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Components;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.io.Preferences;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
@@ -378,6 +380,22 @@ public class Main {
           DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4),
               seg.getShortStr(), c);
           DrawingBufferRoutines.arc(primBuf, seg.getCircleArc(), c, 4.0);
+        }
+
+        // Elliptical Segments
+        Set<EllipseSegment> esegs = s.getEllipseSegments();
+        for (EllipseSegment ellieseg : esegs) {
+          Color c = Color.blue;
+          DrawingBufferRoutines.text(primBuf, ellieseg.getMidPt().getTranslated(6, 4),
+              ellieseg.getShortStr(), c);
+//          List<Pt> abc = ellieseg.getEllipse().getRegionPoints();
+//
+//          DrawingBufferRoutines.dot(primBuf, abc.get(0), 4.0, 1.0, Color.BLACK, Color.GREEN);
+//          DrawingBufferRoutines.dot(primBuf, abc.get(1), 4.0, 1.0, Color.BLACK, Color.BLUE);
+//          DrawingBufferRoutines.dot(primBuf, abc.get(2), 4.0, 1.0, Color.BLACK, Color.RED);
+
+          DrawingBufferRoutines.drawShape(primBuf,
+              new ShapeFactory.RotatedEllipseShape(ellieseg.getEllipse(), 200), c, 4);
         }
       }
     }

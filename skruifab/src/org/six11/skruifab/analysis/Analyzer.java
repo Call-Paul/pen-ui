@@ -68,8 +68,8 @@ public class Analyzer {
   }
 
   /**
-   * Analyze a single stroke to find a sequence of line, circle, and spline segments. It depends on
-   * MergeCF to find corners, and uses them as segment boundaries.
+   * Analyze a single stroke to find a sequence of line, ellipse-arc, and spline segments. It
+   * depends on MergeCF to find corners, and uses them as segment boundaries.
    * 
    * @param seq
    */
@@ -90,6 +90,9 @@ public class Analyzer {
       }
       if (seg.lineCertainty == Certainty.Yes || seg.lineCertainty == Certainty.No) {
         new LineSegment(seg.seq, seg.start, seg.end, seg.lineCertainty);
+      }
+      if (seg.lineCertainty != Certainty.Yes){
+        new EllipseSegment(seg.seq, seg.start, seg.end, Certainty.Maybe); // TODO: change this from Maybe
       }
     }
 
