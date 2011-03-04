@@ -49,7 +49,7 @@ public class DrawnStuff {
    */
   public void add(DrawnThing thing) {
     if (layerNamesInOrder.isEmpty()) {
-      addLayer("default layer");
+      addLayer("default layer", false);
     }
     addToLayer(layerNamesInOrder.get(0), thing);
   }
@@ -57,15 +57,23 @@ public class DrawnStuff {
   /**
    * Create a layer and put it "on top".
    */
-  public void addLayer(String layerName) {
+  public void addLayer(String layerName, boolean onTop) {
     List<DrawnThing> layerData = new ArrayList<DrawnThing>();
     layers.put(layerName, layerData);
-    layerNamesInOrder.add(0, layerName);
+    if (onTop) {
+      layerNamesInOrder.add(layerName);
+    } else {
+      layerNamesInOrder.add(0, layerName);
+    }
+    bug("Added layer. They are in order:");
+    for (String ln : layerNamesInOrder) {
+      bug("  " + ln);
+    }
   }
 
   public void addToLayer(String layerName, DrawnThing thing) {
     if (!layers.containsKey(layerName)) {
-      addLayer(layerName);
+      addLayer(layerName, false);
     }
     layers.get(layerName).add(thing);
     // TODO: not messing with editlist or undo/redo until I figure out wth I'm doing with that.
@@ -116,11 +124,11 @@ public class DrawnStuff {
   public List<DrawingBuffer> getDrawingBuffers() {
     if (dirty) {
       cachedBufferList.clear();
-      for (DrawnThing dt : things) {
-        cachedBufferList.add(dt.getDrawingBuffer());
-      }
       for (DrawingBuffer db : namedBuffers.values()) {
         cachedBufferList.add(db);
+      }
+      for (DrawnThing dt : things) { // TODO: I MOVED the 'things' block below the 'namedBuffers' block. If drawing is wonky move it back.
+        cachedBufferList.add(dt.getDrawingBuffer());
       }
       for (String layerName : layerNamesInOrder) {
         for (DrawnThing layerData : layers.get(layerName)) {
@@ -134,8 +142,6 @@ public class DrawnStuff {
   public void clear() {
     namedBuffers.clear();
     things.clear();
-    //    editList.clear();
-    //    redoList.clear();
     fireChange();
   }
 
@@ -190,6 +196,14 @@ public class DrawnStuff {
 
   private static void bug(String what) {
     Debug.out("DrawnStuff", what);
+  }
+
+  public boolean hasLayer(String name) {
+    return layerNamesInOrder.contains(name);
+  }
+
+  public List<DrawnThing> getLayer(String name) { 
+    return layers.get(name);
   }
 
 }

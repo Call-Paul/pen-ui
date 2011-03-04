@@ -335,67 +335,107 @@ public class Main {
   }
 
   private void interpretPrimitives() {
-    DrawingBuffer primBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("primitives")
-        .toString());
+    
+//    final DrawingBuffer primBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("primitives")
+//        .toString());
+    if (!drawnStuff.hasLayer("debug layer")) {
+      final DrawingBuffer b = new DrawingBuffer();
+      DrawnThing debugLayer = new DrawnThing() {
+
+        public DrawingBuffer getDrawingBuffer() {
+          return b;
+        }
+
+        public int getId() {
+          return 0;
+        }
+
+        public void redo() {
+        }
+
+        public void setDrawingBuffer(DrawingBuffer buf) {
+        }
+
+        public void snap() {
+        }
+
+        public int undo() {
+          return 0;
+        }        
+      };
+      drawnStuff.addLayer("debug layer", true);
+      drawnStuff.addToLayer("debug layer", debugLayer);
+    }
+    DrawingBuffer primBuf = drawnStuff.getLayer("debug layer").get(0).getDrawingBuffer();
     for (Stroke s : uninterpreted) {
       if (!s.hasAttribute(Analyzer.PRIMITIVES)) {
         analyzer.processFinishedSequence(s);
-
+        
         // everything below here is just debug messages and drawing. It can eventually be removed.
+//        Map<Class, Color> classToColor = new HashMap<Class, Color>();
+//        classToColor.put(Dot.class, Color.RED);
+//        classToColor.put(Ellipse.class, Color.MAGENTA);
+//        classToColor.put(LineSegment.class, Color.BLUE);
+//        classToColor.put(ArcSegment.class, Color.CYAN);
+//        classToColor.put(EllipseSegment.class, Color.GREEN);
+
         //
         // Dots
         Set<Dot> dots = s.getDots();
         for (Dot dot : dots) {
-          Color c = dot.getCert() == Certainty.Yes ? Color.BLUE : Color.LIGHT_GRAY;
-          DrawingBufferRoutines.text(primBuf, dot.getCentroid().getTranslated(6, 4),
-              dot.getShortStr(), c);
-          DrawingBufferRoutines.dot(primBuf, dot.getCentroid(), 4, 1, Color.BLACK, c);
+          if (dot.getCert() == Certainty.Yes) {
+            Color c = dot.getCert() == Certainty.Yes ? Color.RED : Color.LIGHT_GRAY;
+            //          DrawingBufferRoutines.text(primBuf, dot.getCentroid().getTranslated(6, 4),
+            //              dot.getShortStr(), c);
+            DrawingBufferRoutines.dot(primBuf, dot.getCentroid(), 4, 1, Color.BLACK, c);
+          }
         }
 
         // Ellipses
         Set<Ellipse> ellipses = s.getEllipses();
         for (Ellipse ellie : ellipses) {
-          bug("Ellipse!");
-          Color c = ellie.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
-          DrawingBufferRoutines.text(primBuf, ellie.getStartPt().getTranslated(6, 4),
-              ellie.getShortStr(), c);
-          DrawingBufferRoutines.rotatedEllipse(primBuf, ellie.getRotatedEllipse(), c, 4.5);
+          if (ellie.getCert() == Certainty.Yes) {
+            Color c = ellie.getCert() == Certainty.Yes ? Color.MAGENTA : Color.LIGHT_GRAY;
+            //            DrawingBufferRoutines.text(primBuf, ellie.getStartPt().getTranslated(6, 4), ellie
+            //                .getShortStr(), c);
+            DrawingBufferRoutines.rotatedEllipse(primBuf, ellie.getRotatedEllipse(), c, 2.8);
+          }
         }
 
         // Lines
         Set<LineSegment> lsegs = s.getLineSegments();
         for (LineSegment seg : lsegs) {
-          bug("Line Segment!");
-          Color c = seg.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
-          DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4),
-              seg.getShortStr(), c);
-          DrawingBufferRoutines.line(primBuf, seg.getStartPt(), seg.getEndPt(), c, 4.5);
+          if (seg.getCert() == Certainty.Yes) {
+            Color c = seg.getCert() == Certainty.Yes ? Color.BLUE : Color.LIGHT_GRAY;
+            //            DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4), seg
+            //                .getShortStr(), c);
+            DrawingBufferRoutines.line(primBuf, seg.getStartPt(), seg.getEndPt(), c, 2.8);
+          }
         }
 
         // Arcs
         Set<ArcSegment> asegs = s.getArcSegments();
         for (ArcSegment seg : asegs) {
-          bug("Arc Segment!");
-          Color c = seg.getCert() == Certainty.Yes ? Color.blue : Color.LIGHT_GRAY;
-          DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4),
-              seg.getShortStr(), c);
-          DrawingBufferRoutines.arc(primBuf, seg.getCircleArc(), c, 4.0);
+          if (seg.getCert() == Certainty.Yes) {
+            Color c = seg.getCert() == Certainty.Yes ? Color.CYAN : Color.LIGHT_GRAY;
+            //            DrawingBufferRoutines.text(primBuf, seg.getMidPt().getTranslated(6, 4), seg
+            //                .getShortStr(), c);
+            DrawingBufferRoutines.arc(primBuf, seg.getCircleArc(), c, 2.8);
+          }
         }
 
         // Elliptical Segments
         Set<EllipseSegment> esegs = s.getEllipseSegments();
         for (EllipseSegment ellieseg : esegs) {
-          Color c = Color.blue;
-          DrawingBufferRoutines.text(primBuf, ellieseg.getMidPt().getTranslated(6, 4),
-              ellieseg.getShortStr(), c);
-//          List<Pt> abc = ellieseg.getEllipse().getRegionPoints();
-//
-//          DrawingBufferRoutines.dot(primBuf, abc.get(0), 4.0, 1.0, Color.BLACK, Color.GREEN);
-//          DrawingBufferRoutines.dot(primBuf, abc.get(1), 4.0, 1.0, Color.BLACK, Color.BLUE);
-//          DrawingBufferRoutines.dot(primBuf, abc.get(2), 4.0, 1.0, Color.BLACK, Color.RED);
-
-          DrawingBufferRoutines.drawShape(primBuf,
-              new ShapeFactory.RotatedEllipseShape(ellieseg.getEllipse(), 200), c, 4);
+          if (ellieseg.getCert() == Certainty.Yes) {
+            Color c = Color.GREEN;
+//            DrawingBufferRoutines.text(primBuf, ellieseg.getMidPt().getTranslated(6, 4), ellieseg
+//                .getShortStr(), c);
+            DrawingBufferRoutines.drawShape(primBuf, new ShapeFactory.RotatedEllipseShape(ellieseg
+                .getEllipse(), 200), c, 4);
+          } else {
+            bug("It's an elliptical segment but the certainty level is : " + ellieseg.getCert());
+          }
         }
       }
     }

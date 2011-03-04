@@ -92,7 +92,8 @@ public class Analyzer {
         new LineSegment(seg.seq, seg.start, seg.end, seg.lineCertainty);
       }
       if (seg.lineCertainty != Certainty.Yes){
-        new EllipseSegment(seg.seq, seg.start, seg.end, Certainty.Maybe); // TODO: change this from Maybe
+        bug("It's not a line, mayeb it is an elliptical segment.");
+        new EllipseSegment(seg.seq, seg.start, seg.end, Certainty.Yes); // TODO: change this from Maybe
       }
     }
 
