@@ -27,15 +27,7 @@ import javax.swing.KeyStroke;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.six11.skruifab.analysis.Analyzer;
-import org.six11.skruifab.analysis.ArcSegment;
-import org.six11.skruifab.analysis.Certainty;
-import org.six11.skruifab.analysis.Dot;
-import org.six11.skruifab.analysis.Ellipse;
-import org.six11.skruifab.analysis.EllipseSegment;
-import org.six11.skruifab.analysis.LineSegment;
-import org.six11.skruifab.analysis.MergeCF;
-import org.six11.skruifab.analysis.Stroke;
+import org.six11.skruifab.analysis.*;
 import org.six11.skruifab.gui.GraphicMessage;
 import org.six11.skruifab.gui.PenButton;
 import org.six11.util.Debug;
@@ -390,6 +382,9 @@ public class Main {
             DrawingBufferRoutines.dot(primBuf, dot.getCentroid(), 4, 1, Color.BLACK, c);
           }
         }
+        if (dots.size() > 0) {
+          continue;
+        }
 
         // Ellipses
         Set<Ellipse> ellipses = s.getEllipses();
@@ -400,6 +395,10 @@ public class Main {
             //                .getShortStr(), c);
             DrawingBufferRoutines.rotatedEllipse(primBuf, ellie.getRotatedEllipse(), c, 2.8);
           }
+        }
+        
+        if (ellipses.size() > 0) {
+          continue;
         }
 
         // Lines
