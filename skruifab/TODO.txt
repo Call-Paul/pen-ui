@@ -1,0 +1,21 @@
+- Improve segmentation 
+
+  * Change the modified MergeCF to use elliptical arcs rather than
+    circular arcs to measure error.
+
+  * measure error by distance to linear sub-segmentation of elliptical
+    arc. Finding the true distance is hard, as it involves numeric
+    root finding.
+
+- Draw rectified bounds without artifacts. This means if there is an
+  elliptical arc adjacent to a line (or anything, really) that they
+  terminate at the same point.
+
+- Fix merge bug near end points (the hook problem)
+
+- Be able to replace ink with rectified segment (and reverse).
+
+- Detect closed loops
+
+  * Bonus points to apply delaunay triangulator to closed area and
+    shade it so it is clear where the part boundaries are.
