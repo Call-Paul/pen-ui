@@ -20,6 +20,7 @@ public class Segment implements Comparable<Segment> {
   public Stroke seq;
 
   public Segment(int start, int end, Stroke seq) {
+    this.type = Type.Unknown;
     this.start = start;
     this.end = end;
     this.lineCertainty = Certainty.Unknown;
@@ -49,27 +50,28 @@ public class Segment implements Comparable<Segment> {
     return seq.get(end);
   }
 
-  private Type getLikelyType() {
-    Type ret = null;
-    boolean probablyLine = isProbablyLine();
-    if (probablyLine) {
-      ret = Type.Line;
-    } else {
-      double le = getLineError();
-      double ae = getArcError();
-      if (le < ae) {
-        ret = Type.Line;
+  public Type getLikelyType() {
+    if (type == Type.Unknown) {
+      boolean probablyLine = isProbablyLine();
+      if (probablyLine) {
+        type = Type.Line;
       } else {
-        ret = Type.Arc;
+        double le = getLineError();
+        double ae = getArcError();
+        if (le < ae) {
+          type = Type.Line;
+        } else {
+          type = Type.Arc;
+        }
       }
     }
-    return ret;
+    return type;
   }
 
   public boolean isProbablyLine() {
     double euclideanDistance = getLineLength();
     double curvilinearDistance = getPathLength();
-    return (euclideanDistance / curvilinearDistance) > 0.90;
+    return (euclideanDistance / curvilinearDistance) > MergeCF.LINE_WOBBLE_THRESHOLD;
   }
 
   public double getArcLength() {
@@ -109,7 +111,7 @@ public class Segment implements Comparable<Segment> {
     }
     return ret;
   }
-  
+
   public double getArcError() {
     if (bestCircle != null && bestCircle.isValid()) {
       return getArcErrorSum() / getNumPoints();
@@ -160,7 +162,7 @@ public class Segment implements Comparable<Segment> {
   public double getPathLength() {
     return seq.getPathLength(start, end);
   }
-  
+
   public final static Comparator<Segment> orderByLength = new Comparator<Segment>() {
     public int compare(Segment s1, Segment s2) {
       int ret = 0;

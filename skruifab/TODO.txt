@@ -1,12 +1,3 @@
-- Improve segmentation 
-
-  * Change the modified MergeCF to use elliptical arcs rather than
-    circular arcs to measure error.
-
-  * measure error by distance to linear sub-segmentation of elliptical
-    arc. Finding the true distance is hard, as it involves numeric
-    root finding.
-
 - Draw rectified bounds without artifacts. This means if there is an
   elliptical arc adjacent to a line (or anything, really) that they
   terminate at the same point.

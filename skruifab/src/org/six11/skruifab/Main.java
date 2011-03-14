@@ -325,7 +325,7 @@ public class Main {
     interpretCorners(); // identifies corners and calculates speed and curvature of each point
     interpretPrimitives(); // finds dots, lines, circles, and other primitive shapes.
   }
-
+  
   private void interpretPrimitives() {
     
 //    final DrawingBuffer primBuf = drawnStuff.getNamedBuffer(debuggingBufferKeyBinds.get("primitives")
@@ -371,6 +371,12 @@ public class Main {
 //        classToColor.put(ArcSegment.class, Color.CYAN);
 //        classToColor.put(EllipseSegment.class, Color.GREEN);
 
+        Set<Primitive> allPrims = s.getPrimitives();
+        bug("Primitives for stroke " + s.getId());
+        for (Primitive p : allPrims) {
+          bug("  " + p.getStartIdx() + " -- " + p.getEndIdx() + ": " + p.getShortStr());
+        }
+        
         //
         // Dots
         Set<Dot> dots = s.getDots();

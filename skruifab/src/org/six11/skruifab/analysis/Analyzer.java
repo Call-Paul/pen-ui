@@ -1,5 +1,6 @@
 package org.six11.skruifab.analysis;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -77,7 +78,7 @@ public class Analyzer {
     if (!seq.hasAttribute(MergeCF.CORNERS_FOUND)) {
       MergeCF.analyze(seq);
     }
-    Set<Segment> segs = seq.getSegments();
+    List<Segment> segs = seq.getSegments();
     // Establish line certainties for each segment.
     for (Segment seg : segs) {
       double lineLenDivCurviLen = seg.getPathLength() / seg.getLineLength();

@@ -3,7 +3,10 @@ package org.six11.skruifab.analysis;
 import java.util.*;
 
 import org.six11.util.Debug;
+import static org.six11.util.Debug.num;
 import org.six11.util.data.Statistics;
+import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 
 /**
@@ -27,11 +30,12 @@ public class MergeCF {
   public final static String SEGMENTS = "segments";
   public final static String CORNER_INDICES = "corner indices";
   public final static String CORNERS = "corners";
-  
+
+  public final static double LINE_WOBBLE_THRESHOLD = 0.90;
   public final static double DUPLICATE_THRESHOLD = 15;
 
-  public static Set<Segment> analyze(Stroke seq) {
-    Set<Segment> segments = new HashSet<Segment>();
+  public static List<Segment> analyze(Stroke seq) {
+    List<Segment> segments = new ArrayList<Segment>();
     List<Integer> corners = getCorners(seq);
     for (int i = 0; i < corners.size() - 1; i++) {
       Segment s = new Segment(corners.get(i), corners.get(i + 1), seq);
@@ -91,6 +95,8 @@ public class MergeCF {
       // perform the MergeCM al gore rythym
       merge(candidates, seq, 1);
 
+      fixSegments(seq);
+
       // Explain to the world which points are the corners.
       for (int idx : candidates) {
         seq.get(idx).setBoolean(CORNER, true);
@@ -98,6 +104,24 @@ public class MergeCF {
       ret.addAll(candidates);
     }
     return ret;
+  }
+
+  private static void fixSegments(Stroke seq) {
+    SortedSet<Segment> inTimeOrder = (SortedSet<Segment>) seq.getAttribute("segmentation");
+    List<Segment> segs = new ArrayList<Segment>();
+    segs.addAll(inTimeOrder);
+    for (int i = 0; i < segs.size() - 1; i++) {
+      Segment a = segs.get(i);
+      Segment b = segs.get(i + 1);
+      if (a.getLikelyType() == Type.Line && b.getLikelyType() == Type.Line) {
+        // form lines that begin at segment junction so angle is consistent.
+        Line lineA = new Line(seq.get(a.end), seq.get(a.start));
+        Line lineB = new Line(seq.get(b.start), seq.get(b.end));
+        double theta = Math.abs(Functions.getAngleBetween(lineA, lineB));
+        bug("Angle between adjacent line segments " + i + " and " + (i + 1) + ": "
+            + num(Math.toDegrees(theta)));
+      }
+    }
   }
 
   private static SortedSet<Integer> removeDupes(Collection<Integer> in, Stroke origin) {
@@ -160,6 +184,7 @@ public class MergeCF {
           double errorNext = nextSeg == null ? 0.0 : nextSeg.getError();
           double errorLeft = prevSeg == null ? Double.POSITIVE_INFINITY : leftSeg.getError();
           double errorRight = nextSeg == null ? Double.POSITIVE_INFINITY : rightSeg.getError();
+
           if (errorLeft < errorRight
               && (leftSeg.isProbablyLine() || errorLeft < (1.5 * errorPrev) + errorThis)) {
             candidates.remove(thisSeg.start);

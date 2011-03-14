@@ -158,8 +158,8 @@ public class Stroke extends Sequence implements DrawnThing {
     return (List<Pt>) getAttribute(MergeCF.CORNERS);
   }
   
-  public Set<Segment> getSegments() {
-    return (Set<Segment>) getAttribute(MergeCF.SEGMENTS);
+  public List<Segment> getSegments() {
+    return (List<Segment>) getAttribute(MergeCF.SEGMENTS);
   }
   
   public Set<LineSegment> getLineSegments() {
