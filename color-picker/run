@@ -24,11 +24,6 @@ addjars () {
 addjars lib
 cpmunge build/classes
 
-if [ $# == 1 ] ; then
-    prog=$1
-    shift
-else
-    prog=org.six11.color-picker.Main
-fi
+prog=org.six11.colorpicker.Main
 
 java -classpath $CP $prog $@
