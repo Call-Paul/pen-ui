@@ -4,7 +4,9 @@
 
 * Replace GenJar with ProGuard
 
-* Make Splash Screen utility class that shows version and date
+* Make Splash Screen utility class that shows 
+  - version (use svnversion with a bash/ant script or something)
+  - today's date
 
 * Make basic UI structure with 
   - sketch pane
