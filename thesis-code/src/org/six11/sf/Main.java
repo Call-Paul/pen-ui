@@ -1,10 +1,10 @@
-package org.six11.zzzz;
+package org.six11.sf;
 
 /**
  * 
  **/
 public class Main {
   public static void main(String[] args) {
-
+    
   }
 }
