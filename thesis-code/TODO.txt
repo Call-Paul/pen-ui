@@ -1,0 +1,124 @@
++------------------------------------------------------------------------+
+|			   SHORT TERM TODO				 |
++------------------------------------------------------------------------+
+
+* Replace GenJar with ProGuard
+
+* Make Splash Screen utility class that shows version and date
+
+* Make basic UI structure with 
+  - sketch pane
+  - scrap grid pane
+  - cutfile pane
+  - today's date in the application frame (for documentation purposes)
+
+* Make bezel surrounding sketch area
+
+* Have lines in the grid, responsive to mouseover
+
+* Think about general event structure for...
+  - goal crossing
+  - pen activity (mostly have this already)
+
+
+
+
++------------------------------------------------------------------------+
+|			   LONG TERM GOALS				 |
++------------------------------------------------------------------------+
+
+* Application supports three main activities:
+
+  1) Thinking about what to make---supports free sketching anywhere on
+  canvas without recognition getting in the way
+
+  2) Specifying details---supports free sketching intended to be
+  recognized periodically at user request
+
+  3) Creating a cutfile---adding detailed stencils to a parts list
+  that is automatically layed out on material whose dimensions are
+  user-defined
+
+* Interface has three main areas
+
+  1) Drawing canvas with a bezel that gives context-specific functions
+  (e.g. panning)
+
+  2) Scrap grid that lets users place sketch fragments. Scraps are for:
+     
+     - Bookmarks to easily find and return to prior sketches
+     - For copying existing fragments onto drawing canvas
+     - For activating a fragment to edit its details
+     - For copying fragments (that include stencils) into the cutfile region
+
+  3) Cutfile region to define material size and add stencils. Used to
+  generate models ready to laser-cut.
+
+* Canvas, in 'thinking mode'
+
+  - Draw anywhere in 'pencil'.
+  - Uses a single, infinite-page metaphor
+  - Navigate canvas by either
+    + using the bezel to pan around (drag gesture)
+    + using scrap grid to navigate to earlier sketches
+  - Can circle a region, which is recognized but no active action is taken
+
+* Scrap grid
+
+  - See earlier sketches placed in grid
+  - When user circles something in thinking mode canvas, grid lights up
+  - Tap empty space in grid to add an encircled sketch fragment
+  - Adding fragment causes circle to go away
+  - Tap grid cell with fragment to zoom to its location and highlight it
+  - Drag fragment onto drawing canvas to copy contents to new location
+  - Double-tap fragment to enter 'specification mode'
+
+* Canvas, in 'specification mode' --- mostly covered in the earlier video
+
+  - visually distinct from 'thinking mode' (e.g. border color or grid lines)
+  - shows pencil marks in light color, recognized elements in dark
+  - Recognition on demand (via gesture, onscreen button, offhand button)
+  - I assume offhand button is best
+  - Input recognized as one of:
+    + Unrecognizable
+    + Stencil lines (== laser cut path)
+    + Text (== parameter names or dimension values)
+    + Guides (reference points, guide lines)
+    + Selections (overtracing or flow-selecting)
+    + Camera gesture (double-circle to zoom in/out)
+  - Selections used as recognition hints, useful for making isomorphic items
+  - Bezel lets users turn up/down pencil mark opacity
+  - Can add fragments (pencil or structured) by dragging from scrap grid
+
+* Cutfile region
+
+  - Drag structured fragments here to indicate atomic parts for cutting
+  - System will automatically arrange them
+  - User can see cutfile contents by dragging outward from cutfile region
+  - User can edit the material dimensions in a bezel widget
+  - User can create a final PDF or whatever using bezel widget
+
+
+Some things that are still murky
+
+1) Unclear how the user will see rough sketches at same time as making
+   specification drawing. This would be useful. Maybe on a large
+   screen this problem goes away.
+
+2) Would like to be able to have multiple cut files, possibly in a
+   sort of gallery or album metaphor within the cutfile widget. I
+   often have a series of related cutfiles that I'm working on and
+   need to edit them separately (e.g. picture frame stencils in one,
+   and stencils for a frame stand in another)
+
+3) Not sure how fluid it is transitioning between thinking and
+   specification modes. Can they co-exist on the same canvas but just
+   in different regions?
+
+4) Unsure how to present recognition results when they are ambiguous,
+   or how to choose among them, or how to recover from recognition
+   error.  
+
+   --> I had a really nice redo/undo widget in my SkruiDraw app that
+       might be useful for recovering from both recognition errors and
+       botched sketch marks.
