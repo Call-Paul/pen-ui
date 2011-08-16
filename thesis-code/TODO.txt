@@ -1,12 +1,18 @@
 +------------------------------------------------------------------------+
+|				NOTES                                    |
++------------------------------------------------------------------------+
+
+Constraint solver is in org.six11.util.spud
+
+Junction finding code is in org.six11.util.tmp2 (I moved it out of the
+six11utils codebase though since they are mostly just experiments. The
+code is in ~/Projects/junction-finders on my laptop now)
+
++------------------------------------------------------------------------+
 |			   SHORT TERM TODO				 |
 +------------------------------------------------------------------------+
 
 * Replace GenJar with ProGuard
-
-* Make Splash Screen utility class that shows 
-  - version (use svnversion with a bash/ant script or something)
-  - today's date
 
 * Make basic UI structure with 
   - sketch pane

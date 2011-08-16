@@ -20,6 +20,7 @@
   </path>
 
   <taskdef classpathref="compile.classpath" resource="genjar.properties" />
+  <taskdef classpathref="compile.classpath" resource="proguard/ant/task.properties" />
 
   <!-- ==================== All Target ====================================== -->
 
@@ -50,18 +51,51 @@
   <target name="jar"
 	  depends="compile">
     <echo message="Using directory: ${compile.output.dir}" />
-    <genjar jarfile="${jar.output}">
-      <class name="org.six11.sf.Main"/>
-      <classpath>
-	<fileset dir="lib">
-	  <include name="*.jar" />
-	</fileset>
-	<pathelement path="${compile.output.dir}" />
-      </classpath>
+    <!--
+	<genjar jarfile="${jar.output}">
+	  <class name="org.six11.sf.Main"/>
+	  <classpath>
+	    <fileset dir="lib">
+	      <include name="*.jar" />
+	    </fileset>
+	    <pathelement path="${compile.output.dir}" />
+	  </classpath>
+	  <manifest>
+	    <attribute name="Main-Class" value="org/six11/sf/Main" />
+	  </manifest>
+	</genjar>  
+	-->
+    <jar destfile="${build.dir}/${shortName}-fat.jar">
+      <fileset dir="${compile.output.dir}" />
       <manifest>
-	<attribute name="Main-Class" value="org/six11/sf/Main" />
+	<attribute name="Main-Class" value="${prog}" />
       </manifest>
-    </genjar>  
+    </jar>
+
+    <proguard>
+      -libraryjars ${java.home}/lib/rt.jar
+      -libraryjars lib/junit-4.1.jar
+      -injars      lib/Jama-1.0.2.jar(!META-INF/MANIFEST.MF)
+      -injars      lib/jdom.jar(!META-INF/MANIFEST.MF)
+      -injars      lib/six11utils.jar(!META-INF/MANIFEST.MF)
+      -injars      lib/iText-2.1.4.jar(!META-INF/MANIFEST.MF)
+      -injars      build/${shortName}-fat.jar <!-- my code. keep the manifest -->
+      -outjars     build/${shortName}.jar
+<!--      -skipnonpubliclibraryclasses -->
+      -dontoptimize
+      -dontobfuscate
+      -dontpreverify
+      -dontwarn com.lowagie.**
+      -dontwarn org.jdom.**
+      -dontwarn java.**
+      -dontwarn javax.**
+      -dontnote com.lowagie.**
+      -dontnote org.jdom.**
+      
+      -keep public class org.six11.sf.Main {
+        public static void main(java.lang.String[]);
+      }
+    </proguard>
   </target>
 
 
