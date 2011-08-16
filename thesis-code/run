@@ -28,7 +28,7 @@ if [ $# == 1 ] ; then
     prog=$1
     shift
 else
-    prog=org.six11.zzzz.Main
+    prog=org.six11.sf.Main
 fi
 
 java -classpath $CP $prog $@
