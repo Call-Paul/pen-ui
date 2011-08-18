@@ -31,11 +31,10 @@ public class SkruiFabEditor implements PenListener {
     layers = new DrawingBufferLayers();
     layers.addPenListener(this);
 
-    JPanel grid = new JPanel();
-    grid.setBackground(Color.BLUE);
-    JPanel cutfile = new JPanel();
-    cutfile.setBackground(Color.RED);
-    cutfile.setPreferredSize(new Dimension(300, 200));
+    ScrapGrid grid = new ScrapGrid();
+    
+    CutfilePane cutfile = new CutfilePane();
+
     FrontEnd fe = new FrontEnd();
     fe.add(layers, "layers");
     fe.add(grid, "grid");

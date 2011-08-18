@@ -12,11 +12,7 @@ code is in ~/Projects/junction-finders on my laptop now)
 |			   SHORT TERM TODO				 |
 +------------------------------------------------------------------------+
 
-* Port Projects/junction-finders/tmp2/DrawingBufferLayers to thesis
-  code. That's the UI component that handles pen input and drawing.
-
 * Make basic UI structure with 
-  - sketch pane
   - scrap grid pane
   - cutfile pane
 

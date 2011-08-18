@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.six11.util.Debug;
+import org.six11.util.args.Arguments;
 import org.six11.util.gui.ApplicationFrame;
 
 /**
@@ -25,7 +27,11 @@ public class Main {
   /**
    * Creates a new SkruiFab application and shows a single editor window.
    */
-  public static void main(String[] args) {
+  public static void main(String[] in) {
+    Arguments args = new Arguments(in);
+    if (args.hasFlag("no-debug-color")) {
+      Debug.useColor = false;
+    }
     new Main().go();
   }
   
