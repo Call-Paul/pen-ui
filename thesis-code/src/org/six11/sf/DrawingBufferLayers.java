@@ -63,6 +63,8 @@ public class DrawingBufferLayers extends JComponent {
         prev = new Pt(ev);
         currentScribble = new GeneralPath();
         currentScribble.moveTo(prev.getX(), prev.getY());
+        PenEvent pev = PenEvent.buildDownEvent(this, prev);
+        fire(pev);
         repaint();
       }
 
@@ -86,7 +88,7 @@ public class DrawingBufferLayers extends JComponent {
     addMouseMotionListener(mt);
     penListeners = new ArrayList<PenListener>();
   }
-  
+
   public void clearScribble() {
     currentScribble = null;
   }
@@ -114,10 +116,6 @@ public class DrawingBufferLayers extends JComponent {
       } else if (buffer.isVisible()) {
         buffer.drawToGraphics(g);
       }
-//      if (buffer.hasHumanReadableName()) {
-//        bug(buffer.getHumanReadableName() + ": "
-//            + (buffer.isVisible() ? "visible" : "not visible **"));
-//      }
     }
     if (currentScribble != null) {
       g.setColor(DEFAULT_COLOR);
@@ -147,6 +145,12 @@ public class DrawingBufferLayers extends JComponent {
     }
   }
 
+  /**
+   * Make a new layer with a specific key (e.g. "dots"), a human-readable name (e.g.
+   * "segment junctions"), a z-depth, and a default visibility setting. Layers with lower z-values
+   * are painted first. This means the 'top' layer has the largest z-value. When two layers have the
+   * same z-value, it is undefined which order they will be painted in.
+   */
   public DrawingBuffer createLayer(String key, String humanName, int z, boolean visible) {
     DrawingBuffer db = new DrawingBuffer();
     db.setHumanReadableName(humanName);
@@ -175,8 +179,10 @@ public class DrawingBufferLayers extends JComponent {
     return ret;
   }
 
+  /**
+   * Non-interactively make a PDF of the whole sketch canvas. The filename is based on today's date.
+   */
   public void print() {
-    // 1. Find a file to open. This is non-interactive. It makes a filename based on the date.
     File file = null;
     int fileCounter = 0;
     Date now = new Date();
@@ -190,7 +196,13 @@ public class DrawingBufferLayers extends JComponent {
       file = new File(parentDir, today + "-" + fileCounter + ".pdf");
       fileCounter++;
     }
-
+    print(file); // defer to other print function.
+  }
+  
+  /**
+   * Print the whole sketch canvas to the given file.
+   */
+  public void print(File file) {
     // 2. Draw the layers to the pdf graphics context.
     BoundingBox bb = getBoundingBox();
     int w = bb.getWidthInt();

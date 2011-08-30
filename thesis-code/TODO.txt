@@ -24,7 +24,27 @@ code is in ~/Projects/junction-finders on my laptop now)
   - goal crossing
   - pen activity (mostly have this already)
 
++------------------------------------------------------------------------+
+|		       HARD OR UNCLEAR PROBLEMS				 |
++------------------------------------------------------------------------+
 
+* Zooming: Need to be able to have an infinite drawing surface that is
+  shown on a finite screen. User will be able to scroll around and
+  zoom in/out. Conceivable many objects are offscreen, so I need to be
+  smart about how I render this. Maybe: each graphic element has a
+  pre-computed bounding box, and I can just query a data structure for
+  all the graphic elements whose bounding boxes intersect with the
+  screen.
+
+* Undo: Is this even a thing I need to support?
+
+* Rendering: How much do I cache? And when I am rendering, how should
+  I deal with the problem of placing an image at a non-integer
+  coordinate? This comes up especially when zooming.
+
+* Constraint solving: I have the spud classes, but this is still
+  basically untested and fragile. If I can't get that to work I'm not
+  sure what I will do.
 
 
 +------------------------------------------------------------------------+

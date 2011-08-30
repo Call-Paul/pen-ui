@@ -1,11 +1,5 @@
 package org.six11.sf;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-
-import javax.swing.JPanel;
-
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.pen.PenEvent;
@@ -55,7 +49,36 @@ public class SkruiFabEditor implements PenListener {
   }
 
   public void handlePenEvent(PenEvent ev) {
-    bug("method not implemented yet!");
+    // see docs/ink-processing-highlevel.pdf for a diagram of this
+    switch(ev.getType()) {
+      case Down: handleDown(ev); break;
+      case Drag: handleDrag(ev); break;
+      case Flow: handleFlow(ev); break;
+      case Tap: handleTap(ev); break;
+      case Idle: handleIdle(ev); break;
+      default: bug("Unknown pen event type received: " + ev.getType());
+    }
   }
+
+  private void handleDown(PenEvent ev) {
+    
+  }
+
+  private void handleDrag(PenEvent ev) {
+    
+  }
+
+  private void handleFlow(PenEvent ev) {
+    
+  }
+
+  private void handleTap(PenEvent ev) {
+    
+  }
+
+  private void handleIdle(PenEvent ev) {
+    
+  }
+
 
 }
