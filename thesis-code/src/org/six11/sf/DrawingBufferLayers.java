@@ -48,10 +48,12 @@ public class DrawingBufferLayers extends JComponent {
   private double borderPad = 3.0;
   private PriorityQueue<DrawingBuffer> layers;
   private Map<String, DrawingBuffer> layersByName;
+  SketchBook model;
 
   GeneralPath currentScribble;
 
-  public DrawingBufferLayers() {
+  public DrawingBufferLayers(SketchBook model) {
+    this.model = model;
     layers = new PriorityQueue<DrawingBuffer>(10, DrawingBuffer.sortByLayer);
     layersByName = new HashMap<String, DrawingBuffer>();
     MouseThing mt = new MouseThing() {
@@ -198,7 +200,7 @@ public class DrawingBufferLayers extends JComponent {
     }
     print(file); // defer to other print function.
   }
-  
+
   /**
    * Print the whole sketch canvas to the given file.
    */
