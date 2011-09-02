@@ -21,15 +21,21 @@ public class SkruiFabEditor implements PenListener {
   Main main;
   DrawingBufferLayers layers;
   SketchBook model;
+  CornerFinder cornerFinder;
+  GraphicDebug guibug;
 
   public SkruiFabEditor(Main m) {
     this.main = m;
     ApplicationFrame af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString")
         + " at " + m.varStr("timeString") + ")");
     af.setSize(600, 400);
+    
+    
     model = new SketchBook();
     layers = new DrawingBufferLayers(model);
     layers.addPenListener(this);
+    guibug = new GraphicDebug(layers);
+    cornerFinder = new CornerFinder(guibug);
     model.setLayers(layers);
 
     ScrapGrid grid = new ScrapGrid();
@@ -95,7 +101,7 @@ public class SkruiFabEditor implements PenListener {
 
   private void handleIdle(PenEvent ev) {
     Sequence seq = model.endScribble(ev.getPt());
-    
+    cornerFinder.findCorners(seq);
   }
 
 }
