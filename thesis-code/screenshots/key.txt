@@ -1,0 +1,13 @@
+001: first running instance with drawing pane and two placeholders for
+     grid and cutfile
+
+002: grid and cutfile objects installed
+
+003: drawing area shows multiple strokes and multiple layers
+
+004: strokes analyzed and the segment types drawn in different colors
+
+005: encircle gestures can be found and drawn (note arbitrary shapes:
+     doesn't need to be convex hull)
+
+006: 

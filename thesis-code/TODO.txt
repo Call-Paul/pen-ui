@@ -1,3 +1,20 @@
+Critical path:
+
+(1) Draw stuff [done]
+
+(2) Analyze input, find corners and identify segment types (line,
+ellipse, other curve) [done]
+
+(3) Identify and act on latching opportunities---forms stencils
+
+(4) Identify and act on encircle gestures
+
+(5) Identify and act on drag-to-grid gestures
+
+(6) Allow stencils to be placed in cutfile pane
+
+(7) Generate cutfile from stencils in cutfile pane
+
 +------------------------------------------------------------------------+
 |				NOTES                                    |
 +------------------------------------------------------------------------+
@@ -12,13 +29,7 @@ code is in ~/Projects/junction-finders on my laptop now)
 |			   SHORT TERM TODO				 |
 +------------------------------------------------------------------------+
 
-* Make basic UI structure with 
-  - scrap grid pane
-  - cutfile pane
-
 * Make bezel surrounding sketch area
-
-* Have lines in the grid, responsive to mouseover
 
 * Think about general event structure for...
   - goal crossing

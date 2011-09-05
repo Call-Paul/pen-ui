@@ -93,6 +93,7 @@ public class DrawingBufferLayers extends JComponent {
 
   public void clearScribble() {
     currentScribble = null;
+    repaint();
   }
 
   public void addPenListener(PenListener pl) {

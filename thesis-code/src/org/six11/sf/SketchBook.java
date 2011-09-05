@@ -39,7 +39,7 @@ public class SketchBook {
   }
 
   public Sequence endScribble(Pt pt) {
-    DrawingBuffer buf = layers.getLayer(SkruiFabEditor.UNSTRUCTURED_INK);
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
     bug("Finished scribble " + scribbles.size() + " with " + scrib.size() + " points");
     DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,

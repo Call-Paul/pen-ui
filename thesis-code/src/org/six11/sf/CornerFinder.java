@@ -23,13 +23,7 @@ public class CornerFinder {
   public static final double lineErrorThreshold = 1.5;
   public static final double ellipseErrorThreshold = 0.5; // TODO: change
   
-  // these are the keyboard-activated layers, mostly for debugging.
-  public static final String DB_RECENT_INK = "1";
-  public static final String DB_JUNCTION_LAYER = "2";
-  public static final String DB_DOT_LAYER = "3";
-  public static final String DB_SEGMENT_LAYER = "4";
-  public static final String DB_LATCH_LAYER = "5";
-  public static final String DB_COMPLETE_LAYER = "6";
+  
   
   private GraphicDebug guibug;
   
@@ -42,7 +36,7 @@ public class CornerFinder {
     isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     guibug.drawJunctions(seq);
     makeSegments(seq); // sets the SEGMENTS attrib (list of Segments)
-    // TODO: debugThing.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
+    guibug.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
   }
 
   private void assignCurvature(Sequence seq) {
@@ -148,7 +142,6 @@ public class CornerFinder {
     List<Segment> segments = new ArrayList<Segment>();
     for (int i = 0; i < juncts.size() - 1; i++) {
       segments.add(identifySegment(seq, juncts.get(i), juncts.get(i + 1)));
-      bug("Segment: " + segments.get(segments.size() - 1));
     }
     seq.setAttribute(SEGMENTS, segments);
   }
