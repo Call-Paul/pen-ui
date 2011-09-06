@@ -11,8 +11,14 @@ import static org.six11.util.Debug.bug;
  *
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public interface GestureFinder {
+public abstract class GestureFinder {
 
-  public Gesture findGesture(Sequence seq);
+  SketchBook model;
+  
+  public GestureFinder(SketchBook model) {
+    this.model = model;
+  }
+  
+  public abstract Gesture findGesture(Sequence seq);
 
 }

@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import java.util.List;
+
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import static org.six11.util.Debug.num;
@@ -10,8 +12,14 @@ import static org.six11.util.Debug.bug;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class EncircleGestureFinder implements GestureFinder {
+public class EncircleGestureFinder extends GestureFinder {
 
+  private double MIN_ACCEPTABLE_RATIO = 0.15;
+  
+  public EncircleGestureFinder(SketchBook model) {
+    super(model);
+  }
+  
   public Gesture findGesture(Sequence seq) {
     double len = seq.length();
     int bestIdx = getNearestEncircleDist(seq);
@@ -20,9 +28,11 @@ public class EncircleGestureFinder implements GestureFinder {
     double ratio = terminalDist / len;
     
     double likelihood = 0;
-    if (ratio < 0.15) {
+    if (ratio < MIN_ACCEPTABLE_RATIO) {
+      // see if there's anything in the circle region.
+      List<Pt> circleRegion = seq.getSubSequence(0, bestIdx + 1).getPoints();
       // return with nonzero likelihood
-      likelihood = (0.15 - ratio) / 0.15;
+      likelihood = (MIN_ACCEPTABLE_RATIO - ratio) / MIN_ACCEPTABLE_RATIO;
     }
     bug("Ratio of " + num(terminalDist) + " / " + num(len) + " = " + ratio + ". Likelihood: "
         + num(likelihood));

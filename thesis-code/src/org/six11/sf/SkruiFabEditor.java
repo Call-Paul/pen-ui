@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,8 @@ public class SkruiFabEditor implements PenListener {
 
   Map<String, Action> actions;
 
+  private static String ACTION_GO = "Go";
+
   public SkruiFabEditor(Main m) {
     this.main = m;
     ApplicationFrame af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString")
@@ -50,7 +53,7 @@ public class SkruiFabEditor implements PenListener {
     guibug = new GraphicDebug(layers);
     cornerFinder = new CornerFinder(guibug);
     gestureFinders = new ArrayList<GestureFinder>();
-    gestureFinders.add(new EncircleGestureFinder());
+    gestureFinders.add(new EncircleGestureFinder(model));
     model.setLayers(layers);
 
     ScrapGrid grid = new ScrapGrid();
@@ -91,18 +94,18 @@ public class SkruiFabEditor implements PenListener {
         }
       });
     }
-    //    //
-    //    // 2b. Now give actions for other commands like printing, saving, launching ICBMs, etc
+    //
+    // 2b. Now give actions for other commands like printing, saving, launching ICBMs, etc
     //    actions.put(ACTION_PRINT, new NamedAction("Print", KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
     //      public void activate() {
     //        print();
     //      }
     //    });
-    //    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
-    //      public void activate() {
-    //        go();
-    //      }
-    //    });
+    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
+      public void activate() {
+        go();
+      }
+    });
 
     // 3. For those actions with keyboard accelerators, register them to the root pane.
     for (Action action : actions.values()) {
@@ -110,6 +113,15 @@ public class SkruiFabEditor implements PenListener {
       if (s != null) {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
       }
+    }
+  }
+
+  public void go() {
+    bug("Go!");
+    List<UnstructuredInk> unstruc = model.getUnanalyzedInk();
+    for (UnstructuredInk stroke : unstruc) {
+      Sequence seq = stroke.getSequence();
+      cornerFinder.findCorners(seq);
     }
   }
 
@@ -181,9 +193,10 @@ public class SkruiFabEditor implements PenListener {
       EncircleGesture circ = (EncircleGesture) best;
       List<Pt> points = circ.getPoints();
       guibug.fillShape(points);
+    } else {
+      bug("Not a gesture. Adding that stroke to unstructured ink list.");
+      model.addInk(new UnstructuredInk(seq));
     }
-
-    cornerFinder.findCorners(seq);
     layers.clearScribble();
   }
 
