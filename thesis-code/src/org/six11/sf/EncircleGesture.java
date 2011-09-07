@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,7 @@ import org.six11.util.pen.Sequence;
 public class EncircleGesture extends Gesture {
   
   List<Pt> points;
+  Area area;
 
   /**
    * @param likelihood
@@ -41,4 +43,10 @@ public class EncircleGesture extends Gesture {
     return points;
   }
 
+  public Area getArea() {
+    if (area == null) {
+      area = new Area(new Sequence(points));
+    }
+    return area;
+  }
 }

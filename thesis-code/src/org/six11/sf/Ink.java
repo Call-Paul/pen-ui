@@ -49,4 +49,12 @@ public abstract class Ink {
   public void setAnalyzed(boolean v) {
     analyzed = v;
   }
+
+  /**
+   * Returns a value indicating how much of this ink is in the target region. Returns zero for no
+   * inclusion, one for complete inclusion, and some number in between if the ink is only partially
+   * contained. The exact semantics are type-specific. 
+   */
+  public abstract double getOverlap(Area target);
+
 }

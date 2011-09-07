@@ -1,6 +1,8 @@
 package org.six11.sf;
 
+import java.awt.Color;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +37,8 @@ public class SkruiFabEditor implements PenListener {
   CornerFinder cornerFinder;
   List<GestureFinder> gestureFinders;
   GraphicDebug guibug;
+  
+  Color ghostColor = new Color(0, 255, 0, 128);
 
   Map<String, Action> actions;
 
@@ -166,6 +170,7 @@ public class SkruiFabEditor implements PenListener {
 
   private void handleIdle(PenEvent ev) {
     Sequence seq = model.endScribble(ev.getPt());
+    
     List<Gesture> gestures = new ArrayList<Gesture>(); // collect all gesture analyses here
     for (GestureFinder gestureFinder : gestureFinders) {
       Gesture gesture = gestureFinder.findGesture(seq);
@@ -192,7 +197,9 @@ public class SkruiFabEditor implements PenListener {
       // right now the only gesture is encircle, so obviously this will change...
       EncircleGesture circ = (EncircleGesture) best;
       List<Pt> points = circ.getPoints();
-      guibug.fillShape(points);
+      guibug.ghostlyOutlineShape(points, ghostColor);
+      List<Ink> selected = model.search(circ.getArea());
+      bug("Found " + selected.size() + " ink items in that area.");
     } else {
       bug("Not a gesture. Adding that stroke to unstructured ink list.");
       model.addInk(new UnstructuredInk(seq));

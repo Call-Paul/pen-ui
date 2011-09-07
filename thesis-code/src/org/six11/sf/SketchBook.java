@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,6 +12,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 import org.six11.util.Debug;
 
 public class SketchBook {
@@ -31,7 +33,7 @@ public class SketchBook {
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       UnstructuredInk unstruc = (UnstructuredInk) newInk;
       Sequence scrib = unstruc.getSequence();
-      bug("Finished stroke with " + scrib.size() + " points");
+      bug("Finished stroke with " + scrib.size() + " points. It has a bounding box of: " + num(newInk.getBounds()));
       DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
           DrawingBufferLayers.DEFAULT_THICKNESS);
       layers.repaint();
@@ -76,6 +78,19 @@ public class SketchBook {
     for (Ink stroke : ink) {
       if (stroke.getType() == Type.Unstructured && !stroke.isAnalyzed()) {
         ret.add((UnstructuredInk) stroke);
+      }
+    }
+    return ret;
+  }
+  
+  /**
+   * Returns a list of Ink that is contained (partly or wholly) in the target area.
+   */
+  public List<Ink> search(Area target) {
+    List<Ink> ret = new ArrayList<Ink>();
+    for (Ink eenk : ink) {
+      if (eenk.getOverlap(target) > 0.5) {
+        ret.add(eenk);
       }
     }
     return ret;

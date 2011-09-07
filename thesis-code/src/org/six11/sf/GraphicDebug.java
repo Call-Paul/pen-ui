@@ -73,10 +73,14 @@ public class GraphicDebug {
     layers.repaint();
   }
 
-  public void fillShape(List<Pt> points) {
+  public void fillShape(List<Pt> points, Color color) {
     DrawingBuffer db = layers.getLayer(DB_HIGHLIGHTS);
-    DrawingBufferRoutines.fillShape(db, points, Color.green, 0);
+    DrawingBufferRoutines.fillShape(db, points, color, 0);
     bug("Drew a shape with " + points.size() + " points");
+  }
+
+  public void ghostlyOutlineShape(List<Pt> points, Color ghostColor) {
+    
   }
 
 }
