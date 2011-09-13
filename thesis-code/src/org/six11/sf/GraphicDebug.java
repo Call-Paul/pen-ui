@@ -21,6 +21,7 @@ public class GraphicDebug {
   public static final String DB_LATCH_LAYER = "5";
   public static final String DB_COMPLETE_LAYER = "6";
   public static final String DB_HIGHLIGHTS = "7";
+  public static final String DB_SELECTION = "8";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;
@@ -76,11 +77,10 @@ public class GraphicDebug {
   public void fillShape(List<Pt> points, Color color) {
     DrawingBuffer db = layers.getLayer(DB_HIGHLIGHTS);
     DrawingBufferRoutines.fillShape(db, points, color, 0);
-    bug("Drew a shape with " + points.size() + " points");
   }
 
-  public void ghostlyOutlineShape(List<Pt> points, Color ghostColor) {
-    
+  public void ghostlyOutlineShape(DrawingBuffer db, List<Pt> points, Color ghostColor) {
+    DrawingBufferRoutines.drawShape(db, points, ghostColor, 10);
   }
 
 }

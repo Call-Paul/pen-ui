@@ -34,10 +34,7 @@ public class EncircleGestureFinder extends GestureFinder {
       // return with nonzero likelihood
       likelihood = (MIN_ACCEPTABLE_RATIO - ratio) / MIN_ACCEPTABLE_RATIO;
     }
-    bug("Ratio of " + num(terminalDist) + " / " + num(len) + " = " + ratio + ". Likelihood: "
-        + num(likelihood));
-    EncircleGesture ret = new EncircleGesture(likelihood);
-    ret.setPoints(seq, 0, bestIdx);
+    EncircleGesture ret = new EncircleGesture(seq, likelihood, 0, bestIdx);
     return ret;
   }
 

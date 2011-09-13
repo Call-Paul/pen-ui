@@ -9,19 +9,21 @@ import org.six11.util.pen.Sequence;
 
 /**
  * 
- *
+ * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class EncircleGesture extends Gesture {
-  
+
   List<Pt> points;
   Area area;
 
   /**
    * @param likelihood
    */
-  public EncircleGesture(double likelihood) {
+  public EncircleGesture(Sequence original, double likelihood, int startInclusive, int endInclusive) {
+    super(original);
     p = likelihood;
+    setPoints(original, startInclusive, endInclusive);
   }
 
   public String getHumanName() {
@@ -31,14 +33,15 @@ public class EncircleGesture extends Gesture {
   public double getProbability() {
     return p;
   }
-  
+
   public void setPoints(Sequence seq, int startInclusive, int endInclusive) {
+
     points = new ArrayList<Pt>();
-    for (int i=startInclusive; i <= endInclusive; i++) {
+    for (int i = startInclusive; i <= endInclusive; i++) {
       points.add(seq.get(i));
     }
   }
-  
+
   public List<Pt> getPoints() {
     return points;
   }

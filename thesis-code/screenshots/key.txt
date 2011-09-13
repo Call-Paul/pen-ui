@@ -10,4 +10,7 @@
 005: encircle gestures can be found and drawn (note arbitrary shapes:
      doesn't need to be convex hull)
 
-006: 
+006: encircle selects things
+
+007: making another selection without acting on first causes the first
+     to revert to unstructured ink.
