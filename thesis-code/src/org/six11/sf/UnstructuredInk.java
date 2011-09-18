@@ -68,4 +68,14 @@ public class UnstructuredInk extends Ink {
     return numHits / (double) seq.size();
   }
 
+  public Ink copy() {
+    return new UnstructuredInk(seq.copy());
+  }
+
+  public void move(double dx, double dy) {
+    for (Pt moveMe : seq) {
+      moveMe.setLocation(moveMe.getX() + dx, moveMe.getY() + dy);
+    }
+  }
+
 }

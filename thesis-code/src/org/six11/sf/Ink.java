@@ -57,4 +57,7 @@ public abstract class Ink {
    */
   public abstract double getOverlap(Area target);
 
+  public abstract Ink copy();
+
+  public abstract void move(double dx, double dy);
 }

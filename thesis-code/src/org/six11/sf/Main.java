@@ -44,7 +44,6 @@ public class Main {
     vars.put("dateString", new SimpleDateFormat("MMM dd yyyy").format(varDate("date")));
     vars.put("timeString", new SimpleDateFormat("K:mm a").format(varDate("date")));
     vars.put("editors", new ArrayList<SkruiFabEditor>());
-    
   }
 
   /**

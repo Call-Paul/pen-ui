@@ -22,6 +22,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 import static org.six11.util.layout.FrontEnd.*;
 
 /**
@@ -38,6 +39,7 @@ public class SkruiFabEditor implements PenListener {
   List<GestureFinder> gestureFinders;
   GraphicDebug guibug;
   Map<String, Action> actions;
+  private boolean actOnGesture;
 
   private static String ACTION_GO = "Go";
 
@@ -119,7 +121,6 @@ public class SkruiFabEditor implements PenListener {
   }
 
   public void go() {
-    bug("Go!");
     List<UnstructuredInk> unstruc = model.getUnanalyzedInk();
     for (UnstructuredInk stroke : unstruc) {
       Sequence seq = stroke.getSequence();
@@ -151,11 +152,23 @@ public class SkruiFabEditor implements PenListener {
   }
 
   private void handleDown(PenEvent ev) {
-    model.startScribble(ev.getPt());
+    actOnGesture = model.isPointNearPotentialGesture(ev.getPt());
+    if (actOnGesture) {
+      model.clearGestureTimer();
+      model.gestureStart(ev.getPt());
+      layers.setShowScribble(false);
+    } else {
+      layers.setShowScribble(true);
+      model.startScribble(ev.getPt());
+    }
   }
 
   private void handleDrag(PenEvent ev) {
-    model.addScribble(ev.getPt());
+    if (actOnGesture) {
+      model.gestureProgress(ev.getPt());
+    } else {
+      model.addScribble(ev.getPt());
+    }
   }
 
   private void handleFlow(PenEvent ev) {
@@ -167,36 +180,39 @@ public class SkruiFabEditor implements PenListener {
   }
 
   private void handleIdle(PenEvent ev) {
-    Sequence seq = model.endScribble(ev.getPt());
-    List<Gesture> gestures = new ArrayList<Gesture>(); // collect all gesture analyses here
-    for (GestureFinder gestureFinder : gestureFinders) {
-      Gesture gesture = gestureFinder.findGesture(seq);
-      if (gesture != null) {
-        gestures.add(gesture);
-      } else {
-        bug("Warning: gesture finder " + gestureFinder.getClass() + " returned a null gesture.");
-      }
-    }
-
-    // There might be zero or more gestures detected. In that case, deal with the most likely.
-    Gesture best = null;
-    for (Gesture g : gestures) {
-      if (best != null && best.getProbability() < g.getProbability()) {
-        best = g;
-      }
-      if (best == null) {
-        best = g;
-      }
-    }
-
-    model.revertPotentialGesture();
-    model.clearSelection();
-    if (best != null && best.getProbability() > 0) {
-      model.addPotentialGesture(best);
+    if (actOnGesture) {
+      model.gestureEnd();
     } else {
-      bug("Not a gesture. Adding that stroke to unstructured ink list.");
-      model.addInk(new UnstructuredInk(seq));
+      Sequence seq = model.endScribble(ev.getPt());
+      List<Gesture> gestures = new ArrayList<Gesture>(); // collect all gesture analyses here
+      for (GestureFinder gestureFinder : gestureFinders) {
+        Gesture gesture = gestureFinder.findGesture(seq);
+        if (gesture != null) {
+          gestures.add(gesture);
+        } else {
+          bug("Warning: gesture finder " + gestureFinder.getClass() + " returned a null gesture.");
+        }
+      }
+
+      // There might be zero or more gestures detected. In that case, deal with the most likely.
+      Gesture best = null;
+      for (Gesture g : gestures) {
+        if (best != null && best.getProbability() < g.getProbability()) {
+          best = g;
+        }
+        if (best == null) {
+          best = g;
+        }
+      }
+
+      model.revertPotentialGesture(true);
+      if (best != null && best.getProbability() > 0) {
+        model.addPotentialGesture(best);
+      } else {
+        model.addInk(new UnstructuredInk(seq));
+      }
+      layers.clearScribble();
     }
-    layers.clearScribble();
+    actOnGesture = false;
   }
 }

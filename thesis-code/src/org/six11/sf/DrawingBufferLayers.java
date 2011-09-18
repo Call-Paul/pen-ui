@@ -51,6 +51,7 @@ public class DrawingBufferLayers extends JComponent {
   SketchBook model;
 
   GeneralPath currentScribble;
+  private boolean showScribble;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
@@ -95,6 +96,11 @@ public class DrawingBufferLayers extends JComponent {
     currentScribble = null;
     repaint();
   }
+  
+  public void setShowScribble(boolean v) {
+    showScribble = v;
+    repaint();
+  }
 
   public void addPenListener(PenListener pl) {
     if (!penListeners.contains(pl)) {
@@ -120,7 +126,7 @@ public class DrawingBufferLayers extends JComponent {
         buffer.drawToGraphics(g);
       }
     }
-    if (currentScribble != null) {
+    if (currentScribble != null && showScribble) {
       g.setColor(DEFAULT_COLOR);
       float thick = DEFAULT_THICKNESS;
       g.setStroke(Strokes.get(thick));

@@ -14,3 +14,7 @@
 
 007: making another selection without acting on first causes the first
      to revert to unstructured ink.
+
+008: user has selected some ink and has begun a 'move' gesture
+
+009: the user has set down the selected ink---a copy of the original.

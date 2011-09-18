@@ -22,6 +22,7 @@ public class GraphicDebug {
   public static final String DB_COMPLETE_LAYER = "6";
   public static final String DB_HIGHLIGHTS = "7";
   public static final String DB_SELECTION = "8";
+  public static final String DB_COPY_LAYER = "9";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;
@@ -80,7 +81,7 @@ public class GraphicDebug {
   }
 
   public void ghostlyOutlineShape(DrawingBuffer db, List<Pt> points, Color ghostColor) {
-    DrawingBufferRoutines.drawShape(db, points, ghostColor, 10);
+    DrawingBufferRoutines.drawShape(db, points, ghostColor, SketchBook.GESTURE_AOE_DISTANCE / 2);
   }
 
 }
