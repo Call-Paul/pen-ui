@@ -12,6 +12,7 @@ import javax.swing.JPanel;
  */
 public class CutfilePane extends JPanel {
   public CutfilePane() {
+    setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
     setPreferredSize(new Dimension(300, 200));
   }

@@ -1,6 +1,8 @@
 package org.six11.sf;
 
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Area;
 import java.util.ArrayList;
@@ -12,6 +14,7 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
+import javax.swing.TransferHandler;
 
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
@@ -40,16 +43,19 @@ public class SkruiFabEditor implements PenListener {
   GraphicDebug guibug;
   Map<String, Action> actions;
   private boolean actOnGesture;
-
+  private GlassPane glass;
   private static String ACTION_GO = "Go";
-
+  ApplicationFrame af;
+  
   public SkruiFabEditor(Main m) {
     this.main = m;
-    ApplicationFrame af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString")
+    af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString")
         + " at " + m.varStr("timeString") + ")");
     af.setSize(600, 400);
     createActions(af.getRootPane());
-
+    glass = new GlassPane(this);
+    af.getRootPane().setGlassPane(glass);
+    glass.setVisible(true);
     model = new SketchBook();
     layers = new DrawingBufferLayers(model);
     layers.addPenListener(this);
@@ -82,6 +88,14 @@ public class SkruiFabEditor implements PenListener {
     af.setVisible(true);
   }
 
+  Container getContentPane() {
+    return af.getContentPane();
+  }
+  
+  public SketchBook getModel() {
+    return model;
+  }
+  
   private void createActions(JRootPane rp) {
     // 1. Make action map. 
     actions = new HashMap<String, Action>();
@@ -181,7 +195,9 @@ public class SkruiFabEditor implements PenListener {
 
   private void handleIdle(PenEvent ev) {
     if (actOnGesture) {
-      model.gestureEnd();
+      Component whereEnded = glass.getDragEndComponent();
+      bug("Idle now. ended at: " + whereEnded.getName());
+      model.gestureEnd(whereEnded == layers);
     } else {
       Sequence seq = model.endScribble(ev.getPt());
       List<Gesture> gestures = new ArrayList<Gesture>(); // collect all gesture analyses here

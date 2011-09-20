@@ -3,6 +3,11 @@ package org.six11.sf;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
@@ -20,14 +25,34 @@ import static org.six11.util.Debug.bug;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class ScrapGrid extends JComponent {
+public class ScrapGrid extends JComponent implements MouseMotionListener, MouseListener {
 
   private Color gridColor;
+  private Color hoveredColor;
+  private Color selectedColor;
+
   private int cellSize = 48;
+  private int hoveredCellX = -1;
+  private int hoveredCellY = -1;
+  private float hoveredCellThickness = 1.4f;
+  private int selectedCellX = -1;
+  private int selectedCellY = -1;
+  private float selectedCellThickness = 2.8f;
 
   public ScrapGrid() {
+    setName("ScrapGrid");
     setBackground(Color.WHITE);
     gridColor = new Color(240, 240, 240);
+    hoveredColor = Color.blue.darker();
+    selectedColor = Color.red.darker();
+    addMouseMotionListener(this);
+    addMouseListener(this);
+  }
+
+  Point getCell(MouseEvent ev) {
+    int cellX = ev.getX() / cellSize;
+    int cellY = ev.getY() / cellSize;
+    return new Point(cellX, cellY);
   }
 
   public void paintComponent(Graphics g1) {
@@ -65,6 +90,60 @@ public class ScrapGrid extends JComponent {
     for (int i = cellSize; i < h; i += cellSize) {
       g.draw(new Line2D.Double(0, i, w, i));
     }
+    if (hoveredCellX >= 0 && hoveredCellY >= 0) {
+      paintCellBG(g, hoveredColor, hoveredCellX, hoveredCellY, hoveredCellThickness);
+    }
+    if (selectedCellX >= 0 && selectedCellY >= 0) {
+      paintCellBG(g, selectedColor, selectedCellX, selectedCellY, selectedCellThickness);
+    }
 
   }
+
+  private void paintCellBG(Graphics2D g, Color c, int x, int y, float t) {
+    int drawX = cellSize * x;
+    int drawY = cellSize * y;
+    g.setColor(c);
+    g.setStroke(Strokes.get(t));
+    g.draw(new Rectangle(drawX, drawY, cellSize, cellSize));
+  }
+
+  public void mouseDragged(MouseEvent ev) {
+    Point p = getCell(ev);
+    hoveredCellX = p.x;
+    hoveredCellY = p.y;
+    repaint();
+  }
+
+  public void mouseMoved(MouseEvent ev) {
+    Point p = getCell(ev);
+    hoveredCellX = p.x;
+    hoveredCellY = p.y;
+    repaint();
+  }
+
+  public void mouseClicked(MouseEvent ev) {
+    Point p = getCell(ev);
+    selectedCellX = p.x;
+    selectedCellY = p.y;
+    repaint();
+  }
+
+  public void mouseEntered(MouseEvent ev) {
+
+  }
+
+  public void mouseExited(MouseEvent ev) {
+    hoveredCellX = -1;
+    hoveredCellY = -1;
+    repaint();
+  }
+
+  public void mousePressed(MouseEvent ev) {
+
+  }
+
+  public void mouseReleased(MouseEvent ev) {
+    bug("Possible gesture end.");
+  }
+
 }

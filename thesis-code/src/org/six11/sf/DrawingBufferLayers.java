@@ -55,6 +55,7 @@ public class DrawingBufferLayers extends JComponent {
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
+    setName("DrawingBufferLayers");
     layers = new PriorityQueue<DrawingBuffer>(10, DrawingBuffer.sortByLayer);
     layersByName = new HashMap<String, DrawingBuffer>();
     MouseThing mt = new MouseThing() {
@@ -66,7 +67,7 @@ public class DrawingBufferLayers extends JComponent {
         prev = new Pt(ev);
         currentScribble = new GeneralPath();
         currentScribble.moveTo(prev.getX(), prev.getY());
-        PenEvent pev = PenEvent.buildDownEvent(this, prev);
+        PenEvent pev = PenEvent.buildDownEvent(this, prev, ev);
         fire(pev);
         repaint();
       }
@@ -75,14 +76,14 @@ public class DrawingBufferLayers extends JComponent {
       public void mouseDragged(MouseEvent ev) {
         Pt here = new Pt(ev);
         currentScribble.lineTo(here.getX(), here.getY());
-        PenEvent pev = PenEvent.buildDragEvent(this, here, prev, 0, null);
+        PenEvent pev = PenEvent.buildDragEvent(this, here, prev, 0, null, ev);
         fire(pev);
         repaint();
       }
 
       @Override
       public void mouseReleased(MouseEvent ev) {
-        PenEvent pev = PenEvent.buildIdleEvent(this);
+        PenEvent pev = PenEvent.buildIdleEvent(this, ev);
         fire(pev);
         repaint();
       }

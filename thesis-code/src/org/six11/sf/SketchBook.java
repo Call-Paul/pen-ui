@@ -1,6 +1,7 @@
 package org.six11.sf;
 
 import java.awt.Color;
+import java.awt.dnd.DragSource;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Area;
@@ -10,6 +11,7 @@ import java.util.List;
 
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.TransferHandler;
 
 import org.six11.sf.Ink.Type;
 import org.six11.util.data.Lists;
@@ -186,6 +188,10 @@ public class SketchBook {
     }
   }
 
+  public boolean isGesturing() {
+    return (potentialGesture != null);
+  }
+
   public boolean isPointNearPotentialGesture(Pt pt) {
     boolean ret = false;
     if (potentialGesture != null) {
@@ -220,6 +226,7 @@ public class SketchBook {
               DrawingBufferLayers.DEFAULT_THICKNESS);
           DrawingBufferRoutines.dots(copyLayer, scrib.getPoints(), 2, 0.5, Color.BLACK, Color.RED);
         }
+
       }
     }
   }
@@ -244,24 +251,28 @@ public class SketchBook {
     layers.repaint();
   }
 
-  public void gestureEnd() {
+  public void gestureEnd(boolean endInDrawingLayers) {
     Gesture currentGesture = getPotentialGesture();
     if (currentGesture != null) {
       if (currentGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        // do whatever is necessary to finalize the gesture.
-        if (gestureProgressStart != null && gestureProgressPrev != null) {
-          double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
-          double dy = gestureProgressPrev.getY() - gestureProgressStart.getY();
-          for (Ink k : selectedCopy) {
-            k.move(dx, dy);
-            addInk(k);
+        bug("Gesture end: " + endInDrawingLayers);
+        if (endInDrawingLayers) {
+          EncircleGesture circ = (EncircleGesture) currentGesture;
+          // do whatever is necessary to finalize the gesture.
+          if (gestureProgressStart != null && gestureProgressPrev != null) {
+            double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
+            double dy = gestureProgressPrev.getY() - gestureProgressStart.getY();
+            for (Ink k : selectedCopy) {
+              k.move(dx, dy);
+              addInk(k);
+            }
           }
         }
         DrawingBuffer copyLayer = layers.getLayer(GraphicDebug.DB_COPY_LAYER);
         copyLayer.clear();
         revertPotentialGesture(false);
         clearSelection();
+        layers.repaint();
       }
     }
 
