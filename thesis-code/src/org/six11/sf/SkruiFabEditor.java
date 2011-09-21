@@ -66,9 +66,11 @@ public class SkruiFabEditor implements PenListener {
     gestureFinders.add(new EncircleGestureFinder(model));
     model.setLayers(layers);
 
-    ScrapGrid grid = new ScrapGrid();
+    ScrapGrid grid = new ScrapGrid(model);
     CutfilePane cutfile = new CutfilePane();
-
+    glass.addGestureListener(layers);
+    glass.addGestureListener(grid);
+    glass.addGestureListener(cutfile);
     FrontEnd fe = new FrontEnd();
     fe.add(layers, "layers");
     fe.add(grid, "grid");

@@ -7,6 +7,8 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
@@ -25,21 +27,29 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   Component prevComponent;
   Component dragStartComponent;
   Component dragEndComponent;
-  
+
   boolean dragging = false;
+  private Collection<GestureListener> gestureListeners;
 
   public GlassPane(SkruiFabEditor editor) {
     this.editor = editor;
+    gestureListeners = new ArrayList<GestureListener>();
     addMouseListener(this);
     addMouseMotionListener(this);
   }
-  
+
+  public void addGestureListener(GestureListener lis) {
+    if (!gestureListeners.contains(lis)) {
+      gestureListeners.add(lis);
+    }
+  }
+
   public Component getDragEndComponent() {
     return dragEndComponent;
   }
 
   private void give(MouseEvent ev) {
-    
+
     Point glassPanePoint = ev.getPoint();
     Container container = editor.getContentPane();
     Point containerPoint = SwingUtilities.convertPoint(this, glassPanePoint, container);
@@ -49,7 +59,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     if (ev.getID() == MouseEvent.MOUSE_RELEASED) {
       dragEndComponent = component;
     }
-    
+
     // handle exit, then enter
     if (prevComponent != null && prevComponent != component) {
       Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
@@ -59,6 +69,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
       prevComponent.dispatchEvent(exitEvent);
       bug("EXIT " + prevComponent.getName());
     }
+
     if (component != null && prevComponent != component) {
       Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
       MouseEvent enterEvent = new MouseEvent(component, MouseEvent.MOUSE_ENTERED, ev.getWhen(), ev
@@ -90,24 +101,37 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
 
     // handle non-drag
     else {
+      GestureCompleteEvent gcev = null;
       // up/down, hover
       // when a gesture ends, tell the originating component there has been a mouse up.
       if (dragStartComponent != null && ev.getID() == MouseEvent.MOUSE_RELEASED
           && editor.getModel().isGesturing()) {
-        Point componentPoint = SwingUtilities
-            .convertPoint(this, glassPanePoint, dragStartComponent);
-        giveTo(dragStartComponent, ev, componentPoint);
+        Point startComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint,
+            dragStartComponent);
+        Point dropComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
+        giveTo(dragStartComponent, ev, startComponentPoint);
         bug("Told " + dragStartComponent.getName() + " that the gesture has ended. I think.");
+        gcev = new GestureCompleteEvent(this, dragStartComponent, component, dropComponentPoint,
+            editor.getModel().getPotentialGesture());
       }
       if (component != null) {
         Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
         giveTo(component, ev, componentPoint);
         //        bug("Case 4: " + component.getName() + " " + num(componentPoint));
       }
+      if (gcev != null) {
+        fire(gcev);
+      }
     }
 
     prevComponent = component;
 
+  }
+
+  private void fire(GestureCompleteEvent gcev) {
+    for (GestureListener lis : gestureListeners) {
+      lis.gestureComplete(gcev);
+    }
   }
 
   private void giveTo(Component component, MouseEvent ev, Point componentPoint) {

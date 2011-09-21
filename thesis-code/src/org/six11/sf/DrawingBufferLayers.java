@@ -38,7 +38,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
-public class DrawingBufferLayers extends JComponent {
+public class DrawingBufferLayers extends JComponent implements GestureListener {
 
   public final static Color DEFAULT_COLOR = Color.BLACK;
   public final static float DEFAULT_THICKNESS = 1.8f;
@@ -61,7 +61,12 @@ public class DrawingBufferLayers extends JComponent {
     MouseThing mt = new MouseThing() {
 
       Pt prev = null;
-
+      public void mouseExited(MouseEvent ev) {
+        PenEvent pev = PenEvent.buildExitEvent(this, ev);
+        fire(pev);
+        repaint();
+      }
+      
       @Override
       public void mousePressed(MouseEvent ev) {
         prev = new Pt(ev);
@@ -244,6 +249,11 @@ public class DrawingBufferLayers extends JComponent {
 
   private static void bug(String what) {
     Debug.out("DrawingBufferLayers", what);
+  }
+
+  public void gestureComplete(GestureCompleteEvent gcev) {
+    bug("GestureListener.gestureComplete not implemented yet!");
+    
   }
 
 }

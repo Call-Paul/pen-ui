@@ -25,11 +25,12 @@ import static org.six11.util.Debug.bug;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class ScrapGrid extends JComponent implements MouseMotionListener, MouseListener {
+public class ScrapGrid extends JComponent implements MouseMotionListener, MouseListener, GestureListener {
 
   private Color gridColor;
   private Color hoveredColor;
   private Color selectedColor;
+  private Color droppedColor;
 
   private int cellSize = 48;
   private int hoveredCellX = -1;
@@ -38,20 +39,25 @@ public class ScrapGrid extends JComponent implements MouseMotionListener, MouseL
   private int selectedCellX = -1;
   private int selectedCellY = -1;
   private float selectedCellThickness = 2.8f;
+  private Point droppedCell = new Point(-1, -1);
+  
+  private SketchBook model;
 
-  public ScrapGrid() {
+  public ScrapGrid(SketchBook model) {
+    this.model = model;
     setName("ScrapGrid");
     setBackground(Color.WHITE);
     gridColor = new Color(240, 240, 240);
     hoveredColor = Color.blue.darker();
     selectedColor = Color.red.darker();
+    droppedColor = Color.magenta.darker().darker();
     addMouseMotionListener(this);
     addMouseListener(this);
   }
 
-  Point getCell(MouseEvent ev) {
-    int cellX = ev.getX() / cellSize;
-    int cellY = ev.getY() / cellSize;
+  Point getCell(Point pt) {
+    int cellX = pt.x / cellSize;
+    int cellY = pt.y / cellSize;
     return new Point(cellX, cellY);
   }
 
@@ -96,6 +102,9 @@ public class ScrapGrid extends JComponent implements MouseMotionListener, MouseL
     if (selectedCellX >= 0 && selectedCellY >= 0) {
       paintCellBG(g, selectedColor, selectedCellX, selectedCellY, selectedCellThickness);
     }
+    if (droppedCell != null && droppedCell.x >= 0 && droppedCell.y >= 0) {
+      paintCellBG(g, droppedColor, droppedCell.x, droppedCell.y, selectedCellThickness * 2);
+    }
 
   }
 
@@ -108,21 +117,21 @@ public class ScrapGrid extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseDragged(MouseEvent ev) {
-    Point p = getCell(ev);
+    Point p = getCell(ev.getPoint());
     hoveredCellX = p.x;
     hoveredCellY = p.y;
     repaint();
   }
 
   public void mouseMoved(MouseEvent ev) {
-    Point p = getCell(ev);
+    Point p = getCell(ev.getPoint());
     hoveredCellX = p.x;
     hoveredCellY = p.y;
     repaint();
   }
 
   public void mouseClicked(MouseEvent ev) {
-    Point p = getCell(ev);
+    Point p = getCell(ev.getPoint());
     selectedCellX = p.x;
     selectedCellY = p.y;
     repaint();
@@ -143,7 +152,16 @@ public class ScrapGrid extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseReleased(MouseEvent ev) {
-    bug("Possible gesture end.");
+  }
+
+  public void gestureComplete(GestureCompleteEvent gcev) {
+    if (gcev.getDragEndComponent() == this) {
+      Point p = gcev.getComponentPoint();
+      bug("drop location in scrap coordinates: " + p.x + ", " + p.y);
+      droppedCell = getCell(p);
+      bug(" ** DING ** " + droppedCell.x + ", " + droppedCell.y);
+      repaint();
+    }
   }
 
 }
