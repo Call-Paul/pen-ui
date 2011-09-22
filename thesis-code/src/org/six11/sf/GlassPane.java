@@ -67,7 +67,6 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
           ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(), ev
               .isPopupTrigger());
       prevComponent.dispatchEvent(exitEvent);
-      bug("EXIT " + prevComponent.getName());
     }
 
     if (component != null && prevComponent != component) {
@@ -76,7 +75,6 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
           .getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(), ev
           .isPopupTrigger());
       component.dispatchEvent(enterEvent);
-      bug("ENTER " + component.getName());
     }
 
     // handle gesture
@@ -85,11 +83,9 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
       if (component != null) {
         Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
         giveTo(component, ev, componentPoint);
-        //        bug("Case 1: " + component.getName() + " " + num(componentPoint));
       } else if (prevComponent != null) {
         Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
         giveTo(prevComponent, ev, componentPoint);
-        //        bug("Case 2: " + prevComponent.getName() + " " + num(componentPoint));
       }
     }
 
@@ -110,14 +106,12 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
             dragStartComponent);
         Point dropComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
         giveTo(dragStartComponent, ev, startComponentPoint);
-        bug("Told " + dragStartComponent.getName() + " that the gesture has ended. I think.");
         gcev = new GestureCompleteEvent(this, dragStartComponent, component, dropComponentPoint,
             editor.getModel().getPotentialGesture());
       }
       if (component != null) {
         Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
         giveTo(component, ev, componentPoint);
-        //        bug("Case 4: " + component.getName() + " " + num(componentPoint));
       }
       if (gcev != null) {
         fire(gcev);

@@ -162,6 +162,9 @@ public class SkruiFabEditor implements PenListener {
       case Idle:
         handleIdle(ev);
         break;
+      case Exit:
+      case Enter: // do nothing, for now
+        break;
       default:
         bug("Unknown pen event type received: " + ev.getType());
     }
@@ -198,7 +201,6 @@ public class SkruiFabEditor implements PenListener {
   private void handleIdle(PenEvent ev) {
     if (actOnGesture) {
       Component whereEnded = glass.getDragEndComponent();
-      bug("Idle now. ended at: " + whereEnded.getName());
       model.gestureEnd(whereEnded == layers);
     } else {
       Sequence seq = model.endScribble(ev.getPt());
@@ -223,7 +225,7 @@ public class SkruiFabEditor implements PenListener {
         }
       }
 
-      model.revertPotentialGesture(true);
+      model.revertPotentialGesture();
       if (best != null && best.getProbability() > 0) {
         model.addPotentialGesture(best);
       } else {

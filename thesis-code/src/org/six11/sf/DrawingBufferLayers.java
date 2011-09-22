@@ -252,8 +252,7 @@ public class DrawingBufferLayers extends JComponent implements GestureListener {
   }
 
   public void gestureComplete(GestureCompleteEvent gcev) {
-    bug("GestureListener.gestureComplete not implemented yet!");
-    
+    // nop
   }
 
 }

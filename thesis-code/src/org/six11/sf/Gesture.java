@@ -1,6 +1,8 @@
 package org.six11.sf;
 
+import org.six11.util.Debug;
 import org.six11.util.pen.Sequence;
+import static org.six11.util.Debug.bug;
 
 /**
  * Represents a user-drawn gesture such as "erase" or "lasso select".
@@ -19,6 +21,7 @@ public abstract class Gesture {
    * The gesture's probability. Set this in the constructor, or have a mutator method.
    */
   protected double p;
+  private boolean wasReal;
 
   public abstract String getHumanName();
 
@@ -26,6 +29,15 @@ public abstract class Gesture {
 
   public Sequence getOriginalSequence() {
     return originalPoints;
+  }
+  
+  public void setActualGesture(boolean v) {
+    bug("It really was a gesture!");
+    this.wasReal = v;
+  }
+
+  public boolean wasActualGesture() {
+    return wasReal;
   }
 
 }

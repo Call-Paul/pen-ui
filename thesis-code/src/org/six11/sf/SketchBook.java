@@ -136,11 +136,12 @@ public class SketchBook {
     guibug.ghostlyOutlineShape(db, points, encircleColor);
     setSelected(search(circ.getArea()));
     potentialGesture = circ;
+    bug("Set potential gesture to " + circ.hashCode());
     // after some timeout, revert the buffer if it hasn't been acted on.
     potentialGestureTimeout = new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
         bug("Attempting to automatically revert the gesture.");
-        revertPotentialGesture(true);
+        revertPotentialGesture();
       }
     };
     clearGestureTimer();
@@ -172,11 +173,13 @@ public class SketchBook {
     }
   }
 
-  public void revertPotentialGesture(boolean addAsInk) {
+  public void revertPotentialGesture() {
     if (potentialGesture != null) {
+      bug("... currently in a gesture (" + potentialGesture.hashCode()
+          + "). Reverting. was actual gesture? " + potentialGesture.wasActualGesture());
       clearGestureTimer();
       clearSelection();
-      if (addAsInk) {
+      if (!potentialGesture.wasActualGesture()) {
         // turn the gesture's pen input into unstructured ink
         Ink originalInk = new UnstructuredInk(potentialGesture.getOriginalSequence());
         addInk(originalInk);
@@ -185,6 +188,8 @@ public class SketchBook {
       // remove the graphics from any highlight currently shown
       DrawingBuffer db = layers.getLayer(GraphicDebug.DB_HIGHLIGHTS);
       db.clear();
+    } else {
+      bug("... not in a gesture. Doing nothing.");
     }
   }
 
@@ -256,8 +261,8 @@ public class SketchBook {
     if (currentGesture != null) {
       if (currentGesture instanceof EncircleGesture) {
         bug("Gesture end: " + endInDrawingLayers);
+        EncircleGesture circ = (EncircleGesture) currentGesture;
         if (endInDrawingLayers) {
-          EncircleGesture circ = (EncircleGesture) currentGesture;
           // do whatever is necessary to finalize the gesture.
           if (gestureProgressStart != null && gestureProgressPrev != null) {
             double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
@@ -268,14 +273,15 @@ public class SketchBook {
             }
           }
         }
+        circ.setActualGesture(true);
         DrawingBuffer copyLayer = layers.getLayer(GraphicDebug.DB_COPY_LAYER);
         copyLayer.clear();
-        revertPotentialGesture(false);
+        revertPotentialGesture();
         clearSelection();
         layers.repaint();
       }
     }
-
+    bug("Cleaing gesture " + potentialGesture.hashCode());
     potentialGesture = null;
     gestureProgressPrev = null;
     gestureProgressStart = null;
