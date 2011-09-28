@@ -63,6 +63,7 @@ public class GestureController {
     db.clear();
     model.getGuiBug().ghostlyOutlineShape(db, points, encircleColor);
     model.setSelected(model.search(circ.getArea()));
+    circ.setSelection(model.getSelection());
     potentialGesture = circ;
     bug("Set potential gesture to " + circ.hashCode());
     // after some timeout, revert the buffer if it hasn't been acted on.

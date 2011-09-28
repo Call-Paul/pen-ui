@@ -102,10 +102,10 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     MouseEventInfo mei = new MouseEventInfo(ev);
 
     if (mod.getGestures().isGesturing()) {
-      bug("Gesture...");
+      bug("Gesture underway. what do I do now?");
     } else {
-      givePenEvent(mei.component, PenEvent.buildDragEvent(this, new Pt(mei.componentPoint), null,
-          0, null, ev));
+      givePenEvent(mei.component,
+          PenEvent.buildDragEvent(this, new Pt(mei.componentPoint), null, 0, null, ev));
     }
 
   }
@@ -132,16 +132,23 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   public void mousePressed(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
     SketchBook mod = editor.getModel();
+    GestureController gests = mod.getGestures();
+    Gesture pot = gests.getPotentialGesture();
+
     dragging = true;
     if (mei.componentPoint == null) {
       bug("mei.componentPoint is null");
     }
-    if (editor.getModel().getGestures().isPointNearPotentialGesture(new Pt(mei.componentPoint))) {
+    if (pot != null && pot.isPointNearHotspot(new Pt(mei.componentPoint))) {
       // enter gesture ON mode
-      Gesture gest = mod.getGestures().getPotentialGesture().createSubsequentGesture(
-          mei.componentPoint);
+      pot.setActualGesture(true);
+      Gesture gest = gests.getPotentialGesture().createSubsequentGesture(mei.componentPoint);
       mod.getGestures().addGesture(gest);
     } else {
+      if (pot != null) {
+        bug("Pressed, and there is a potential gesture still alive, but you are dragging far from it.");
+        gests.revertPotentialGesture();
+      }
       dragging = true; // down and dragging over component
       // now give it to component if we can.
       givePenEvent(mei.component, PenEvent.buildDownEvent(this, new Pt(mei.componentPoint), ev));
@@ -175,16 +182,16 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     if (prevComponent != null && prevComponent != component) {
       Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
       MouseEvent exitEvent = new MouseEvent(prevComponent, MouseEvent.MOUSE_EXITED, ev.getWhen(),
-          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(), ev
-              .isPopupTrigger());
+          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
+          ev.isPopupTrigger());
       prevComponent.dispatchEvent(exitEvent);
     }
 
     if (component != null && prevComponent != component) {
       Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
-      MouseEvent enterEvent = new MouseEvent(component, MouseEvent.MOUSE_ENTERED, ev.getWhen(), ev
-          .getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(), ev
-          .isPopupTrigger());
+      MouseEvent enterEvent = new MouseEvent(component, MouseEvent.MOUSE_ENTERED, ev.getWhen(),
+          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
+          ev.isPopupTrigger());
       component.dispatchEvent(enterEvent);
     }
 

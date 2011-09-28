@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -18,6 +21,7 @@ public class EncircleGesture extends Gesture {
 
   List<Pt> points;
   Area area;
+  List<Ink> selection;
 
   /**
    * @param likelihood
@@ -30,6 +34,10 @@ public class EncircleGesture extends Gesture {
 
   public String getHumanName() {
     return "Encircle Gesture";
+  }
+
+  public void setSelection(List<Ink> selection) {
+    this.selection = selection;
   }
 
   public double getProbability() {
@@ -56,7 +64,38 @@ public class EncircleGesture extends Gesture {
   }
 
   public Gesture createSubsequentGesture(Point componentPoint) {
-    bug("Gesture.createSubsequentGesture not implemented yet!");
-    return null;
+    Sequence seq = new Sequence();
+    seq.add(new Pt(componentPoint));
+    Gesture ret = new MoveGesture(seq);
+    return ret;
+  }
+
+  public boolean isPointNearHotspot(Pt pt) {
+    boolean ret = false;
+    if (selection == null) {
+      bug("FYI the selection is null. This will give you problems.");
+    }
+    // first check the gesture points
+    Pt nearest = Functions.getNearestPointOnSequence(pt, originalPoints);
+    double dist = nearest.distance(pt);
+
+    if (dist < GestureController.GESTURE_AOE_DISTANCE) {
+      ret = true;
+    } else if (selection != null) {
+      for (Ink sel : selection) {
+        if (sel instanceof UnstructuredInk) {
+          Sequence seq = ((UnstructuredInk) sel).getSequence();
+          dist = Functions.getNearestPointOnSequence(pt, seq).distance(pt);
+          if (dist < GestureController.GESTURE_AOE_DISTANCE) {
+            bug("Input is at least " + num(dist) + " px from a hotspot, so i say it is near!");
+            ret = true;
+            break;
+          }
+        } else {
+          // TODO: do stuff.
+        }
+      }
+    }
+    return ret;
   }
 }

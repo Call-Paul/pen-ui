@@ -3,6 +3,7 @@ package org.six11.sf;
 import java.awt.Point;
 
 import org.six11.util.Debug;
+import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import static org.six11.util.Debug.bug;
 
@@ -49,5 +50,12 @@ public abstract class Gesture {
    * circGest.createSubsequentGesture(..).
    */
   public abstract Gesture createSubsequentGesture(Point componentPoint);
+
+  /**
+   * Tells you if the given point is near the gesture or some other location that is relevant to the
+   * gesture. For example if the gesture is an encircled region that selects some objects, it is
+   * reasonable to consider the selected objects as part of the gesture to activate it.
+   */
+  public abstract boolean isPointNearHotspot(Pt pt);
 
 }

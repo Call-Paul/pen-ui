@@ -1,3 +1,14 @@
+Bugs at the moment:
+
+- after moving a selection the encircle gesture and selection
+  highlights do not go away. They should go away completely. Try this:
+  start the revert timer when the move gesture ends. That way people
+  can make more than one copy.
+
+- a move gesture currently does nothing. implement the start, drag,
+  and end parts.
+
+
 Critical path:
 
 (1) Draw stuff [done]
