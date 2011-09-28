@@ -27,34 +27,41 @@ import org.six11.util.Debug;
 
 public class SketchBook {
 
-  public static final double GESTURE_AOE_DISTANCE = 20.0;
-
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
-  /*
-   * A potential gesture is ink the user just made, and looks suspiciously like some gesture. The
-   * only way to determine if it is a gesture is to wait for the user's next action. If the next
-   * action is consistent with the gesture (e.g. moving a selection) then we use the gesture. If the
-   * next action is NOT consistent with the gesture it means that ink was simply unstructured ink.
-   */
-  Gesture potentialGesture;
-  Pt gestureProgressStart;
-  Pt gestureProgressPrev;
-
+  private GestureController gestures;
   private DrawingBufferLayers layers;
-  private List<Ink> selected;
-  private List<Ink> selectedCopy;
+  private List<Ink> selection;
+  private List<Ink> selectionCopy;
   private GraphicDebug guibug;
-  private Color encircleColor = new Color(255, 255, 0, 128);
-  private ActionListener potentialGestureTimeout;
-  private Timer potentialGestureTimer;
 
   public SketchBook() {
     this.scribbles = new ArrayList<Sequence>();
-    this.selected = new ArrayList<Ink>();
-    this.selectedCopy = new ArrayList<Ink>();
+    this.selection = new ArrayList<Ink>();
+    this.selectionCopy = new ArrayList<Ink>();
+    this.gestures = new GestureController(this);
     ink = new ArrayList<Ink>();
+  }
+
+  public List<Ink> getSelectionCopy() {
+    return selectionCopy;
+  }
+
+  public List<Ink> getSelection() {
+    return selection;
+  }
+
+  public DrawingBufferLayers getLayers() {
+    return layers;
+  }
+
+  public GraphicDebug getGuiBug() {
+    return guibug;
+  }
+
+  public GestureController getGestures() {
+    return gestures;
   }
 
   public void setGuibug(GraphicDebug gb) {
@@ -63,7 +70,7 @@ public class SketchBook {
 
   public void addInk(Ink newInk) {
     ink.add(newInk);
-    clearGestureTimer();
+    gestures.clearGestureTimer();
     if (newInk.getType() == Type.Unstructured) {
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       UnstructuredInk unstruc = (UnstructuredInk) newInk;
@@ -80,6 +87,9 @@ public class SketchBook {
     bug("Not implemented");
   }
 
+  /**
+   * The 'scribble' is ink that is currently being drawn, or is the most recently completed stroke.
+   */
   public Sequence startScribble(Pt pt) {
     Sequence scrib = new Sequence();
     scrib.add(pt);
@@ -89,7 +99,8 @@ public class SketchBook {
 
   public Sequence addScribble(Pt pt) {
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
-    if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in scribble
+    if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
+      // scribble
       scrib.add(pt);
     }
     return scrib;
@@ -127,164 +138,21 @@ public class SketchBook {
     return ret;
   }
 
-  public void addPotentialGesture(Gesture best) {
-    // right now the only gesture is encircle, so obviously this will change...
-    EncircleGesture circ = (EncircleGesture) best;
-    List<Pt> points = circ.getPoints();
-    DrawingBuffer db = layers.getLayer(GraphicDebug.DB_HIGHLIGHTS);
-    db.clear();
-    guibug.ghostlyOutlineShape(db, points, encircleColor);
-    setSelected(search(circ.getArea()));
-    potentialGesture = circ;
-    bug("Set potential gesture to " + circ.hashCode());
-    // after some timeout, revert the buffer if it hasn't been acted on.
-    potentialGestureTimeout = new ActionListener() {
-      public void actionPerformed(ActionEvent ev) {
-        bug("Attempting to automatically revert the gesture.");
-        revertPotentialGesture();
-      }
-    };
-    clearGestureTimer();
-    potentialGestureTimer = new Timer(5000, potentialGestureTimeout);
-    potentialGestureTimer.setRepeats(false);
-    potentialGestureTimer.start();
-  }
-
-  public void clearGestureTimer() {
-    if (potentialGestureTimer != null) {
-      potentialGestureTimer.stop();
-    }
-  }
-
   public void clearSelection() {
     setSelected(null);
   }
 
   public void setSelected(Collection<Ink> selectUs) {
-    selected.clear();
+    selection.clear();
     if (selectUs != null) {
-      selected.addAll(selectUs);
+      selection.addAll(selectUs);
     }
     DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SELECTION);
     db.clear();
-    for (Ink eenk : selected) {
+    for (Ink eenk : selection) {
       UnstructuredInk uns = (UnstructuredInk) eenk;
       guibug.ghostlyOutlineShape(db, uns.getSequence().getPoints(), Color.CYAN.darker());
     }
-  }
-
-  public void revertPotentialGesture() {
-    if (potentialGesture != null) {
-      bug("... currently in a gesture (" + potentialGesture.hashCode()
-          + "). Reverting. was actual gesture? " + potentialGesture.wasActualGesture());
-      clearGestureTimer();
-      clearSelection();
-      if (!potentialGesture.wasActualGesture()) {
-        // turn the gesture's pen input into unstructured ink
-        Ink originalInk = new UnstructuredInk(potentialGesture.getOriginalSequence());
-        addInk(originalInk);
-      }
-      clearSelection(); // deselet things if there were any
-      // remove the graphics from any highlight currently shown
-      DrawingBuffer db = layers.getLayer(GraphicDebug.DB_HIGHLIGHTS);
-      db.clear();
-    } else {
-      bug("... not in a gesture. Doing nothing.");
-    }
-  }
-
-  public boolean isGesturing() {
-    return (potentialGesture != null);
-  }
-
-  public boolean isPointNearPotentialGesture(Pt pt) {
-    boolean ret = false;
-    if (potentialGesture != null) {
-      Sequence seq = potentialGesture.getOriginalSequence();
-      Pt close = Functions.getNearestPointOnPolyline(pt, seq.getPoints());
-      double d = close.distance(pt);
-      ret = (d < GESTURE_AOE_DISTANCE / 2);
-    }
-    return ret;
-  }
-
-  public Gesture getPotentialGesture() {
-    return potentialGesture;
-  }
-
-  public void gestureStart(Pt pt) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        selectedCopy.clear();
-        for (Ink sel : selected) {
-          selectedCopy.add(sel.copy());
-        }
-        DrawingBuffer copyLayer = layers.getLayer(GraphicDebug.DB_COPY_LAYER);
-        copyLayer.clear();
-        Color color = DrawingBufferLayers.DEFAULT_COLOR.brighter().brighter();
-        for (Ink eenk : selectedCopy) {
-          UnstructuredInk uns = (UnstructuredInk) eenk;
-          Sequence scrib = uns.getSequence();
-          DrawingBufferRoutines.drawShape(copyLayer, scrib.getPoints(), color,
-              DrawingBufferLayers.DEFAULT_THICKNESS);
-          DrawingBufferRoutines.dots(copyLayer, scrib.getPoints(), 2, 0.5, Color.BLACK, Color.RED);
-        }
-
-      }
-    }
-  }
-
-  public void gestureProgress(Pt pt) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        if (gestureProgressStart == null) {
-          gestureProgressStart = pt;
-        } else {
-          double dx = pt.getX() - gestureProgressStart.getX();
-          double dy = pt.getY() - gestureProgressStart.getY();
-          DrawingBuffer copyLayer = layers.getLayer(GraphicDebug.DB_COPY_LAYER);
-          copyLayer.setGraphicsReset();
-          copyLayer.setGraphicsTranslate(dx, dy);
-        }
-        gestureProgressPrev = pt;
-      }
-    }
-    layers.repaint();
-  }
-
-  public void gestureEnd(boolean endInDrawingLayers) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        bug("Gesture end: " + endInDrawingLayers);
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        if (endInDrawingLayers) {
-          // do whatever is necessary to finalize the gesture.
-          if (gestureProgressStart != null && gestureProgressPrev != null) {
-            double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
-            double dy = gestureProgressPrev.getY() - gestureProgressStart.getY();
-            for (Ink k : selectedCopy) {
-              k.move(dx, dy);
-              addInk(k);
-            }
-          }
-        }
-        circ.setActualGesture(true);
-        DrawingBuffer copyLayer = layers.getLayer(GraphicDebug.DB_COPY_LAYER);
-        copyLayer.clear();
-        revertPotentialGesture();
-        clearSelection();
-        layers.repaint();
-      }
-    }
-    bug("Cleaing gesture " + potentialGesture.hashCode());
-    potentialGesture = null;
-    gestureProgressPrev = null;
-    gestureProgressStart = null;
   }
 
 }

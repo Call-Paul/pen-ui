@@ -1,9 +1,11 @@
 package org.six11.sf;
 
+import java.awt.Point;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.six11.util.Debug.bug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -51,5 +53,10 @@ public class EncircleGesture extends Gesture {
       area = new Area(new Sequence(points));
     }
     return area;
+  }
+
+  public Gesture createSubsequentGesture(Point componentPoint) {
+    bug("Gesture.createSubsequentGesture not implemented yet!");
+    return null;
   }
 }

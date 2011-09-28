@@ -21,6 +21,7 @@ import java.util.PriorityQueue;
 import javax.swing.JComponent;
 
 import org.six11.util.Debug;
+import static org.six11.util.Debug.bug;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
@@ -38,7 +39,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
-public class DrawingBufferLayers extends JComponent implements GestureListener {
+public class DrawingBufferLayers extends JComponent implements PenListener, GestureListener {
 
   public final static Color DEFAULT_COLOR = Color.BLACK;
   public final static float DEFAULT_THICKNESS = 1.8f;
@@ -50,61 +51,56 @@ public class DrawingBufferLayers extends JComponent implements GestureListener {
   private Map<String, DrawingBuffer> layersByName;
   SketchBook model;
 
+  Pt prev;
   GeneralPath currentScribble;
-  private boolean showScribble;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
     setName("DrawingBufferLayers");
     layers = new PriorityQueue<DrawingBuffer>(10, DrawingBuffer.sortByLayer);
     layersByName = new HashMap<String, DrawingBuffer>();
-    MouseThing mt = new MouseThing() {
-
-      Pt prev = null;
-      public void mouseExited(MouseEvent ev) {
-        PenEvent pev = PenEvent.buildExitEvent(this, ev);
-        fire(pev);
-        repaint();
-      }
-      
-      @Override
-      public void mousePressed(MouseEvent ev) {
-        prev = new Pt(ev);
-        currentScribble = new GeneralPath();
-        currentScribble.moveTo(prev.getX(), prev.getY());
-        PenEvent pev = PenEvent.buildDownEvent(this, prev, ev);
-        fire(pev);
-        repaint();
-      }
-
-      @Override
-      public void mouseDragged(MouseEvent ev) {
-        Pt here = new Pt(ev);
-        currentScribble.lineTo(here.getX(), here.getY());
-        PenEvent pev = PenEvent.buildDragEvent(this, here, prev, 0, null, ev);
-        fire(pev);
-        repaint();
-      }
-
-      @Override
-      public void mouseReleased(MouseEvent ev) {
-        PenEvent pev = PenEvent.buildIdleEvent(this, ev);
-        fire(pev);
-        repaint();
-      }
-    };
-    addMouseListener(mt);
-    addMouseMotionListener(mt);
+    //    MouseThing mt = new MouseThing() {
+    //
+    //      Pt prev = null;
+    //      public void mouseExited(MouseEvent ev) {
+    //        PenEvent pev = PenEvent.buildExitEvent(this, ev);
+    //        fire(pev);
+    //        repaint();
+    //      }
+    //      
+    //      @Override
+    //      public void mousePressed(MouseEvent ev) {
+    //        prev = new Pt(ev);
+    //        currentScribble = new GeneralPath();
+    //        currentScribble.moveTo(prev.getX(), prev.getY());
+    //        PenEvent pev = PenEvent.buildDownEvent(this, prev, ev);
+    //        fire(pev);
+    //        repaint();
+    //      }
+    //
+    //      @Override
+    //      public void mouseDragged(MouseEvent ev) {
+    //        Pt here = new Pt(ev);
+    //        currentScribble.lineTo(here.getX(), here.getY());
+    //        PenEvent pev = PenEvent.buildDragEvent(this, here, prev, 0, null, ev);
+    //        fire(pev);
+    //        repaint();
+    //      }
+    //
+    //      @Override
+    //      public void mouseReleased(MouseEvent ev) {
+    //        PenEvent pev = PenEvent.buildIdleEvent(this, ev);
+    //        fire(pev);
+    //        repaint();
+    //      }
+    //    };
+    //    addMouseListener(mt);
+    //    addMouseMotionListener(mt);
     penListeners = new ArrayList<PenListener>();
   }
 
   public void clearScribble() {
     currentScribble = null;
-    repaint();
-  }
-  
-  public void setShowScribble(boolean v) {
-    showScribble = v;
     repaint();
   }
 
@@ -132,7 +128,7 @@ public class DrawingBufferLayers extends JComponent implements GestureListener {
         buffer.drawToGraphics(g);
       }
     }
-    if (currentScribble != null && showScribble) {
+    if (currentScribble != null) {
       g.setColor(DEFAULT_COLOR);
       float thick = DEFAULT_THICKNESS;
       g.setStroke(Strokes.get(thick));
@@ -247,12 +243,25 @@ public class DrawingBufferLayers extends JComponent implements GestureListener {
     System.out.println("Wrote " + file.getAbsolutePath());
   }
 
-  private static void bug(String what) {
-    Debug.out("DrawingBufferLayers", what);
-  }
-
   public void gestureComplete(GestureCompleteEvent gcev) {
     // nop
+  }
+
+  public void handlePenEvent(PenEvent ev) {
+    switch (ev.getType()) {
+      case Down:
+        prev = ev.getPt();
+        currentScribble = new GeneralPath();
+        currentScribble.moveTo(prev.getX(), prev.getY());
+        repaint();
+        break;
+      case Drag:
+        Pt here = ev.getPt();
+        currentScribble.lineTo(here.getX(), here.getY());
+        repaint();
+        break;
+    }
+    fire(ev); // just pass it on to the listeners
   }
 
 }

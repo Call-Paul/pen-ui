@@ -39,18 +39,17 @@ public class SkruiFabEditor implements PenListener {
   DrawingBufferLayers layers;
   SketchBook model;
   CornerFinder cornerFinder;
-  List<GestureFinder> gestureFinders;
+
   GraphicDebug guibug;
   Map<String, Action> actions;
-  private boolean actOnGesture;
   private GlassPane glass;
   private static String ACTION_GO = "Go";
   ApplicationFrame af;
-  
+
   public SkruiFabEditor(Main m) {
     this.main = m;
-    af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString")
-        + " at " + m.varStr("timeString") + ")");
+    af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
+        + m.varStr("timeString") + ")");
     af.setSize(600, 400);
     createActions(af.getRootPane());
     glass = new GlassPane(this);
@@ -59,11 +58,14 @@ public class SkruiFabEditor implements PenListener {
     model = new SketchBook();
     layers = new DrawingBufferLayers(model);
     layers.addPenListener(this);
+
+    /*
+     * TODO: GLassPane now handles mouse events and generates pen listens.
+     * layers.addPenListener(this);
+     */
     guibug = new GraphicDebug(layers);
     model.setGuibug(guibug);
     cornerFinder = new CornerFinder(guibug);
-    gestureFinders = new ArrayList<GestureFinder>();
-    gestureFinders.add(new EncircleGestureFinder(model));
     model.setLayers(layers);
 
     ScrapGrid grid = new ScrapGrid(model);
@@ -93,13 +95,13 @@ public class SkruiFabEditor implements PenListener {
   Container getContentPane() {
     return af.getContentPane();
   }
-  
+
   public SketchBook getModel() {
     return model;
   }
-  
+
   private void createActions(JRootPane rp) {
-    // 1. Make action map. 
+    // 1. Make action map.
     actions = new HashMap<String, Action>();
 
     // 2. Fill action map with named actions.
@@ -115,19 +117,22 @@ public class SkruiFabEditor implements PenListener {
       });
     }
     //
-    // 2b. Now give actions for other commands like printing, saving, launching ICBMs, etc
-    //    actions.put(ACTION_PRINT, new NamedAction("Print", KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
-    //      public void activate() {
-    //        print();
-    //      }
-    //    });
+    // 2b. Now give actions for other commands like printing, saving,
+    // launching ICBMs, etc
+    // actions.put(ACTION_PRINT, new NamedAction("Print",
+    // KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
+    // public void activate() {
+    // print();
+    // }
+    // });
     actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
       public void activate() {
         go();
       }
     });
 
-    // 3. For those actions with keyboard accelerators, register them to the root pane.
+    // 3. For those actions with keyboard accelerators, register them to the
+    // root pane.
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
       if (s != null) {
@@ -144,8 +149,11 @@ public class SkruiFabEditor implements PenListener {
     }
   }
 
+  /**
+   * Handle pen events. If this is called we can be guaranteed that the original mouse event is or
+   * could be ink. In other words, this is not a gesture, so it is safe to put it in the ink list.
+   */
   public void handlePenEvent(PenEvent ev) {
-    // see docs/ink-processing-highlevel.pdf for a diagram of this
     switch (ev.getType()) {
       case Down:
         handleDown(ev);
@@ -153,86 +161,48 @@ public class SkruiFabEditor implements PenListener {
       case Drag:
         handleDrag(ev);
         break;
-      case Flow:
-        handleFlow(ev);
-        break;
-      case Tap:
-        handleTap(ev);
-        break;
+      // case Flow:
+      // handleFlow(ev);
+      // break;
+      // case Tap:
+      // handleTap(ev);
+      // break;
       case Idle:
         handleIdle(ev);
         break;
-      case Exit:
-      case Enter: // do nothing, for now
-        break;
-      default:
-        bug("Unknown pen event type received: " + ev.getType());
+    // case Exit:
+    // case Enter: // do nothing, for now
+    // break;
+    // default:
+    // bug("Unknown pen event type received: " + ev.getType());
     }
   }
 
   private void handleDown(PenEvent ev) {
-    actOnGesture = model.isPointNearPotentialGesture(ev.getPt());
-    if (actOnGesture) {
-      model.clearGestureTimer();
-      model.gestureStart(ev.getPt());
-      layers.setShowScribble(false);
-    } else {
-      layers.setShowScribble(true);
-      model.startScribble(ev.getPt());
-    }
+    model.startScribble(ev.getPt());
   }
 
   private void handleDrag(PenEvent ev) {
-    if (actOnGesture) {
-      model.gestureProgress(ev.getPt());
-    } else {
-      model.addScribble(ev.getPt());
-    }
+    model.addScribble(ev.getPt());
   }
 
-  private void handleFlow(PenEvent ev) {
-    bug("Flow");
-  }
-
-  private void handleTap(PenEvent ev) {
-    bug("Tap");
-  }
+  //
+  // private void handleFlow(PenEvent ev) {
+  // bug("Flow");
+  // }
+  //
+  // private void handleTap(PenEvent ev) {
+  // bug("Tap");
+  // }
 
   private void handleIdle(PenEvent ev) {
-    if (actOnGesture) {
-      Component whereEnded = glass.getDragEndComponent();
-      model.gestureEnd(whereEnded == layers);
-    } else {
-      Sequence seq = model.endScribble(ev.getPt());
-      List<Gesture> gestures = new ArrayList<Gesture>(); // collect all gesture analyses here
-      for (GestureFinder gestureFinder : gestureFinders) {
-        Gesture gesture = gestureFinder.findGesture(seq);
-        if (gesture != null) {
-          gestures.add(gesture);
-        } else {
-          bug("Warning: gesture finder " + gestureFinder.getClass() + " returned a null gesture.");
-        }
-      }
-
-      // There might be zero or more gestures detected. In that case, deal with the most likely.
-      Gesture best = null;
-      for (Gesture g : gestures) {
-        if (best != null && best.getProbability() < g.getProbability()) {
-          best = g;
-        }
-        if (best == null) {
-          best = g;
-        }
-      }
-
-      model.revertPotentialGesture();
-      if (best != null && best.getProbability() > 0) {
-        model.addPotentialGesture(best);
-      } else {
-        model.addInk(new UnstructuredInk(seq));
-      }
-      layers.clearScribble();
+    Sequence seq = model.endScribble(ev.getPt());
+    Gesture gest = model.getGestures().detectGesture(seq);
+    if (gest == null) {
+      model.addInk(new UnstructuredInk(seq));
+    } else if (gest.getProbability() > 0) {
+      model.getGestures().addPotentialGesture(gest);
     }
-    actOnGesture = false;
+    layers.clearScribble();
   }
 }

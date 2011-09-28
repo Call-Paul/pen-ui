@@ -2,7 +2,11 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="lib/GenJar.jar"/>
-	<classpathentry kind="lib" path="lib/six11utils.jar"/>
+	<classpathentry kind="lib" path="lib/six11utils.jar" sourcepath="/six11utils/src">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/Users/johnsogg/Projects/six11utils/build/docs/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="lib" path="lib/iText-2.1.4.jar"/>
 	<classpathentry kind="lib" path="lib/Jama-1.0.2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
