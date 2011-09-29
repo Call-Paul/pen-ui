@@ -23,3 +23,6 @@
      and drop using a GlassPane since Java's DnD is excruciatingly bad.
 
 011: scrap grid has state info about selected and hovered cell.
+
+012: video showing multiple copies, and using selected items or selection
+     boundary as drag handle.

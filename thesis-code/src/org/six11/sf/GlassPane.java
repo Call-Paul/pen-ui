@@ -161,6 +161,8 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
       if (pot != null) {
         bug("Pressed, and there is a potential gesture still alive, but you are dragging far from it.");
         gests.revertPotentialGesture();
+        gests.clearGestureTimer();
+        gests.clearPotentialGesture();
       }
       dragging = true; // down and dragging over component
       // now give it to component if we can.

@@ -292,7 +292,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
   }
 
   public void gestureProgress(GestureEvent ev) {
-    bug("Gesture Progress");
     // TODO: for now assume gestures are entirely within drawing buffer layers. change later
     GestureController gests = model.getGestures();
     Gesture currentGesture = gests.getPotentialGesture();
@@ -316,14 +315,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
   }
 
   public void gestureComplete(GestureEvent ev) {
-    bug("Gesture Complete");
-    // TODO: for now assume gestures are entirely within drawing buffer layers. change later
-    boolean endInDrawingLayers = true;
+ // TODO: for now assume gestures are entirely within drawing buffer layers. change later
     GestureController gests = model.getGestures();
+    boolean endInDrawingLayers = true;
+
     Gesture currentGesture = gests.getPotentialGesture();
     if (currentGesture != null) {
       if (currentGesture instanceof EncircleGesture) {
-        bug("Gesture end: " + endInDrawingLayers);
         EncircleGesture circ = (EncircleGesture) currentGesture;
         if (endInDrawingLayers) {
           // do whatever is necessary to finalize the gesture.
@@ -339,13 +337,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
         circ.setActualGesture(true);
         DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
         copyLayer.clear();
-        gests.revertPotentialGesture();
-        model.clearSelection();
         model.getLayers().repaint();
       }
     }
-    bug("Cleaing gesture " + gests.getPotentialGesture().hashCode());
-    gests.clearPotentialGesture();
+    gests.restartGestureTimer();
     gestureProgressPrev = null;
     gestureProgressStart = null;
   }

@@ -11,6 +11,7 @@ import java.util.List;
 
 import javax.swing.Timer;
 
+import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
@@ -107,7 +108,7 @@ public class GestureController {
         model.addInk(originalInk);
       }
       model.clearSelection(); // deselect things if there were any
-      potentialGesture = null; // forget anything about the last input as a gesture.
+      // potentialGesture = null; // forget anything about the last input as a gesture.
       // remove the graphics from any highlight currently shown
       DrawingBuffer db = model.getLayers().getLayer(GraphicDebug.DB_HIGHLIGHTS);
       db.clear();
