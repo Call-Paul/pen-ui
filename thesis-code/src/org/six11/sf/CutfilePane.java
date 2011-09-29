@@ -18,8 +18,20 @@ public class CutfilePane extends JPanel implements GestureListener {
     setPreferredSize(new Dimension(300, 200));
   }
 
-  public void gestureComplete(GestureCompleteEvent gcev) {
+  public void gestureComplete(GestureEvent gcev) {
     bug("GestureListener.gestureComplete not implemented yet!");
+    
+  }
+
+  @Override
+  public void gestureStart(GestureEvent ev) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public void gestureProgress(GestureEvent ev) {
+    // TODO Auto-generated method stub
     
   }
 }

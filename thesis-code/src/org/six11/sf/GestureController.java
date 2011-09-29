@@ -37,8 +37,6 @@ public class GestureController {
    */
   private List<GestureFinder> gestureFinders;
   private Gesture potentialGesture;
-  private Pt gestureProgressStart;
-  private Pt gestureProgressPrev;
   private Gesture actualGesture;
   private SketchBook model;
   private Color encircleColor = new Color(255, 255, 0, 128);
@@ -55,6 +53,11 @@ public class GestureController {
 
   }
 
+  public void clearPotentialGesture() {
+    potentialGesture = null;
+  }
+
+  
   public void addPotentialGesture(Gesture best) {
     // right now the only gesture is encircle, so obviously this will change...
     EncircleGesture circ = (EncircleGesture) best;
@@ -85,6 +88,13 @@ public class GestureController {
     }
   }
 
+  public void restartGestureTimer() {
+    if (potentialGestureTimer != null) {
+      bug("Restarted timer");
+      potentialGestureTimer.restart();
+    }
+  }
+
   public void revertPotentialGesture() {
     if (potentialGesture != null) {
       bug("... currently in a gesture (" + potentialGesture.hashCode()
@@ -101,6 +111,7 @@ public class GestureController {
       // remove the graphics from any highlight currently shown
       DrawingBuffer db = model.getLayers().getLayer(GraphicDebug.DB_HIGHLIGHTS);
       db.clear();
+      model.getLayers().repaint();
     } else {
       bug("... not in a gesture. Doing nothing.");
     }
@@ -123,81 +134,6 @@ public class GestureController {
 
   public Gesture getPotentialGesture() {
     return potentialGesture;
-  }
-
-  public void gestureStart(Pt pt) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        model.getSelectionCopy().clear();
-        for (Ink sel : model.getSelection()) {
-          model.getSelectionCopy().add(sel.copy());
-        }
-        DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-        copyLayer.clear();
-        Color color = DrawingBufferLayers.DEFAULT_COLOR.brighter().brighter();
-        for (Ink eenk : model.getSelectionCopy()) {
-          UnstructuredInk uns = (UnstructuredInk) eenk;
-          Sequence scrib = uns.getSequence();
-          DrawingBufferRoutines.drawShape(copyLayer, scrib.getPoints(), color,
-              DrawingBufferLayers.DEFAULT_THICKNESS);
-          DrawingBufferRoutines.dots(copyLayer, scrib.getPoints(), 2, 0.5, Color.BLACK, Color.RED);
-        }
-
-      }
-    }
-  }
-
-  public void gestureProgress(Pt pt) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        if (gestureProgressStart == null) {
-          gestureProgressStart = pt;
-        } else {
-          double dx = pt.getX() - gestureProgressStart.getX();
-          double dy = pt.getY() - gestureProgressStart.getY();
-          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-          copyLayer.setGraphicsReset();
-          copyLayer.setGraphicsTranslate(dx, dy);
-        }
-        gestureProgressPrev = pt;
-      }
-    }
-    model.getLayers().repaint();
-  }
-
-  public void gestureEnd(boolean endInDrawingLayers) {
-    Gesture currentGesture = getPotentialGesture();
-    if (currentGesture != null) {
-      if (currentGesture instanceof EncircleGesture) {
-        bug("Gesture end: " + endInDrawingLayers);
-        EncircleGesture circ = (EncircleGesture) currentGesture;
-        if (endInDrawingLayers) {
-          // do whatever is necessary to finalize the gesture.
-          if (gestureProgressStart != null && gestureProgressPrev != null) {
-            double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
-            double dy = gestureProgressPrev.getY() - gestureProgressStart.getY();
-            for (Ink k : model.getSelectionCopy()) {
-              k.move(dx, dy);
-              model.addInk(k);
-            }
-          }
-        }
-        circ.setActualGesture(true);
-        DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-        copyLayer.clear();
-        revertPotentialGesture();
-        model.clearSelection();
-        model.getLayers().repaint();
-      }
-    }
-    bug("Cleaing gesture " + potentialGesture.hashCode());
-    potentialGesture = null;
-    gestureProgressPrev = null;
-    gestureProgressStart = null;
   }
 
   public void addGesture(Gesture gest) {
@@ -226,15 +162,11 @@ public class GestureController {
       }
     }
     return best;
-
-    // model.revertPotentialGesture();
-    // if (best != null && best.getProbability() > 0) {
-    // model.addPotentialGesture(best);
-    // } else {
-    // }
-    // }
-    // actOnGesture = false;
-
   }
+
+  public Gesture getGesture() {
+    return actualGesture;
+  }
+
 
 }

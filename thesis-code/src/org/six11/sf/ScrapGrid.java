@@ -154,14 +154,26 @@ public class ScrapGrid extends JComponent implements MouseMotionListener, MouseL
   public void mouseReleased(MouseEvent ev) {
   }
 
-  public void gestureComplete(GestureCompleteEvent gcev) {
-    if (gcev.getDragEndComponent() == this) {
+  public void gestureComplete(GestureEvent gcev) {
+    if (gcev.getTargetComponent() == this) {
       Point p = gcev.getComponentPoint();
       bug("drop location in scrap coordinates: " + p.x + ", " + p.y);
       droppedCell = getCell(p);
       bug(" ** DING ** " + droppedCell.x + ", " + droppedCell.y);
       repaint();
     }
+  }
+
+  @Override
+  public void gestureStart(GestureEvent ev) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  @Override
+  public void gestureProgress(GestureEvent ev) {
+    // TODO Auto-generated method stub
+    
   }
 
 }

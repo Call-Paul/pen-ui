@@ -7,6 +7,8 @@ package org.six11.sf;
  */
 public interface GestureListener {
 
-  void gestureComplete(GestureCompleteEvent gcev);
+  void gestureStart(GestureEvent ev);
+  void gestureProgress(GestureEvent ev);
+  void gestureComplete(GestureEvent ev);
 
 }
