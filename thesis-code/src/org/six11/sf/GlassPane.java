@@ -77,7 +77,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   private void givePenEvent(Component component, PenEvent ev) {
     if (component instanceof PenListener) {
       ((PenListener) component).handlePenEvent(ev);
-    } else {
+    } else if (component != null) {
       warn(this, "Component not a pen listener: " + component.toString());
     }
   }
@@ -110,9 +110,19 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   public void mouseDragged(MouseEvent ev) {
     SketchBook mod = editor.getModel();
     MouseEventInfo mei = new MouseEventInfo(ev);
-    if (mod.getGestures().isGesturing()) {
+    if (prevComponent != mei.component) {
+      if (prevComponent != null) {
+        givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
+      }
+      if (mei.component != null) {
+        givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
+      }
+    }
+    prevComponent = mei.component;
+    if (mod.getGestures().hasActualGesture()) {
       Gesture gesture = mod.getGestures().getGesture();
-      GestureEvent gprog = GestureEvent.buildProgressEvent(this, mei.component, mei.componentPoint, gesture);
+      GestureEvent gprog = GestureEvent.buildProgressEvent(this, mei.component, mei.componentPoint,
+          gesture);
       fire(gprog);
     } else {
       givePenEvent(mei.component,
@@ -121,7 +131,25 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseMoved(MouseEvent ev) {
-    //    give(ev);
+    MouseEventInfo mei = new MouseEventInfo(ev);
+    //    bug("mei.component: " + mei.component.getName() + " " + num(mei.componentPoint));
+    SketchBook mod = editor.getModel();
+    if (prevComponent != mei.component) {
+      if (prevComponent != null) {
+        givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
+      }
+      if (mei.component != null) {
+        givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
+      }
+    }
+    prevComponent = mei.component;
+    if (mod.getGestures().hasActualGesture()) {
+
+    } else {
+      Pt translated = new Pt(ev);
+      translated.setLocation(mei.componentPoint.getX(), mei.componentPoint.getY());
+      givePenEvent(mei.component, PenEvent.buildHoverEvent(this, translated));
+    }
   }
 
   /**
@@ -132,19 +160,33 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseEntered(MouseEvent ev) {
-    //    give(ev);
+    // This means the mouse entered the glass pane---it is somewhere over the app, but if you want more info you have to look
+    SketchBook mod = editor.getModel();
+    MouseEventInfo mei = new MouseEventInfo(ev);
+    if (mod.getGestures().hasActualGesture()) {
+      // TODO: need to notify target component by firing gesture event
+    } else {
+      givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
+    }
   }
 
   public void mouseExited(MouseEvent ev) {
-    //    give(ev);
+ // This means the mouse exited the glass pane---it is somewhere over the app, but if you want more info you have to look
+    SketchBook mod = editor.getModel();
+    MouseEventInfo mei = new MouseEventInfo(ev);
+    if (mod.getGestures().hasActualGesture()) {
+      // TODO: need to notify target component by firing gesture event
+    } else {
+      givePenEvent(mei.component, PenEvent.buildExitEvent(this, ev));
+    }
   }
 
   public void mousePressed(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
     SketchBook mod = editor.getModel();
     GestureController gests = mod.getGestures();
+    gests.reportState("Mouse Press");
     Gesture pot = gests.getPotentialGesture();
-
     dragging = true;
     if (mei.componentPoint == null) {
       bug("mei.componentPoint is null");
@@ -152,8 +194,9 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     if (pot != null && pot.isPointNearHotspot(new Pt(mei.componentPoint))) {
       // enter gesture ON mode
       pot.setActualGesture(true);
-      Gesture gest = gests.getPotentialGesture().createSubsequentGesture(mei.componentPoint);
-      gests.addGesture(gest);
+      Gesture gest = gests.getPotentialGesture().createSubsequentGesture(mei.component,
+          mei.componentPoint);
+      gests.setGesture(gest);
       GestureEvent gestStart = GestureEvent.buildStartEvent(this, mei.component,
           mei.componentPoint, gest);
       fire(gestStart);
@@ -163,6 +206,8 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
         gests.revertPotentialGesture();
         gests.clearGestureTimer();
         gests.clearPotentialGesture();
+      } else {
+        bug("Drag, no potential gesture.");
       }
       dragging = true; // down and dragging over component
       // now give it to component if we can.
@@ -174,12 +219,13 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   public void mouseReleased(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
     SketchBook mod = editor.getModel();
-    if (mod.getGestures().isGesturing()) {
-      bug("Gesture complete...");
+    if (mod.getGestures().hasActualGesture()) {
       Gesture gest = mod.getGestures().getGesture();
       mod.getGestures().restartGestureTimer();
-      GestureEvent gestEnd = GestureEvent.buildEndEvent(this, mei.component, mei.componentPoint, gest); 
+      GestureEvent gestEnd = GestureEvent.buildEndEvent(this, mei.component, mei.componentPoint,
+          gest);
       fire(gestEnd);
+      mod.getGestures().clearGesture();
     } else {
       givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
     }
@@ -187,77 +233,77 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     dragStartComponent = null;
   }
 
-//  private void oldGive(MouseEvent ev) {
-//    Point glassPanePoint = ev.getPoint();
-//    Container container = editor.getContentPane();
-//    Point containerPoint = SwingUtilities.convertPoint(this, glassPanePoint, container);
-//    Component component = SwingUtilities.getDeepestComponentAt(container, containerPoint.x,
-//        containerPoint.y);
-//    if (ev.getID() == MouseEvent.MOUSE_RELEASED) {
-//      dragEndComponent = component;
-//    }
-//
-//    // handle exit, then enter
-//    if (prevComponent != null && prevComponent != component) {
-//      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
-//      MouseEvent exitEvent = new MouseEvent(prevComponent, MouseEvent.MOUSE_EXITED, ev.getWhen(),
-//          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
-//          ev.isPopupTrigger());
-//      prevComponent.dispatchEvent(exitEvent);
-//    }
-//
-//    if (component != null && prevComponent != component) {
-//      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
-//      MouseEvent enterEvent = new MouseEvent(component, MouseEvent.MOUSE_ENTERED, ev.getWhen(),
-//          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
-//          ev.isPopupTrigger());
-//      component.dispatchEvent(enterEvent);
-//    }
-//
-//    // handle gesture
-//    if (dragging && ev.getID() == MouseEvent.MOUSE_DRAGGED
-//        && editor.getModel().getGestures().isGesturing()) {
-//      // give to whichever component the mouse is over, or previous component if out of bounds
-//      if (component != null) {
-//        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
-//        giveTo(component, ev, componentPoint);
-//      } else if (prevComponent != null) {
-//        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
-//        giveTo(prevComponent, ev, componentPoint);
-//      }
-//    }
-//
-//    // handle non-gesture dragging
-//    else if (dragging && ev.getID() == MouseEvent.MOUSE_DRAGGED) {
-//      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, dragStartComponent);
-//      giveTo(dragStartComponent, ev, componentPoint);
-//    }
-//
-//    // handle non-drag
-//    else {
-//      GestureEvent gcev = null;
-//      // up/down, hover
-//      // when a gesture ends, tell the originating component there has been a mouse up.
-//      if (dragStartComponent != null && ev.getID() == MouseEvent.MOUSE_RELEASED
-//          && editor.getModel().getGestures().isGesturing()) {
-//        Point startComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint,
-//            dragStartComponent);
-//        Point dropComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
-//        giveTo(dragStartComponent, ev, startComponentPoint);
-//        // commented out because it doesn't compile
-//        //        gcev = new GestureEvent(this, dragStartComponent, component, dropComponentPoint, editor
-//        //            .getModel().getGestures().getPotentialGesture());
-//      }
-//      if (component != null) {
-//        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
-//        giveTo(component, ev, componentPoint);
-//      }
-//      if (gcev != null) {
-//        fire(gcev);
-//      }
-//    }
-//
-//    prevComponent = component;
-//  }
+  //  private void oldGive(MouseEvent ev) {
+  //    Point glassPanePoint = ev.getPoint();
+  //    Container container = editor.getContentPane();
+  //    Point containerPoint = SwingUtilities.convertPoint(this, glassPanePoint, container);
+  //    Component component = SwingUtilities.getDeepestComponentAt(container, containerPoint.x,
+  //        containerPoint.y);
+  //    if (ev.getID() == MouseEvent.MOUSE_RELEASED) {
+  //      dragEndComponent = component;
+  //    }
+  //
+  //    // handle exit, then enter
+  //    if (prevComponent != null && prevComponent != component) {
+  //      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
+  //      MouseEvent exitEvent = new MouseEvent(prevComponent, MouseEvent.MOUSE_EXITED, ev.getWhen(),
+  //          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
+  //          ev.isPopupTrigger());
+  //      prevComponent.dispatchEvent(exitEvent);
+  //    }
+  //
+  //    if (component != null && prevComponent != component) {
+  //      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
+  //      MouseEvent enterEvent = new MouseEvent(component, MouseEvent.MOUSE_ENTERED, ev.getWhen(),
+  //          ev.getModifiers(), componentPoint.x, componentPoint.y, ev.getClickCount(),
+  //          ev.isPopupTrigger());
+  //      component.dispatchEvent(enterEvent);
+  //    }
+  //
+  //    // handle gesture
+  //    if (dragging && ev.getID() == MouseEvent.MOUSE_DRAGGED
+  //        && editor.getModel().getGestures().isGesturing()) {
+  //      // give to whichever component the mouse is over, or previous component if out of bounds
+  //      if (component != null) {
+  //        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
+  //        giveTo(component, ev, componentPoint);
+  //      } else if (prevComponent != null) {
+  //        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, prevComponent);
+  //        giveTo(prevComponent, ev, componentPoint);
+  //      }
+  //    }
+  //
+  //    // handle non-gesture dragging
+  //    else if (dragging && ev.getID() == MouseEvent.MOUSE_DRAGGED) {
+  //      Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, dragStartComponent);
+  //      giveTo(dragStartComponent, ev, componentPoint);
+  //    }
+  //
+  //    // handle non-drag
+  //    else {
+  //      GestureEvent gcev = null;
+  //      // up/down, hover
+  //      // when a gesture ends, tell the originating component there has been a mouse up.
+  //      if (dragStartComponent != null && ev.getID() == MouseEvent.MOUSE_RELEASED
+  //          && editor.getModel().getGestures().isGesturing()) {
+  //        Point startComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint,
+  //            dragStartComponent);
+  //        Point dropComponentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
+  //        giveTo(dragStartComponent, ev, startComponentPoint);
+  //        // commented out because it doesn't compile
+  //        //        gcev = new GestureEvent(this, dragStartComponent, component, dropComponentPoint, editor
+  //        //            .getModel().getGestures().getPotentialGesture());
+  //      }
+  //      if (component != null) {
+  //        Point componentPoint = SwingUtilities.convertPoint(this, glassPanePoint, component);
+  //        giveTo(component, ev, componentPoint);
+  //      }
+  //      if (gcev != null) {
+  //        fire(gcev);
+  //      }
+  //    }
+  //
+  //    prevComponent = component;
+  //  }
 
 }

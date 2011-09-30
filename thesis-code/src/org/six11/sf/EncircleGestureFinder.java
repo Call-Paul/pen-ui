@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Component;
 import java.util.List;
 
 import org.six11.util.pen.Pt;
@@ -20,7 +21,7 @@ public class EncircleGestureFinder extends GestureFinder {
     super(model);
   }
   
-  public Gesture findGesture(Sequence seq) {
+  public Gesture findGesture(Component start, Sequence seq) {
     double len = seq.length();
     int bestIdx = getNearestEncircleDist(seq);
     Pt bestPt = seq.get(bestIdx);
@@ -34,7 +35,7 @@ public class EncircleGestureFinder extends GestureFinder {
       // return with nonzero likelihood
       likelihood = (MIN_ACCEPTABLE_RATIO - ratio) / MIN_ACCEPTABLE_RATIO;
     }
-    EncircleGesture ret = new EncircleGesture(seq, likelihood, 0, bestIdx);
+    EncircleGesture ret = new EncircleGesture(start, seq, likelihood, 0, bestIdx);
     return ret;
   }
 

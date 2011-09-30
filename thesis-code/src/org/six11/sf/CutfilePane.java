@@ -4,6 +4,10 @@ import java.awt.Color;
 import java.awt.Dimension;
 
 import javax.swing.JPanel;
+
+import org.six11.util.pen.PenEvent;
+import org.six11.util.pen.PenListener;
+
 import static org.six11.util.Debug.bug;
 
 /**
@@ -11,7 +15,7 @@ import static org.six11.util.Debug.bug;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class CutfilePane extends JPanel implements GestureListener {
+public class CutfilePane extends JPanel implements GestureListener, PenListener {
   public CutfilePane() {
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
@@ -19,18 +23,20 @@ public class CutfilePane extends JPanel implements GestureListener {
   }
 
   public void gestureComplete(GestureEvent gcev) {
-    bug("GestureListener.gestureComplete not implemented yet!");
     
   }
 
-  @Override
   public void gestureStart(GestureEvent ev) {
     // TODO Auto-generated method stub
     
   }
 
-  @Override
   public void gestureProgress(GestureEvent ev) {
+    // TODO Auto-generated method stub
+    
+  }
+
+  public void handlePenEvent(PenEvent ev) {
     // TODO Auto-generated method stub
     
   }

@@ -4,6 +4,7 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -58,7 +59,6 @@ public class GestureController {
     potentialGesture = null;
   }
 
-  
   public void addPotentialGesture(Gesture best) {
     // right now the only gesture is encircle, so obviously this will change...
     EncircleGesture circ = (EncircleGesture) best;
@@ -107,8 +107,7 @@ public class GestureController {
         Ink originalInk = new UnstructuredInk(potentialGesture.getOriginalSequence());
         model.addInk(originalInk);
       }
-      model.clearSelection(); // deselect things if there were any
-      // potentialGesture = null; // forget anything about the last input as a gesture.
+      clearPotentialGesture();
       // remove the graphics from any highlight currently shown
       DrawingBuffer db = model.getLayers().getLayer(GraphicDebug.DB_HIGHLIGHTS);
       db.clear();
@@ -118,8 +117,16 @@ public class GestureController {
     }
   }
 
-  public boolean isGesturing() {
+  public boolean hasPotentialGesture() {
     return (potentialGesture != null);
+  }
+
+  public boolean hasActualGesture() {
+    return (actualGesture != null);
+  }
+
+  public void clearGesture() {
+    actualGesture = null;
   }
 
   public boolean isPointNearPotentialGesture(Pt pt) {
@@ -137,19 +144,17 @@ public class GestureController {
     return potentialGesture;
   }
 
-  public void addGesture(Gesture gest) {
+  public void setGesture(Gesture gest) {
     this.actualGesture = gest;
   }
 
-  public Gesture detectGesture(Sequence seq) {
+  public Gesture detectGesture(Component start, Sequence seq) {
     List<Gesture> gestures = new ArrayList<Gesture>(); // collect all results
     for (GestureFinder gestureFinder : gestureFinders) {
-      Gesture gesture = gestureFinder.findGesture(seq);
+      Gesture gesture = gestureFinder.findGesture(start, seq);
       if (gesture != null && gesture.getProbability() > 0) {
         gestures.add(gesture);
         bug("Added " + gesture.getClass().getName() + " with p=" + num(gesture.getProbability()));
-      } else {
-        bug("Warning: gesture finder " + gestureFinder.getClass() + " returned a null gesture.");
       }
     }
     // There might be zero or more gestures detected. In that case, deal with the most likely.
@@ -169,5 +174,11 @@ public class GestureController {
     return actualGesture;
   }
 
+  public void reportState(String msg) {
+    bug(" >>> " + msg + "\tpotentialGesture: " + hasPotentialGesture() + "\tactualGesture: " + hasActualGesture()
+        + "\ttimer running: "
+        + (potentialGestureTimer == null ? "null" : "" + potentialGestureTimer.isRunning()) + " <<<");
+
+  }
 
 }

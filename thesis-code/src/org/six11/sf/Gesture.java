@@ -1,6 +1,9 @@
 package org.six11.sf;
 
+import java.awt.Component;
+import java.awt.Image;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 
 import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
@@ -15,8 +18,12 @@ import static org.six11.util.Debug.bug;
 public abstract class Gesture {
 
   Sequence originalPoints;
+  Component componentStart;
+  Component componentEnd;
+  Image thumb;
 
-  public Gesture(Sequence originalPoints) {
+  public Gesture(Component start, Sequence originalPoints) {
+    this.componentStart = start;
     this.originalPoints = originalPoints;
   }
 
@@ -35,7 +42,6 @@ public abstract class Gesture {
   }
 
   public void setActualGesture(boolean v) {
-    bug("It really was a gesture!");
     this.wasReal = v;
   }
 
@@ -49,7 +55,7 @@ public abstract class Gesture {
    * pen stroke constitutes an EncircleGesture 'circGest'. To generate a MoveGesture, call
    * circGest.createSubsequentGesture(..).
    */
-  public abstract Gesture createSubsequentGesture(Point componentPoint);
+  public abstract Gesture createSubsequentGesture(Component start, Point componentPoint);
 
   /**
    * Tells you if the given point is near the gesture or some other location that is relevant to the
@@ -58,4 +64,33 @@ public abstract class Gesture {
    */
   public abstract boolean isPointNearHotspot(Pt pt);
 
+  /**
+   * Sets an optional image representing the contents of the gesture.
+   * 
+   * @param thumb
+   */
+  public void setThumbnail(Image thumb) {
+    bug("Gesture " + getClass().getName() + " now has a " + thumb.getWidth(null) + "x" + thumb.getHeight(null) + " thumbnail.");
+    this.thumb = thumb;
+  }
+
+  /**
+   * Gives an optional image representing the contents of the gesture. This might be null, depending
+   * on which type of gesture it is.
+   */
+  public Image getThumbnail() {
+    return thumb;
+  }
+  
+  public Component getComponentStart() {
+    return componentStart;
+  }
+  
+  public Component getComponentEnd() {
+    return componentEnd;
+  }
+  
+  public void setComponentEnd(Component c) {
+    this.componentEnd = c;
+  }
 }

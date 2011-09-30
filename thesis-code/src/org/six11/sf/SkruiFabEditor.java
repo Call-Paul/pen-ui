@@ -16,6 +16,7 @@ import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.TransferHandler;
 
+import org.six11.util.Debug;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
@@ -33,7 +34,7 @@ import static org.six11.util.layout.FrontEnd.*;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class SkruiFabEditor implements PenListener {
+public class SkruiFabEditor {
 
   Main main;
   DrawingBufferLayers layers;
@@ -57,7 +58,6 @@ public class SkruiFabEditor implements PenListener {
     glass.setVisible(true);
     model = new SketchBook();
     layers = new DrawingBufferLayers(model);
-    layers.addPenListener(this);
 
     /*
      * TODO: GLassPane now handles mouse events and generates pen listens.
@@ -153,56 +153,5 @@ public class SkruiFabEditor implements PenListener {
    * Handle pen events. If this is called we can be guaranteed that the original mouse event is or
    * could be ink. In other words, this is not a gesture, so it is safe to put it in the ink list.
    */
-  public void handlePenEvent(PenEvent ev) {
-    switch (ev.getType()) {
-      case Down:
-        handleDown(ev);
-        break;
-      case Drag:
-        handleDrag(ev);
-        break;
-      // case Flow:
-      // handleFlow(ev);
-      // break;
-      // case Tap:
-      // handleTap(ev);
-      // break;
-      case Idle:
-        handleIdle(ev);
-        break;
-    // case Exit:
-    // case Enter: // do nothing, for now
-    // break;
-    // default:
-    // bug("Unknown pen event type received: " + ev.getType());
-    }
-  }
 
-  private void handleDown(PenEvent ev) {
-    model.startScribble(ev.getPt());
-  }
-
-  private void handleDrag(PenEvent ev) {
-    model.addScribble(ev.getPt());
-  }
-
-  //
-  // private void handleFlow(PenEvent ev) {
-  // bug("Flow");
-  // }
-  //
-  // private void handleTap(PenEvent ev) {
-  // bug("Tap");
-  // }
-
-  private void handleIdle(PenEvent ev) {
-    Sequence seq = model.endScribble(ev.getPt());
-    Gesture gest = model.getGestures().detectGesture(seq);
-    if (gest == null) {
-      model.addInk(new UnstructuredInk(seq));
-    } else if (gest.getProbability() > 0) {
-      model.getGestures().addPotentialGesture(gest);
-    }
-    layers.clearScribble();
-  }
 }

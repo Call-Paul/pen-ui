@@ -27,7 +27,7 @@ public class GestureEvent extends EventObject {
   private GestureEvent(Object source, Component targetComponent, Point componentPoint,
       Gesture gesture) {
     super(source);
-
+    this.targetComponent = targetComponent;
     this.componentPoint = componentPoint;
     this.gesture = gesture;
   }
@@ -56,6 +56,7 @@ public class GestureEvent extends EventObject {
   
   public static GestureEvent buildEndEvent(Object source, Component dragEndComponent,
       Point componentPoint, Gesture gesture) {
+    gesture.setComponentEnd(dragEndComponent);
     GestureEvent ret = new GestureEvent(source, dragEndComponent, componentPoint, gesture);
     ret.setType(Type.End);
     return ret;
@@ -67,6 +68,10 @@ public class GestureEvent extends EventObject {
 
   public Component getTargetComponent() {
     return targetComponent;
+  }
+  
+  public Gesture getGesture() {
+    return gesture;
   }
 
 }

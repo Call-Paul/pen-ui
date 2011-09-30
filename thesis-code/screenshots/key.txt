@@ -26,3 +26,6 @@
 
 012: video showing multiple copies, and using selected items or selection
      boundary as drag handle.
+
+013: video shows dragging into scrap grid with thumbnail appearing. bugs
+     related to crossing over between components have been fixed.

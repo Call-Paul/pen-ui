@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Component;
 import java.awt.Point;
 import java.awt.geom.Area;
 import java.util.ArrayList;
@@ -26,8 +27,8 @@ public class EncircleGesture extends Gesture {
   /**
    * @param likelihood
    */
-  public EncircleGesture(Sequence original, double likelihood, int startInclusive, int endInclusive) {
-    super(original);
+  public EncircleGesture(Component start, Sequence original, double likelihood, int startInclusive, int endInclusive) {
+    super(start, original);
     p = likelihood;
     setPoints(original, startInclusive, endInclusive);
   }
@@ -63,10 +64,10 @@ public class EncircleGesture extends Gesture {
     return area;
   }
 
-  public Gesture createSubsequentGesture(Point componentPoint) {
+  public Gesture createSubsequentGesture(Component start, Point componentPoint) {
     Sequence seq = new Sequence();
     seq.add(new Pt(componentPoint));
-    Gesture ret = new MoveGesture(seq);
+    Gesture ret = new MoveGesture(start, seq);
     return ret;
   }
 

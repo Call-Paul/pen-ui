@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +21,6 @@ public abstract class GestureFinder {
     this.model = model;
   }
 
-  public abstract Gesture findGesture(Sequence seq);
+  public abstract Gesture findGesture(Component start, Sequence seq);
 
 }
