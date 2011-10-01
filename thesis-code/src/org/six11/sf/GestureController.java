@@ -91,15 +91,12 @@ public class GestureController {
 
   public void restartGestureTimer() {
     if (potentialGestureTimer != null) {
-      bug("Restarted timer");
       potentialGestureTimer.restart();
     }
   }
 
   public void revertPotentialGesture() {
     if (potentialGesture != null) {
-      bug("... currently in a gesture (" + potentialGesture.hashCode()
-          + "). Reverting. was actual gesture? " + potentialGesture.wasActualGesture());
       clearGestureTimer();
       model.clearSelection();
       if (!potentialGesture.wasActualGesture()) {
@@ -112,8 +109,6 @@ public class GestureController {
       DrawingBuffer db = model.getLayers().getLayer(GraphicDebug.DB_HIGHLIGHTS);
       db.clear();
       model.getLayers().repaint();
-    } else {
-      bug("... not in a gesture. Doing nothing.");
     }
   }
 

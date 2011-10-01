@@ -11,10 +11,13 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JComponent;
 
@@ -25,6 +28,7 @@ import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.warn;
 import static org.six11.util.Debug.num;
 
 /**
@@ -33,6 +37,16 @@ import static org.six11.util.Debug.num;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class ScrapGrid extends JComponent implements PenListener, GestureListener {
+
+  public class GridCellContent {
+    Area area;
+    Image thumb;
+
+    public GridCellContent(Area area, Image thumb) {
+      this.area = area;
+      this.thumb = thumb;
+    }
+  }
 
   private Color gridColor;
   private Color hoveredColor;
@@ -48,6 +62,7 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
   private int selectedCellY = -1;
   private float selectedCellThickness = 2.8f;
   private Point droppedCell = new Point(-1, -1);
+  private Map<Point, GridCellContent> cells = new HashMap<Point, GridCellContent>();
 
   private SketchBook model;
 
@@ -65,6 +80,10 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
     int cellX = pt.x / cellSize;
     int cellY = pt.y / cellSize;
     return new Point(cellX, cellY);
+  }
+
+  private void setCellReference(Point cell, GridCellContent content) {
+    cells.put(cell, content);
   }
 
   public void paintComponent(Graphics g1) {
@@ -96,6 +115,20 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
     g.setStroke(Strokes.VERY_THIN_STROKE);
     int w = getWidth();
     int h = getHeight();
+    Point lastCell = getCell(new Point(w, h));
+    Point cursor = new Point();
+    for (int cellX = 0; cellX <= lastCell.x; cellX++) {
+      for (int cellY = 0; cellY <= lastCell.y; cellY++) {
+        cursor.setLocation(cellX, cellY);
+        if (cells.containsKey(cursor)) {
+          GridCellContent content = cells.get(cursor);
+          if (content.thumb == null) {
+            warn(this, "thumbnail for " + cellX + ", " + cellY + " is null. this is bad");
+          }
+          g.drawImage(content.thumb, cellX * cellSize, cellY * cellSize, null);
+        }
+      }
+    }
     for (int i = cellSize; i < w; i += cellSize) {
       g.draw(new Line2D.Double(i, 0, i, h));
     }
@@ -150,8 +183,17 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
       Point p = ev.getComponentPoint();
       bug("drop location in scrap coordinates: " + p.x + ", " + p.y);
       droppedCell = getCell(p);
-      bug(" ** DING ** " + droppedCell.x + ", " + droppedCell.y);
-      // TODO: capture the info about the source ink here.
+      Gesture g = ev.getGesture();
+      if (g instanceof MoveGesture) {
+        MoveGesture mg = (MoveGesture) g;
+        Area loc = mg.getWhere();
+        Point cell = getCell(p);
+        BufferedImage newThumb = new BufferedImage(mg.thumb.getWidth(null),
+            mg.thumb.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+        copyImage(mg.thumb, newThumb, 1.0);
+        GridCellContent content = new GridCellContent(loc, newThumb);
+        setCellReference(cell, content);
+      }
       hoveredThumb = null;
       repaint();
     }
@@ -201,20 +243,21 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
     if (model.getGestures().hasActualGesture()) {
       DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
       BufferedImage bigImage = copyLayer.getImage();
-      BufferedImage smallImage = new BufferedImage(cellSize, cellSize,
-          BufferedImage.TYPE_INT_ARGB);
       double sw = (double) cellSize / (double) bigImage.getWidth();
       double sh = (double) cellSize / (double) bigImage.getHeight();
       double s = Math.min(sw, sh);
-      Graphics2D g = smallImage.createGraphics();
-      AffineTransform xform = AffineTransform.getScaleInstance(s, s);
-      g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-          RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-      g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-      g.drawImage(bigImage, xform, null);
-      g.dispose();
+      BufferedImage smallImage = new BufferedImage(cellSize, cellSize, BufferedImage.TYPE_INT_ARGB);
+      copyImage(bigImage, smallImage, s);
       model.getGestures().getGesture().setThumbnail(smallImage);
     }
   }
 
+  private void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
+    Graphics2D g = destImage.createGraphics();
+    AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    g.drawImage(sourceImage, xform, null);
+    g.dispose();
+  }
 }

@@ -29,3 +29,7 @@
 
 013: video shows dragging into scrap grid with thumbnail appearing. bugs
      related to crossing over between components have been fixed.
+
+014: scraps are persistent in the scrap grid. the grid contains a reference
+     to the location (as an Area) and a thumbnail of what was originally
+     dragged.

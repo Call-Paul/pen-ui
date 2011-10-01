@@ -338,7 +338,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
             DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
             copyLayer.setGraphicsReset();
             copyLayer.setGraphicsTranslate(dx, dy);
-            bug("Is copyLayer visible? " + copyLayer.isVisible());
           }
           gestureProgressPrev = pt;
         }

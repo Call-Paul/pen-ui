@@ -121,6 +121,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     prevComponent = mei.component;
     if (mod.getGestures().hasActualGesture()) {
       Gesture gesture = mod.getGestures().getGesture();
+      mod.getGestures().restartGestureTimer();
       GestureEvent gprog = GestureEvent.buildProgressEvent(this, mei.component, mei.componentPoint,
           gesture);
       fire(gprog);
