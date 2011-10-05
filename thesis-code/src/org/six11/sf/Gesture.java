@@ -21,10 +21,14 @@ public abstract class Gesture {
   Component componentStart;
   Component componentEnd;
   Image thumb;
+  boolean drawThumbOnDrag;
+  Point startLoc;
 
   public Gesture(Component start, Sequence originalPoints) {
     this.componentStart = start;
     this.originalPoints = originalPoints;
+    this.thumb = null;
+    this.drawThumbOnDrag = false;
   }
 
   /**
@@ -36,6 +40,14 @@ public abstract class Gesture {
   public abstract String getHumanName();
 
   public abstract double getProbability();
+
+  protected void setStartLocation(Point mouseLoc) {
+    this.startLoc = mouseLoc;
+  }
+
+  public Point getStartLocation() {
+    return startLoc;
+  }
 
   public Sequence getOriginalSequence() {
     return originalPoints;
@@ -70,7 +82,6 @@ public abstract class Gesture {
    * @param thumb
    */
   public void setThumbnail(Image thumb) {
-    bug("Gesture " + getClass().getName() + " now has a " + thumb.getWidth(null) + "x" + thumb.getHeight(null) + " thumbnail.");
     this.thumb = thumb;
   }
 
@@ -81,16 +92,20 @@ public abstract class Gesture {
   public Image getThumbnail() {
     return thumb;
   }
-  
+
   public Component getComponentStart() {
     return componentStart;
   }
-  
+
   public Component getComponentEnd() {
     return componentEnd;
   }
-  
+
   public void setComponentEnd(Component c) {
     this.componentEnd = c;
+  }
+
+  public void setDragImage(boolean showThumbWhenDragging) {
+    drawThumbOnDrag = showThumbWhenDragging;
   }
 }

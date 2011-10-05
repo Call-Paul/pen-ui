@@ -2,8 +2,10 @@ package org.six11.sf;
 
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -35,6 +37,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   Component dragEndComponent;
 
   boolean dragging = false;
+  Point dragPoint = null;
   private Collection<GestureListener> gestureListeners;
 
   public GlassPane(SkruiFabEditor editor) {
@@ -42,6 +45,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     gestureListeners = new ArrayList<GestureListener>();
     addMouseListener(this);
     addMouseMotionListener(this);
+    setOpaque(false);
   }
 
   public void addGestureListener(GestureListener lis) {
@@ -82,7 +86,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     }
   }
 
-  private void fire(GestureEvent ev) {
+  void fire(GestureEvent ev) {
     for (GestureListener lis : gestureListeners) {
       switch (ev.getType()) {
         case Start:
@@ -104,10 +108,22 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void paintComponent(Graphics g) {
-    // nothing
+    if (dragging && dragPoint != null) {
+      SketchBook mod = editor.getModel();
+      Gesture gest;
+      if ((gest = mod.getGestures().getGesture()) != null) {
+        if (gest.drawThumbOnDrag && gest.thumb != null) {
+          g.setClip(new Rectangle(dragPoint, new Dimension(gest.thumb.getWidth(null), gest.thumb
+              .getHeight(null))));
+          g.drawImage(gest.thumb, dragPoint.x, dragPoint.y, null);
+          editor.getContentPane().repaint();
+        }
+      }
+    }
   }
 
   public void mouseDragged(MouseEvent ev) {
+    dragPoint = ev.getPoint();
     SketchBook mod = editor.getModel();
     MouseEventInfo mei = new MouseEventInfo(ev);
     if (prevComponent != mei.component) {
@@ -126,14 +142,16 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
           gesture);
       fire(gprog);
     } else {
-      givePenEvent(mei.component,
-          PenEvent.buildDragEvent(this, new Pt(mei.componentPoint), null, 0, null, ev));
+      Pt pt = new Pt(mei.componentPoint, ev.getWhen());
+      givePenEvent(mei.component, PenEvent.buildDragEvent(this, pt, null, 0, null, ev));
+    }
+    if (dragging && dragPoint != null && mod.getGestures().getGesture() != null) {
+      repaint();
     }
   }
 
   public void mouseMoved(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
-    //    bug("mei.component: " + mei.component.getName() + " " + num(mei.componentPoint));
     SketchBook mod = editor.getModel();
     if (prevComponent != mei.component) {
       if (prevComponent != null) {
@@ -172,7 +190,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseExited(MouseEvent ev) {
- // This means the mouse exited the glass pane---it is somewhere over the app, but if you want more info you have to look
+    // This means the mouse exited the glass pane---it is somewhere over the app, but if you want more info you have to look
     SketchBook mod = editor.getModel();
     MouseEventInfo mei = new MouseEventInfo(ev);
     if (mod.getGestures().hasActualGesture()) {
@@ -189,10 +207,11 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     gests.reportState("Mouse Press");
     Gesture pot = gests.getPotentialGesture();
     dragging = true;
+    dragPoint = ev.getPoint();
     if (mei.componentPoint == null) {
       bug("mei.componentPoint is null");
     }
-    if (pot != null && pot.isPointNearHotspot(new Pt(mei.componentPoint))) {
+    if (pot != null && pot.isPointNearHotspot(new Pt(mei.componentPoint, ev.getWhen()))) {
       // enter gesture ON mode
       pot.setActualGesture(true);
       Gesture gest = gests.getPotentialGesture().createSubsequentGesture(mei.component,
@@ -203,21 +222,19 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
       fire(gestStart);
     } else {
       if (pot != null) {
-        bug("Pressed, and there is a potential gesture still alive, but you are dragging far from it.");
         gests.revertPotentialGesture();
         gests.clearGestureTimer();
         gests.clearPotentialGesture();
-      } else {
-        bug("Drag, no potential gesture.");
       }
-      dragging = true; // down and dragging over component
       // now give it to component if we can.
-      givePenEvent(mei.component, PenEvent.buildDownEvent(this, new Pt(mei.componentPoint), ev));
+      givePenEvent(mei.component,
+          PenEvent.buildDownEvent(this, new Pt(mei.componentPoint, ev.getWhen()), ev));
     }
     dragStartComponent = mei.component;
   }
 
   public void mouseReleased(MouseEvent ev) {
+    dragPoint = null;
     MouseEventInfo mei = new MouseEventInfo(ev);
     SketchBook mod = editor.getModel();
     if (mod.getGestures().hasActualGesture()) {

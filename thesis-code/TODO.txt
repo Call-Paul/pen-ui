@@ -1,8 +1,14 @@
 Bugs at the moment:
 
-- after completing a move gesture, something isn't getting cleaned up because pen events are not being generated.
+- GlassPane mousePressed: the mouse point is not being converted to
+  the same reference. make sure the gesture's coordinate system and
+  the mouse point's system are the same.
 
-- When a pen enter/exit event is received, make sure to react accordingly when gesturing.
+- after completing a move gesture, something isn't getting cleaned up
+  because pen events are not being generated.
+
+- When a pen enter/exit event is received, make sure to react
+  accordingly when gesturing.
 
 - implement drawing buffer layers gesture complete
 

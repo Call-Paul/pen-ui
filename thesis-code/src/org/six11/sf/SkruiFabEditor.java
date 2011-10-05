@@ -3,8 +3,13 @@ package org.six11.sf;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +61,7 @@ public class SkruiFabEditor {
     glass = new GlassPane(this);
     af.getRootPane().setGlassPane(glass);
     glass.setVisible(true);
-    model = new SketchBook();
+    model = new SketchBook(glass);
     layers = new DrawingBufferLayers(model);
 
     /*
@@ -68,8 +73,8 @@ public class SkruiFabEditor {
     cornerFinder = new CornerFinder(guibug);
     model.setLayers(layers);
 
-    ScrapGrid grid = new ScrapGrid(model);
-    CutfilePane cutfile = new CutfilePane();
+    ScrapGrid grid = new ScrapGrid(this);
+    CutfilePane cutfile = new CutfilePane(this);
     glass.addGestureListener(layers);
     glass.addGestureListener(grid);
     glass.addGestureListener(cutfile);
@@ -90,6 +95,19 @@ public class SkruiFabEditor {
     af.add(fe);
     af.center();
     af.setVisible(true);
+  }
+
+  public CornerFinder getCornerFinder() {
+    return cornerFinder;
+  }
+  
+  public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
+    Graphics2D g = destImage.createGraphics();
+    AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    g.drawImage(sourceImage, xform, null);
+    g.dispose();
   }
 
   Container getContentPane() {

@@ -44,12 +44,14 @@ public class GestureController {
   private Color encircleColor = new Color(255, 255, 0, 128);
   private ActionListener potentialGestureTimeout;
   private Timer potentialGestureTimer;
+  private GlassPane glass;
 
   /**
    * @param sketchBook
    */
-  public GestureController(SketchBook sketchBook) {
+  public GestureController(SketchBook sketchBook, GlassPane glass) {
     this.model = sketchBook;
+    this.glass = glass;
     gestureFinders = new ArrayList<GestureFinder>();
     gestureFinders.add(new EncircleGestureFinder(model));
 
@@ -141,6 +143,10 @@ public class GestureController {
 
   public void setGesture(Gesture gest) {
     this.actualGesture = gest;
+    GestureEvent gestStart = GestureEvent.buildStartEvent(this, gest.getComponentStart(),
+        gest.getStartLocation(), gest);
+    bug("Firing gesture start event.");
+    glass.fire(gestStart);
   }
 
   public Gesture detectGesture(Component start, Sequence seq) {
@@ -170,9 +176,9 @@ public class GestureController {
   }
 
   public void reportState(String msg) {
-    bug(" >>> " + msg + "\tpotentialGesture: " + hasPotentialGesture() + "\tactualGesture: " + hasActualGesture()
-        + "\ttimer running: "
-        + (potentialGestureTimer == null ? "null" : "" + potentialGestureTimer.isRunning()) + " <<<");
+    bug(msg + "\tpotentialGesture: " + hasPotentialGesture() + "\tactualGesture: "
+        + hasActualGesture() + "\ttimer running: "
+        + (potentialGestureTimer == null ? "null" : "" + potentialGestureTimer.isRunning()));
 
   }
 

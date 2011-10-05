@@ -36,11 +36,11 @@ public class SketchBook {
   private List<Ink> selectionCopy;
   private GraphicDebug guibug;
 
-  public SketchBook() {
+  public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
     this.selectionCopy = new ArrayList<Ink>();
-    this.gestures = new GestureController(this);
+    this.gestures = new GestureController(this, glass);
     ink = new ArrayList<Ink>();
   }
 

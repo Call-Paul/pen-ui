@@ -14,11 +14,16 @@ public class MoveGesture extends Gesture {
 
   Area where;
   
-  public MoveGesture(Component start, Sequence seq, Area where) {
+  public MoveGesture(Component start, Point mouseLoc, Sequence seq, Area where) {
     super(start, seq);
+    setStartLocation(mouseLoc);
     this.where = where;
   }
 
+  public Point getStartLocation() {
+    return startLoc;
+  }
+  
   public Area getWhere() {
     return where;
   }

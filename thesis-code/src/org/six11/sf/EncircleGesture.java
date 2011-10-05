@@ -67,7 +67,7 @@ public class EncircleGesture extends Gesture {
   public Gesture createSubsequentGesture(Component start, Point componentPoint) {
     Sequence seq = new Sequence();
     seq.add(new Pt(componentPoint));
-    Gesture ret = new MoveGesture(start, seq, getArea());
+    Gesture ret = new MoveGesture(start, componentPoint, seq, getArea());
     return ret;
   }
 

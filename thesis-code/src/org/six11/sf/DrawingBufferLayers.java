@@ -294,7 +294,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
 
   public void gestureStart(GestureEvent ev) {
     if (ev.getTargetComponent() == this) {
-      bug("Gesture Start");
       // TODO: for now assume gestures are entirely within drawing buffer layers. change later
       Pt pt = new Pt(ev.getComponentPoint());
       GestureController gests = model.getGestures();

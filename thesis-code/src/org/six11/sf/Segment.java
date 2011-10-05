@@ -106,6 +106,28 @@ public abstract class Segment {
     return spline;
   }
 
+  public void move(double dx, double dy) {
+    for (Pt pt : points) {
+      pt.setLocation(pt.getX() + dx, pt.getY() + dy);
+    }
+    switch (type) {
+      case Line:
+        Line l = asLine();
+        l.setLine(l.getX1() + dx, l.getY1() + dy, l.getX2() + dx, l.getY2() + dy);
+        break;
+      case EllipticalArc:
+      case Curve:
+        Sequence s = asSpline();
+        for (Pt pt : s) {
+          pt.setLocation(pt.getX() + dx, pt.getY() + dy);
+        }
+        break;
+      default:
+        bug("FAIL");
+        break;
+    }
+  }
+
   public class Terminal {
 
     Pt pt;
@@ -126,10 +148,8 @@ public abstract class Segment {
       return dir;
     }
 
-    
-    
     public String toString() {
-      return "S-" + id + "/T-"+ (pt == getP1() ? "1" : "2");
+      return "S-" + id + "/T-" + (pt == getP1() ? "1" : "2");
     }
 
     public Segment getSegment() {
@@ -151,21 +171,22 @@ public abstract class Segment {
     public Pt getOpposingTermPoint() {
       return pt == getP1() ? getP2() : getP1();
     }
-//
-//    /**
-//     * Returns a point list for this segment with the terminal's endpoint as the first element. Use
-//     * this when you need to traverse points along the segment beginning at one end.
-//     * 
-//     * @return
-//     */
-//    public List<Pt> getPointListFromTerm() {
-//      List<Pt> ret = new ArrayList<Pt>();
-//      ret.addAll(points);
-//      if (pt == getP2()) {
-//        Collections.reverse(ret);
-//      }
-//      return ret;
-//    }
+
+    //
+    //    /**
+    //     * Returns a point list for this segment with the terminal's endpoint as the first element. Use
+    //     * this when you need to traverse points along the segment beginning at one end.
+    //     * 
+    //     * @return
+    //     */
+    //    public List<Pt> getPointListFromTerm() {
+    //      List<Pt> ret = new ArrayList<Pt>();
+    //      ret.addAll(points);
+    //      if (pt == getP2()) {
+    //        Collections.reverse(ret);
+    //      }
+    //      return ret;
+    //    }
 
     public List<Pt> getSurfacePolyline() {
       List<Pt> ret = new ArrayList<Pt>();
@@ -173,7 +194,7 @@ public abstract class Segment {
         ret.add(getPoint());
         ret.add(getOpposingTermPoint());
       } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-        if (pt == getP1()) { 
+        if (pt == getP1()) {
           ret.addAll(asPolyline());
         } else {
           ret.addAll(asPolyline());

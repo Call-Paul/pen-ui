@@ -1,7 +1,10 @@
 package org.six11.sf;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import static java.lang.Math.abs;
 import static java.lang.Math.toRadians;
 import static java.lang.Math.ceil;
@@ -23,20 +26,24 @@ public class CornerFinder {
   public static final double lineErrorThreshold = 1.5;
   public static final double ellipseErrorThreshold = 0.5; // TODO: change
   
-  
-  
   private GraphicDebug guibug;
   
   public CornerFinder(GraphicDebug guibug) {
     this.guibug = guibug;
   }
 
-  public void findCorners(Sequence seq) {
+  public Set<StructuredInk> findCorners(Sequence seq) {
     assignCurvature(seq); // put a 'curvature' double attribute at every point
     isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     guibug.drawJunctions(seq);
     makeSegments(seq); // sets the SEGMENTS attrib (list of Segments)
-    guibug.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
+//    guibug.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
+    Set<StructuredInk> ret = new HashSet<StructuredInk>();
+    for (Segment seg : (List<Segment>) seq.getAttribute(SEGMENTS)) {
+      StructuredInk struc = new StructuredInk(seg);
+      ret.add(struc);
+    }
+    return ret;
   }
 
   private void assignCurvature(Sequence seq) {
