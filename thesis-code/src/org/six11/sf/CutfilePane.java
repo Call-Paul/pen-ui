@@ -81,13 +81,14 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
     }
     g.setColor(Color.BLUE);
     AffineTransform before = g.getTransform();
-    AffineTransform scaleXform = AffineTransform.getScaleInstance(scale, scale); 
+    AffineTransform scaleXform = AffineTransform.getScaleInstance(scale, scale);
     g.transform(scaleXform);
     g.setStroke(Strokes.get(2.0f));
     for (Stencil stencil : stencils) {
       Pt origin = stencil.getOrigin();
-      bug("Drawing shape with bounding rect: " + stencil.getShape().getBounds2D() + ", origin= " + num(origin));
-      Point2D scaledOrigin = scaleXform.transform(origin, null); 
+      bug("Drawing shape with bounding rect: " + stencil.getShape().getBounds2D() + ", origin= "
+          + num(origin));
+      Point2D scaledOrigin = scaleXform.transform(origin, null);
       g.translate(scaledOrigin.getX(), scaledOrigin.getY());
       g.draw(stencil.getShape());
       g.setTransform(scaleXform);
@@ -147,6 +148,12 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
 
   }
 
+  /**
+   * Prints the collection of Stencil objects in their current positions. Before printing, ensure
+   * doCutfileLayout() has been called.
+   * 
+   * @param file
+   */
   public void print(File file) {
     // 2. Draw the layers to the pdf graphics context.
     BoundingBox bb = getBoundingBox();
