@@ -1,10 +1,12 @@
 package org.six11.sf;
 
 import java.awt.Color;
+import java.awt.Shape;
 import java.awt.dnd.DragSource;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Area;
+import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +37,7 @@ public class SketchBook {
   private List<Ink> selection;
   private List<Ink> selectionCopy;
   private GraphicDebug guibug;
+  private Color transluscentPink = new Color(220, 180, 180, 140);
 
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
@@ -77,6 +80,29 @@ public class SketchBook {
       Sequence scrib = unstruc.getSequence();
       DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
           DrawingBufferLayers.DEFAULT_THICKNESS);
+      layers.repaint();
+    } else if (newInk.getType() == Type.Structured) {
+      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
+      DrawingBuffer bugBuf = layers.getLayer(GraphicDebug.DB_LATCH_LAYER);
+      StructuredInk struc = (StructuredInk) newInk;
+      bug("Adding structured ink of type: " + struc.getSegment().getType());
+      switch (struc.getSegment().getType()) {
+        case Curve:
+          DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.CYAN, 1.8);
+          break;
+        case EllipticalArc:
+          DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.MAGENTA, 1.8);
+          break;
+        case Line:
+          DrawingBufferRoutines.line(buf, struc.getSegment().asLine(), Color.GREEN, 1.8);
+          break;
+        case Unknown:
+          break;
+      }
+      Segment s = struc.getSegment();
+      Shape[] caps = s.getEndcapShapes();
+      DrawingBufferRoutines.fillShape(bugBuf, caps[0], transluscentPink , 1);
+      DrawingBufferRoutines.fillShape(bugBuf, caps[1], transluscentPink , 1);
       layers.repaint();
     }
   }

@@ -1,11 +1,18 @@
 package org.six11.sf;
 
+import java.awt.Shape;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.six11.util.Debug;
 import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
@@ -43,6 +50,26 @@ public abstract class Segment {
         termA, termB
     };
     id = ID_COUNTER++;
+  }
+
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    switch (getType()) {
+      case Curve:
+        buf.append("C");
+        break;
+      case EllipticalArc:
+        buf.append("E");
+        break;
+      case Line:
+        buf.append("L");
+        break;
+      case Unknown:
+        buf.append("?");
+        break;
+    }
+    buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
+    return buf.toString();
   }
 
   public int getId() {
@@ -86,12 +113,34 @@ public abstract class Segment {
     return ret;
   }
 
-  private void warn(String what) {
-    Debug.out("Segment", "** warning ** " + what);
+  public Vec getStartDir() {
+    Vec ret = null;
+    switch (type) {
+      case Line:
+        ret = new Vec(getP1(), getP2()).getUnitVector();
+        break;
+      case EllipticalArc:
+      case Curve:
+        Sequence spline = asSpline(); // spline should reliably give the direction at the ends
+        ret = new Vec(spline.get(0), spline.get(1)).getUnitVector();
+        break;
+    }
+    return ret;
   }
-
-  private void bug(String what) {
-    Debug.out("Segment", what);
+  
+  public Vec getEndDir() {
+    Vec ret = null;
+    switch (type) {
+      case Line:
+        ret = new Vec(getP2(), getP1()).getUnitVector();
+        break;
+      case EllipticalArc:
+      case Curve:
+        Sequence spline = asSpline(); // spline should reliably give the direction at the ends
+        ret = new Vec(spline.get(spline.size() - 1), spline.get(spline.size() - 2)).getUnitVector();
+        break;
+    }
+    return ret;
   }
 
   public Sequence asSpline() {
@@ -128,114 +177,149 @@ public abstract class Segment {
     }
   }
 
-  public class Terminal {
-
-    Pt pt;
-    Vec dir;
-    boolean fixed;
-
-    private Terminal(Pt pt, Vec dir, boolean fixed) {
-      this.pt = pt;
-      this.dir = dir;
-      this.fixed = fixed;
-    }
-
-    public Pt getPoint() {
-      return pt;
-    }
-
-    public Vec getDir() {
-      return dir;
-    }
-
-    public String toString() {
-      return "S-" + id + "/T-" + (pt == getP1() ? "1" : "2");
-    }
-
-    public Segment getSegment() {
-      return Segment.this;
-    }
-
-    public boolean isSame(Terminal near) {
-      return (pt.isSameLocation(near.getPoint()) && dir.isSame(near.getDir()));
-    }
-
-    public boolean isFixed() {
-      return fixed;
-    }
-
-    public Line getLine() {
-      return new Line(getPoint(), getDir());
-    }
-
-    public Pt getOpposingTermPoint() {
-      return pt == getP1() ? getP2() : getP1();
-    }
-
-    //
-    //    /**
-    //     * Returns a point list for this segment with the terminal's endpoint as the first element. Use
-    //     * this when you need to traverse points along the segment beginning at one end.
-    //     * 
-    //     * @return
-    //     */
-    //    public List<Pt> getPointListFromTerm() {
-    //      List<Pt> ret = new ArrayList<Pt>();
-    //      ret.addAll(points);
-    //      if (pt == getP2()) {
-    //        Collections.reverse(ret);
-    //      }
-    //      return ret;
-    //    }
-
-    public List<Pt> getSurfacePolyline() {
-      List<Pt> ret = new ArrayList<Pt>();
-      if (type == Segment.Type.Line) {
-        ret.add(getPoint());
-        ret.add(getOpposingTermPoint());
-      } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-        if (pt == getP1()) {
-          ret.addAll(asPolyline());
-        } else {
-          ret.addAll(asPolyline());
-          Collections.reverse(ret);
-        }
-      } else {
-        Debug.warn(this, "Unknown seg type in getSurfacePolyline(): " + type);
-      }
-      for (Pt pt : ret) {
-        if (pt.getTime() == 0) {
-          Debug.stacktrace("no time stamp in " + getType(), 8);
-        }
-      }
-      return ret;
-    }
-
-  }
-
-  public List<Terminal> getTerminals() {
-    List<Terminal> ret = new ArrayList<Terminal>();
-
-    if (type == Segment.Type.Line) {
-      ret.add(new Terminal(getP1(), new Vec(getP2(), getP1()).getUnitVector(), !terms[0]));
-    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-      ret.add(new Terminal(getP1(), new Vec(points.get(1), points.get(0)).getUnitVector(),
-          !terms[0]));
-    } else {
-      warn("unknown seg type in getTerminals");
-    }
-
-    if (type == Segment.Type.Line) {
-      ret.add(new Terminal(getP2(), new Vec(getP1(), getP2()).getUnitVector(), !terms[1]));
-    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-      ret.add(new Terminal(getP2(), new Vec(points.get(points.size() - 2),
-          points.get(points.size() - 1)).getUnitVector(), !terms[1]));
-    } else {
-      warn("unknown seg type in getTerminals");
-    }
-
+  public Area[] getEndcaps() {
+    Area[] ret = new Area[2];
+    ret[0] = new Area();
+    ret[1] = new Area();
+    Pt p1 = getP1();
+    Pt p2 = getP2();
+    double dist = p1.distance(p2);
+    double rad = dist / 20;
+    ret[0].add(new Area(new Circle(p1, rad)));
+    double d = 0;
+    Vec startVec = getStartDir().getFlip();
+    Area t1 = makeTriangle(p1, startVec, rad, 6 * rad);
+    ret[0].add(t1);
+    ret[1].add(new Area(new Circle(p2, rad)));
+    Vec endVec = getEndDir().getFlip();
+    Area t2 = makeTriangle(p2, endVec, rad, 6 * rad);
+    ret[1].add(t2);
     return ret;
   }
+
+  private Area makeTriangle(Pt end, Vec dir, double halfHeight, double width) {
+    Vec norm1 = dir.getNormal().getVectorOfMagnitude(halfHeight);
+    Vec norm2 = norm1.getFlip();
+    Pt p1 = norm1.add(end);
+    Pt p2 = norm2.add(end);
+    Pt p3 = dir.getVectorOfMagnitude(width).add(end);
+    Path2D retPath = new Path2D.Double();
+    retPath.moveTo(p1.getX(), p1.getY());
+    retPath.lineTo(p2.getX(), p2.getY());
+    retPath.lineTo(p3.getX(), p3.getY());
+    retPath.closePath();
+    Area ret = new Area(retPath);
+    return ret;
+  }
+
+  //  public class Terminal {
+  //
+  //    Pt pt;
+  //    Vec dir;
+  //    boolean fixed;
+  //
+  //    private Terminal(Pt pt, Vec dir, boolean fixed) {
+  //      this.pt = pt;
+  //      this.dir = dir;
+  //      this.fixed = fixed;
+  //    }
+  //
+  //    public Pt getPoint() {
+  //      return pt;
+  //    }
+  //
+  //    public Vec getDir() {
+  //      return dir;
+  //    }
+  //
+  //    public String toString() {
+  //      return "S-" + id + "/T-" + (pt == getP1() ? "1" : "2");
+  //    }
+  //
+  //    public Segment getSegment() {
+  //      return Segment.this;
+  //    }
+  //
+  //    public boolean isSame(Terminal near) {
+  //      return (pt.isSameLocation(near.getPoint()) && dir.isSame(near.getDir()));
+  //    }
+  //
+  //    public boolean isFixed() {
+  //      return fixed;
+  //    }
+  //
+  //    public Line getLine() {
+  //      return new Line(getPoint(), getDir());
+  //    }
+  //
+  //    public Pt getOpposingTermPoint() {
+  //      return pt == getP1() ? getP2() : getP1();
+  //    }
+  //
+  //    //
+  //    //    /**
+  //    //     * Returns a point list for this segment with the terminal's endpoint as the first element. Use
+  //    //     * this when you need to traverse points along the segment beginning at one end.
+  //    //     * 
+  //    //     * @return
+  //    //     */
+  //    //    public List<Pt> getPointListFromTerm() {
+  //    //      List<Pt> ret = new ArrayList<Pt>();
+  //    //      ret.addAll(points);
+  //    //      if (pt == getP2()) {
+  //    //        Collections.reverse(ret);
+  //    //      }
+  //    //      return ret;
+  //    //    }
+  //
+  //    public List<Pt> getSurfacePolyline() {
+  //      List<Pt> ret = new ArrayList<Pt>();
+  //      if (type == Segment.Type.Line) {
+  //        ret.add(getPoint());
+  //        ret.add(getOpposingTermPoint());
+  //      } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+  //        if (pt == getP1()) {
+  //          ret.addAll(asPolyline());
+  //        } else {
+  //          ret.addAll(asPolyline());
+  //          Collections.reverse(ret);
+  //        }
+  //      } else {
+  //        Debug.warn(this, "Unknown seg type in getSurfacePolyline(): " + type);
+  //      }
+  //      for (Pt pt : ret) {
+  //        if (pt.getTime() == 0) {
+  //          Debug.stacktrace("no time stamp in " + getType(), 8);
+  //        }
+  //      }
+  //      return ret;
+  //    }
+  //
+  //  }
+  //
+  //  public List<Terminal> getTerminals() {
+  //    List<Terminal> ret = new ArrayList<Terminal>();
+  //
+  //    if (type == Segment.Type.Line) {
+  //      ret.add(new Terminal(getP1(), new Vec(getP2(), getP1()).getUnitVector(), !terms[0]));
+  //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+  //      ret.add(new Terminal(getP1(), new Vec(points.get(1), points.get(0)).getUnitVector(),
+  //          !terms[0]));
+  //    } else {
+  //      bug("unknown seg type in getTerminals");
+  //    }
+  //
+  //    if (type == Segment.Type.Line) {
+  //      ret.add(new Terminal(getP2(), new Vec(getP1(), getP2()).getUnitVector(), !terms[1]));
+  //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+  //      ret.add(new Terminal(getP2(), new Vec(points.get(points.size() - 2),
+  //          points.get(points.size() - 1)).getUnitVector(), !terms[1]));
+  //    } else {
+  //      bug("unknown seg type in getTerminals");
+  //    }
+  //
+  //    return ret;
+  //  }
 
   /**
    * If you modify the segment externally, call this so cached stuff is re-calcuated.
@@ -259,6 +343,16 @@ public abstract class Segment {
     if (where != null && where.distance(point) <= dist) {
       ret = true;
     }
+    return ret;
+  }
+
+  public Shape[] getEndcapShapes() {
+    Path2D[] ret = new Path2D[2];
+    Area[] caps = getEndcaps();
+    ret[0] = new Path2D.Double();
+    ret[1] = new Path2D.Double();
+    ret[0].append(caps[0].getPathIterator(null), false);
+    ret[1].append(caps[1].getPathIterator(null), false);
     return ret;
   }
 

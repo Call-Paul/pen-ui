@@ -23,6 +23,7 @@ public class GraphicDebug {
   public static final String DB_HIGHLIGHTS = "7";
   public static final String DB_SELECTION = "8";
   public static final String DB_COPY_LAYER = "9";
+  public static final String DB_STRUCTURED_INK = "structured ink";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;

@@ -12,8 +12,10 @@ import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -45,15 +47,17 @@ public class SkruiFabEditor {
   DrawingBufferLayers layers;
   SketchBook model;
   CornerFinder cornerFinder;
-
+  
   GraphicDebug guibug;
   Map<String, Action> actions;
   private GlassPane glass;
   private static String ACTION_GO = "Go";
   ApplicationFrame af;
+  private ConstraintAnalyzer constraintAnalyzer;
 
   public SkruiFabEditor(Main m) {
     this.main = m;
+    this.constraintAnalyzer = new ConstraintAnalyzer();
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(600, 400);
@@ -137,6 +141,7 @@ public class SkruiFabEditor {
     //
     // 2b. Now give actions for other commands like printing, saving,
     // launching ICBMs, etc
+    
     // actions.put(ACTION_PRINT, new NamedAction("Print",
     // KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
     // public void activate() {
@@ -160,11 +165,23 @@ public class SkruiFabEditor {
   }
 
   public void go() {
+    bug("go");
     List<UnstructuredInk> unstruc = model.getUnanalyzedInk();
+    Set<StructuredInk> struc = new HashSet<StructuredInk>();
     for (UnstructuredInk stroke : unstruc) {
       Sequence seq = stroke.getSequence();
-      cornerFinder.findCorners(seq);
+      struc.addAll(cornerFinder.findCorners(seq));
+      stroke.setAnalyzed(true);
     }
+    List<Segment> unconstrained = new ArrayList<Segment>();
+    for (StructuredInk thing : struc) {
+      unconstrained.add(thing.getSegment());
+      model.addInk(thing);
+      bug("Structured thing: " + thing.getSegment());
+    }
+    constraintAnalyzer.analyze(unconstrained);
+    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+    layers.repaint();
   }
 
   /**

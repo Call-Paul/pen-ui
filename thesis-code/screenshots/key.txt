@@ -1,3 +1,5 @@
+=== skruifab ===
+
 001: first running instance with drawing pane and two placeholders for
      grid and cutfile
 
@@ -30,6 +32,11 @@
 013: video shows dragging into scrap grid with thumbnail appearing. bugs
      related to crossing over between components have been fixed.
 
-014: scraps are persistent in the scrap grid. the grid contains a reference
-     to the location (as an Area) and a thumbnail of what was originally
-     dragged.
+014: scraps are persistent in the scrap grid. grid has a reference to the
+     location (as an Area) and a thumbnail of what was originally dragged.
+
+015: added code to analyze unstructured ink, draw the structured
+     interpretation, and remove the unstructured ink
+
+016: calculates and draws endcap regions. these are going to be used to
+     detect if segment endpoints should be joined.

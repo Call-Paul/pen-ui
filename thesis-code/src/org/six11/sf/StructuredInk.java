@@ -75,5 +75,9 @@ public class StructuredInk extends Ink {
     bug("Moving by " + dx + ", " + dy);
     seg.move(dx, dy);
   }
+  
+  public Segment getSegment() {
+    return seg;
+  }
 
 }
