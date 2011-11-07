@@ -179,6 +179,7 @@ public class SkruiFabEditor {
       model.addInk(thing);
       bug("Structured thing: " + thing.getSegment());
     }
+    model.processStructuredInk(struc);
     constraintAnalyzer.analyze(unconstrained);
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     layers.repaint();

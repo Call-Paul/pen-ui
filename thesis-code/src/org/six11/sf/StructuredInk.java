@@ -4,6 +4,8 @@ import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.util.Collection;
+import java.util.HashSet;
 
 import org.six11.util.pen.Pt;
 
@@ -38,6 +40,13 @@ public class StructuredInk extends Ink {
       }
     }
     return path;
+  }
+
+  public Collection<EndCap> getEndCaps() {
+    Collection<EndCap>ret = new HashSet<EndCap>();
+    ret.add(new EndCap(this, EndCap.WhichEnd.Start));
+    ret.add(new EndCap(this, EndCap.WhichEnd.End));
+    return ret;
   }
 
   public Area getArea() {

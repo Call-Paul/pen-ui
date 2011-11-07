@@ -177,40 +177,6 @@ public abstract class Segment {
     }
   }
 
-  public Area[] getEndcaps() {
-    Area[] ret = new Area[2];
-    ret[0] = new Area();
-    ret[1] = new Area();
-    Pt p1 = getP1();
-    Pt p2 = getP2();
-    double dist = p1.distance(p2);
-    double rad = dist / 20;
-    ret[0].add(new Area(new Circle(p1, rad)));
-    double d = 0;
-    Vec startVec = getStartDir().getFlip();
-    Area t1 = makeTriangle(p1, startVec, rad, 6 * rad);
-    ret[0].add(t1);
-    ret[1].add(new Area(new Circle(p2, rad)));
-    Vec endVec = getEndDir().getFlip();
-    Area t2 = makeTriangle(p2, endVec, rad, 6 * rad);
-    ret[1].add(t2);
-    return ret;
-  }
-
-  private Area makeTriangle(Pt end, Vec dir, double halfHeight, double width) {
-    Vec norm1 = dir.getNormal().getVectorOfMagnitude(halfHeight);
-    Vec norm2 = norm1.getFlip();
-    Pt p1 = norm1.add(end);
-    Pt p2 = norm2.add(end);
-    Pt p3 = dir.getVectorOfMagnitude(width).add(end);
-    Path2D retPath = new Path2D.Double();
-    retPath.moveTo(p1.getX(), p1.getY());
-    retPath.lineTo(p2.getX(), p2.getY());
-    retPath.lineTo(p3.getX(), p3.getY());
-    retPath.closePath();
-    Area ret = new Area(retPath);
-    return ret;
-  }
 
   //  public class Terminal {
   //
@@ -343,16 +309,6 @@ public abstract class Segment {
     if (where != null && where.distance(point) <= dist) {
       ret = true;
     }
-    return ret;
-  }
-
-  public Shape[] getEndcapShapes() {
-    Path2D[] ret = new Path2D[2];
-    Area[] caps = getEndcaps();
-    ret[0] = new Path2D.Double();
-    ret[1] = new Path2D.Double();
-    ret[0].append(caps[0].getPathIterator(null), false);
-    ret[1].append(caps[1].getPathIterator(null), false);
     return ret;
   }
 
