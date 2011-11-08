@@ -103,7 +103,7 @@ public class GestureController {
       model.clearSelection();
       if (!potentialGesture.wasActualGesture()) {
         // turn the gesture's pen input into unstructured ink
-        Ink originalInk = new UnstructuredInk(potentialGesture.getOriginalSequence());
+        Ink originalInk = new Ink(potentialGesture.getOriginalSequence());
         model.addInk(originalInk);
       }
       clearPotentialGesture();

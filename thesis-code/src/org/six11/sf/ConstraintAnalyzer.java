@@ -19,12 +19,12 @@ public class ConstraintAnalyzer {
     this.model = model;
   }
 
-  public void analyze(Collection<StructuredInk> struc) {
+  public void analyze(Collection<Segment> segs) {
     // make a current map of the endcap locations for all structured ink
 
     DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
-    Set<EndCap> caps = getCurrentEndCaps(model.ink);
-    Set<EndCap> newCaps = getCurrentEndCaps(struc);
+    Set<EndCap> caps = getCurrentEndCaps(); // set of all endcaps
+    Set<EndCap> newCaps = getCurrentEndCaps(); // set of recently added endcaps (based on struc)
     Set<EndCap.Intersection> examined = new HashSet<EndCap.Intersection>();
     Set<EndCap.Intersection> success = new HashSet<EndCap.Intersection>();
     // Compare the caps of the new ink with each cap in the model
@@ -34,7 +34,6 @@ public class ConstraintAnalyzer {
           EndCap.Intersection ix = c1.intersectInCap(c2);
           if (ix.intersects) {
             success.add(ix);
-            bug("Caps intersect. Marking it with a fat blue dot.");
             DrawingBufferRoutines.dot(bugBuf, ix.pt, 8, 1, Color.BLACK, Color.BLUE);
           }
           examined.add(ix);
@@ -91,13 +90,17 @@ public class ConstraintAnalyzer {
     return ret;
   }
 
-  private Set<EndCap> getCurrentEndCaps(Collection<? extends Ink> someInk) {
+  private Set<EndCap> getCurrentEndCaps() {
     Set<EndCap> ret = new HashSet<EndCap>();
-    for (Ink k : someInk) {
-      if (k instanceof StructuredInk) {
-        ret.addAll(((StructuredInk) k).getEndCaps());
-      }
+//    bug("TODO: get endcaps from the model");
+    for (Segment seg : model.getGeometry()) {
+      ret.addAll(seg.getEndCaps());
     }
+//    for (Ink k : someInk) {
+//      if (k instanceof StructuredInk) {
+//        ret.addAll(((StructuredInk) k).getEndCaps());
+//      }
+//    }
     return ret;
   }
 }

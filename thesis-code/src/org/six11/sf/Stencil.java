@@ -21,12 +21,13 @@ public class Stencil {
   Shape shape;
 
   public Stencil(Set<StructuredInk> struc) {
-    this.structuredInk = struc;
-    BoundingBox bb = getBoundingBox();
-    for (StructuredInk ink : struc) {
-      ink.move(-bb.getMinX(), -bb.getMinY());
-    }
-    bounds = null;
+    bug("TODO: Stencil using old structured ink stuff");
+//    this.structuredInk = struc;
+//    BoundingBox bb = getBoundingBox();
+//    for (StructuredInk ink : struc) {
+//      ink.move(-bb.getMinX(), -bb.getMinY());
+//    }
+//    bounds = null;
   }
 
   public void setOrigin(double x, double y) {

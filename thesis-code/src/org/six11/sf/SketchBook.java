@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.sf.Ink.Type;
 import org.six11.util.data.Lists;
@@ -12,6 +14,7 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.solve.ConstraintSolver;
 
 import static org.six11.util.Debug.bug;
 
@@ -25,13 +28,19 @@ public class SketchBook {
   private List<Ink> selection;
   private List<Ink> selectionCopy;
   private GraphicDebug guibug;
+  private Set<Segment> geometry;
+  private ConstraintAnalyzer constraintAnalyzer;
+  private ConstraintSolver solver;
 
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
     this.selectionCopy = new ArrayList<Ink>();
     this.gestures = new GestureController(this, glass);
+    this.geometry = new HashSet<Segment>();
     this.ink = new ArrayList<Ink>();
+    this.constraintAnalyzer = new ConstraintAnalyzer(this);
+    this.solver = new ConstraintSolver();
   }
 
   public List<Ink> getSelectionCopy() {
@@ -61,30 +70,10 @@ public class SketchBook {
   public void addInk(Ink newInk) {
     ink.add(newInk);
     gestures.clearGestureTimer();
-    if (newInk.getType() == Type.Unstructured) {
-      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-      UnstructuredInk unstruc = (UnstructuredInk) newInk;
-      Sequence scrib = unstruc.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
-          DrawingBufferLayers.DEFAULT_THICKNESS);
-      //    } else if (newInk.getType() == Type.Structured) {
-      //      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
-      //      StructuredInk struc = (StructuredInk) newInk;
-      //      bug("Adding structured ink of type: " + struc.getSegment().getType());
-      //      switch (struc.getSegment().getType()) {
-      //        case Curve:
-      //          DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.CYAN, 1.8);
-      //          break;
-      //        case EllipticalArc:
-      //          DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.MAGENTA, 1.8);
-      //          break;
-      //        case Line:
-      //          DrawingBufferRoutines.line(buf, struc.getSegment().asLine(), Color.GREEN, 1.8);
-      //          break;
-      //        case Unknown:
-      //          break;
-      //      }
-    }
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+    Sequence scrib = newInk.getSequence();
+    DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
+        DrawingBufferLayers.DEFAULT_THICKNESS);
     layers.repaint();
   }
 
@@ -122,11 +111,11 @@ public class SketchBook {
     this.layers = layers;
   }
 
-  public List<UnstructuredInk> getUnanalyzedInk() {
-    List<UnstructuredInk> ret = new ArrayList<UnstructuredInk>();
+  public List<Ink> getUnanalyzedInk() {
+    List<Ink> ret = new ArrayList<Ink>();
     for (Ink stroke : ink) {
-      if (stroke.getType() == Type.Unstructured && !stroke.isAnalyzed()) {
-        ret.add((UnstructuredInk) stroke);
+      if (!stroke.isAnalyzed()) {
+        ret.add(stroke);
       }
     }
     return ret;
@@ -157,9 +146,24 @@ public class SketchBook {
     DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SELECTION);
     db.clear();
     for (Ink eenk : selection) {
-      UnstructuredInk uns = (UnstructuredInk) eenk;
-      guibug.ghostlyOutlineShape(db, uns.getSequence().getPoints(), Color.CYAN.darker());
+      guibug.ghostlyOutlineShape(db, eenk.getSequence().getPoints(), Color.CYAN.darker());
     }
+  }
+
+  public void addGeometry(Segment seg) {
+    geometry.add(seg);
+  }
+
+  public Set<Segment> getGeometry() {
+    return geometry;
+  }
+
+  public ConstraintAnalyzer getConstraintAnalyzer() {
+    return constraintAnalyzer;
+  }
+  
+  public ConstraintSolver getConstraints() {
+    return solver;
   }
 
 }

@@ -32,17 +32,18 @@ public class CornerFinder {
     this.guibug = guibug;
   }
 
-  public Set<StructuredInk> findCorners(Sequence seq) {
+  public Set<Segment> findCorners(Sequence seq) {
     assignCurvature(seq); // put a 'curvature' double attribute at every point
     isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     guibug.drawJunctions(seq);
     makeSegments(seq); // sets the SEGMENTS attrib (list of Segments)
 //    guibug.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
-    Set<StructuredInk> ret = new HashSet<StructuredInk>();
-    for (Segment seg : (List<Segment>) seq.getAttribute(SEGMENTS)) {
-      StructuredInk struc = new StructuredInk(seg);
-      ret.add(struc);
-    }
+    Set<Segment> ret = new HashSet<Segment>();
+    ret.addAll((List<Segment>) seq.getAttribute(SEGMENTS));
+//    for (Segment seg : (List<Segment>) seq.getAttribute(SEGMENTS)) {
+//      StructuredInk struc = new StructuredInk(seg);
+//      ret.add(seg);
+//    }
     return ret;
   }
 

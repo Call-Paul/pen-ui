@@ -27,7 +27,8 @@ public class EncircleGesture extends Gesture {
   /**
    * @param likelihood
    */
-  public EncircleGesture(Component start, Sequence original, double likelihood, int startInclusive, int endInclusive) {
+  public EncircleGesture(Component start, Sequence original, double likelihood, int startInclusive,
+      int endInclusive) {
     super(start, original);
     p = likelihood;
     setPoints(original, startInclusive, endInclusive);
@@ -84,16 +85,12 @@ public class EncircleGesture extends Gesture {
       ret = true;
     } else if (selection != null) {
       for (Ink sel : selection) {
-        if (sel instanceof UnstructuredInk) {
-          Sequence seq = ((UnstructuredInk) sel).getSequence();
-          dist = Functions.getNearestPointOnSequence(pt, seq).distance(pt);
-          if (dist < GestureController.GESTURE_AOE_DISTANCE) {
-            bug("Input is at least " + num(dist) + " px from a hotspot, so i say it is near!");
-            ret = true;
-            break;
-          }
-        } else {
-          // TODO: do stuff.
+        Sequence seq = sel.getSequence();
+        dist = Functions.getNearestPointOnSequence(pt, seq).distance(pt);
+        if (dist < GestureController.GESTURE_AOE_DISTANCE) {
+          bug("Input is at least " + num(dist) + " px from a hotspot, so i say it is near!");
+          ret = true;
+          break;
         }
       }
     }

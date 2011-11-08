@@ -64,43 +64,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
     setName("DrawingBufferLayers");
     layers = new PriorityQueue<DrawingBuffer>(10, DrawingBuffer.sortByLayer);
     layersByName = new HashMap<String, DrawingBuffer>();
-    //    MouseThing mt = new MouseThing() {
-    //
-    //      Pt prev = null;
-    //      public void mouseExited(MouseEvent ev) {
-    //        PenEvent pev = PenEvent.buildExitEvent(this, ev);
-    //        fire(pev);
-    //        repaint();
-    //      }
-    //      
-    //      @Override
-    //      public void mousePressed(MouseEvent ev) {
-    //        prev = new Pt(ev);
-    //        currentScribble = new GeneralPath();
-    //        currentScribble.moveTo(prev.getX(), prev.getY());
-    //        PenEvent pev = PenEvent.buildDownEvent(this, prev, ev);
-    //        fire(pev);
-    //        repaint();
-    //      }
-    //
-    //      @Override
-    //      public void mouseDragged(MouseEvent ev) {
-    //        Pt here = new Pt(ev);
-    //        currentScribble.lineTo(here.getX(), here.getY());
-    //        PenEvent pev = PenEvent.buildDragEvent(this, here, prev, 0, null, ev);
-    //        fire(pev);
-    //        repaint();
-    //      }
-    //
-    //      @Override
-    //      public void mouseReleased(MouseEvent ev) {
-    //        PenEvent pev = PenEvent.buildIdleEvent(this, ev);
-    //        fire(pev);
-    //        repaint();
-    //      }
-    //    };
-    //    addMouseListener(mt);
-    //    addMouseMotionListener(mt);
     penListeners = new ArrayList<PenListener>();
   }
 
@@ -267,7 +230,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
         Sequence seq = model.endScribble(ev.getPt());
         Gesture gest = model.getGestures().detectGesture(this, seq);
         if (gest == null) {
-          model.addInk(new UnstructuredInk(seq));
+          model.addInk(new Ink(seq));
         } else if (gest.getProbability() > 0) {
           model.getGestures().addPotentialGesture(gest);
         }
@@ -310,8 +273,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
           copyLayer.setVisible(true);
           Color color = Color.BLUE;
           for (Ink eenk : model.getSelectionCopy()) {
-            UnstructuredInk uns = (UnstructuredInk) eenk;
-            Sequence scrib = uns.getSequence();
+            Sequence scrib = eenk.getSequence();
             DrawingBufferRoutines.drawShape(copyLayer, scrib.getPoints(), color,
                 DrawingBufferLayers.DEFAULT_THICKNESS * 1.5);
           }

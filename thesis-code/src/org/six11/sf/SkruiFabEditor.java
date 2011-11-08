@@ -57,7 +57,7 @@ public class SkruiFabEditor {
   private GlassPane glass;
   private static String ACTION_GO = "Go";
   ApplicationFrame af;
-  private ConstraintAnalyzer constraintAnalyzer;
+  private int pointCounter = 1;
 
   public SkruiFabEditor(Main m) {
     this.main = m;
@@ -70,7 +70,6 @@ public class SkruiFabEditor {
     glass.setVisible(true);
     model = new SketchBook(glass);
     layers = new DrawingBufferLayers(model);
-    this.constraintAnalyzer = new ConstraintAnalyzer(model);
 
     /*
      * TODO: GLassPane now handles mouse events and generates pen listens.
@@ -170,49 +169,47 @@ public class SkruiFabEditor {
 
   public void go() {
     bug("go");
-    List<UnstructuredInk> unstruc = model.getUnanalyzedInk();
-    Collection<StructuredInk> struc = new HashSet<StructuredInk>();
-    for (UnstructuredInk stroke : unstruc) {
+    List<Ink> unstruc = model.getUnanalyzedInk();
+    Collection<Segment> segs = new HashSet<Segment>();
+    for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
-      struc.addAll(cornerFinder.findCorners(seq));
+      segs.addAll(cornerFinder.findCorners(seq));
       stroke.setAnalyzed(true);
     }
-    for (StructuredInk thing : struc) {
-      model.addInk(thing);
+    for (Segment seg : segs) {
+      model.getConstraints().addPoint(nextPointName(), seg.getP1());
+      model.getConstraints().addPoint(nextPointName(), seg.getP2());
+      model.addGeometry(seg);
     }
-    constraintAnalyzer.analyze(struc);
+    model.getConstraintAnalyzer().analyze(segs);
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStructured();
     layers.repaint();
   }
 
+  private String nextPointName() {
+    return "P" + pointCounter++;
+  }
+  
   private void drawStructured() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
-    for (Ink ink : model.ink) {
-      if (ink instanceof StructuredInk) {
-        StructuredInk struc = (StructuredInk) ink;
-        switch (struc.getSegment().getType()) {
-          case Curve:
-            DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.CYAN, 1.8);
-            break;
-          case EllipticalArc:
-            DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.MAGENTA, 1.8);
-            break;
-          case Line:
-            DrawingBufferRoutines.line(buf, struc.getSegment().asLine(), Color.GREEN, 1.8);
-            break;
-          case Unknown:
-            break;
-        }
+    for (Segment seg : model.getGeometry()) {
+      switch (seg.getType()) {
+        case Curve:
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.CYAN, 1.8);
+          break;
+        case EllipticalArc:
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
+          break;
+        case Line:
+          DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);
+          break;
+        case Unknown:
+          break;
       }
     }
     layers.repaint();
   }
-
-  /**
-   * Handle pen events. If this is called we can be guaranteed that the original mouse event is or
-   * could be ink. In other words, this is not a gesture, so it is safe to put it in the ink list.
-   */
 
 }

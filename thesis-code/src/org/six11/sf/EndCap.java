@@ -77,7 +77,7 @@ public class EndCap {
     Start, End
   }
 
-  private StructuredInk ink;
+  private Segment seg;
   private Pt pt;
   private Vec dir;
   private Area area;
@@ -86,13 +86,13 @@ public class EndCap {
   private Line line;
   private WhichEnd end;
 
-  public EndCap(StructuredInk ink, WhichEnd end) {
-    this.ink = ink;
+  public EndCap(Segment seg, WhichEnd end) {
+    this.seg = seg;
     this.end = end;
-    Segment s = ink.getSegment();
-    this.pt = (end == WhichEnd.Start ? s.getP1() : s.getP2());
-    this.dir = (end == WhichEnd.Start ? s.getStartDir() : s.getEndDir()).getFlip();
-    double dist = s.getP1().distance(s.getP2());
+    
+    this.pt = (end == WhichEnd.Start ? seg.getP1() : seg.getP2());
+    this.dir = (end == WhichEnd.Start ? seg.getStartDir() : seg.getEndDir()).getFlip();
+    double dist = seg.getP1().distance(seg.getP2());
     double rad = dist / 20;
     this.area = new Area();
     area.add(new Area(new Circle(pt, rad)));
@@ -118,8 +118,8 @@ public class EndCap {
     return ret;
   }
 
-  public StructuredInk getInk() {
-    return ink;
+  public Segment getSegment() {
+    return seg;
   }
 
   public Pt getPt() {
@@ -158,11 +158,11 @@ public class EndCap {
    * Returns true if these two endcaps have the same ink and end (using getInk() and getEnd()).
    */
   public boolean same(EndCap other) {
-    return ink == other.getInk() && end == other.getEnd();
+    return seg == other.getSegment() && end == other.getEnd();
   }
 
   public String toString() {
-    return getInk().getSegment().toString() + " " + end;
+    return seg.toString() + " " + end;
   }
 
   public EndCap.Intersection intersectInCap(EndCap c2) {

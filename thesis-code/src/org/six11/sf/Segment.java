@@ -5,7 +5,9 @@ import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import org.six11.util.Debug;
@@ -70,6 +72,13 @@ public abstract class Segment {
     }
     buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
     return buf.toString();
+  }
+  
+  public Collection<EndCap> getEndCaps() {
+    Collection<EndCap>ret = new HashSet<EndCap>();
+    ret.add(new EndCap(this, EndCap.WhichEnd.Start));
+    ret.add(new EndCap(this, EndCap.WhichEnd.End));
+    return ret;
   }
 
   public int getId() {
@@ -155,27 +164,28 @@ public abstract class Segment {
     return spline;
   }
 
-  public void move(double dx, double dy) {
-    for (Pt pt : points) {
-      pt.setLocation(pt.getX() + dx, pt.getY() + dy);
-    }
-    switch (type) {
-      case Line:
-        Line l = asLine();
-        l.setLine(l.getX1() + dx, l.getY1() + dy, l.getX2() + dx, l.getY2() + dy);
-        break;
-      case EllipticalArc:
-      case Curve:
-        Sequence s = asSpline();
-        for (Pt pt : s) {
-          pt.setLocation(pt.getX() + dx, pt.getY() + dy);
-        }
-        break;
-      default:
-        bug("FAIL");
-        break;
-    }
-  }
+//  public void move(double dx, double dy) {
+//    bug("This is a dangerous method. if you see this, freak out");
+//    for (Pt pt : points) {
+//      pt.setLocation(pt.getX() + dx, pt.getY() + dy);
+//    }
+//    switch (type) {
+//      case Line:
+//        Line l = asLine();
+//        l.setLine(l.getX1() + dx, l.getY1() + dy, l.getX2() + dx, l.getY2() + dy);
+//        break;
+//      case EllipticalArc:
+//      case Curve:
+//        Sequence s = asSpline();
+//        for (Pt pt : s) {
+//          pt.setLocation(pt.getX() + dx, pt.getY() + dy);
+//        }
+//        break;
+//      default:
+//        bug("FAIL");
+//        break;
+//    }
+//  }
 
 
   //  public class Terminal {

@@ -102,19 +102,17 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
     if (g instanceof MoveGesture && g.getComponentStart() instanceof ScrapGrid
         && g.getComponentEnd() == this) {
       bug("You just dropped a scrap on the cutfile pane.");
-      MoveGesture mg = (MoveGesture) g;
-      List<Ink> selected = editor.getModel().search(mg.getWhere());
-      Set<StructuredInk> stencilParts = new HashSet<StructuredInk>();
-      for (Ink stroke : selected) {
-        if (stroke instanceof UnstructuredInk) {
-          UnstructuredInk unstruc = (UnstructuredInk) stroke;
-          Sequence seq = unstruc.getSequence();
-          stencilParts.addAll(editor.getCornerFinder().findCorners(seq));
-        }
-      }
-      Stencil part = new Stencil(stencilParts);
-      stencils.add(part);
-      doCutfileLayout();
+      bug("TODO: re-do this using newfangled data structures");
+//      MoveGesture mg = (MoveGesture) g;
+//      List<Ink> selected = editor.getModel().search(mg.getWhere());
+//      Set<StructuredInk> stencilParts = new HashSet<StructuredInk>();
+//      for (Ink stroke : selected) {
+//          Sequence seq = stroke.getSequence();
+//          stencilParts.addAll(editor.getCornerFinder().findCorners(seq));
+//      }
+//      Stencil part = new Stencil(stencilParts);
+//      stencils.add(part);
+//      doCutfileLayout();
     }
   }
 
