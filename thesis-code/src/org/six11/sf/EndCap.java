@@ -1,11 +1,17 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
+import java.awt.Color;
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.six11.util.gui.shape.Circle;
+import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.IntersectionData;
 import org.six11.util.pen.Line;
@@ -13,6 +19,59 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
 public class EndCap {
+
+  public static class Group {
+    Set<EndCap.Intersection> intersections = new HashSet<EndCap.Intersection>();
+
+    public Group(Intersection ix) {
+      intersections.add(ix);
+    }
+
+    public void add(EndCap.Intersection ix) {
+      intersections.add(ix);
+    }
+
+    public boolean has(Group other) {
+      boolean ret = false;
+      for (Intersection ix : intersections) {
+        for (Intersection otherIx : other.intersections) {
+          if (ix.isRelated(otherIx)) {
+            ret = true;
+            break;
+          }
+        }
+      }
+      return ret;
+    }
+
+    public void merge(Group other) {
+      for (Intersection ix : other.intersections) {
+        add(ix);
+      }
+    }
+
+    public void adjustMembers() {
+      double sumX = 0;
+      double sumY = 0;
+      int n = 0;
+      for (Intersection ix : intersections) {
+        if (ix.intersects) {
+          n = n + 1;
+          sumX = sumX + ix.pt.getX();
+          sumY = sumY + ix.pt.getY();
+        }
+      }
+      if (n > 0) {
+        double midX = sumX / n;
+        double midY = sumY / n;
+        for (Intersection ix : intersections) {
+          if (ix.intersects) {
+            ix.adjustMembers(midX, midY);
+          }
+        }
+      }
+    }
+  }
 
   public static enum WhichEnd {
     Start, End
@@ -90,7 +149,7 @@ public class EndCap {
   public WhichEnd getEnd() {
     return end;
   }
-  
+
   public IntersectionData intersect(EndCap other) {
     return Functions.getIntersectionData(getLine(), other.getLine());
   }
@@ -101,8 +160,63 @@ public class EndCap {
   public boolean same(EndCap other) {
     return ink == other.getInk() && end == other.getEnd();
   }
-  
+
   public String toString() {
     return getInk().getSegment().toString() + " " + end;
+  }
+
+  public EndCap.Intersection intersectInCap(EndCap c2) {
+    EndCap.Intersection ret = new EndCap.Intersection(this, c2);
+    // to be efficient do the low-overhead checks first: 
+    if (!same(c2) && // avoid self-comparison
+        getBounds().intersects(c2.getBounds())) { // check bounding rectangles
+      Area mutableArea = new Area(getArea());
+      mutableArea.intersect(c2.getArea());
+      if (!mutableArea.isEmpty()) { // check if cap regions overlap
+        IntersectionData id = intersect(c2);
+        if (!id.isParallel()) {
+          Pt x = id.getIntersection(); // check if segments intersect in overlap
+          if (mutableArea.contains(x)) {
+            ret.setResult(true, x);
+          }
+        }
+      }
+    }
+    return ret;
+  }
+
+  public static class Intersection {
+    EndCap c1, c2;
+    Pt pt;
+    boolean intersects;
+
+    public Intersection(EndCap c1, EndCap c2) {
+      this.c1 = c1;
+      this.c2 = c2;
+      this.intersects = false;
+      this.pt = null;
+    }
+
+    public void adjustMembers(double midX, double midY) {
+      c1.pt.setLocation(midX, midY);
+      c2.pt.setLocation(midX, midY);
+    }
+
+    private void setResult(boolean intersects, Pt pt) {
+      this.intersects = intersects;
+      this.pt = pt;
+    }
+
+    public boolean usesSameCaps(EndCap e1, EndCap e2) {
+      return ((e1.same(c1) && e2.same(c2)) || (e1.same(c2) && e2.same(c1)));
+    }
+
+    public boolean isRelated(Intersection other) {
+      boolean ret = false;
+      if (intersects && other.intersects) {
+        ret = c1.same(other.c1) || c1.same(other.c2) || c2.same(other.c1) || c2.same(other.c2);
+      }
+      return ret;
+    }
   }
 }

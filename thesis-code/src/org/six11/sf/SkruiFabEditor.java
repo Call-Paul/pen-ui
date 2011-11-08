@@ -11,6 +11,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,10 +24,13 @@ import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.TransferHandler;
 
+import org.six11.sf.Ink.Type;
 import org.six11.util.Debug;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
+import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -47,7 +51,7 @@ public class SkruiFabEditor {
   DrawingBufferLayers layers;
   SketchBook model;
   CornerFinder cornerFinder;
-  
+
   GraphicDebug guibug;
   Map<String, Action> actions;
   private GlassPane glass;
@@ -57,7 +61,6 @@ public class SkruiFabEditor {
 
   public SkruiFabEditor(Main m) {
     this.main = m;
-    this.constraintAnalyzer = new ConstraintAnalyzer();
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(600, 400);
@@ -67,6 +70,7 @@ public class SkruiFabEditor {
     glass.setVisible(true);
     model = new SketchBook(glass);
     layers = new DrawingBufferLayers(model);
+    this.constraintAnalyzer = new ConstraintAnalyzer(model);
 
     /*
      * TODO: GLassPane now handles mouse events and generates pen listens.
@@ -104,7 +108,7 @@ public class SkruiFabEditor {
   public CornerFinder getCornerFinder() {
     return cornerFinder;
   }
-  
+
   public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
     Graphics2D g = destImage.createGraphics();
     AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
@@ -141,7 +145,7 @@ public class SkruiFabEditor {
     //
     // 2b. Now give actions for other commands like printing, saving,
     // launching ICBMs, etc
-    
+
     // actions.put(ACTION_PRINT, new NamedAction("Print",
     // KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
     // public void activate() {
@@ -167,21 +171,42 @@ public class SkruiFabEditor {
   public void go() {
     bug("go");
     List<UnstructuredInk> unstruc = model.getUnanalyzedInk();
-    Set<StructuredInk> struc = new HashSet<StructuredInk>();
+    Collection<StructuredInk> struc = new HashSet<StructuredInk>();
     for (UnstructuredInk stroke : unstruc) {
       Sequence seq = stroke.getSequence();
       struc.addAll(cornerFinder.findCorners(seq));
       stroke.setAnalyzed(true);
     }
-    List<Segment> unconstrained = new ArrayList<Segment>();
     for (StructuredInk thing : struc) {
-      unconstrained.add(thing.getSegment());
       model.addInk(thing);
-      bug("Structured thing: " + thing.getSegment());
     }
-    model.processStructuredInk(struc);
-    constraintAnalyzer.analyze(unconstrained);
+    constraintAnalyzer.analyze(struc);
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+    drawStructured();
+    layers.repaint();
+  }
+
+  private void drawStructured() {
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
+    buf.clear();
+    for (Ink ink : model.ink) {
+      if (ink instanceof StructuredInk) {
+        StructuredInk struc = (StructuredInk) ink;
+        switch (struc.getSegment().getType()) {
+          case Curve:
+            DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.CYAN, 1.8);
+            break;
+          case EllipticalArc:
+            DrawingBufferRoutines.drawShape(buf, struc.getSegment().asSpline(), Color.MAGENTA, 1.8);
+            break;
+          case Line:
+            DrawingBufferRoutines.line(buf, struc.getSegment().asLine(), Color.GREEN, 1.8);
+            break;
+          case Unknown:
+            break;
+        }
+      }
+    }
     layers.repaint();
   }
 

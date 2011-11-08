@@ -68,7 +68,6 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
     double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
     double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
     double scale = Math.min(sx, sy);
-    bug("Setting scale: " + num(scale));
     g.fill(getVisibleRect());
     if (dropBorder) {
       float t = 1.5f;

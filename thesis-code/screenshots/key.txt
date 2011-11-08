@@ -43,3 +43,5 @@
 
 017: endcap intersections are now found (blue dots) by using segment
      intersection data and endcap overlap.
+
+018: adjusts endpoints of nearby line segments
