@@ -164,139 +164,6 @@ public abstract class Segment {
     return spline;
   }
 
-//  public void move(double dx, double dy) {
-//    bug("This is a dangerous method. if you see this, freak out");
-//    for (Pt pt : points) {
-//      pt.setLocation(pt.getX() + dx, pt.getY() + dy);
-//    }
-//    switch (type) {
-//      case Line:
-//        Line l = asLine();
-//        l.setLine(l.getX1() + dx, l.getY1() + dy, l.getX2() + dx, l.getY2() + dy);
-//        break;
-//      case EllipticalArc:
-//      case Curve:
-//        Sequence s = asSpline();
-//        for (Pt pt : s) {
-//          pt.setLocation(pt.getX() + dx, pt.getY() + dy);
-//        }
-//        break;
-//      default:
-//        bug("FAIL");
-//        break;
-//    }
-//  }
-
-
-  //  public class Terminal {
-  //
-  //    Pt pt;
-  //    Vec dir;
-  //    boolean fixed;
-  //
-  //    private Terminal(Pt pt, Vec dir, boolean fixed) {
-  //      this.pt = pt;
-  //      this.dir = dir;
-  //      this.fixed = fixed;
-  //    }
-  //
-  //    public Pt getPoint() {
-  //      return pt;
-  //    }
-  //
-  //    public Vec getDir() {
-  //      return dir;
-  //    }
-  //
-  //    public String toString() {
-  //      return "S-" + id + "/T-" + (pt == getP1() ? "1" : "2");
-  //    }
-  //
-  //    public Segment getSegment() {
-  //      return Segment.this;
-  //    }
-  //
-  //    public boolean isSame(Terminal near) {
-  //      return (pt.isSameLocation(near.getPoint()) && dir.isSame(near.getDir()));
-  //    }
-  //
-  //    public boolean isFixed() {
-  //      return fixed;
-  //    }
-  //
-  //    public Line getLine() {
-  //      return new Line(getPoint(), getDir());
-  //    }
-  //
-  //    public Pt getOpposingTermPoint() {
-  //      return pt == getP1() ? getP2() : getP1();
-  //    }
-  //
-  //    //
-  //    //    /**
-  //    //     * Returns a point list for this segment with the terminal's endpoint as the first element. Use
-  //    //     * this when you need to traverse points along the segment beginning at one end.
-  //    //     * 
-  //    //     * @return
-  //    //     */
-  //    //    public List<Pt> getPointListFromTerm() {
-  //    //      List<Pt> ret = new ArrayList<Pt>();
-  //    //      ret.addAll(points);
-  //    //      if (pt == getP2()) {
-  //    //        Collections.reverse(ret);
-  //    //      }
-  //    //      return ret;
-  //    //    }
-  //
-  //    public List<Pt> getSurfacePolyline() {
-  //      List<Pt> ret = new ArrayList<Pt>();
-  //      if (type == Segment.Type.Line) {
-  //        ret.add(getPoint());
-  //        ret.add(getOpposingTermPoint());
-  //      } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-  //        if (pt == getP1()) {
-  //          ret.addAll(asPolyline());
-  //        } else {
-  //          ret.addAll(asPolyline());
-  //          Collections.reverse(ret);
-  //        }
-  //      } else {
-  //        Debug.warn(this, "Unknown seg type in getSurfacePolyline(): " + type);
-  //      }
-  //      for (Pt pt : ret) {
-  //        if (pt.getTime() == 0) {
-  //          Debug.stacktrace("no time stamp in " + getType(), 8);
-  //        }
-  //      }
-  //      return ret;
-  //    }
-  //
-  //  }
-  //
-  //  public List<Terminal> getTerminals() {
-  //    List<Terminal> ret = new ArrayList<Terminal>();
-  //
-  //    if (type == Segment.Type.Line) {
-  //      ret.add(new Terminal(getP1(), new Vec(getP2(), getP1()).getUnitVector(), !terms[0]));
-  //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-  //      ret.add(new Terminal(getP1(), new Vec(points.get(1), points.get(0)).getUnitVector(),
-  //          !terms[0]));
-  //    } else {
-  //      bug("unknown seg type in getTerminals");
-  //    }
-  //
-  //    if (type == Segment.Type.Line) {
-  //      ret.add(new Terminal(getP2(), new Vec(getP1(), getP2()).getUnitVector(), !terms[1]));
-  //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-  //      ret.add(new Terminal(getP2(), new Vec(points.get(points.size() - 2),
-  //          points.get(points.size() - 1)).getUnitVector(), !terms[1]));
-  //    } else {
-  //      bug("unknown seg type in getTerminals");
-  //    }
-  //
-  //    return ret;
-  //  }
-
   /**
    * If you modify the segment externally, call this so cached stuff is re-calcuated.
    */
@@ -320,6 +187,19 @@ public abstract class Segment {
       ret = true;
     }
     return ret;
+  }
+
+  public void replace(Pt capPt, Pt spot) {
+    if (capPt == getP1()) {
+      points.remove(0);
+      points.add(0, spot);
+      bug("Replaced " + num(capPt) + " with " + num(spot) + " as first point in " + this);
+    }
+    if (capPt == getP2()) {
+      points.remove(points.size() - 1);
+      points.add(spot);
+      bug("Replaced " + num(capPt) + " with " + num(spot) + " as last point in " + this);
+    }
   }
 
 }

@@ -45,3 +45,6 @@
      intersection data and endcap overlap.
 
 018: adjusts endpoints of nearby line segments
+
+019: video showing user making a box. the system identifies junctions,
+     merges points, identifies length constraints, and solves the system.

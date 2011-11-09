@@ -31,7 +31,8 @@ public class SketchBook {
   private Set<Segment> geometry;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
-
+  private int pointCounter = 1;
+  
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
@@ -41,6 +42,8 @@ public class SketchBook {
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
+    solver.runInBackground();
+    solver.createUI();
   }
 
   public List<Ink> getSelectionCopy() {
@@ -164,6 +167,19 @@ public class SketchBook {
   
   public ConstraintSolver getConstraints() {
     return solver;
+  }
+
+  public void replace(Pt capPt, Pt spot) {
+    // segment geometry
+    for (Segment seg : geometry) {
+      seg.replace(capPt, spot);
+    }
+    // points and constraints
+    solver.replacePoint(capPt, nextPointName(), spot);
+  }
+
+  String nextPointName() {
+    return "P" + pointCounter++;
   }
 
 }

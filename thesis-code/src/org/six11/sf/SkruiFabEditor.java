@@ -22,6 +22,7 @@ import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 
 import org.six11.sf.Ink.Type;
@@ -31,10 +32,12 @@ import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.solve.ConstraintSolver;
 
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
@@ -57,7 +60,6 @@ public class SkruiFabEditor {
   private GlassPane glass;
   private static String ACTION_GO = "Go";
   ApplicationFrame af;
-  private int pointCounter = 1;
 
   public SkruiFabEditor(Main m) {
     this.main = m;
@@ -69,6 +71,19 @@ public class SkruiFabEditor {
     af.getRootPane().setGlassPane(glass);
     glass.setVisible(true);
     model = new SketchBook(glass);
+    model.getConstraints().addListener(new ConstraintSolver.Listener() {
+      public void constraintStepDone() {
+        Runnable r = new Runnable() {
+          public void run() {
+            if (layers != null) {
+              drawStructured();
+              drawConstraints();
+            }
+          }
+        };
+        SwingUtilities.invokeLater(r);
+      }
+    });
     layers = new DrawingBufferLayers(model);
 
     /*
@@ -177,24 +192,28 @@ public class SkruiFabEditor {
       stroke.setAnalyzed(true);
     }
     for (Segment seg : segs) {
-      model.getConstraints().addPoint(nextPointName(), seg.getP1());
-      model.getConstraints().addPoint(nextPointName(), seg.getP2());
+      model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
+      model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
       model.addGeometry(seg);
     }
     model.getConstraintAnalyzer().analyze(segs);
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStructured();
+    drawConstraints();
     layers.repaint();
   }
 
-  private String nextPointName() {
-    return "P" + pointCounter++;
-  }
-  
   private void drawStructured() {
+
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
     for (Segment seg : model.getGeometry()) {
+      if (!model.getConstraints().getPoints().contains(seg.getP1())) {
+        bug("Segment P1 is unknown to constraint system.");
+      }
+      if (!model.getConstraints().getPoints().contains(seg.getP2())) {
+        bug("Segment P2 is unknown to constraint system.");
+      }
       switch (seg.getType()) {
         case Curve:
           DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.CYAN, 1.8);
@@ -210,6 +229,16 @@ public class SkruiFabEditor {
       }
     }
     layers.repaint();
+
+  }
+
+  private void drawConstraints() {
+
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DOT_LAYER);
+    buf.clear();
+    for (Pt pt : model.getConstraints().getPoints()) {
+      DrawingBufferRoutines.dot(buf, pt, 6, 0.6, Color.BLACK, Color.GREEN);
+    }
   }
 
 }

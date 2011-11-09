@@ -50,7 +50,8 @@ public class EndCap {
       }
     }
 
-    public void adjustMembers() {
+    public Pt adjustMembers() {
+      Pt ret = null;
       double sumX = 0;
       double sumY = 0;
       int n = 0;
@@ -64,12 +65,18 @@ public class EndCap {
       if (n > 0) {
         double midX = sumX / n;
         double midY = sumY / n;
-        for (Intersection ix : intersections) {
-          if (ix.intersects) {
-            ix.adjustMembers(midX, midY);
-          }
-        }
+        ret = new Pt(midX, midY);
       }
+      return ret;
+    }
+
+    public Set<Pt> getPoints() {
+      Set<Pt> ret = new HashSet<Pt>();
+      for (Intersection ix: intersections) {
+        ret.add(ix.c1.getPt());
+        ret.add(ix.c2.getPt());
+      }
+      return ret;
     }
   }
 
