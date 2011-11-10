@@ -28,8 +28,8 @@ public class CornerFinder {
   
   private GraphicDebug guibug;
   
-  public CornerFinder(GraphicDebug guibug) {
-    this.guibug = guibug;
+  public CornerFinder() {
+
   }
 
   public Set<Segment> findCorners(Sequence seq) {
@@ -37,13 +37,8 @@ public class CornerFinder {
     isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     guibug.drawJunctions(seq);
     makeSegments(seq); // sets the SEGMENTS attrib (list of Segments)
-//    guibug.drawSegments((List<Segment>) seq.getAttribute(SEGMENTS));
     Set<Segment> ret = new HashSet<Segment>();
     ret.addAll((List<Segment>) seq.getAttribute(SEGMENTS));
-//    for (Segment seg : (List<Segment>) seq.getAttribute(SEGMENTS)) {
-//      StructuredInk struc = new StructuredInk(seg);
-//      ret.add(seg);
-//    }
     return ret;
   }
 
@@ -151,6 +146,7 @@ public class CornerFinder {
     for (int i = 0; i < juncts.size() - 1; i++) {
       segments.add(identifySegment(seq, juncts.get(i), juncts.get(i + 1)));
     }
+    bug("Setting segments to " + segments);
     seq.setAttribute(SEGMENTS, segments);
   }
 
@@ -160,7 +156,6 @@ public class CornerFinder {
     int numPatches = (int) ceil(segLength / minPatchSize);
     double patchLength = segLength / (double) numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(seq, i, j, patchLength).getPoints();
-    // debugThing.drawPoints(patch);
     int a = 0;
     int b = patch.size() - 1;
     Line line = new Line(patch.get(a), patch.get(b));
@@ -173,5 +168,9 @@ public class CornerFinder {
       ret = new CurvySegment(patch, i == 0, j == seq.size() - 1);
     }
     return ret;
+  }
+
+  public void setGuibug(GraphicDebug gb) {
+    this.guibug = gb;
   }
 }

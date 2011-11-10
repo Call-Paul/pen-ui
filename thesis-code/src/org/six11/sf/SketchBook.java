@@ -31,11 +31,13 @@ public class SketchBook {
   private Set<Segment> geometry;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
+  private CornerFinder cornerFinder;
   private int pointCounter = 1;
   
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
+    this.cornerFinder = new CornerFinder();
     this.selectionCopy = new ArrayList<Ink>();
     this.gestures = new GestureController(this, glass);
     this.geometry = new HashSet<Segment>();
@@ -68,6 +70,7 @@ public class SketchBook {
 
   public void setGuibug(GraphicDebug gb) {
     this.guibug = gb;
+    this.cornerFinder.setGuibug(gb);
   }
 
   public void addInk(Ink newInk) {
@@ -107,6 +110,8 @@ public class SketchBook {
 
   public Sequence endScribble(Pt pt) {
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
+    cornerFinder.findCorners(scrib);
+    bug("Did corner finding for sequence " + scrib.getId());
     return scrib;
   }
 
@@ -114,6 +119,10 @@ public class SketchBook {
     this.layers = layers;
   }
 
+  public CornerFinder getCornerFinder() {
+    return cornerFinder;
+  }
+  
   public List<Ink> getUnanalyzedInk() {
     List<Ink> ret = new ArrayList<Ink>();
     for (Ink stroke : ink) {

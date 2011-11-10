@@ -53,7 +53,7 @@ public class SkruiFabEditor {
   Main main;
   DrawingBufferLayers layers;
   SketchBook model;
-  CornerFinder cornerFinder;
+
 
   GraphicDebug guibug;
   Map<String, Action> actions;
@@ -85,14 +85,8 @@ public class SkruiFabEditor {
       }
     });
     layers = new DrawingBufferLayers(model);
-
-    /*
-     * TODO: GLassPane now handles mouse events and generates pen listens.
-     * layers.addPenListener(this);
-     */
     guibug = new GraphicDebug(layers);
     model.setGuibug(guibug);
-    cornerFinder = new CornerFinder(guibug);
     model.setLayers(layers);
 
     ScrapGrid grid = new ScrapGrid(this);
@@ -119,9 +113,7 @@ public class SkruiFabEditor {
     af.setVisible(true);
   }
 
-  public CornerFinder getCornerFinder() {
-    return cornerFinder;
-  }
+
 
   public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
     Graphics2D g = destImage.createGraphics();
@@ -188,7 +180,7 @@ public class SkruiFabEditor {
     Collection<Segment> segs = new HashSet<Segment>();
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
-      segs.addAll(cornerFinder.findCorners(seq));
+      segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
       stroke.setAnalyzed(true);
     }
     for (Segment seg : segs) {
