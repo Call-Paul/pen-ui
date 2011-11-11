@@ -3,7 +3,6 @@ package org.six11.sf;
 import static java.lang.Math.abs;
 import static java.lang.Math.ceil;
 import static java.lang.Math.toRadians;
-import static org.six11.util.Debug.bug;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -148,7 +147,6 @@ public class CornerFinder {
     for (int i = 0; i < juncts.size() - 1; i++) {
       segments.add(identifySegment(seq, juncts.get(i), juncts.get(i + 1)));
     }
-    bug("Setting segments to " + segments);
     seq.setAttribute(SEGMENTS, segments);
   }
 

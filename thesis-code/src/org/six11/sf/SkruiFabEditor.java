@@ -185,7 +185,6 @@ public class SkruiFabEditor {
   }
 
   private void drawStructured() {
-
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
     for (Segment seg : model.getGeometry()) {
@@ -214,7 +213,6 @@ public class SkruiFabEditor {
   }
 
   private void drawConstraints() {
-
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DOT_LAYER);
     buf.clear();
     for (Pt pt : model.getConstraints().getPoints()) {

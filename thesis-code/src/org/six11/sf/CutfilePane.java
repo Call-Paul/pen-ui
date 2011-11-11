@@ -1,21 +1,15 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.swing.JPanel;
 
@@ -23,7 +17,6 @@ import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
-import org.six11.util.pen.Pt;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -38,18 +31,16 @@ import com.lowagie.text.pdf.PdfWriter;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class CutfilePane extends JPanel implements /*GestureListener, */PenListener {
-//  private SkruiFabEditor editor;
-  private BoundingBox cutfileBB;
-  Set<Stencil> stencils;
-  private boolean dropBorder;
+public class CutfilePane extends JPanel implements PenListener {
+
   public static double PX_PER_INCH = 1.0 / 72.0;
   public static double CUTFILE_MAX_WIDTH_INCHES = 24.0;
   public static double CUTFILE_MAX_HEIGHT_INCHES = 16.0;
 
+  private BoundingBox cutfileBB;
+  private boolean dropBorder;
+
   public CutfilePane(SkruiFabEditor editor) {
-//    this.editor = editor;
-    this.stencils = new HashSet<Stencil>();
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
     setPreferredSize(new Dimension(300, 200));
@@ -59,9 +50,9 @@ public class CutfilePane extends JPanel implements /*GestureListener, */PenListe
     Graphics2D g = (Graphics2D) g1;
     g.setColor(getBackground());
     Rectangle2D vizSize = getVisibleRect();
-    double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
-    double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
-    double scale = Math.min(sx, sy);
+//    double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
+//    double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
+//    double scale = Math.min(sx, sy); 
     g.fill(getVisibleRect());
     if (dropBorder) {
       float t = 1.5f;
@@ -72,68 +63,11 @@ public class CutfilePane extends JPanel implements /*GestureListener, */PenListe
           vizSize.getWidth() - t, vizSize.getHeight() - t);
       g.draw(recDst);
     }
-    g.setColor(Color.BLUE);
-    AffineTransform before = g.getTransform();
-    AffineTransform scaleXform = AffineTransform.getScaleInstance(scale, scale);
-    g.transform(scaleXform);
-    g.setStroke(Strokes.get(2.0f));
-    for (Stencil stencil : stencils) {
-      Pt origin = stencil.getOrigin();
-      bug("Drawing shape with bounding rect: " + stencil.getShape().getBounds2D() + ", origin= "
-          + num(origin));
-      Point2D scaledOrigin = scaleXform.transform(origin, null);
-      g.translate(scaledOrigin.getX(), scaledOrigin.getY());
-      g.draw(stencil.getShape());
-      g.setTransform(scaleXform);
-    }
-    g.setTransform(before);
   }
-
-//  public void gestureComplete(GestureEvent ev) {
-//    dropBorder = false;
-//    repaint();
-//    Gesture g = ev.getGesture();
-//    if (g instanceof MoveGesture && g.getComponentStart() instanceof ScrapGrid
-//        && g.getComponentEnd() == this) {
-//      bug("You just dropped a scrap on the cutfile pane.");
-//      bug("TODO: re-do this using newfangled data structures");
-////      MoveGesture mg = (MoveGesture) g;
-////      List<Ink> selected = editor.getModel().search(mg.getWhere());
-////      Set<StructuredInk> stencilParts = new HashSet<StructuredInk>();
-////      for (Ink stroke : selected) {
-////          Sequence seq = stroke.getSequence();
-////          stencilParts.addAll(editor.getCornerFinder().findCorners(seq));
-////      }
-////      Stencil part = new Stencil(stencilParts);
-////      stencils.add(part);
-////      doCutfileLayout();
-//    }
-//  }
-
-//  private void doCutfileLayout() {
-//    double xCursor = 0;
-//    cutfileBB = new BoundingBox();
-//    for (Stencil stencil : stencils) {
-//      stencil.setOrigin(xCursor, 0.0);
-//      cutfileBB.add(stencil.getCutfileBoundingBox());
-//      xCursor += stencil.getWidth();
-//    }
-//    print(new File("cutfile.pdf"));
-//  }
-
+  
   private BoundingBox getBoundingBox() {
     return cutfileBB;
   }
-
-//  public void gestureStart(GestureEvent ev) {
-//    // TODO Auto-generated method stub
-//
-//  }
-//
-//  public void gestureProgress(GestureEvent ev) {
-//    dropBorder = (ev.getTargetComponent() == this);
-//    repaint();
-//  }
 
   public void handlePenEvent(PenEvent ev) {
 
@@ -146,7 +80,7 @@ public class CutfilePane extends JPanel implements /*GestureListener, */PenListe
    * @param file
    */
   public void print(File file) {
-    // 2. Draw the layers to the pdf graphics context.
+    bug("Ensure the cutfile has been arranged prior to calling 'print'. I removed this in the purge of 11/11/11...");
     BoundingBox bb = getBoundingBox();
     int w = bb.getWidthInt();
     int h = bb.getHeightInt();
@@ -164,7 +98,7 @@ public class CutfilePane extends JPanel implements /*GestureListener, */PenListe
       tp.setWidth(w);
       tp.setHeight(h);
       g2.translate(-bb.getX(), -bb.getY());
-      printStencils(g2);
+      // TODO: print stencils here...     printStencils(g2);
       g2.dispose();
       cb.addTemplate(tp, 0, 0);
     } catch (DocumentException ex) {
@@ -174,17 +108,6 @@ public class CutfilePane extends JPanel implements /*GestureListener, */PenListe
     }
     document.close();
     bug("Wrote " + file.getAbsolutePath());
-  }
-
-  private void printStencils(Graphics2D g) {
-    g.setColor(Color.BLUE);
-    g.setStroke(new BasicStroke(0.001f));
-    for (Stencil stencil : stencils) {
-      Pt tx = stencil.origin;
-      g.translate(tx.x, tx.y);
-      g.draw(stencil.getShape());
-      g.translate(-tx.x, -tx.y);
-    }
   }
 
 }

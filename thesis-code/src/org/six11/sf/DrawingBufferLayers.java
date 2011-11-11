@@ -222,31 +222,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         break;
       case Idle:
         Sequence seq = model.endScribble(ev.getPt());
-//        Gesture gest = model.getGestures().detectGesture(this, seq);
-//        if (gest == null) {
-          model.addInk(new Ink(seq));
-//        } else if (gest.getProbability() > 0) {
-//          model.getGestures().addPotentialGesture(gest);
-//        }
+        model.addInk(new Ink(seq));
         clearScribble();
       case Enter:
-//        if (model.getGestures().hasActualGesture()) {
-//          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-//          copyLayer.setVisible(true);
-//          repaint();
-//          bug("turned ON copy layer");
-//        }
         break;
       case Exit:
-//        if (model.getGestures().hasActualGesture()) {
-//          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-//          copyLayer.setVisible(false);
-//          repaint();
-//          bug("turned OFF copy layer");
-//        }
         break;
     }
-    //    fire(ev); // just pass it on to the listeners
   }
 
 }

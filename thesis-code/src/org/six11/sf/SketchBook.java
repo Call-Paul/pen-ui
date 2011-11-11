@@ -22,7 +22,6 @@ public class SketchBook {
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
-//  private GestureController gestures;
   private DrawingBufferLayers layers;
   private List<Ink> selection;
   private List<Ink> selectionCopy;
@@ -38,7 +37,6 @@ public class SketchBook {
     this.selection = new ArrayList<Ink>();
     this.cornerFinder = new CornerFinder();
     this.selectionCopy = new ArrayList<Ink>();
-//    this.gestures = new GestureController(this, glass);
     this.geometry = new HashSet<Segment>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
@@ -63,10 +61,6 @@ public class SketchBook {
     return guibug;
   }
 
-//  public GestureController getGestures() {
-//    return gestures;
-//  }
-
   public void setGuibug(GraphicDebug gb) {
     this.guibug = gb;
     this.cornerFinder.setGuibug(gb);
@@ -74,7 +68,6 @@ public class SketchBook {
 
   public void addInk(Ink newInk) {
     ink.add(newInk);
-    //    gestures.clearGestureTimer();
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
     Sequence scrib = newInk.getSequence();
     DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
@@ -110,7 +103,6 @@ public class SketchBook {
   public Sequence endScribble(Pt pt) {
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
     cornerFinder.findCorners(scrib);
-    bug("Did corner finding for sequence " + scrib.getId());
     return scrib;
   }
 
@@ -186,7 +178,11 @@ public class SketchBook {
     solver.replacePoint(capPt, nextPointName(), spot);
   }
 
-  String nextPointName() {
+  /**
+   * Gives a incrementally-formed name like "P240" to assign points used in the constraint model.
+   * @return
+   */
+  protected String nextPointName() {
     return "P" + pointCounter++;
   }
 

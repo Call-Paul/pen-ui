@@ -84,6 +84,7 @@ public class GraphicDebug {
   }
 
   public void ghostlyOutlineShape(DrawingBuffer db, List<Pt> points, Color ghostColor) {
+    bug("re-implement me");
 //    DrawingBufferRoutines.drawShape(db, points, ghostColor, GestureController.GESTURE_AOE_DISTANCE / 2);
   }
 

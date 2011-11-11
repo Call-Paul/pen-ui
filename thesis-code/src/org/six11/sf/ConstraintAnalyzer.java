@@ -1,8 +1,5 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
 import java.awt.Color;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,9 +24,6 @@ public class ConstraintAnalyzer {
   }
 
   public void analyze(Collection<Segment> segs) {
-    bug("Analyzing " + segs.size() + " new segments");
-    // make a current map of the endcap locations for all structured ink
-
     DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
     bugBuf.clear();
     Set<EndCap> caps = getCurrentEndCaps(model.getGeometry()); // set of all endcaps
@@ -43,7 +37,6 @@ public class ConstraintAnalyzer {
           EndCap.Intersection ix = c1.intersectInCap(c2);
           if (ix.intersects) {
             success.add(ix);
-            bug("blue at " + num(ix.pt));
             DrawingBufferRoutines.dot(bugBuf, ix.pt, 4, 0.4, Color.BLACK, Color.BLUE);
           }
           examined.add(ix);
@@ -60,7 +53,6 @@ public class ConstraintAnalyzer {
       ;
     for (EndCap.Group group : groups) {
       Pt spot = group.adjustMembers(); // note: spot does not have time data
-      bug("magenta at " + num(spot));
       DrawingBufferRoutines.dot(bugBuf, spot, 4, 0.4, Color.BLACK, Color.MAGENTA);
       for (Pt capPt : group.getPoints()) {
         model.replace(capPt, spot);
@@ -76,36 +68,19 @@ public class ConstraintAnalyzer {
     for (Segment seg : segs) {
       lengthClusters.add(seg);
     }
-    bug("Made " + lengthClusters.size() + " clusters");
     lengthClusters.computeClusters();
-//    ClusterThing.ClusterFilter<Segment> filter = new ClusterThing.ClusterFilter<Segment>() {
-//      public boolean accepts(Cluster<Segment> cluster) {
-//        bug("Cluster radius: " + num(cluster.getRadius()));
-//        boolean ret = false;
-//        double max = lengthClusters.query(cluster.getMax());
-//        double min = lengthClusters.query(cluster.getMin());
-//        double ratio = max / min;
-//        bug("ratio: " + num(ratio));
-//        ret = (ratio <= 1.34);
-//        return ret;
-//      }
-//    };
+
     ClusterThing.ClusterFilter<Segment> filter = lengthClusters.getRatioFilter(0.9);
     List<Cluster<Segment>> similar = lengthClusters.search(filter);
-    bug("There are " + similar.size() + " clusters of similar length.");
     for (Cluster<Segment> cluster : similar) {
       if (cluster.getMembers().size() > 1) {
-        bug("Cluster: ");
         double sum = 0;
         int n = 0;
         for (Segment s : cluster.getMembers()) {
-          bug("  " + s);
           sum = sum + s.length();
           n++;
         }
         double len = sum / n;
-        bug("Constraining " + cluster.getMembers().size() + " segments to be " + num(len)
-            + " in length");
         for (Segment s : cluster.getMembers()) {
           DistanceConstraint lengthConstraint = new DistanceConstraint(s.getP1(), s.getP2(),
               new NumericValue(len));

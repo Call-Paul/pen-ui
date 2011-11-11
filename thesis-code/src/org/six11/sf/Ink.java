@@ -16,7 +16,6 @@ import org.six11.util.pen.Sequence;
  */
 public class Ink {
 
-//  protected Type type;
   protected long created;
   protected Rectangle2D bounds;
   protected Area area;
@@ -24,16 +23,11 @@ public class Ink {
   protected boolean analyzed;
   protected Sequence seq;
 
-  public enum Type {
-    Structured, Unstructured
-  }
-
   public Ink(Sequence seq) {
-//    this.type = type;
     this.seq = seq;
     created = System.currentTimeMillis();
   }
-  
+
   public Rectangle2D getBounds() {
     if (bounds == null) {
       BoundingBox bb = new BoundingBox(seq.getPoints());
@@ -65,8 +59,7 @@ public class Ink {
   }
 
   /**
-   * Returns 0 to 1 depending on how many points of the total unstructured ink stroke are included
-   * in the target region.
+   * Returns a fraction (0..1) of how many points of the stroke are in the target area.
    */
   public double getOverlap(Area target) {
     double numHits = 0;
@@ -87,19 +80,7 @@ public class Ink {
       moveMe.setLocation(moveMe.getX() + dx, moveMe.getY() + dy);
     }
   }
-
-//  public abstract Path2D getPath();
-//
-//  public abstract Area getArea();
-//
-//  public abstract Rectangle2D getBounds();
-//
-//  public abstract boolean isClosed();
-//
-//  public Type getType() {
-//    return type;
-//  }
-
+  
   public boolean isAnalyzed() {
     return analyzed;
   }
@@ -108,14 +89,4 @@ public class Ink {
     analyzed = v;
   }
 
-  /**
-   * Returns a value indicating how much of this ink is in the target region. Returns zero for no
-   * inclusion, one for complete inclusion, and some number in between if the ink is only partially
-   * contained. The exact semantics are type-specific. 
-   */
-//  public abstract double getOverlap(Area target);
-//
-//  public abstract Ink copy();
-//
-//  public abstract void move(double dx, double dy);
 }

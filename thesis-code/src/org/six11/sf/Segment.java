@@ -2,7 +2,6 @@ package org.six11.sf;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
-import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.util.Collection;
@@ -184,12 +183,10 @@ public abstract class Segment {
     if (capPt == getP1()) {
       points.remove(0);
       points.add(0, spot);
-      bug("Replaced " + num(capPt) + " with " + num(spot) + " as first point in " + this);
     }
     if (capPt == getP2()) {
       points.remove(points.size() - 1);
       points.add(spot);
-      bug("Replaced " + num(capPt) + " with " + num(spot) + " as last point in " + this);
     }
   }
 
