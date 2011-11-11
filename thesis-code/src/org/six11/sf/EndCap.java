@@ -1,9 +1,5 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-
-import java.awt.Color;
-import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
@@ -11,7 +7,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.util.gui.shape.Circle;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.IntersectionData;
 import org.six11.util.pen.Line;

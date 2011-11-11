@@ -1,17 +1,15 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Shape;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.PathIterator;
 import java.util.Set;
 
-import org.six11.util.Debug;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Pt;
-
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
 
 public class Stencil {
 
@@ -52,19 +50,19 @@ public class Stencil {
     return shape;
   }
 
-  private void debugShapePoints(Shape shape) {
-    PathIterator pi = shape.getPathIterator(null);
-    double[] coords = new double[6];
-    int part = 1;
-    while (!pi.isDone()) {
-      int type = pi.currentSegment(coords);
-      String typeStr = getPITypeStr(type);
-      bug("Coords for part " + part + " (type " + typeStr + "): " + num(coords[0]) + ", "
-          + num(coords[1]));
-      part++;
-      pi.next();
-    }
-  }
+//  private void debugShapePoints(Shape shape) {
+//    PathIterator pi = shape.getPathIterator(null);
+//    double[] coords = new double[6];
+//    int part = 1;
+//    while (!pi.isDone()) {
+//      int type = pi.currentSegment(coords);
+//      String typeStr = getPITypeStr(type);
+//      bug("Coords for part " + part + " (type " + typeStr + "): " + num(coords[0]) + ", "
+//          + num(coords[1]));
+//      part++;
+//      pi.next();
+//    }
+//  }
 
   public static String getPITypeStr(int type) {
     switch (type) {

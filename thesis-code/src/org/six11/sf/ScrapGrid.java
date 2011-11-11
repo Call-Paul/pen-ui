@@ -1,47 +1,34 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.warn;
+
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
 
-import org.six11.sf.ScrapGrid.GridCellContent;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
-import org.six11.util.layout.FrontEnd;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
-import org.six11.util.pen.Sequence;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.warn;
-import static org.six11.util.Debug.num;
 
 /**
  * 
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class ScrapGrid extends JComponent implements PenListener, GestureListener {
+public class ScrapGrid extends JComponent implements PenListener /*, GestureListener */ {
 
   public class GridCellContent {
     Area area;
@@ -69,12 +56,12 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
   private Point droppedCell = new Point(-1, -1);
   private Map<Point, GridCellContent> cells = new HashMap<Point, GridCellContent>();
 
-  private SkruiFabEditor editor;
-  private Point prevCellDrag;
-  private GridCellContent gestureMoveCell;
+//  private SkruiFabEditor editor;
+//  private Point prevCellDrag;
+//  private GridCellContent gestureMoveCell;
 
   public ScrapGrid(SkruiFabEditor editor) {
-    this.editor = editor;
+//    this.editor = editor;
     setName("ScrapGrid");
     setBackground(Color.WHITE);
     gridColor = new Color(240, 240, 240);
@@ -89,9 +76,9 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
     return new Point(cellX, cellY);
   }
 
-  private void setCellReference(Point cell, GridCellContent content) {
-    cells.put(cell, content);
-  }
+//  private void setCellReference(Point cell, GridCellContent content) {
+//    cells.put(cell, content);
+//  }
 
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
@@ -185,49 +172,49 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
   //    repaint();
   //  }
 
-  public void gestureComplete(GestureEvent ev) {
-    if (ev.getTargetComponent() == this
-        && ev.getGesture().getComponentStart() instanceof DrawingBufferLayers) {
-      Point p = ev.getComponentPoint();
-      bug("drop location in scrap coordinates: " + p.x + ", " + p.y);
-      droppedCell = getCell(p);
-      Gesture g = ev.getGesture();
-      if (g instanceof MoveGesture) {
-        MoveGesture mg = (MoveGesture) g;
-        Area loc = mg.getWhere();
-        Point cell = getCell(p);
-        BufferedImage newThumb = new BufferedImage(mg.thumb.getWidth(null),
-            mg.thumb.getHeight(null), BufferedImage.TYPE_INT_ARGB);
-        SkruiFabEditor.copyImage(mg.thumb, newThumb, 1.0);
-        GridCellContent content = new GridCellContent(loc, newThumb);
-        setCellReference(cell, content);
-      }
-      hoveredThumb = null;
-      repaint();
-    }
-    prevCellDrag = null;
-  }
+//  public void gestureComplete(GestureEvent ev) {
+//    if (ev.getTargetComponent() == this
+//        && ev.getGesture().getComponentStart() instanceof DrawingBufferLayers) {
+//      Point p = ev.getComponentPoint();
+//      bug("drop location in scrap coordinates: " + p.x + ", " + p.y);
+//      droppedCell = getCell(p);
+//      Gesture g = ev.getGesture();
+//      if (g instanceof MoveGesture) {
+//        MoveGesture mg = (MoveGesture) g;
+//        Area loc = mg.getWhere();
+//        Point cell = getCell(p);
+//        BufferedImage newThumb = new BufferedImage(mg.thumb.getWidth(null),
+//            mg.thumb.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+//        SkruiFabEditor.copyImage(mg.thumb, newThumb, 1.0);
+//        GridCellContent content = new GridCellContent(loc, newThumb);
+//        setCellReference(cell, content);
+//      }
+//      hoveredThumb = null;
+//      repaint();
+//    }
+//    prevCellDrag = null;
+//  }
 
-  @Override
-  public void gestureStart(GestureEvent ev) {
-    if (ev.getTargetComponent() == this) {
-      bug("Started a gesture in the scrap grid. " + (gestureMoveCell == null ? "GMC null" : "ok"));
-      ev.getGesture().setThumbnail(gestureMoveCell.thumb);
-      ev.getGesture().setDragImage(true);
-    }
-  }
-
-  @Override
-  public void gestureProgress(GestureEvent ev) {
-    if (ev.getTargetComponent() == this
-    //        && ev.getGesture().getComponentStart() instanceof DrawingBufferLayers
-    ) {
-      Point cellPoint = getCell(ev.getComponentPoint());
-      hoveredCellX = cellPoint.x;
-      hoveredCellY = cellPoint.y;
-      hoveredThumb = ev.getGesture().getThumbnail();
-    }
-  }
+//  @Override
+//  public void gestureStart(GestureEvent ev) {
+//    if (ev.getTargetComponent() == this) {
+//      bug("Started a gesture in the scrap grid. " + (gestureMoveCell == null ? "GMC null" : "ok"));
+//      ev.getGesture().setThumbnail(gestureMoveCell.thumb);
+//      ev.getGesture().setDragImage(true);
+//    }
+//  }
+//
+//  @Override
+//  public void gestureProgress(GestureEvent ev) {
+//    if (ev.getTargetComponent() == this
+//    //        && ev.getGesture().getComponentStart() instanceof DrawingBufferLayers
+//    ) {
+//      Point cellPoint = getCell(ev.getComponentPoint());
+//      hoveredCellX = cellPoint.x;
+//      hoveredCellY = cellPoint.y;
+//      hoveredThumb = ev.getGesture().getThumbnail();
+//    }
+//  }
 
   @Override
   public void handlePenEvent(PenEvent ev) {
@@ -248,42 +235,43 @@ public class ScrapGrid extends JComponent implements PenListener, GestureListene
         repaint();
         break;
       case Drag:
-        detectMoveGesture(new Point(ev.getPt().ix(), ev.getPt().iy()));
+//        detectMoveGesture(new Point(ev.getPt().ix(), ev.getPt().iy()));
         break;
       case Idle:
-        prevCellDrag = null;
+//        prevCellDrag = null;
+        break;
       default:
         bug("Unhandled pen event: " + ev.getType());
     }
   }
 
-  private void detectMoveGesture(Point currentMouseLoc) {
-    Point currentCell = getCell(currentMouseLoc);
-    if (prevCellDrag != null && !currentCell.equals(prevCellDrag)) {
-      GridCellContent content = cells.get(prevCellDrag);
-      if (content != null) {
-        bug("Move gesture detected starting in scrap grid, cell " + num(prevCellDrag));
-        gestureMoveCell = content;
-        Gesture gest = new MoveGesture(this, currentMouseLoc, new Sequence(), content.area);
-        editor.getModel().getGestures().setGesture(gest);
-      }
-    }
-    prevCellDrag = currentCell;
-  }
+//  private void detectMoveGesture(Point currentMouseLoc) {
+//    Point currentCell = getCell(currentMouseLoc);
+//    if (prevCellDrag != null && !currentCell.equals(prevCellDrag)) {
+//      GridCellContent content = cells.get(prevCellDrag);
+//      if (content != null) {
+//        bug("Move gesture detected starting in scrap grid, cell " + num(prevCellDrag));
+//        gestureMoveCell = content;
+//        Gesture gest = new MoveGesture(this, currentMouseLoc, new Sequence(), content.area);
+//        editor.getModel().getGestures().setGesture(gest);
+//      }
+//    }
+//    prevCellDrag = currentCell;
+//  }
 
   private void handlePenEnter(PenEvent ev) {
-    SketchBook model = editor.getModel();
-    if (model.getGestures().hasActualGesture()) {
-      bug("Gesture type on entering scrap grid: " + model.getGestures().getGesture().getHumanName());
-      DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-      BufferedImage bigImage = copyLayer.getImage();
-      double sw = (double) cellSize / (double) bigImage.getWidth();
-      double sh = (double) cellSize / (double) bigImage.getHeight();
-      double s = Math.min(sw, sh);
-      BufferedImage smallImage = new BufferedImage(cellSize, cellSize, BufferedImage.TYPE_INT_ARGB);
-      SkruiFabEditor.copyImage(bigImage, smallImage, s);
-      model.getGestures().getGesture().setThumbnail(smallImage);
-    }
+//    SketchBook model = editor.getModel();
+//    if (model.getGestures().hasActualGesture()) {
+//      bug("Gesture type on entering scrap grid: " + model.getGestures().getGesture().getHumanName());
+//      DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
+//      BufferedImage bigImage = copyLayer.getImage();
+//      double sw = (double) cellSize / (double) bigImage.getWidth();
+//      double sh = (double) cellSize / (double) bigImage.getHeight();
+//      double s = Math.min(sw, sh);
+//      BufferedImage smallImage = new BufferedImage(cellSize, cellSize, BufferedImage.TYPE_INT_ARGB);
+//      SkruiFabEditor.copyImage(bigImage, smallImage, s);
+//      model.getGestures().getGesture().setThumbnail(smallImage);
+//    }
   }
 
 }

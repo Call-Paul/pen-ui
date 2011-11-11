@@ -1,47 +1,40 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.layout.FrontEnd.E;
+import static org.six11.util.layout.FrontEnd.N;
+import static org.six11.util.layout.FrontEnd.ROOT;
+import static org.six11.util.layout.FrontEnd.S;
+import static org.six11.util.layout.FrontEnd.W;
+
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
 
-import org.six11.sf.Ink.Type;
-import org.six11.util.Debug;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Line;
-import org.six11.util.pen.PenEvent;
-import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-import static org.six11.util.layout.FrontEnd.*;
 
 /**
  * A self-contained editor instance.
@@ -91,9 +84,6 @@ public class SkruiFabEditor {
 
     ScrapGrid grid = new ScrapGrid(this);
     CutfilePane cutfile = new CutfilePane(this);
-    glass.addGestureListener(layers);
-    glass.addGestureListener(grid);
-    glass.addGestureListener(cutfile);
     FrontEnd fe = new FrontEnd();
     fe.add(layers, "layers");
     fe.add(grid, "grid");
@@ -112,8 +102,6 @@ public class SkruiFabEditor {
     af.center();
     af.setVisible(true);
   }
-
-
 
   public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
     Graphics2D g = destImage.createGraphics();
@@ -174,6 +162,7 @@ public class SkruiFabEditor {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void go() {
     bug("go");
     List<Ink> unstruc = model.getUnanalyzedInk();

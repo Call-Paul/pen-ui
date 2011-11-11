@@ -1,30 +1,21 @@
 package org.six11.sf;
 
-import java.awt.Shape;
-import java.awt.geom.Area;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Path2D;
-import java.util.ArrayList;
+import static java.lang.Math.ceil;
+import static java.lang.Math.min;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
 import org.six11.util.Debug;
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
-
-import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
-import static java.lang.Math.min;
-import static java.lang.Math.ceil;
-
-@SuppressWarnings("unused")
 public abstract class Segment {
 
   int id;

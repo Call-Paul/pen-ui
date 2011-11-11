@@ -1,22 +1,20 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Shape;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Line2D;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.swing.JPanel;
@@ -26,7 +24,6 @@ import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Sequence;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -36,16 +33,13 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
 /**
  * 
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class CutfilePane extends JPanel implements GestureListener, PenListener {
-  private SkruiFabEditor editor;
+public class CutfilePane extends JPanel implements /*GestureListener, */PenListener {
+//  private SkruiFabEditor editor;
   private BoundingBox cutfileBB;
   Set<Stencil> stencils;
   private boolean dropBorder;
@@ -54,7 +48,7 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
   public static double CUTFILE_MAX_HEIGHT_INCHES = 16.0;
 
   public CutfilePane(SkruiFabEditor editor) {
-    this.editor = editor;
+//    this.editor = editor;
     this.stencils = new HashSet<Stencil>();
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
@@ -95,51 +89,51 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
     g.setTransform(before);
   }
 
-  public void gestureComplete(GestureEvent ev) {
-    dropBorder = false;
-    repaint();
-    Gesture g = ev.getGesture();
-    if (g instanceof MoveGesture && g.getComponentStart() instanceof ScrapGrid
-        && g.getComponentEnd() == this) {
-      bug("You just dropped a scrap on the cutfile pane.");
-      bug("TODO: re-do this using newfangled data structures");
-//      MoveGesture mg = (MoveGesture) g;
-//      List<Ink> selected = editor.getModel().search(mg.getWhere());
-//      Set<StructuredInk> stencilParts = new HashSet<StructuredInk>();
-//      for (Ink stroke : selected) {
-//          Sequence seq = stroke.getSequence();
-//          stencilParts.addAll(editor.getCornerFinder().findCorners(seq));
-//      }
-//      Stencil part = new Stencil(stencilParts);
-//      stencils.add(part);
-//      doCutfileLayout();
-    }
-  }
+//  public void gestureComplete(GestureEvent ev) {
+//    dropBorder = false;
+//    repaint();
+//    Gesture g = ev.getGesture();
+//    if (g instanceof MoveGesture && g.getComponentStart() instanceof ScrapGrid
+//        && g.getComponentEnd() == this) {
+//      bug("You just dropped a scrap on the cutfile pane.");
+//      bug("TODO: re-do this using newfangled data structures");
+////      MoveGesture mg = (MoveGesture) g;
+////      List<Ink> selected = editor.getModel().search(mg.getWhere());
+////      Set<StructuredInk> stencilParts = new HashSet<StructuredInk>();
+////      for (Ink stroke : selected) {
+////          Sequence seq = stroke.getSequence();
+////          stencilParts.addAll(editor.getCornerFinder().findCorners(seq));
+////      }
+////      Stencil part = new Stencil(stencilParts);
+////      stencils.add(part);
+////      doCutfileLayout();
+//    }
+//  }
 
-  private void doCutfileLayout() {
-    double xCursor = 0;
-    cutfileBB = new BoundingBox();
-    for (Stencil stencil : stencils) {
-      stencil.setOrigin(xCursor, 0.0);
-      cutfileBB.add(stencil.getCutfileBoundingBox());
-      xCursor += stencil.getWidth();
-    }
-    print(new File("cutfile.pdf"));
-  }
+//  private void doCutfileLayout() {
+//    double xCursor = 0;
+//    cutfileBB = new BoundingBox();
+//    for (Stencil stencil : stencils) {
+//      stencil.setOrigin(xCursor, 0.0);
+//      cutfileBB.add(stencil.getCutfileBoundingBox());
+//      xCursor += stencil.getWidth();
+//    }
+//    print(new File("cutfile.pdf"));
+//  }
 
   private BoundingBox getBoundingBox() {
     return cutfileBB;
   }
 
-  public void gestureStart(GestureEvent ev) {
-    // TODO Auto-generated method stub
-
-  }
-
-  public void gestureProgress(GestureEvent ev) {
-    dropBorder = (ev.getTargetComponent() == this);
-    repaint();
-  }
+//  public void gestureStart(GestureEvent ev) {
+//    // TODO Auto-generated method stub
+//
+//  }
+//
+//  public void gestureProgress(GestureEvent ev) {
+//    dropBorder = (ev.getTargetComponent() == this);
+//    repaint();
+//  }
 
   public void handlePenEvent(PenEvent ev) {
 
@@ -188,7 +182,6 @@ public class CutfilePane extends JPanel implements GestureListener, PenListener 
     for (Stencil stencil : stencils) {
       Pt tx = stencil.origin;
       g.translate(tx.x, tx.y);
-      Shape s = stencil.getShape();
       g.draw(stencil.getShape());
       g.translate(-tx.x, -tx.y);
     }

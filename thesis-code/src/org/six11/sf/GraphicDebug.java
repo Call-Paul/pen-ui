@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Color;
 import java.util.List;
 
@@ -7,7 +9,6 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-import static org.six11.util.Debug.bug;
 
 public class GraphicDebug {
 
@@ -29,6 +30,7 @@ public class GraphicDebug {
     this.layers = layers;
   }
 
+  @SuppressWarnings("unchecked")
   public void drawJunctions(Sequence seq) {
     DrawingBuffer db = layers.getLayer(GraphicDebug.DB_JUNCTION_LAYER);
     List<Integer> juncts = (List<Integer>) seq.getAttribute(CornerFinder.SEGMENT_JUNCTIONS);
@@ -82,7 +84,7 @@ public class GraphicDebug {
   }
 
   public void ghostlyOutlineShape(DrawingBuffer db, List<Pt> points, Color ghostColor) {
-    DrawingBufferRoutines.drawShape(db, points, ghostColor, GestureController.GESTURE_AOE_DISTANCE / 2);
+//    DrawingBufferRoutines.drawShape(db, points, ghostColor, GestureController.GESTURE_AOE_DISTANCE / 2);
   }
 
 }

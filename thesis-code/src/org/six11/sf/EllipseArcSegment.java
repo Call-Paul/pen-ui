@@ -2,7 +2,6 @@ package org.six11.sf;
 
 import java.util.List;
 
-import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
@@ -41,8 +40,4 @@ public class EllipseArcSegment extends Segment {
     this.type = Type.EllipticalArc;
   }
   
-  private static void bug(String what) {
-    Debug.out("EllipseArcSegment", what);
-  }
-
 }

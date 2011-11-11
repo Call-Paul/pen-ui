@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Color;
 import java.awt.geom.Area;
 import java.util.ArrayList;
@@ -8,7 +10,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.sf.Ink.Type;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -16,14 +17,12 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
 
-import static org.six11.util.Debug.bug;
-
 public class SketchBook {
 
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
-  private GestureController gestures;
+//  private GestureController gestures;
   private DrawingBufferLayers layers;
   private List<Ink> selection;
   private List<Ink> selectionCopy;
@@ -33,13 +32,13 @@ public class SketchBook {
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
-  
+
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
     this.cornerFinder = new CornerFinder();
     this.selectionCopy = new ArrayList<Ink>();
-    this.gestures = new GestureController(this, glass);
+//    this.gestures = new GestureController(this, glass);
     this.geometry = new HashSet<Segment>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
@@ -64,9 +63,9 @@ public class SketchBook {
     return guibug;
   }
 
-  public GestureController getGestures() {
-    return gestures;
-  }
+//  public GestureController getGestures() {
+//    return gestures;
+//  }
 
   public void setGuibug(GraphicDebug gb) {
     this.guibug = gb;
@@ -75,7 +74,7 @@ public class SketchBook {
 
   public void addInk(Ink newInk) {
     ink.add(newInk);
-    gestures.clearGestureTimer();
+    //    gestures.clearGestureTimer();
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
     Sequence scrib = newInk.getSequence();
     DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
@@ -122,7 +121,7 @@ public class SketchBook {
   public CornerFinder getCornerFinder() {
     return cornerFinder;
   }
-  
+
   public List<Ink> getUnanalyzedInk() {
     List<Ink> ret = new ArrayList<Ink>();
     for (Ink stroke : ink) {
@@ -173,7 +172,7 @@ public class SketchBook {
   public ConstraintAnalyzer getConstraintAnalyzer() {
     return constraintAnalyzer;
   }
-  
+
   public ConstraintSolver getConstraints() {
     return solver;
   }

@@ -1,16 +1,11 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
-import java.util.Collection;
-import java.util.HashSet;
-
-import org.six11.util.pen.Pt;
-
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
 
 public class StructuredInk {
 

@@ -1,7 +1,5 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -11,7 +9,6 @@ import java.util.Map;
 
 import org.six11.util.Debug;
 import org.six11.util.args.Arguments;
-import org.six11.util.gui.ApplicationFrame;
 
 /**
  * 
@@ -49,6 +46,7 @@ public class Main {
   /**
    * Creates and shows a single new editor window.
    */
+  @SuppressWarnings("unchecked")
   public void go() {
     SkruiFabEditor ed = new SkruiFabEditor(this);
     List<SkruiFabEditor> editors = (List<SkruiFabEditor>) vars.get("editors");

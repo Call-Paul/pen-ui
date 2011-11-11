@@ -1,20 +1,20 @@
 package org.six11.sf;
 
+import static java.lang.Math.abs;
+import static java.lang.Math.ceil;
+import static java.lang.Math.toRadians;
+import static org.six11.util.Debug.bug;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static java.lang.Math.abs;
-import static java.lang.Math.toRadians;
-import static java.lang.Math.ceil;
-import static org.six11.util.Debug.bug;
-
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-import org.six11.util.pen.Line;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -32,6 +32,7 @@ public class CornerFinder {
 
   }
 
+  @SuppressWarnings("unchecked")
   public Set<Segment> findCorners(Sequence seq) {
     assignCurvature(seq); // put a 'curvature' double attribute at every point
     isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
@@ -140,6 +141,7 @@ public class CornerFinder {
     seq.setAttribute(SEGMENT_JUNCTIONS, junctions);
   }
   
+  @SuppressWarnings("unchecked")
   private void makeSegments(Sequence seq) {
     List<Integer> juncts = (List<Integer>) seq.getAttribute(SEGMENT_JUNCTIONS);
     List<Segment> segments = new ArrayList<Segment>();

@@ -1,9 +1,10 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.RoundRectangle2D;
@@ -20,15 +21,10 @@ import java.util.PriorityQueue;
 
 import javax.swing.JComponent;
 
-import org.six11.util.Debug;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.MouseThing;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -42,7 +38,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
-public class DrawingBufferLayers extends JComponent implements PenListener, GestureListener {
+public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public final static Color DEFAULT_COLOR = Color.BLACK;
   public final static float DEFAULT_THICKNESS = 1.8f;
@@ -53,8 +49,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
   private PriorityQueue<DrawingBuffer> layers;
   private Map<String, DrawingBuffer> layersByName;
   SketchBook model;
-  private Pt gestureProgressStart;
-  private Pt gestureProgressPrev;
 
   Pt prev;
   GeneralPath currentScribble;
@@ -228,113 +222,31 @@ public class DrawingBufferLayers extends JComponent implements PenListener, Gest
         break;
       case Idle:
         Sequence seq = model.endScribble(ev.getPt());
-        Gesture gest = model.getGestures().detectGesture(this, seq);
-        if (gest == null) {
+//        Gesture gest = model.getGestures().detectGesture(this, seq);
+//        if (gest == null) {
           model.addInk(new Ink(seq));
-        } else if (gest.getProbability() > 0) {
-          model.getGestures().addPotentialGesture(gest);
-        }
+//        } else if (gest.getProbability() > 0) {
+//          model.getGestures().addPotentialGesture(gest);
+//        }
         clearScribble();
       case Enter:
-        if (model.getGestures().hasActualGesture()) {
-          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-          copyLayer.setVisible(true);
-          repaint();
-          bug("turned ON copy layer");
-        }
+//        if (model.getGestures().hasActualGesture()) {
+//          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
+//          copyLayer.setVisible(true);
+//          repaint();
+//          bug("turned ON copy layer");
+//        }
         break;
       case Exit:
-        if (model.getGestures().hasActualGesture()) {
-          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-          copyLayer.setVisible(false);
-          repaint();
-          bug("turned OFF copy layer");
-        }
+//        if (model.getGestures().hasActualGesture()) {
+//          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
+//          copyLayer.setVisible(false);
+//          repaint();
+//          bug("turned OFF copy layer");
+//        }
         break;
     }
     //    fire(ev); // just pass it on to the listeners
-  }
-
-  public void gestureStart(GestureEvent ev) {
-    if (ev.getTargetComponent() == this) {
-      // TODO: for now assume gestures are entirely within drawing buffer layers. change later
-      Pt pt = new Pt(ev.getComponentPoint());
-      GestureController gests = model.getGestures();
-      Gesture currentGesture = gests.getPotentialGesture();
-      if (currentGesture != null) {
-        if (currentGesture instanceof EncircleGesture) {
-          EncircleGesture circ = (EncircleGesture) currentGesture;
-          model.getSelectionCopy().clear();
-          for (Ink sel : model.getSelection()) {
-            model.getSelectionCopy().add(sel.copy());
-          }
-          DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-          copyLayer.clear();
-          copyLayer.setVisible(true);
-          Color color = Color.BLUE;
-          for (Ink eenk : model.getSelectionCopy()) {
-            Sequence scrib = eenk.getSequence();
-            DrawingBufferRoutines.drawShape(copyLayer, scrib.getPoints(), color,
-                DrawingBufferLayers.DEFAULT_THICKNESS * 1.5);
-          }
-        }
-      }
-    }
-  }
-
-  public void gestureProgress(GestureEvent ev) {
-    if (ev.getTargetComponent() == this) {
-      // TODO: for now assume gestures are entirely within drawing buffer layers. change later
-      GestureController gests = model.getGestures();
-      Gesture currentGesture = gests.getPotentialGesture();
-      Pt pt = new Pt(ev.getComponentPoint());
-      if (currentGesture != null) {
-        if (currentGesture instanceof EncircleGesture) {
-          EncircleGesture circ = (EncircleGesture) currentGesture;
-          if (gestureProgressStart == null) {
-            gestureProgressStart = pt;
-          } else {
-            double dx = pt.getX() - gestureProgressStart.getX();
-            double dy = pt.getY() - gestureProgressStart.getY();
-            DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-            copyLayer.setGraphicsReset();
-            copyLayer.setGraphicsTranslate(dx, dy);
-          }
-          gestureProgressPrev = pt;
-        }
-      }
-      model.getLayers().repaint();
-    }
-  }
-
-  public void gestureComplete(GestureEvent ev) {
-    // TODO: for now assume gestures are entirely within drawing buffer layers. change later
-    GestureController gests = model.getGestures();
-    gests.reportState("DBL got gesture complete.");
-    Gesture currentPotentialGesture = gests.getPotentialGesture();
-    if (currentPotentialGesture != null) {
-      if (ev.getGesture() instanceof MoveGesture && currentPotentialGesture instanceof EncircleGesture) {
-        EncircleGesture circ = (EncircleGesture) currentPotentialGesture;
-        if (ev.getTargetComponent() == this) {
-          // do whatever is necessary to finalize the gesture.
-          if (gestureProgressStart != null && gestureProgressPrev != null) {
-            double dx = gestureProgressPrev.getX() - gestureProgressStart.getX();
-            double dy = gestureProgressPrev.getY() - gestureProgressStart.getY();
-            for (Ink k : model.getSelectionCopy()) {
-              k.move(dx, dy);
-              model.addInk(k);
-            }
-          }
-        }
-        circ.setActualGesture(true);
-        DrawingBuffer copyLayer = model.getLayers().getLayer(GraphicDebug.DB_COPY_LAYER);
-        copyLayer.clear();
-        model.getLayers().repaint();
-      }
-    }
-    gests.restartGestureTimer();
-    gestureProgressPrev = null;
-    gestureProgressStart = null;
   }
 
 }
