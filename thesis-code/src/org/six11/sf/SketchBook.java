@@ -31,6 +31,7 @@ public class SketchBook {
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
+  private SketchRecognizerController recognizer;
 
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
@@ -43,6 +44,7 @@ public class SketchBook {
     this.solver = new ConstraintSolver();
     solver.runInBackground();
     solver.createUI();
+    this.recognizer = new SketchRecognizerController(this);
   }
 
   public List<Ink> getSelectionCopy() {
@@ -73,6 +75,7 @@ public class SketchBook {
     DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
         DrawingBufferLayers.DEFAULT_THICKNESS);
     layers.repaint();
+    recognizer.analyzeRecent();
   }
 
   public void removeInk(Ink oldInk) {
@@ -180,6 +183,7 @@ public class SketchBook {
 
   /**
    * Gives a incrementally-formed name like "P240" to assign points used in the constraint model.
+   * 
    * @return
    */
   protected String nextPointName() {

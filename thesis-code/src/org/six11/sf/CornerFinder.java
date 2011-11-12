@@ -18,7 +18,7 @@ import org.six11.util.pen.Vec;
 public class CornerFinder {
   public static final double windowSize = 10;
   public static final double highCurvatureThresholdDegrees = 45;
-  public static final String SEGMENTS = "segments"; // List<SEGMENTS> : corners
+  public static final String SEGMENTS = "segments"; // List<Segment> : lines, ellipses, curves
   public static final double clusterDistanceThreshold = 6;
   public static final String SEGMENT_JUNCTIONS = "junctions"; // List<Integer> : corners
   public static final double minPatchSize = 10;
