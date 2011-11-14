@@ -1,14 +1,14 @@
 package org.six11.sf.rec;
 
 import org.six11.sf.Ink;
-import org.six11.sf.rec.RecognizerPrimitive.Certainty;
-import org.six11.sf.rec.RecognizerPrimitive.Type;
 import org.six11.util.pen.RotatedEllipse;
 
 import static org.six11.util.Debug.bug;
 
-public class RecognizerPrimitive {
+public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
 
+  private static int ID_COUNTER = 0;
+  
   public static enum Type {
     Line, Arc, Dot, Ellipse
   }
@@ -23,8 +23,10 @@ public class RecognizerPrimitive {
   private int end;
   private Certainty cert;
   private RotatedEllipse ellipse;
+  public final int id; // = ID_COUNTER++;
 
   private RecognizerPrimitive(Type t, Ink ink, int startIdx, int endIdx, Certainty cert) {
+    this.id = ID_COUNTER++;
     this.type = t;
     this.ink = ink;
     this.start = startIdx;
@@ -33,7 +35,6 @@ public class RecognizerPrimitive {
     if (cert == Certainty.Yes) {
       bug(type.toString() + "!");
     }
-
   }
 
   public static RecognizerPrimitive makeLine(Ink ink, int a, int b, Certainty certainty) {
@@ -82,4 +83,12 @@ public class RecognizerPrimitive {
     return this.ellipse;
   }
 
+  public int compareTo(RecognizerPrimitive other) {
+    return (((Integer) id).compareTo(other.id));
+  }
+
+  public String toString() {
+    return type + "_" + id;
+  }
+  
 }

@@ -1,5 +1,11 @@
 package org.six11.sf;
 
+import java.util.Collection;
+import java.util.Set;
+
+import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizerPrimitive;
+
 public abstract class SketchRecognizer {
 
   protected SketchBook model;
@@ -8,6 +14,6 @@ public abstract class SketchRecognizer {
     this.model = model;
   }
 
-  public abstract void analyze();
+  public abstract Collection<RecognizedItem> apply(Collection<RecognizerPrimitive> in);
   
 }

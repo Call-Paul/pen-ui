@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.sf.rec.Arrow;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -45,6 +46,11 @@ public class SketchBook {
     solver.runInBackground();
     solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
+    addRecognizer(new Arrow(this));
+  }
+  
+  private void addRecognizer(SketchRecognizer rec) {
+    recognizer.add(rec);
   }
 
   public List<Ink> getSelectionCopy() {
