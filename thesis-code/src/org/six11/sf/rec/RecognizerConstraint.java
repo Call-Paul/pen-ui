@@ -25,9 +25,22 @@ public abstract class RecognizerConstraint {
     }
   }
   
-  public void say(String what) {
+  public void say(RecognizerPrimitive[] prims, String[] labels, double[] values, Certainty result) {
     if (debugging) {
-      bug(what);
+      StringBuilder buf = new StringBuilder();
+      buf.append(getName() + "(" + getClass().getName() + "): ");
+      for (RecognizerPrimitive prim : prims) {
+        buf.append(prim + " ");
+      }
+      if (labels.length == values.length) {
+        for (int i=0; i < labels.length; i++) {
+          buf.append(labels[i] + "=" + num(values[i]) + " ");
+        }
+      } else {
+        buf.append("wrong number of labels/values: " + labels.length + "/" + values.length);
+      }
+      buf.append(" ==> " + result);
+      bug(buf.toString());
     }
   }
 

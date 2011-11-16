@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.Antipodal;
@@ -32,15 +33,19 @@ public class SketchRecognizerController {
 
   }
 
-  public void analyzeRecent() {
-    bug("Waking up " + recognizers.size() + " recognizers to analyze recent input.");
+  public Collection<RecognizedItem> analyzeRecent() {
+    bug("Waking up " + recognizers.size() + " recognizers to analyze " + model.ink.size()
+        + " recent ink strokes.");
+    allPrimitives.clear();
     // Create a pool of for recognizers to use based on current rough ink.
     for (Ink ink : model.ink) {
       Set<RecognizerPrimitive> prims = extractPrimitives(ink); // appends to allPrimitives
     }
+    Set<RecognizedItem> success = new HashSet<RecognizedItem>();
     for (SketchRecognizer rec : recognizers) {
-      rec.apply(extractPrimitives()); // combines values of allPrimitives
+      success.addAll(rec.apply(extractPrimitives())); // combines values of allPrimitives
     }
+    return success;
   }
 
   private Set<RecognizerPrimitive> extractPrimitives() {
@@ -108,7 +113,7 @@ public class SketchRecognizerController {
           if (punishLazyPen) {
             ret.add(RecognizerPrimitive.makeEllipse(ink, re, Certainty.Maybe));
           } else {
-            ret.add(RecognizerPrimitive.makeEllipse(ink, re, Certainty.Yes)); 
+            ret.add(RecognizerPrimitive.makeEllipse(ink, re, Certainty.Yes));
           }
         } else if (normalizedError < 9) {
           if (punishLazyPen) {

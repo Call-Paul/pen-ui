@@ -20,28 +20,23 @@ public class Coincident extends RecognizerConstraint {
     
     Certainty certainty = Certainty.Unknown;
     certainty = checkAdjacent(primA, subA, primB, subB);
-    say("flip 0, 0: " + certainty);
     if (!ok(certainty) && primB.isFlippable()) {
       primB.flipSubshapeBinding();
       certainty = checkAdjacent(primA, subA, primB, subB);
-      say("flip 0, 1: " + certainty);
     }
     if (!ok(certainty) && primA.isFlippable()) {
       primA.flipSubshapeBinding();
       certainty = checkAdjacent(primA, subA, primB, subB);
-      say("flip 1, 1: " + certainty);
     }
     if (!ok(certainty) && primB.isFlippable()) {
       primB.flipSubshapeBinding();
       certainty = checkAdjacent(primA, subA, primB, subB);
-      say("flip 1, 0: " + certainty);
     }
     if (ok(certainty)) {
-      say("fixing subshapes");
       primA.setSubshapeBindingFixed(true);
       primB.setSubshapeBindingFixed(true);
     }
-    say("Coincident(" + primA + ", " + primB + "): " + certainty);
+    say(p, new String[0], new double[0], certainty);
     return certainty;
   }
 

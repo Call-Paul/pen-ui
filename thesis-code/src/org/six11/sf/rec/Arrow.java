@@ -16,7 +16,12 @@ public class Arrow extends RecognizedItemTemplate {
     addConstraint(new AcuteAngle("c4", "head2", "shaft"));
     addConstraint(new EqualLength("c5", "head1", "head2"));
     addConstraint(new Larger("c6", "shaft", "head1"));
-
+    getConstraint("c1").setDebugging(true);
+    getConstraint("c2").setDebugging(true);
+    getConstraint("c3").setDebugging(true);
+    getConstraint("c4").setDebugging(true);
+    getConstraint("c5").setDebugging(true);
+    getConstraint("c6").setDebugging(true);
   }
 
 }

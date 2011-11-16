@@ -231,4 +231,11 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     }
   }
 
+  public void clearAllBuffers() {
+    for (DrawingBuffer buf : layers) {
+      buf.clear();
+    }
+    repaint();
+  }
+
 }

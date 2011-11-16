@@ -82,6 +82,10 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     return constraints;
   }
 
+  protected RecognizerConstraint getConstraint(String name) {
+    return constraints.get(name);
+  }
+  
   protected void addConstraint(RecognizerConstraint c) {
     // 1. Add the constraint to the map so we can access it by name easily.
     constraints.put(c.getName(), c);

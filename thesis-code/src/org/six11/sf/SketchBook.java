@@ -81,7 +81,6 @@ public class SketchBook {
     DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
         DrawingBufferLayers.DEFAULT_THICKNESS);
     layers.repaint();
-    recognizer.analyzeRecent();
   }
 
   public void removeInk(Ink oldInk) {
@@ -194,6 +193,31 @@ public class SketchBook {
    */
   protected String nextPointName() {
     return "P" + pointCounter++;
+  }
+
+  public SketchRecognizerController getRecognizer() {
+    return recognizer;
+  }
+
+  public void clearInk() {
+    int before = ink.size();
+    ink.clear();
+    bug("removed " + (before - ink.size()) + " ink strokes");
+  }
+
+  public void clearAll() {
+    clearInk();
+    clearSelection();
+    clearStructured();
+    getConstraints().clearConstraints();
+    layers.clearScribble();
+    layers.clearAllBuffers();
+    layers.repaint();
+  }
+
+
+  private void clearStructured() {
+    geometry.clear();
   }
 
 }

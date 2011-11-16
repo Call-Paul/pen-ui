@@ -69,6 +69,10 @@ public class RecognizedItem {
   public Collection<RecognizerPrimitive> getSubshapes() {
     return subshapes.values();
   }
+  
+  public RecognizerPrimitive getSubshape(String name) {
+    return subshapes.get(name);
+  }
 
   public RecognizedItemTemplate getTemplate() {
     return template;

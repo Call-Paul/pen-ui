@@ -27,6 +27,9 @@ import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
+import org.six11.sf.rec.Arrow;
+import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
@@ -35,6 +38,8 @@ import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
+
+import com.sun.java.swing.plaf.gtk.GTKConstants.ArrowType;
 
 /**
  * A self-contained editor instance.
@@ -52,6 +57,7 @@ public class SkruiFabEditor {
   Map<String, Action> actions;
   private GlassPane glass;
   private static String ACTION_GO = "Go";
+  private static String ACTION_CLEAR = "Clear";
   ApplicationFrame af;
 
   public SkruiFabEditor(Main m) {
@@ -152,6 +158,12 @@ public class SkruiFabEditor {
       }
     });
 
+    actions.put(ACTION_CLEAR, new NamedAction("Clear", KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)) {
+      public void activate() {
+        model.clearAll();
+      }
+    });
+
     // 3. For those actions with keyboard accelerators, register them to the
     // root pane.
     for (Action action : actions.values()) {
@@ -178,10 +190,23 @@ public class SkruiFabEditor {
       model.addGeometry(seg);
     }
     model.getConstraintAnalyzer().analyze(segs);
+    Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
+    model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStructured();
     drawConstraints();
+    drawRecognized(items);
     layers.repaint();
+  }
+
+  private void drawRecognized(Collection<RecognizedItem> items) {
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
+    for (RecognizedItem item : items) {
+      if (item.getTemplate() instanceof Arrow) {
+        RecognizerPrimitive shaft = item.getSubshape("shaft");
+        DrawingBufferRoutines.arrow(buf, shaft.getP1(), shaft.getP2(), 2.0f, Color.BLUE);
+      }
+    }
   }
 
   private void drawStructured() {
