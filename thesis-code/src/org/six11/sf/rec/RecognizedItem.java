@@ -1,5 +1,81 @@
 package org.six11.sf.rec;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Stack;
+
+import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+
+import static org.six11.util.Debug.bug;
+
 public class RecognizedItem {
+
+  private RecognizedItemTemplate template;
+
+  private Map<String, RecognizerPrimitive> subshapes;
+  private Map<String, Certainty> constraints;
+  private String debugString;
+
+  /**
+   * Instantiate a shape using the given template. This assumes that all the necessary slots are
+   * present and bound. On exit, all bindings are copied and stored, and constraint certainties are
+   * recorded.
+   * 
+   * @param template
+   *          the source template (e.g. 'Arrow')
+   * @param bindSlot
+   *          names of slots. each element corresponds to elements of bindObj.
+   * @param bindObj
+   *          values of slots. each element corresponds to elements in bindSlot.
+   */
+  public RecognizedItem(RecognizedItemTemplate template, Stack<String> bindSlot,
+      Stack<RecognizerPrimitive> bindObj) {
+    this.template = template;
+    this.subshapes = new HashMap<String, RecognizerPrimitive>();
+    for (int i = 0; i < bindSlot.size(); i++) {
+      subshapes.put(bindSlot.get(i), bindObj.get(i));
+    }
+    this.constraints = new HashMap<String, Certainty>();
+    for (String cName : template.getConstraints().keySet()) {
+      RecognizerConstraint c = template.getConstraints().get(cName);
+      if (c.getNumSlots() > 1) {
+        RecognizerPrimitive[] arguments = c.makeArguments(bindSlot, bindObj);
+//        c.setDebugging(true);
+        Certainty result = c.check(arguments);
+        constraints.put(cName, result);
+      }
+    }
+    
+    // make a debugging string.
+    StringBuffer buf = new StringBuffer();
+    buf.append(subshapes.size() + " shapes: ");
+    for (String sName : subshapes.keySet()) {
+      buf.append("[" + sName + "=" + subshapes.get(sName).toString() + " <"
+          + subshapes.get(sName).getCert() + ">] ");
+    }
+    buf.append(constraints.size() + " constraints: ");
+    for (String cName : constraints.keySet()) {
+      buf.append("[" + cName + "=" + constraints.get(cName) + "] ");
+    }
+    debugString = template.getName() + " " + buf.toString();
+    bug("Created " + this);
+  }
+  
+  public String toString() {
+    return debugString;
+  }
+
+  public Collection<RecognizerPrimitive> getSubshapes() {
+    return subshapes.values();
+  }
+
+  public RecognizedItemTemplate getTemplate() {
+    return template;
+  }
+
+  public boolean containsAll(Stack<RecognizerPrimitive> otherShapes) {
+    return subshapes.values().containsAll(otherShapes);
+  }
 
 }
