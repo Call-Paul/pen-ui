@@ -25,10 +25,16 @@ public abstract class RecognizerConstraint {
     }
   }
   
+  public void say(String what) {
+    if (debugging) {
+      bug(getName() + " (" + getClass().getName() + "): " + what);
+    }
+  }
+  
   public void say(RecognizerPrimitive[] prims, String[] labels, double[] values, Certainty result) {
     if (debugging) {
       StringBuilder buf = new StringBuilder();
-      buf.append(getName() + "(" + getClass().getName() + "): ");
+      buf.append(getName() + " (" + getClass().getName() + "): ");
       for (RecognizerPrimitive prim : prims) {
         buf.append(prim + " ");
       }

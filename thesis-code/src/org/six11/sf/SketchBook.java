@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.six11.sf.rec.Arrow;
+import org.six11.sf.rec.RightAngleBrace;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -47,6 +48,7 @@ public class SketchBook {
     solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new Arrow(this));
+    addRecognizer(new RightAngleBrace(this));
   }
   
   private void addRecognizer(SketchRecognizer rec) {

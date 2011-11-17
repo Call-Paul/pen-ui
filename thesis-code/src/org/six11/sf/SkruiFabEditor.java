@@ -15,6 +15,7 @@ import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import javax.swing.SwingUtilities;
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizerPrimitive;
+import org.six11.sf.rec.RightAngleBrace;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
@@ -203,8 +205,17 @@ public class SkruiFabEditor {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
     for (RecognizedItem item : items) {
       if (item.getTemplate() instanceof Arrow) {
-        RecognizerPrimitive shaft = item.getSubshape("shaft");
-        DrawingBufferRoutines.arrow(buf, shaft.getP1(), shaft.getP2(), 2.0f, Color.BLUE);
+        DrawingBufferRoutines.arrow(buf, item.getFeaturePoint(Arrow.START), item.getFeaturePoint(Arrow.TIP), 2.0f, Color.BLUE);
+      } else if (item.getTemplate() instanceof RightAngleBrace) {
+        List<Pt> corners = new ArrayList<Pt>();
+        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_A));
+        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_B));
+        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_D));
+        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_C));
+        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_A));
+        DrawingBufferRoutines.lines(buf, corners, Color.CYAN, 2.0);
+        DrawingBufferRoutines.dot(buf, corners.get(0), 4.0, 1.0, Color.BLACK, Color.GREEN);
+        DrawingBufferRoutines.dot(buf, corners.get(2), 4.0, 1.0, Color.BLACK, Color.RED);
       }
     }
   }

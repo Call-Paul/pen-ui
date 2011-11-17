@@ -56,10 +56,6 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
     this.cert = cert;
     this.subshapeBindingFlipped = false;
     this.subshapeBindingFixed = false;
-
-    if (cert == Certainty.Yes) {
-      bug(type.toString() + "!");
-    }
   }
 
   public static RecognizerPrimitive makeLine(Ink ink, int a, int b, Certainty certainty) {

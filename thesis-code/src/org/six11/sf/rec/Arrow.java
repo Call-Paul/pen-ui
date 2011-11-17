@@ -1,9 +1,16 @@
 package org.six11.sf.rec;
 
+import java.util.Map;
+import java.util.Stack;
+
 import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Type;
+import org.six11.util.pen.Pt;
 
 public class Arrow extends RecognizedItemTemplate {
+
+  public static String TIP = "arrowTip";
+  public static String START = "arrowStart";
 
   public Arrow(SketchBook model) {
     super(model, "Arrow");
@@ -16,12 +23,16 @@ public class Arrow extends RecognizedItemTemplate {
     addConstraint(new AcuteAngle("c4", "head2", "shaft"));
     addConstraint(new EqualLength("c5", "head1", "head2"));
     addConstraint(new Larger("c6", "shaft", "head1"));
-    getConstraint("c1").setDebugging(true);
-    getConstraint("c2").setDebugging(true);
-    getConstraint("c3").setDebugging(true);
-    getConstraint("c4").setDebugging(true);
-    getConstraint("c5").setDebugging(true);
-    getConstraint("c6").setDebugging(true);
+  }
+
+  public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
+    RecognizedItem item = new RecognizedItem(this, slots, prims);
+    RecognizerPrimitive prim = search(slots, prims, "shaft");
+    if (prim != null) { 
+      item.setFeaturedPoint(START, prim.getSubshape("p1"));
+      item.setFeaturedPoint(TIP, prim.getSubshape("p2"));
+    }
+    return item;
   }
 
 }

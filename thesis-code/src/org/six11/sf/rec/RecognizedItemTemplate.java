@@ -54,6 +54,11 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   private Map<String, Set<String>> slotsToConstraints;
 
   /**
+   * Map of recognized parts (e.g. "shaft.p1") to higher level item feature points (e.g. "arrowTip")
+   */
+  protected Map<String, String> pointBindings;
+
+  /**
    * Holds a set of candidates that could potentially fill a given slot. This is used to restrict
    * the search. For example, if slot 'shaft' requries a line, the set of candidates will only
    * include lines, but no dots.
@@ -68,7 +73,10 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     this.constraints = new HashMap<String, RecognizerConstraint>();
     this.slotsToConstraints = new HashMap<String, Set<String>>();
     this.validSlotCandidates = new HashMap<String, SortedSet<RecognizerPrimitive>>();
+    this.pointBindings = new HashMap<String, String>();
   }
+
+  public abstract RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims);
 
   public String toString() {
     return name;
@@ -78,6 +86,28 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     return name;
   }
 
+  /**
+   * Binds a point from the input set to a 'final' name. For example, a recognized arrow has an
+   * arrow tip. But the arrow is composed of a shaft and two heads, and the shaft primitive might be
+   * flipped around. When the arrow is recognized and put together, we would like to remember where
+   * the arrow head is, rather than remembering which of the two ends of the shaft the arrow head
+   * is. In this case, you would bind "shaft.p2" to "arrowHead".
+   * 
+   * @param sourceName
+   * @param destName
+   */
+  protected void bindPoint(String sourceName, String destName) {
+    pointBindings.put(sourceName, destName);
+  }
+
+  /**
+   * Gives a map of component identifiers (such as "shaft.p1") to higher-level shape identifiers
+   * (like "arrowTip").
+   */
+  public Map<String, String> getPointBindings() {
+    return pointBindings;
+  }
+
   public Map<String, RecognizerConstraint> getConstraints() {
     return constraints;
   }
@@ -85,7 +115,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   protected RecognizerConstraint getConstraint(String name) {
     return constraints.get(name);
   }
-  
+
   protected void addConstraint(RecognizerConstraint c) {
     // 1. Add the constraint to the map so we can access it by name easily.
     constraints.put(c.getName(), c);
@@ -169,7 +199,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
             }
             if (ok) {
               bug("About to make recognized shape on evaluate result: " + result);
-              RecognizedItem item = new RecognizedItem(this, bindSlot, bindObj);
+              RecognizedItem item = makeItem(bindSlot, bindObj);
               Toolkit.getDefaultToolkit().beep();
               results.add(item);
             }
@@ -235,6 +265,17 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
         }
       }
     }
+  }
+  
+  public RecognizerPrimitive search(Stack<String> slots, Stack<RecognizerPrimitive> prims, String slot) {
+    RecognizerPrimitive ret = null;
+    for (int i=0; i < prims.size(); i ++) {
+      if (slots.get(i).equals(slot)) {
+        ret = prims.get(i);
+        break;
+      }
+    }
+    return ret;
   }
 
   private static String getBindingString(Stack<String> names, Stack<RecognizerPrimitive> vals) {

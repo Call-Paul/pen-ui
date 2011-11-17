@@ -30,7 +30,6 @@ public class SketchRecognizerController {
     this.model = model;
     this.recognizers = new ArrayList<SketchRecognizer>();
     this.allPrimitives = new HashMap<Ink, Set<RecognizerPrimitive>>();
-
   }
 
   public Collection<RecognizedItem> analyzeRecent() {

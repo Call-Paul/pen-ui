@@ -6,15 +6,19 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+import org.six11.util.pen.Pt;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class RecognizedItem {
 
   private RecognizedItemTemplate template;
 
   private Map<String, RecognizerPrimitive> subshapes;
+  private Map<String, Boolean> flipState;
   private Map<String, Certainty> constraints;
+  private Map<String, Pt> featurePoints;
   private String debugString;
 
   /**
@@ -33,20 +37,24 @@ public class RecognizedItem {
       Stack<RecognizerPrimitive> bindObj) {
     this.template = template;
     this.subshapes = new HashMap<String, RecognizerPrimitive>();
-    for (int i = 0; i < bindSlot.size(); i++) {
-      subshapes.put(bindSlot.get(i), bindObj.get(i));
-    }
+    this.featurePoints = new HashMap<String, Pt>();
     this.constraints = new HashMap<String, Certainty>();
     for (String cName : template.getConstraints().keySet()) {
       RecognizerConstraint c = template.getConstraints().get(cName);
       if (c.getNumSlots() > 1) {
         RecognizerPrimitive[] arguments = c.makeArguments(bindSlot, bindObj);
-//        c.setDebugging(true);
         Certainty result = c.check(arguments);
         constraints.put(cName, result);
       }
     }
     
+    
+    for (int i = 0; i < bindSlot.size(); i++) {
+      String slot = bindSlot.get(i);
+      subshapes.put(bindSlot.get(i), bindObj.get(i));
+
+    }
+
     // make a debugging string.
     StringBuffer buf = new StringBuffer();
     buf.append(subshapes.size() + " shapes: ");
@@ -61,7 +69,7 @@ public class RecognizedItem {
     debugString = template.getName() + " " + buf.toString();
     bug("Created " + this);
   }
-  
+
   public String toString() {
     return debugString;
   }
@@ -69,7 +77,7 @@ public class RecognizedItem {
   public Collection<RecognizerPrimitive> getSubshapes() {
     return subshapes.values();
   }
-  
+
   public RecognizerPrimitive getSubshape(String name) {
     return subshapes.get(name);
   }
@@ -80,6 +88,14 @@ public class RecognizedItem {
 
   public boolean containsAll(Stack<RecognizerPrimitive> otherShapes) {
     return subshapes.values().containsAll(otherShapes);
+  }
+
+  public Pt getFeaturePoint(String key) {
+    return featurePoints.get(key);
+  }
+
+  public void setFeaturedPoint(String key, Pt pt) {
+    featurePoints.put(key, pt);
   }
 
 }
