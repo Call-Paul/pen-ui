@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.six11.sf.Segment;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.Pt;
 
@@ -19,6 +20,7 @@ public class RecognizedItem {
   private Map<String, Boolean> flipState;
   private Map<String, Certainty> constraints;
   private Map<String, Pt> featurePoints;
+  private Map<String, Object> targets;
   private String debugString;
 
   /**
@@ -39,6 +41,7 @@ public class RecognizedItem {
     this.subshapes = new HashMap<String, RecognizerPrimitive>();
     this.featurePoints = new HashMap<String, Pt>();
     this.constraints = new HashMap<String, Certainty>();
+    this.targets = new HashMap<String, Object>();
     for (String cName : template.getConstraints().keySet()) {
       RecognizerConstraint c = template.getConstraints().get(cName);
       if (c.getNumSlots() > 1) {
@@ -98,4 +101,12 @@ public class RecognizedItem {
     featurePoints.put(key, pt);
   }
 
+  public void addTarget(String targetKey, Segment seg) {
+    targets.put(targetKey, seg);
+  }
+  
+  public Segment getSegmentTarget(String targetKey) {
+    return (Segment) targets.get(targetKey);
+  }
+  
 }

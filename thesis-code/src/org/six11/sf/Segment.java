@@ -29,8 +29,10 @@ public abstract class Segment {
   Line line;
   Sequence spline;
   boolean[] terms;
+  Ink ink;
 
-  public Segment(List<Pt> points, boolean termA, boolean termB) {
+  public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
+    this.ink = ink;
     this.points = points;
     for (Pt pt : points) {
       if (pt.getTime() == 0) {
@@ -42,6 +44,10 @@ public abstract class Segment {
         termA, termB
     };
     id = ID_COUNTER++;
+  }
+  
+  public Ink getOriginalInk() {
+     return ink;
   }
 
   public String toString() {
@@ -142,6 +148,15 @@ public abstract class Segment {
     return ret;
   }
 
+  public double getMinAngle(Segment other) {
+    Vec target = getStartDir();
+    Vec segStart = other.getStartDir();
+    Vec segEnd = other.getEndDir();
+    double angleStart = Math.abs(Functions.getSignedAngleBetween(target, segStart));
+    double angleEnd = Math.abs(Functions.getSignedAngleBetween(target, segEnd));
+    return Math.min(angleStart,  angleEnd);
+  }
+  
   public Sequence asSpline() {
     if (spline == null) {
       double roughLength = 0;

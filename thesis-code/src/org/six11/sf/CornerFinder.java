@@ -32,13 +32,13 @@ public class CornerFinder {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<Segment> findCorners(Sequence seq) {
-    assignCurvature(seq); // put a 'curvature' double attribute at every point
-    isolateCorners(seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
-    guibug.drawJunctions(seq);
-    makeSegments(seq); // sets the SEGMENTS attrib (list of Segments)
+  public Set<Segment> findCorners(Ink ink) {
+    assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
+    isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
+//    guibug.drawJunctions(ink.seq);
+    makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
     Set<Segment> ret = new HashSet<Segment>();
-    ret.addAll((List<Segment>) seq.getAttribute(SEGMENTS));
+    ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
     return ret;
   }
 
@@ -141,31 +141,31 @@ public class CornerFinder {
   }
   
   @SuppressWarnings("unchecked")
-  private void makeSegments(Sequence seq) {
-    List<Integer> juncts = (List<Integer>) seq.getAttribute(SEGMENT_JUNCTIONS);
+  private void makeSegments(Ink ink) {
+    List<Integer> juncts = (List<Integer>) ink.seq.getAttribute(SEGMENT_JUNCTIONS);
     List<Segment> segments = new ArrayList<Segment>();
     for (int i = 0; i < juncts.size() - 1; i++) {
-      segments.add(identifySegment(seq, juncts.get(i), juncts.get(i + 1)));
+      segments.add(identifySegment(ink, juncts.get(i), juncts.get(i + 1)));
     }
-    seq.setAttribute(SEGMENTS, segments);
+    ink.seq.setAttribute(SEGMENTS, segments);
   }
 
-  private Segment identifySegment(Sequence seq, int i, int j) {
+  private Segment identifySegment(Ink ink, int i, int j) {
     Segment ret = null;
-    double segLength = seq.getPathLength(i, j);
+    double segLength = ink.seq.getPathLength(i, j);
     int numPatches = (int) ceil(segLength / minPatchSize);
     double patchLength = segLength / (double) numPatches;
-    List<Pt> patch = Functions.getCurvilinearNormalizedSequence(seq, i, j, patchLength).getPoints();
+    List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength).getPoints();
     int a = 0;
     int b = patch.size() - 1;
     Line line = new Line(patch.get(a), patch.get(b));
     double lineError = Functions.getLineError(line, patch, a, b);
     if (lineError < lineErrorThreshold) {
-      ret = new LineSegment(patch, i == 0, j == seq.size() - 1);
+      ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
-      ret = new EllipseArcSegment(patch, i == 0, j == seq.size() - 1);
+      ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     } else {
-      ret = new CurvySegment(patch, i == 0, j == seq.size() - 1);
+      ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     }
     return ret;
   }

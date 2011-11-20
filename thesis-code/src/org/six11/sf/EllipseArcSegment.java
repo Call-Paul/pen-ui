@@ -8,8 +8,8 @@ import org.six11.util.pen.RotatedEllipse;
 
 public class EllipseArcSegment extends Segment {
 
-  public EllipseArcSegment(List<Pt> points, boolean termA, boolean termB) {
-    super(points, termA, termB);
+  public EllipseArcSegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
+    super(ink, points, termA, termB);
     // The ellipse is fit using regression, and does not necessarily begin and end at the first 
     // and last points in the list. So get the elliptical region, and transform it two times so it
     // does begin and end at those points.

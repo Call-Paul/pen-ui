@@ -1,6 +1,7 @@
 package org.six11.sf.rec;
 
 import java.awt.Toolkit;
+import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,9 +13,12 @@ import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+import org.six11.util.pen.ConvexHull;
+import org.six11.util.pen.Pt;
 
 import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
@@ -65,6 +69,8 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
    */
   private Map<String, SortedSet<RecognizerPrimitive>> validSlotCandidates;
 
+  protected boolean debugAll = false;
+
   public RecognizedItemTemplate(SketchBook model, String name) {
     super(model);
     this.name = name;
@@ -77,6 +83,24 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   }
 
   public abstract RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims);
+
+  public abstract Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in);
+
+  public void create(RecognizedItem item, SketchBook model) {
+  }
+
+  protected void setDebugAll(boolean v) {
+    this.debugAll = v;
+    for (RecognizerConstraint c : constraints.values()) {
+      c.setDebugging(v);
+    }
+  }
+
+  protected void say(String what) {
+    if (debugAll) {
+      bug(name + ": " + what);
+    }
+  }
 
   public String toString() {
     return name;
@@ -139,12 +163,23 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   }
 
   public Collection<RecognizedItem> apply(Collection<RecognizerPrimitive> in) {
+    say("Applying template with " + in.size() + " primitive input(s): " + num(in, " "));
     List<RecognizedItem> ret = new ArrayList<RecognizedItem>();
     resetValid();
     setValid(in);
     Stack<String> bindSlot = new Stack<String>();
     Stack<RecognizerPrimitive> bindObj = new Stack<RecognizerPrimitive>();
     fit(0, bindSlot, bindObj, ret);
+    Set<RecognizedItem> wrongContext = new HashSet<RecognizedItem>();
+    for (RecognizedItem item : ret) {
+      Certainty cert = checkContext(item, in);
+      if (!RecognizerConstraint.ok(cert)) {
+        wrongContext.add(item);
+      }
+    }
+    say("Found " + ret.size() + " candidates, but removing " + wrongContext.size()
+        + " that lack context.");
+    ret.removeAll(wrongContext);
     return ret;
   }
 
@@ -171,11 +206,15 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   private void fit(int slotIndex, Stack<String> bindSlot, Stack<RecognizerPrimitive> bindObj,
       List<RecognizedItem> results) {
     String topSlot = slotNames.get(slotIndex);
+    say("trying slot " + slotIndex + " (" + topSlot + ") with slot candidates: "
+        + num(validSlotCandidates.get(topSlot), " "));
     bindSlot.push(topSlot);
     // Each slot might have several possible values. Iterate through them all.
     for (RecognizerPrimitive p : validSlotCandidates.get(topSlot)) {
       // avoid adding the same primitive to the slot binding if it is already present.
+      say("1...");
       if (!bindObj.contains(p)) {
+        say("2...");
         bindObj.push(p); // add this primitive to the current binding (for slot "slotIndex")
         // Sometimes shapes can be flipped---reversing p1 and p2. If a shape has been flipped
         // it is polite to undo that later, at the end of the fit() function.
@@ -184,6 +223,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
           revertFixedState[i] = !bindObj.get(i).isFlippable();
         }
         Certainty result = evaluate(bindSlot, bindObj); // sees if the current slot binding works.
+        say("3...");
         if (result != Certainty.No) {
           if (slotIndex + 1 < slotNames.size()) {
             // there are unexplored branches below here. go do the next one!
@@ -211,6 +251,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
         }
         bindObj.pop();
       }
+      say("4...");
     }
     bindSlot.pop();
   }
@@ -219,22 +260,31 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     Certainty ret = Certainty.Unknown;
     String topSlot = bindSlot.peek(); // the most recently added slot
     Set<String> constraintNames = slotsToConstraints.get(topSlot);
+    Map<String, Certainty> constraintResults = new HashMap<String, Certainty>();
     if (constraintNames == null) {
+      say("No constraints to DQ me.");
       ret = Certainty.Yes; // The shape has no constraints to disqualify this item
     } else {
       // Examine all constraints related to the most recently added slot. See if they can tell 
       // us if we should continue or not by evaluating the ones that have enough info.
+      say("Examining constraints related to " + topSlot + ": " + num(constraintNames, " "));
       for (String cName : constraintNames) {
         RecognizerConstraint c = constraints.get(cName);
         List<String> relevantNames = c.getPrimarySlotNames();
         if (bindSlot.containsAll(relevantNames)) { // if related slots are bound...
           RecognizerPrimitive[] arguments = c.makeArguments(bindSlot, bindObj);
           ret = c.check(arguments);
+          constraintResults.put(cName, ret);
           if (ret == Certainty.No) { // give up after the first No.
+            say("Giving up at " + cName);
             break;
           }
         }
       }
+    }
+    say("Constraint results for evaluation of top slot: " + topSlot);
+    for (String cName : constraintResults.keySet()) {
+      say(cName + " = " + constraintResults.get(cName));
     }
     return ret; // the return value is either No (fail) or something else (success);
   }
@@ -266,10 +316,11 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
       }
     }
   }
-  
-  public RecognizerPrimitive search(Stack<String> slots, Stack<RecognizerPrimitive> prims, String slot) {
+
+  public RecognizerPrimitive search(Stack<String> slots, Stack<RecognizerPrimitive> prims,
+      String slot) {
     RecognizerPrimitive ret = null;
-    for (int i=0; i < prims.size(); i ++) {
+    for (int i = 0; i < prims.size(); i++) {
       if (slots.get(i).equals(slot)) {
         ret = prims.get(i);
         break;
@@ -294,4 +345,13 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     }
     return buf.toString();
   }
+
+  protected Area getTotalArea(RecognizerPrimitive[] p) {
+    ConvexHull hull = new ConvexHull();
+    for (RecognizerPrimitive prim : p) {
+      hull.addPoints(prim.getP1(), prim.getP2());
+    }
+    return new Area(hull.getHullShape());
+  }
+
 }

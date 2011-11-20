@@ -36,13 +36,14 @@ public class SketchRecognizerController {
     bug("Waking up " + recognizers.size() + " recognizers to analyze " + model.ink.size()
         + " recent ink strokes.");
     allPrimitives.clear();
-    // Create a pool of for recognizers to use based on current rough ink.
+    // Create a pool of primitives for recognizers to use based on current rough ink.
     for (Ink ink : model.ink) {
-      Set<RecognizerPrimitive> prims = extractPrimitives(ink); // appends to allPrimitives
+      extractPrimitives(ink); // appends to allPrimitives
     }
     Set<RecognizedItem> success = new HashSet<RecognizedItem>();
+    Set<RecognizerPrimitive> prims = extractPrimitives();
     for (SketchRecognizer rec : recognizers) {
-      success.addAll(rec.apply(extractPrimitives())); // combines values of allPrimitives
+      success.addAll(rec.apply(prims)); // combines values of allPrimitives
     }
     return success;
   }

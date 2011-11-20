@@ -77,6 +77,7 @@ public class SketchBook {
   }
 
   public void addInk(Ink newInk) {
+    cornerFinder.findCorners(newInk);
     ink.add(newInk);
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
     Sequence scrib = newInk.getSequence();
@@ -112,7 +113,7 @@ public class SketchBook {
 
   public Sequence endScribble(Pt pt) {
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
-    cornerFinder.findCorners(scrib);
+//    cornerFinder.findCorners(scrib);
     return scrib;
   }
 
@@ -146,7 +147,7 @@ public class SketchBook {
     }
     return ret;
   }
-
+  
   public void clearSelection() {
     setSelected(null);
   }
@@ -165,6 +166,10 @@ public class SketchBook {
 
   public void addGeometry(Segment seg) {
     geometry.add(seg);
+  }
+  
+  public void removeGeometry(Segment seg) {
+    geometry.remove(seg);
   }
 
   public Set<Segment> getGeometry() {
@@ -221,5 +226,19 @@ public class SketchBook {
   private void clearStructured() {
     geometry.clear();
   }
+
+  public void removeRelated(Ink eenk) {
+    Set<Segment> doomed = new HashSet<Segment>(); 
+    for (Segment seg : geometry) {
+      if (seg.ink == eenk) {
+        doomed.add(seg);
+        getConstraints().removePoint(seg.getP1());
+        getConstraints().removePoint(seg.getP2());
+      }
+    }
+    geometry.removeAll(doomed);
+    getConstraints().wakeUp();
+  }
+
 
 }

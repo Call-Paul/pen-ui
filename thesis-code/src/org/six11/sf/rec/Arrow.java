@@ -1,9 +1,11 @@
 package org.six11.sf.rec;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Stack;
 
 import org.six11.sf.SketchBook;
+import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.sf.rec.RecognizerPrimitive.Type;
 import org.six11.util.pen.Pt;
 
@@ -25,6 +27,10 @@ public class Arrow extends RecognizedItemTemplate {
     addConstraint(new Larger("c6", "shaft", "head1"));
   }
 
+  public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
+    return Certainty.Yes;
+  }
+  
   public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
     RecognizedItem item = new RecognizedItem(this, slots, prims);
     RecognizerPrimitive prim = search(slots, prims, "shaft");
@@ -33,6 +39,11 @@ public class Arrow extends RecognizedItemTemplate {
       item.setFeaturedPoint(TIP, prim.getSubshape("p2"));
     }
     return item;
+  }
+
+  @Override
+  public void create(RecognizedItem item, SketchBook model) {
+
   }
 
 }
