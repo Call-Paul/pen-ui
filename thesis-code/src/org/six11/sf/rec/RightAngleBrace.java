@@ -52,6 +52,25 @@ public class RightAngleBrace extends RecognizedItemTemplate {
         toRadians(110)), "line1", "line2"));
     setDebugAll(true);
   }
+  
+  public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
+    RecognizedItem item = new RecognizedItem(this, slots, prims);
+    RecognizerPrimitive line1 = search(slots, prims, "line1");
+    RecognizerPrimitive line2 = search(slots, prims, "line2");
+    if (line1 != null && line2 != null) {
+      Pt a = line1.getSubshape("p2");
+      Pt b = line1.getSubshape("p1");
+      Pt c = line2.getSubshape("p2");
+      Vec v1 = new Vec(a, b);
+      Vec v2 = new Vec(a, c);
+      Pt d = new Pt(a.getX() + v1.getX() + v2.getX(), a.getY() + v1.getY() + v2.getY());
+      item.setFeaturedPoint(CORNER_A, a);
+      item.setFeaturedPoint(CORNER_B, b);
+      item.setFeaturedPoint(CORNER_C, c);
+      item.setFeaturedPoint(CORNER_D, d);
+    }
+    return item;
+  }
 
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
     Certainty ret = Certainty.No;
@@ -85,25 +104,6 @@ public class RightAngleBrace extends RecognizedItemTemplate {
       ret = Certainty.Yes;
     }
     return ret;
-  }
-
-  public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
-    RecognizedItem item = new RecognizedItem(this, slots, prims);
-    RecognizerPrimitive line1 = search(slots, prims, "line1");
-    RecognizerPrimitive line2 = search(slots, prims, "line2");
-    if (line1 != null && line2 != null) {
-      Pt a = line1.getSubshape("p2");
-      Pt b = line1.getSubshape("p1");
-      Pt c = line2.getSubshape("p2");
-      Vec v1 = new Vec(a, b);
-      Vec v2 = new Vec(a, c);
-      Pt d = new Pt(a.getX() + v1.getX() + v2.getX(), a.getY() + v1.getY() + v2.getY());
-      item.setFeaturedPoint(CORNER_A, a);
-      item.setFeaturedPoint(CORNER_B, b);
-      item.setFeaturedPoint(CORNER_C, c);
-      item.setFeaturedPoint(CORNER_D, d);
-    }
-    return item;
   }
 
   @Override
