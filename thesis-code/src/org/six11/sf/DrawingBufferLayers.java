@@ -21,6 +21,7 @@ import java.util.PriorityQueue;
 
 import javax.swing.JComponent;
 
+import org.six11.sf.rec.RecognizedItem;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
@@ -29,6 +30,7 @@ import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.solve.Constraint;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -52,6 +54,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   Pt prev;
   GeneralPath currentScribble;
+  private Pt hoverPt;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
@@ -83,6 +86,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Components.antialias(g);
+    drawConstraints();
     for (DrawingBuffer buffer : layers) {
       if (buffer.isVisible() && useCachedImages) {
         buffer.paste(g);
@@ -208,17 +212,17 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void handlePenEvent(PenEvent ev) {
     switch (ev.getType()) {
       case Down:
+        hoverPt = null;
         prev = ev.getPt();
         currentScribble = new GeneralPath();
         currentScribble.moveTo(prev.getX(), prev.getY());
         model.startScribble(ev.getPt());
-        repaint();
         break;
       case Drag:
+        hoverPt = null;
         Pt here = ev.getPt();
         currentScribble.lineTo(here.getX(), here.getY());
         model.addScribble(ev.getPt());
-        repaint();
         break;
       case Idle:
         Sequence seq = model.endScribble(ev.getPt());
@@ -227,8 +231,39 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       case Enter:
         break;
       case Exit:
+        hoverPt = null;
+        break;
+      case Hover:
+        hoverPt = ev.getPt().copyXYT();
         break;
     }
+    repaint();
+  }
+
+  private void drawConstraints() {
+    DrawingBuffer buf = getLayer(GraphicDebug.DB_DOT_LAYER);
+    buf.clear();
+    for (Constraint c : model.getConstraints().getConstraints()) {
+      RecognizedItem item = model.getConstraintItem(c);
+      if (item != null) {
+        item.getTemplate().draw(c, item, buf, getHoverPoint());
+      }
+    }
+  }
+  
+  /**
+   * Returns the last location the pen was hovering, or null if the pen is down or outside of the
+   * component.
+   */
+  public Pt getHoverPoint() {
+    return hoverPt;
+  }
+  
+  /**
+   * Tells you if the hover point is currently valid.
+   */
+  public boolean isHovering() {
+    return (hoverPt != null);
   }
 
   public void clearAllBuffers() {

@@ -7,7 +7,9 @@ import java.util.Stack;
 
 import org.six11.sf.Segment;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
+import org.six11.util.solve.Constraint;
 
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
@@ -107,6 +109,5 @@ public class RecognizedItem {
   
   public Segment getSegmentTarget(String targetKey) {
     return (Segment) targets.get(targetKey);
-  }
-  
+  }  
 }

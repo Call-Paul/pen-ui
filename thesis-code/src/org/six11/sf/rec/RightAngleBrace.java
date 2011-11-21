@@ -1,8 +1,11 @@
 package org.six11.sf.rec;
 
+import java.awt.Color;
 import java.awt.geom.Area;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -12,8 +15,11 @@ import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.sf.rec.RecognizerPrimitive.Type;
 import org.six11.util.math.Interval;
+import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
+import org.six11.util.solve.Constraint;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.OrientationConstraint;
 
@@ -35,22 +41,22 @@ public class RightAngleBrace extends RecognizedItemTemplate {
   public static String CORNER_B = "cornerB";
   public static String CORNER_C = "cornerC";
   public static String CORNER_D = "cornerD"; // this is opposite of the corner
-  
+
   public static String TARGET_A = "targetA";
   public static String TARGET_B = "targetB";
 
+  public static String NAME = "RightAngleBrace";
+
   public RightAngleBrace(SketchBook model) {
-    super(model, "RightAngleBrace");
+    super(model, NAME);
     addPrimitive("line1", Type.Line);
     addPrimitive("line2", Type.Line);
     addConstraint(new Coincident("c1", "line1.p2", "line2.p1"));
     addConstraint(new EqualLength("c2", "line1", "line2"));
-    addConstraint(new AngleConstraint("c3", 
-        new Interval(toRadians(82), toRadians(98)), new Interval(toRadians(70),
-        toRadians(110)), "line1", "line2"));
-//    setDebugAll(true);
+    addConstraint(new AngleConstraint("c3", new Interval(toRadians(82), toRadians(98)),
+        new Interval(toRadians(70), toRadians(110)), "line1", "line2"));
   }
-  
+
   public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
     RecognizedItem item = new RecognizedItem(this, slots, prims);
     RecognizerPrimitive line1 = search(slots, prims, "line1");
@@ -108,12 +114,56 @@ public class RightAngleBrace extends RecognizedItemTemplate {
   public void create(RecognizedItem item, SketchBook model) {
     Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
     Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
-    model.getConstraints().addConstraint(
-        new OrientationConstraint(s1.getP1(), s1.getP2(), s2.getP1(), s2.getP2(),
-            new NumericValue(Math.toRadians(90))));
-    for (RecognizerPrimitive prim : item.getSubshapes()) {
-      model.removeRelated(prim.getInk());
-    }    
+    Constraint rightAngleConstraint = new OrientationConstraint(s1.getP1(), s1.getP2(), s2.getP1(),
+        s2.getP2(), new NumericValue(Math.toRadians(90)));
+    rightAngleConstraint.setSecretName(NAME);
+    model.registerConstraint(item, rightAngleConstraint);
+  }
+
+  public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
+    if (hoverPoint != null) {
+      Pt fulcrum = null;
+      Pt left = null;
+      Pt right = null;
+      Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
+      Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
+      if (s1.getP1() == s2.getP1()) {
+        fulcrum = s1.getP1();
+        left = s1.getP2();
+        right = s2.getP2();
+      } else if (s1.getP1() == s2.getP2()) {
+        fulcrum = s1.getP1();
+        left = s1.getP2();
+        right = s2.getP1();
+      } else if (s1.getP2() == s2.getP1()) {
+        fulcrum = s1.getP2();
+        left = s1.getP1();
+        right = s2.getP2();
+      } else if (s1.getP2() == s2.getP2()) {
+        fulcrum = s1.getP2();
+        left = s1.getP1();
+        right = s2.getP1();
+      }
+      if (fulcrum == null || left == null || right == null) {
+        // do nothing
+      } else {
+        Vec leftV = new Vec(fulcrum, left).getUnitVector();
+        Vec rightV = new Vec(fulcrum, right).getUnitVector();
+        Vec diagonal = Vec.sum(leftV, rightV).getUnitVector();
+        double root2 = Math.sqrt(2);
+        double braceLen = 16;
+        Pt braceCorner = fulcrum.getTranslated(diagonal, root2 * braceLen);
+        Pt braceLeft = fulcrum.getTranslated(leftV, braceLen);
+        Pt braceRight = fulcrum.getTranslated(rightV, braceLen);
+        List<Pt> points = new ArrayList<Pt>();
+        points.add(braceLeft);
+        points.add(braceCorner);
+        points.add(braceRight);
+        double alpha = Math.max(0.1, getAlpha(fulcrum.distance(hoverPoint), 10, 80));
+        Color color = new Color(1, 0, 0, (float) alpha);
+        DrawingBufferRoutines.lines(buf, points, color, 1.0);
+      }
+    }
   }
 
 }

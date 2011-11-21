@@ -1,16 +1,21 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Color;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.six11.sf.rec.Arrow;
+import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.util.data.Lists;
@@ -18,7 +23,9 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
+
 
 public class SketchBook {
 
@@ -35,6 +42,9 @@ public class SketchBook {
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
   private SketchRecognizerController recognizer;
+  //  private Map<Constraint, RecognizedItem> userConstraints;
+  private Map<RecognizedItem, Set<Constraint>> userConstraints;
+  private Set<Set<RecognizedItem>> friends;
 
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
@@ -42,6 +52,9 @@ public class SketchBook {
     this.cornerFinder = new CornerFinder();
     this.selectionCopy = new ArrayList<Ink>();
     this.geometry = new HashSet<Segment>();
+    //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
+    this.userConstraints = new HashMap<RecognizedItem, Set<Constraint>>();
+    this.friends = new HashSet<Set<RecognizedItem>>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
@@ -52,7 +65,7 @@ public class SketchBook {
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
   }
-  
+
   private void addRecognizer(SketchRecognizer rec) {
     recognizer.add(rec);
   }
@@ -115,7 +128,7 @@ public class SketchBook {
 
   public Sequence endScribble(Pt pt) {
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
-//    cornerFinder.findCorners(scrib);
+    //    cornerFinder.findCorners(scrib);
     return scrib;
   }
 
@@ -149,7 +162,7 @@ public class SketchBook {
     }
     return ret;
   }
-  
+
   public void clearSelection() {
     setSelected(null);
   }
@@ -169,7 +182,7 @@ public class SketchBook {
   public void addGeometry(Segment seg) {
     geometry.add(seg);
   }
-  
+
   public void removeGeometry(Segment seg) {
     geometry.remove(seg);
   }
@@ -219,18 +232,18 @@ public class SketchBook {
     clearSelection();
     clearStructured();
     getConstraints().clearConstraints();
+    friends = new HashSet<Set<RecognizedItem>>();
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
   }
-
 
   private void clearStructured() {
     geometry.clear();
   }
 
   public void removeRelated(Ink eenk) {
-    Set<Segment> doomed = new HashSet<Segment>(); 
+    Set<Segment> doomed = new HashSet<Segment>();
     for (Segment seg : geometry) {
       if (seg.ink == eenk) {
         doomed.add(seg);
@@ -242,5 +255,57 @@ public class SketchBook {
     getConstraints().wakeUp();
   }
 
+  public void registerConstraint(RecognizedItem item, Constraint someConstraint) {
+    getConstraints().addConstraint(someConstraint);
+    //    userConstraints.put(someConstraint, item);
+    if (userConstraints.get(item) == null) {
+      userConstraints.put(item, new HashSet<Constraint>());
+    }
+    userConstraints.get(item).add(someConstraint);
+    for (RecognizerPrimitive prim : item.getSubshapes()) {
+      removeRelated(prim.getInk());
+    }
+  }
+
+  public RecognizedItem getConstraintItem(Constraint c) {
+    RecognizedItem ret = null;
+    for (RecognizedItem item : userConstraints.keySet()) {
+      if (userConstraints.get(item).contains(c)) {
+        ret = item;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public void setFriends(RecognizedItem... items) {
+    Set<RecognizedItem> f = null;
+    for (RecognizedItem item : items) {
+      f = findFriends(item);
+      if (f != null) {
+        break;
+      }
+    }
+    if (f == null) {
+      f = new HashSet<RecognizedItem>();
+      friends.add(f);
+    }
+    for (RecognizedItem item : items) {
+      f.add(item);
+    }
+    bug("The following are now friends: " + num(f, " "));
+    
+  }
+
+  public Set<RecognizedItem> findFriends(RecognizedItem item) {
+    Set<RecognizedItem> f = null;
+    for (Set<RecognizedItem> click : friends) {
+      if (click.contains(item)) {
+        f = click;
+        break;
+      }
+    }
+    return f;
+  }
 
 }

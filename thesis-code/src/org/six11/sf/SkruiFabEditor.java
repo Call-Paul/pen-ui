@@ -39,6 +39,7 @@ import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.OrientationConstraint;
@@ -79,7 +80,7 @@ public class SkruiFabEditor {
           public void run() {
             if (layers != null) {
               drawStructured();
-              drawConstraints();
+//              drawConstraints();
             }
           }
         };
@@ -208,7 +209,6 @@ public class SkruiFabEditor {
     model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStructured();
-    drawConstraints();
     drawRecognized(items);
     layers.repaint();
   }
@@ -273,12 +273,6 @@ public class SkruiFabEditor {
 
   }
 
-  private void drawConstraints() {
-    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DOT_LAYER);
-    //    buf.clear();
-    //    for (Pt pt : model.getConstraints().getPoints()) {
-    //      DrawingBufferRoutines.dot(buf, pt, 3, 0.3, Color.BLACK, Color.GREEN.darker().darker());
-    //    }
-  }
+
 
 }

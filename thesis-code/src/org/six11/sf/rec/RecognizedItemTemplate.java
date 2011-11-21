@@ -18,7 +18,9 @@ import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.ConvexHull;
+import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
+import org.six11.util.solve.Constraint;
 
 import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
@@ -353,5 +355,23 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     }
     return new Area(hull.getHullShape());
   }
+
+  public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
+    bug("draw not implemented for " + name + ". override me.");
+  }
+  
+  protected double getAlpha(double distance, double min, double max) {
+    double ret = 0;
+    if (distance < min) {
+      ret = 1;
+    } else if (distance < max) {
+      ret = 1 - ((distance - min) / (max - min));
+      ret = ret * ret;
+    } else {
+      ret = 0;
+    }
+    return ret;
+  }
+
 
 }
