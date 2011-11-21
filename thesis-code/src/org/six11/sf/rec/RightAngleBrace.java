@@ -45,12 +45,10 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     addPrimitive("line2", Type.Line);
     addConstraint(new Coincident("c1", "line1.p2", "line2.p1"));
     addConstraint(new EqualLength("c2", "line1", "line2"));
-    //    addConstraint(new RightAngle("c3", "line1", "line2"));
-    // the 'normal' range for RightAngle is too strict.
     addConstraint(new AngleConstraint("c3", 
         new Interval(toRadians(82), toRadians(98)), new Interval(toRadians(70),
         toRadians(110)), "line1", "line2"));
-    setDebugAll(true);
+//    setDebugAll(true);
   }
   
   public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {

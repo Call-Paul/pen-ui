@@ -5,7 +5,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.sf.rec.RecognizerPrimitive;
+import org.six11.util.math.Interval;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.IntersectionData;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
@@ -105,7 +108,8 @@ public abstract class SegmentFilter {
       public Set<Segment> filter(Set<Segment> segments) {
         Set<Segment> ret = new HashSet<Segment>();
         for (Segment seg : segments) {
-          if (seg != reference && (hasPoint(reference.getP1(), seg) || hasPoint(reference.getP2(), seg))) {
+          if (seg != reference
+              && (hasPoint(reference.getP1(), seg) || hasPoint(reference.getP2(), seg))) {
             ret.add(seg);
           }
         }
@@ -114,5 +118,63 @@ public abstract class SegmentFilter {
     };
     return filter;
   };
+
+  /**
+   * Filters segments whose midpoints are near some reference segment. The 'slop' is the deviation
+   * from the candidate's midpoint expressed as a percentage of its total length. So say a candidate
+   * is 300 units long and the slop is 0.1. If the reference's midpoint is within 30 units of the
+   * candidate's mid, the candidate is included in the return set.
+   */
+  public static SegmentFilter makeMidpointFilter(final RecognizerPrimitive reference,
+      final double slop) {
+    SegmentFilter filter = new SegmentFilter() {
+      public Set<Segment> filter(Set<Segment> segments) {
+        Set<Segment> ret = new HashSet<Segment>();
+        Pt refMid = Functions.getMean(reference.getP1(), reference.getP2());
+        for (Segment cand : segments) {
+          Pt candMid = Functions.getMean(cand.getP1(), cand.getP2());
+          double radius = cand.length() * slop;
+          if (refMid.distance(candMid) <= radius) {
+            ret.add(cand);
+          }
+        }
+        return ret;
+      }
+    };
+    return filter;
+  }
+
+  public static SegmentFilter makeLengthFilter(final Interval range) {
+    SegmentFilter filter = new SegmentFilter() {
+      public Set<Segment> filter(Set<Segment> segments) {
+        Set<Segment> ret = new HashSet<Segment>();
+        for (Segment cand : segments) {
+          bug("is " + num(cand.length()) + " in " + range + "? " + (range.contains(cand.length())));
+          if (range.contains(cand.length())) {
+            ret.add(cand);
+          }
+        }
+        return ret;
+      }
+    };
+    return filter;
+  }
+
+  public static SegmentFilter makeIntersectFilter(final RecognizerPrimitive prim) {
+    SegmentFilter filter = new SegmentFilter() {
+      public Set<Segment> filter(Set<Segment> segments) {
+        Set<Segment> ret = new HashSet<Segment>();
+        for (Segment cand : segments) {
+          IntersectionData id = Functions.getIntersectionData(new Line(prim.getP1(), prim.getP2()),
+              new Line(cand.getP1(), cand.getP2()));
+          if (id.intersectsInSegments()) {
+            ret.add(cand);
+          }
+        }
+        return ret;
+      }
+    };
+    return filter;
+  }
 
 }
