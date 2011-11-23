@@ -20,6 +20,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
+import org.six11.util.solve.MultisourceNumericValue;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
@@ -98,7 +99,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     }
     Set<Constraint> addUs = new HashSet<Constraint>();
     if (existing.size() == 0) {
-      NumericValue dist = new NumericValue(s1.length(), s2.length());
+      MultisourceNumericValue dist = new MultisourceNumericValue(mkSource(s1), mkSource(s2));
       addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), dist));
       addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), dist));
       // model.getConstraints().addConstraint();
@@ -107,18 +108,17 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       bug("Adding to the existing distance constraint.");
       // use existing numeric value
       DistanceConstraint distConst = (DistanceConstraint) existing.toArray(new Constraint[1])[0];
+      MultisourceNumericValue val = (MultisourceNumericValue) distConst.getValue();
       RecognizedItem otherDistItem = model.getConstraintItem(distConst);
       model.setFriends(otherDistItem, item);
       if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
         // s1 already constrained. incorporate s2's length and give it constraint
-        distConst.getValue().addValue(s2.length());
+        val.addValue(mkSource(s2));//s2.length());
         addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), distConst.getValue()));
-        //        model.getConstraints().addConstraint();
       } else {
         // same as above but reverse the segments.
-        distConst.getValue().addValue(s1.length());
+        val.addValue(mkSource(s1));
         addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), distConst.getValue()));
-        //        model.getConstraints().addConstraint();
       }
     } else if (existing.size() > 1) {
       bug("Warning: creating this distance constraint would conflict with " + existing.size()
@@ -127,6 +127,14 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     for (Constraint c : addUs) {
       model.registerConstraint(item, c);
     }
+  }
+
+  private MultisourceNumericValue.Source mkSource(final Segment seg) {
+    return new MultisourceNumericValue.Source() {
+      public double getValue() {
+        return seg.length();
+      }
+    };
   }
 
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
