@@ -145,7 +145,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       double d2 = Functions.getDistanceBetweenPointAndSegment(hoverPoint, s2.asLine());
       double d = Math.min(d1, d2);
       if (d < 50) {
-        double alpha = getAlpha(d, 5, 50);
+        double alpha = getAlpha(d, 5, 20);
         Color color = new Color(1, 0, 0, (float) alpha);
         Set<RecognizedItem> f = model.findFriends(item);
         Set<Segment> allSegs = new HashSet<Segment>();
@@ -160,7 +160,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
         }
         for (Segment seg : allSegs) {
           Pt mid = Functions.getMean(seg.getP1(), seg.getP2());
-          DrawingBufferRoutines.cross(buf, mid, 5, color);
+          DrawingBufferRoutines.acuteHash(buf, mid, seg.getStartDir(), 12, 1.5, color);
         }
       }
     }

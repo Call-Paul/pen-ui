@@ -308,4 +308,8 @@ public class SketchBook {
     return f;
   }
 
+  public void findStencil(Collection<Segment> segs) {
+    
+  }
+
 }

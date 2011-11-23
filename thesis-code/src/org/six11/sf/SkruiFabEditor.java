@@ -80,7 +80,6 @@ public class SkruiFabEditor {
           public void run() {
             if (layers != null) {
               drawStructured();
-//              drawConstraints();
             }
           }
         };
@@ -91,7 +90,6 @@ public class SkruiFabEditor {
     guibug = new GraphicDebug(layers);
     model.setGuibug(guibug);
     model.setLayers(layers);
-
     ScrapGrid grid = new ScrapGrid(this);
     CutfilePane cutfile = new CutfilePane(this);
     FrontEnd fe = new FrontEnd();
@@ -199,13 +197,13 @@ public class SkruiFabEditor {
       model.addGeometry(seg);
     }
     model.getConstraintAnalyzer().analyze(segs);
+    new StencilFinder(segs, model.getGeometry());
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
     model.getConstraints().wakeUp();
-
     model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStructured();
@@ -232,15 +230,7 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.arrow(buf, item.getFeaturePoint(Arrow.START),
             item.getFeaturePoint(Arrow.TIP), 2.0f, Color.BLUE);
       } else if (item.getTemplate() instanceof RightAngleBrace) {
-        //        List<Pt> corners = new ArrayList<Pt>();
-        //        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_A));
-        //        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_B));
-        //        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_D));
-        //        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_C));
-        //        corners.add(item.getFeaturePoint(RightAngleBrace.CORNER_A));
-        //        DrawingBufferRoutines.lines(buf, corners, Color.CYAN, 2.0);
-        //        DrawingBufferRoutines.dot(buf, corners.get(0), 4.0, 1.0, Color.BLACK, Color.GREEN);
-        //        DrawingBufferRoutines.dot(buf, corners.get(2), 4.0, 1.0, Color.BLACK, Color.RED);
+
       }
     }
   }
