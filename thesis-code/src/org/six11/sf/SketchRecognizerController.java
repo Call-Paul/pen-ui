@@ -33,8 +33,6 @@ public class SketchRecognizerController {
   }
 
   public Collection<RecognizedItem> analyzeRecent() {
-    bug("Waking up " + recognizers.size() + " recognizers to analyze " + model.ink.size()
-        + " recent ink strokes.");
     allPrimitives.clear();
     // Create a pool of primitives for recognizers to use based on current rough ink.
     for (Ink ink : model.ink) {

@@ -15,12 +15,17 @@ import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -33,6 +38,7 @@ import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.util.gui.ApplicationFrame;
+import org.six11.util.gui.Colors;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
@@ -61,11 +67,15 @@ public class SkruiFabEditor {
   Map<String, Action> actions;
   private GlassPane glass;
   private static String ACTION_GO = "Go";
+  private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
   ApplicationFrame af;
+  Colors colors;
 
   public SkruiFabEditor(Main m) {
     this.main = m;
+    this.colors = new Colors();
+    colors.set("stencil", new Color(0.97f, 0.97f, 0.97f));
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(600, 400);
@@ -79,7 +89,7 @@ public class SkruiFabEditor {
         Runnable r = new Runnable() {
           public void run() {
             if (layers != null) {
-              drawStructured();
+              drawStuff();
             }
           }
         };
@@ -160,6 +170,13 @@ public class SkruiFabEditor {
       }
     });
 
+    actions.put(ACTION_DEBUG_STATE,
+        new NamedAction("DebugState", KeyStroke.getKeyStroke(KeyEvent.VK_D, 0)) {
+          public void activate() {
+            debugState();
+          }
+        });
+
     actions.put(ACTION_CLEAR,
         new NamedAction("Clear", KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0)) {
           public void activate() {
@@ -174,6 +191,21 @@ public class SkruiFabEditor {
       if (s != null) {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
       }
+    }
+  }
+
+  protected void debugState() {
+    String debugFileName = "skrui-debug-" + System.currentTimeMillis() + ".txt";
+    bug("Debugging state of everything. Look in the file " + debugFileName);
+    File bugFile = new File(debugFileName);
+    try {
+      bugFile.createNewFile();
+      BufferedWriter bugFileOut = new BufferedWriter(new FileWriter(bugFile));
+      bugFileOut.write(model.getMondoDebugString());
+      bugFileOut.flush();
+      bugFileOut.close();
+    } catch (IOException ex) {
+      ex.printStackTrace();
     }
   }
 
@@ -197,15 +229,17 @@ public class SkruiFabEditor {
       model.addGeometry(seg);
     }
     model.getConstraintAnalyzer().analyze(segs);
-    new StencilFinder(segs, model.getGeometry());
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
+    StencilFinder sf = new StencilFinder(segs, model.getGeometry());
+    model.mergeStencils(sf.getNewStencils());
     model.getConstraints().wakeUp();
     model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+    drawStencils();
     drawStructured();
     drawRecognized(items);
     layers.repaint();
@@ -222,6 +256,11 @@ public class SkruiFabEditor {
     ret.addAll(items); // TODO: you're doing it wrong.
     return ret;
   }
+  
+  private void drawStuff() {
+    drawStencils();
+    drawStructured();
+  }
 
   private void drawRecognized(Collection<RecognizedItem> items) {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
@@ -232,6 +271,16 @@ public class SkruiFabEditor {
       } else if (item.getTemplate() instanceof RightAngleBrace) {
 
       }
+    }
+  }
+  
+  private void drawStencils() {
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STENCIL_LAYER);
+    buf.clear();
+    Set<Stencil> stencils = model.getStencils();
+    for (Stencil s : stencils) {
+      DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
+//      DrawingBufferRoutines.drawShape(buf, s.getShape(), Color.BLACK, 4.0);      
     }
   }
 
@@ -262,7 +311,5 @@ public class SkruiFabEditor {
     layers.repaint();
 
   }
-
-
 
 }

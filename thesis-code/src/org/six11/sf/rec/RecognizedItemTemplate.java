@@ -240,9 +240,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
               }
             }
             if (ok) {
-              bug("About to make recognized shape on evaluate result: " + result);
               RecognizedItem item = makeItem(bindSlot, bindObj);
-              Toolkit.getDefaultToolkit().beep();
               results.add(item);
             }
           }

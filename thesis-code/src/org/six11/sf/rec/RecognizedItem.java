@@ -72,7 +72,6 @@ public class RecognizedItem {
       buf.append("[" + cName + "=" + constraints.get(cName) + "] ");
     }
     debugString = template.getName() + " " + buf.toString();
-    bug("Created " + this);
   }
 
   public String toString() {

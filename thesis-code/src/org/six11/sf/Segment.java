@@ -4,6 +4,7 @@ import static java.lang.Math.ceil;
 import static java.lang.Math.min;
 import static org.six11.util.Debug.num;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -28,7 +29,7 @@ public abstract class Segment {
   Type type;
   Line line;
   Sequence spline;
-  boolean[] terms;
+  //  boolean[] terms;
   Ink ink;
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
@@ -40,14 +41,14 @@ public abstract class Segment {
       }
     }
     this.type = Type.Unknown;
-    terms = new boolean[] {
-        termA, termB
-    };
+    //    terms = new boolean[] {
+    //        termA, termB
+    //    };
     id = ID_COUNTER++;
   }
-  
+
   public Ink getOriginalInk() {
-     return ink;
+    return ink;
   }
 
   public String toString() {
@@ -69,9 +70,9 @@ public abstract class Segment {
     buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
     return buf.toString();
   }
-  
+
   public Collection<EndCap> getEndCaps() {
-    Collection<EndCap>ret = new HashSet<EndCap>();
+    Collection<EndCap> ret = new HashSet<EndCap>();
     ret.add(new EndCap(this, EndCap.WhichEnd.Start));
     ret.add(new EndCap(this, EndCap.WhichEnd.End));
     return ret;
@@ -94,10 +95,7 @@ public abstract class Segment {
   }
 
   public Line asLine() {
-    if (line == null) {
-      line = new Line(getP1(), getP2());
-    }
-    return line;
+    return new Line(getP1(), getP2());
   }
 
   public double length() {
@@ -132,7 +130,7 @@ public abstract class Segment {
     }
     return ret;
   }
-  
+
   public Vec getEndDir() {
     Vec ret = null;
     switch (type) {
@@ -154,18 +152,18 @@ public abstract class Segment {
     Vec segEnd = other.getEndDir();
     double angleStart = Math.abs(Functions.getSignedAngleBetween(target, segStart));
     double angleEnd = Math.abs(Functions.getSignedAngleBetween(target, segEnd));
-    return Math.min(angleStart,  angleEnd);
+    return Math.min(angleStart, angleEnd);
   }
-  
+
   public Sequence asSpline() {
-    if (spline == null) {
-      double roughLength = 0;
-      for (int i = 0; i < points.size() - 1; i++) {
-        roughLength = roughLength + points.get(i).distance(points.get(i + 1));
-      }
-      int numSteps = (int) ceil(min(roughLength / 100, 10));
-      spline = Functions.makeNaturalSpline(numSteps, points);
+    //    if (spline == null) {
+    double roughLength = 0;
+    for (int i = 0; i < points.size() - 1; i++) {
+      roughLength = roughLength + points.get(i).distance(points.get(i + 1));
     }
+    int numSteps = (int) ceil(min(roughLength / 100, 10));
+    spline = Functions.makeNaturalSpline(numSteps, points);
+    //    }
     return spline;
   }
 
@@ -203,6 +201,22 @@ public abstract class Segment {
       points.remove(points.size() - 1);
       points.add(spot);
     }
+  }
+
+  /**
+   * Returns a list of points that define the geometry of this segment. For lines this is simply two
+   * points. For splines and elliptical arcs there might be many more. 
+   */
+  public List<Pt> getPointList() {
+    List<Pt> ret = new ArrayList<Pt>();
+    if (type == Type.Line){
+      ret.add(getP1());
+      ret.add(getP2());
+    } else {
+      ret.addAll(asPolyline());
+    }
+    
+    return ret;
   }
 
 }

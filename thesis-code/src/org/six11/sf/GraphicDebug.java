@@ -14,31 +14,19 @@ public class GraphicDebug {
 
   private DrawingBufferLayers layers;
   // these are the keyboard-activated layers, mostly for debugging.
-  public static final String DB_UNSTRUCTURED_INK = "0";
-  public static final String DB_RECENT_INK = "1";
-  public static final String DB_JUNCTION_LAYER = "2";
-  public static final String DB_DOT_LAYER = "3";
+  public static final String DB_STENCIL_LAYER = "0";
+  public static final String DB_STRUCTURED_INK = "1";
+  public static final String DB_CONSTRAINT_LAYER = "2";
+  public static final String DB_COPY_LAYER = "3";
   public static final String DB_SEGMENT_LAYER = "4";
   public static final String DB_LATCH_LAYER = "5";
   public static final String DB_COMPLETE_LAYER = "6";
   public static final String DB_HIGHLIGHTS = "7";
   public static final String DB_SELECTION = "8";
-  public static final String DB_COPY_LAYER = "9";
-  public static final String DB_STRUCTURED_INK = "structured ink";
+  public static final String DB_UNSTRUCTURED_INK = "9";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;
-  }
-
-  @SuppressWarnings("unchecked")
-  public void drawJunctions(Sequence seq) {
-    DrawingBuffer db = layers.getLayer(GraphicDebug.DB_JUNCTION_LAYER);
-    List<Integer> juncts = (List<Integer>) seq.getAttribute(CornerFinder.SEGMENT_JUNCTIONS);
-    for (int idx : juncts) {
-      Pt where = seq.get(idx);
-      DrawingBufferRoutines.dot(db, where, 3.0, 0.5, Color.BLACK, Color.RED);
-    }
-    layers.repaint();
   }
 
   public void drawSegments(List<Segment> segs) {

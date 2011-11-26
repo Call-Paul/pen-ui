@@ -73,9 +73,6 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       item.addTarget(SameLengthGesture.TARGET_B, seg2[0]);
       ret = Certainty.Yes;
     }
-    bug("segs1: " + num(segs1, " "));
-    bug("segs2: " + num(segs2, " "));
-
     return ret;
   }
 

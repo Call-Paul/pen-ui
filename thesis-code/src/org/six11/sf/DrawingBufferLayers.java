@@ -13,6 +13,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +41,7 @@ import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
+@SuppressWarnings("serial")
 public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public final static Color DEFAULT_COLOR = Color.BLACK;
@@ -47,8 +49,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
-  private double borderPad = 3.0;
-  private PriorityQueue<DrawingBuffer> layers;
+  private double borderPad = 2.0;
+  private List<DrawingBuffer> layers;
   private Map<String, DrawingBuffer> layersByName;
   SketchBook model;
 
@@ -59,7 +61,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
     setName("DrawingBufferLayers");
-    layers = new PriorityQueue<DrawingBuffer>(10, DrawingBuffer.sortByLayer);
+    layers = new ArrayList<DrawingBuffer>();
     layersByName = new HashMap<String, DrawingBuffer>();
     penListeners = new ArrayList<PenListener>();
   }
@@ -135,13 +137,20 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     layersByName.put(key, db);
     db.setLayer(z);
     layers.add(db);
+    Collections.sort(layers, DrawingBuffer.sortByLayer);
     db.setVisible(visible);
     return db;
   }
 
   public DrawingBuffer getLayer(String name) {
     if (!layersByName.containsKey(name)) {
-      createLayer(name, "Layer " + name, 0, true);
+      int z = 0;
+      try {
+        z = Integer.parseInt(name);
+      } catch (NumberFormatException ex) {
+        
+      }
+      createLayer(name, "Layer " + name, z, true);
     }
     return layersByName.get(name);
   }
@@ -241,7 +250,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   private void drawConstraints() {
-    DrawingBuffer buf = getLayer(GraphicDebug.DB_DOT_LAYER);
+    DrawingBuffer buf = getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
     buf.clear();
     for (Constraint c : model.getConstraints().getConstraints()) {
       RecognizedItem item = model.getConstraintItem(c);
@@ -250,7 +259,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     }
   }
-  
+
   /**
    * Returns the last location the pen was hovering, or null if the pen is down or outside of the
    * component.
@@ -258,7 +267,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public Pt getHoverPoint() {
     return hoverPt;
   }
-  
+
   /**
    * Tells you if the hover point is currently valid.
    */

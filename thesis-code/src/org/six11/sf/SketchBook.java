@@ -18,14 +18,15 @@ import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
+import org.six11.util.Debug;
 import org.six11.util.data.Lists;
+import org.six11.util.gui.Colors;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
-
 
 public class SketchBook {
 
@@ -42,16 +43,17 @@ public class SketchBook {
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
   private SketchRecognizerController recognizer;
-  //  private Map<Constraint, RecognizedItem> userConstraints;
   private Map<RecognizedItem, Set<Constraint>> userConstraints;
   private Set<Set<RecognizedItem>> friends;
-
+  private Set<Stencil> stencils;
+  
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
     this.cornerFinder = new CornerFinder();
     this.selectionCopy = new ArrayList<Ink>();
     this.geometry = new HashSet<Segment>();
+    this.stencils = new HashSet<Stencil>();
     //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
     this.userConstraints = new HashMap<RecognizedItem, Set<Constraint>>();
     this.friends = new HashSet<Set<RecognizedItem>>();
@@ -76,6 +78,10 @@ public class SketchBook {
 
   public List<Ink> getSelection() {
     return selection;
+  }
+  
+  public Set<Stencil> getStencils() {
+    return stencils;
   }
 
   public DrawingBufferLayers getLayers() {
@@ -224,7 +230,6 @@ public class SketchBook {
   public void clearInk() {
     int before = ink.size();
     ink.clear();
-    bug("removed " + (before - ink.size()) + " ink strokes");
   }
 
   public void clearAll() {
@@ -294,7 +299,7 @@ public class SketchBook {
       f.add(item);
     }
     bug("The following are now friends: " + num(f, " "));
-    
+
   }
 
   public Set<RecognizedItem> findFriends(RecognizedItem item) {
@@ -308,8 +313,38 @@ public class SketchBook {
     return f;
   }
 
-  public void findStencil(Collection<Segment> segs) {
-    
+  public String getMondoDebugString() {
+    StringBuilder buf = new StringBuilder();
+    int indent = 0;
+    addBug(indent, buf, "All debug info\n\n");
+    addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
+    addBug(indent, buf, "seg type\tp1 name\tp1 hash\tp2 name\tp2 hash\n");
+    for (Segment seg : geometry) {
+      String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<no name>";
+      String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<no name>";
+      addBug(indent, buf, seg.getType() + " " + p1 + "\t" + seg.getP1().hashCode() + "\t" + p2
+          + "\t" + seg.getP2().hashCode() + "\n");
+    }
+    return buf.toString();
+  }
+
+  private void addBug(int indent, StringBuilder buf, String what) {
+    buf.append(Debug.spaces(4 * indent) + what);
+  }
+
+  public void mergeStencils(Set<Stencil> newStencils) {
+    for (Stencil nub : newStencils) {
+      boolean ok = true;
+      for (Stencil old : stencils) {
+        if (old.isSame(nub)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        stencils.add(nub);
+      }
+    }
   }
 
 }

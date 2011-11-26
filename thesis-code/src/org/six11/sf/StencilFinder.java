@@ -2,25 +2,29 @@ package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
 import org.six11.util.pen.Pt;
+import static org.six11.util.Debug.num;
 
 public class StencilFinder {
 
   private Set<Stencil> stencils;
   private Map<Pt, Set<Pt>> adjacent;
   private Stack<Pt> newPoints;
+  private Set<List<Pt>> paths;
 
   public StencilFinder(Collection<Segment> newSegs, Set<Segment> allGeometry) {
-    bug("StencilFinder receives input: " + newSegs.size() + " new segments, " + allGeometry.size() + " total segments.");
     this.stencils = new HashSet<Stencil>();
     this.newPoints = new Stack<Pt>();
+    this.paths = new HashSet<List<Pt>>();
     for (Segment s : newSegs) {
       if (!newPoints.contains(s.getP1())) {
         newPoints.add(s.getP1());
@@ -29,32 +33,61 @@ public class StencilFinder {
         newPoints.add(s.getP2());
       }
     }
-    bug("Making adjacency table...");
     makeAdjacency(allGeometry);
-    bug("Searching for paths...");
-    Stack<Pt> path = new Stack<Pt>();
+    Stack<Pt> initialPath = new Stack<Pt>();
     for (Pt newPt : newPoints) {
-      path.push(newPt);
-      delve(path);
-      path.pop();
+      if (adjacent.containsKey(newPt)) {
+        initialPath.push(newPt);
+        delve(initialPath);
+        initialPath.pop();
+      }
+    }
+    Set<List<Pt>> pruned = new HashSet<List<Pt>>();
+    for (List<Pt> path : paths) {
+      boolean ok = true;
+      for (List<Pt> goodPath : pruned) {
+        if (goodPath.size() == path.size() && goodPath.containsAll(path)) {
+          ok = false;
+          break;
+        }
+      }
+      if (ok) {
+        pruned.add(path);
+      }
+    }
+    for (List<Pt> path : pruned) {
+      List<Segment> segList = Stencil.getSegmentList(path, allGeometry);
+      stencils.add(new Stencil(path, segList));
     }
   }
 
   private void delve(Stack<Pt> path) {
     Pt top = path.peek();
-    String withOrWithout = adjacent.containsKey(top) ? "with" : "without";
-    bug("  Delve: " + n(path) + " (top node: " + n(top) + " " + withOrWithout + " an adjacency table)");
-    for (Pt adj : adjacent.get(top)) {
-      if (path.contains(adj)) {
-        bug("    Avoid " + adj);
-      } else if (adj.equals(path.get(0))) {
-        bug("    * Found complete tour! Length: " + (path.size() + 1));
-      } else {
-        path.push(adj);
-        delve(path);
-        path.pop();
+    try {
+      for (Pt adj : adjacent.get(top)) {
+        if (path.size() > 2 && adj.equals(path.get(0))) {
+          path.push(adj);
+          paths.add(new ArrayList<Pt>(path));
+          path.pop();
+        } else if (path.contains(adj)) {
+          // avoid this one. do nothing
+        } else {
+          path.push(adj);
+          delve(path);
+          path.pop();
+        }
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      bug("Caught " + ex.getClass() + ", diagnosing issue...");
+      bug("Current path: " + n(path));
+      bug("Top: " + n(top));
+      bug("Adjacency table:");
+      for (Pt pt : adjacent.keySet()) {
+        bug("  " + n(pt) + ": " + n(adjacent.get(pt)));
       }
     }
+
   }
 
   private final void makeAdjacency(Set<Segment> allGeometry) {
@@ -65,17 +98,13 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
-    bug("Adjacency table:");
-    for (Pt pt : adjacent.keySet()) {
-      bug("  " + n(pt) + ": " + n(adjacent.get(pt)));
-    }
   }
 
-  private String n(Pt pt) {
+  public static String n(Pt pt) {
     return pt.getString("name");
   }
 
-  private String n(Collection<Pt> pts) {
+  public static String n(Collection<Pt> pts) {
     StringBuilder buf = new StringBuilder();
     if (pts == null) {
       buf.append("<null input!>");
@@ -89,12 +118,9 @@ public class StencilFinder {
 
   private void associate(Pt p1, Pt p2) {
     if (!adjacent.containsKey(p1)) {
-      bug("New point found: " + n(p1));
       adjacent.put(p1, new HashSet<Pt>());
     }
-    bug("Associating: " + n(p1) + " with " + n(p2));
     adjacent.get(p1).add(p2);
-    bug("Now have entry for " +n(p1) + " = " + n(adjacent.get(p1)));
   }
 
   public Set<Stencil> getNewStencils() {

@@ -36,8 +36,6 @@ public abstract class SegmentFilter {
             ret.add(s);
             answer = true;
           }
-          bug("are " + num(s.getP1()) + " or " + num(s.getP2()) + " within " + num(radius) + " of "
-              + num(pt) + "? " + answer);
         }
         return ret;
       }
@@ -89,7 +87,6 @@ public abstract class SegmentFilter {
         for (RecognizerPrimitive prim : in) {
           avoidUs.add(prim.getInk());
         }
-        bug("Will avoid " + avoidUs + " inks");
         Set<Segment> ret = new HashSet<Segment>();
         for (Segment s : segments) {
           Ink segmentInk = s.getOriginalInk();
