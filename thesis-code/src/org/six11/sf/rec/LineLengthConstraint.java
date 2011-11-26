@@ -12,6 +12,10 @@ public class LineLengthConstraint extends RecognizerConstraint {
     this.interval = interval;
   }
 
+  public Interval getInterval() {
+    return interval;
+  }
+  
   @Override
   public Certainty check(RecognizerPrimitive... p) {
     Certainty ret = Certainty.Unknown;

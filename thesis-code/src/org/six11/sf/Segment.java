@@ -27,7 +27,7 @@ public abstract class Segment {
 
   List<Pt> points;
   Type type;
-  Line line;
+//  Line line;
   Sequence spline;
   //  boolean[] terms;
   Ink ink;

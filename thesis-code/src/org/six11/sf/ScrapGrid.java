@@ -30,7 +30,7 @@ import org.six11.util.pen.PenListener;
  */
 public class ScrapGrid extends JComponent implements PenListener {
 
-  public class GridCellContent {
+  public static class GridCellContent {
     Area area;
     Image thumb;
 

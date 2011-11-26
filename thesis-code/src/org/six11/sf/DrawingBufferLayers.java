@@ -118,11 +118,11 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     g.draw(rec);
   }
 
-  protected void fire(PenEvent pev) {
-    for (PenListener pl : penListeners) {
-      pl.handlePenEvent(pev);
-    }
-  }
+  //  protected void fire(PenEvent pev) {
+  //    for (PenListener pl : penListeners) {
+  //      pl.handlePenEvent(pev);
+  //    }
+  //  }
 
   /**
    * Make a new layer with a specific key (e.g. "dots"), a human-readable name (e.g.
@@ -148,7 +148,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       try {
         z = Integer.parseInt(name);
       } catch (NumberFormatException ex) {
-        
+
       }
       createLayer(name, "Layer " + name, z, true);
     }
@@ -175,14 +175,17 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     SimpleDateFormat df = new SimpleDateFormat("MMMdd");
     String today = df.format(now);
     File parentDir = new File("screenshots");
+    boolean made = true;
     if (!parentDir.exists()) {
-      parentDir.mkdir();
+      made = parentDir.mkdir();
     }
-    while (file == null || file.exists()) {
-      file = new File(parentDir, today + "-" + fileCounter + ".pdf");
-      fileCounter++;
+    if (made) {
+      while (file == null || file.exists()) {
+        file = new File(parentDir, today + "-" + fileCounter + ".pdf");
+        fileCounter++;
+      }
+      print(file); // defer to other print function.
     }
-    print(file); // defer to other print function.
   }
 
   /**
@@ -237,6 +240,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         Sequence seq = model.endScribble(ev.getPt());
         model.addInk(new Ink(seq));
         clearScribble();
+        break;
       case Enter:
         break;
       case Exit:

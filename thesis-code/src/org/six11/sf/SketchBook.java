@@ -7,6 +7,7 @@ import java.awt.Color;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.six11.sf.rec.Arrow;
+import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
@@ -46,7 +48,7 @@ public class SketchBook {
   private Map<RecognizedItem, Set<Constraint>> userConstraints;
   private Set<Set<RecognizedItem>> friends;
   private Set<Stencil> stencils;
-  
+
   public SketchBook(GlassPane glass) {
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new ArrayList<Ink>();
@@ -63,6 +65,7 @@ public class SketchBook {
     solver.runInBackground();
     solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
+    addRecognizer(new EncircleRecognizer(this));
     addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
@@ -79,7 +82,7 @@ public class SketchBook {
   public List<Ink> getSelection() {
     return selection;
   }
-  
+
   public Set<Stencil> getStencils() {
     return stencils;
   }
@@ -94,10 +97,13 @@ public class SketchBook {
 
   public void setGuibug(GraphicDebug gb) {
     this.guibug = gb;
-    this.cornerFinder.setGuibug(gb);
+    //    this.cornerFinder.setGuibug(gb);
   }
 
   public void addInk(Ink newInk) {
+    // this is the part where encircle gestures should be found since they have precedence
+    Collection<RecognizerPrimitive> rawPrim = Collections.singleton(RecognizerPrimitive.makeRaw(newInk));
+    recognizer.analyzeSingleRaw(rawPrim);
     cornerFinder.findCorners(newInk);
     ink.add(newInk);
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
@@ -156,18 +162,18 @@ public class SketchBook {
     return ret;
   }
 
-  /**
-   * Returns a list of Ink that is contained (partly or wholly) in the target area.
-   */
-  public List<Ink> search(Area target) {
-    List<Ink> ret = new ArrayList<Ink>();
-    for (Ink eenk : ink) {
-      if (eenk.getOverlap(target) > 0.5) {
-        ret.add(eenk);
-      }
-    }
-    return ret;
-  }
+  //  /**
+  //   * Returns a list of Ink that is contained (partly or wholly) in the target area.
+  //   */
+  //  public List<Ink> search(Area target) {
+  //    List<Ink> ret = new ArrayList<Ink>();
+  //    for (Ink eenk : ink) {
+  //      if (eenk.getOverlap(target) > 0.5) {
+  //        ret.add(eenk);
+  //      }
+  //    }
+  //    return ret;
+  //  }
 
   public void clearSelection() {
     setSelected(null);
@@ -228,7 +234,6 @@ public class SketchBook {
   }
 
   public void clearInk() {
-    int before = ink.size();
     ink.clear();
   }
 
@@ -245,6 +250,7 @@ public class SketchBook {
 
   private void clearStructured() {
     geometry.clear();
+    stencils.clear();
   }
 
   public void removeRelated(Ink eenk) {

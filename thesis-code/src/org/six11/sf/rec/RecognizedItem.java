@@ -19,7 +19,7 @@ public class RecognizedItem {
   private RecognizedItemTemplate template;
 
   private Map<String, RecognizerPrimitive> subshapes;
-  private Map<String, Boolean> flipState;
+//  private Map<String, Boolean> flipState;
   private Map<String, Certainty> constraints;
   private Map<String, Pt> featurePoints;
   private Map<String, Object> targets;

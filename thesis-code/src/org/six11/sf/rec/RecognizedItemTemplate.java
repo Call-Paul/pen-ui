@@ -74,7 +74,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   protected boolean debugAll = false;
 
   public RecognizedItemTemplate(SketchBook model, String name) {
-    super(model);
+    super(model, Type.Standard);
     this.name = name;
     this.slotNames = new ArrayList<String>();
     this.slotTypes = new ArrayList<RecognizerPrimitive.Type>();
@@ -283,9 +283,12 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
       }
     }
     say("Constraint results for evaluation of top slot: " + topSlot);
-    for (String cName : constraintResults.keySet()) {
-      say(cName + " = " + constraintResults.get(cName));
+    for (Map.Entry<String, Certainty> entry : constraintResults.entrySet()) {
+      say(entry.getKey() + " = " + entry.getValue());
     }
+//    for (String cName : constraintResults.keySet()) {
+//      say(cName + " = " + constraintResults.get(cName));
+//    }
     return ret; // the return value is either No (fail) or something else (success);
   }
 

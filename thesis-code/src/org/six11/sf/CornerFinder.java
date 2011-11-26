@@ -170,7 +170,7 @@ public class CornerFinder {
     return ret;
   }
 
-  public void setGuibug(GraphicDebug gb) {
-    this.guibug = gb;
-  }
+//  public void setGuibug(GraphicDebug gb) {
+//    this.guibug = gb;
+//  }
 }

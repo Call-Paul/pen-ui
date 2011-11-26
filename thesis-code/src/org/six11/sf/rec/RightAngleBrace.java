@@ -13,7 +13,6 @@ import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
-import org.six11.sf.rec.RecognizerPrimitive.Type;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -49,8 +48,8 @@ public class RightAngleBrace extends RecognizedItemTemplate {
 
   public RightAngleBrace(SketchBook model) {
     super(model, NAME);
-    addPrimitive("line1", Type.Line);
-    addPrimitive("line2", Type.Line);
+    addPrimitive("line1", RecognizerPrimitive.Type.Line);
+    addPrimitive("line2", RecognizerPrimitive.Type.Line);
     addConstraint(new Coincident("c1", "line1.p2", "line2.p1"));
     addConstraint(new EqualLength("c2", "line1", "line2"));
     addConstraint(new AngleConstraint("c3", new Interval(toRadians(82), toRadians(98)),

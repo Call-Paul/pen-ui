@@ -24,11 +24,13 @@ public class SketchRecognizerController {
 
   private SketchBook model;
   private List<SketchRecognizer> recognizers;
+  private List<SketchRecognizer> rawRecognizersFinished;
   private Map<Ink, Set<RecognizerPrimitive>> allPrimitives;
 
   public SketchRecognizerController(SketchBook model) {
     this.model = model;
     this.recognizers = new ArrayList<SketchRecognizer>();
+    this.rawRecognizersFinished = new ArrayList<SketchRecognizer>();
     this.allPrimitives = new HashMap<Ink, Set<RecognizerPrimitive>>();
   }
 
@@ -194,7 +196,33 @@ public class SketchRecognizerController {
   }
 
   public void add(SketchRecognizer rec) {
-    recognizers.add(rec);
+    switch (rec.getType()) {
+      case Standard:
+        recognizers.add(rec);
+        break;
+      case SingleRaw:
+        rawRecognizersFinished.add(rec);
+        break;
+      default:
+        bug("No bucket for sketch recognizer of type " + rec.getType());
+    }
+  }
+
+  public void analyzeSingleRaw(Collection<RecognizerPrimitive> rawPrim) {
+    if (rawPrim.size() != 1) {
+      bug("Warning: using analyeSingleRaw with wrong number of primitives (should be 1): "
+          + rawPrim.size());
+    } else {
+      Collection<RecognizedItem> results = new HashSet<RecognizedItem>();
+      for (SketchRecognizer rec : rawRecognizersFinished) {
+        results.addAll(rec.apply(rawPrim));
+      }
+      if (results.size() == 1) {
+        
+      } else if (results.size() > 1) {
+        bug(":( found too many results: " + results.size());
+      }
+    }
   }
 
 }

@@ -11,25 +11,48 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
   private static int ID_COUNTER = 0;
 
   public static enum Type {
-    Line, Arc, Dot, Ellipse
+    /**
+     * A straight line.
+     */
+    Line,
+
+    /**
+     * A circular arc.
+     */
+    Arc,
+
+    /**
+     * A small dot, like how you'd denote a point on a cartesian plane.
+     */
+    Dot, 
+    
+    /**
+     * A partial ellipse.
+     */
+    Ellipse, 
+    
+    /**
+     * Raw ink that has no (yet) detected geometric properties.
+     */
+    Raw
   }
 
   public static enum Certainty {
     /**
      * The proposition is most likely true.
      */
-    Yes, 
-    
+    Yes,
+
     /**
      * The proposition is most likely false.
      */
-    No, 
-    
+    No,
+
     /**
      * The proposition might be true. This is a weaker form of 'Yes'.
      */
-    Maybe, 
-    
+    Maybe,
+
     /**
      * The proposition can't be evaluated.
      */
@@ -37,7 +60,7 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
   }
 
   public final int id; // = ID_COUNTER++;
-  
+
   private Type type;
   private Ink ink;
   private int start;
@@ -76,6 +99,10 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
     ret.setEllipse(re);
     return ret;
   }
+  
+  public static RecognizerPrimitive makeRaw(Ink ink) {
+    return new RecognizerPrimitive(Type.Raw, ink, 0, ink.getSequence().size() - 1, Certainty.Yes);
+  }
 
   private void setEllipse(RotatedEllipse re) {
     this.ellipse = re;
@@ -113,12 +140,12 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
     int idx = subshapeBindingFlipped ? getEnd() : getStart();
     return ink.getSequence().get(idx);
   }
-  
+
   public Pt getP2() {
     int idx = subshapeBindingFlipped ? getStart() : getEnd();
     return ink.getSequence().get(idx);
   }
-  
+
   public Pt getSubshape(String which) {
     if (which.equals("p1")) {
       return getP1();
@@ -134,7 +161,7 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
   public boolean isFlippable() {
     return !subshapeBindingFixed;
   }
-  
+
   public boolean getFlipState() {
     return subshapeBindingFlipped;
   }
@@ -142,7 +169,7 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
   public void setSubshapeBindingFixed(boolean b) {
     subshapeBindingFixed = b;
   }
-  
+
   public void flipSubshapeBinding() {
     if (isFlippable()) {
       subshapeBindingFlipped = !subshapeBindingFlipped;

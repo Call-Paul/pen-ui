@@ -35,7 +35,6 @@ import javax.swing.SwingUtilities;
 
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.RecognizedItem;
-import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
@@ -43,14 +42,8 @@ import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
-import org.six11.util.solve.NumericValue;
-import org.six11.util.solve.OrientationConstraint;
-
-import com.sun.java.swing.plaf.gtk.GTKConstants.ArrowType;
 
 /**
  * A self-contained editor instance.
@@ -59,21 +52,21 @@ import com.sun.java.swing.plaf.gtk.GTKConstants.ArrowType;
  */
 public class SkruiFabEditor {
 
-  Main main;
-  DrawingBufferLayers layers;
-  SketchBook model;
-
-  GraphicDebug guibug;
-  Map<String, Action> actions;
-  private GlassPane glass;
   private static String ACTION_GO = "Go";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
-  ApplicationFrame af;
-  Colors colors;
+
+//  private Main main;
+  private DrawingBufferLayers layers;
+  private SketchBook model;
+  private GraphicDebug guibug;
+  private Map<String, Action> actions;
+  private GlassPane glass;
+  private ApplicationFrame af;
+  private Colors colors;
 
   public SkruiFabEditor(Main m) {
-    this.main = m;
+//    this.main = m;
     this.colors = new Colors();
     colors.set("stencil", new Color(0.97f, 0.97f, 0.97f));
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
@@ -199,11 +192,13 @@ public class SkruiFabEditor {
     bug("Debugging state of everything. Look in the file " + debugFileName);
     File bugFile = new File(debugFileName);
     try {
-      bugFile.createNewFile();
-      BufferedWriter bugFileOut = new BufferedWriter(new FileWriter(bugFile));
-      bugFileOut.write(model.getMondoDebugString());
-      bugFileOut.flush();
-      bugFileOut.close();
+      boolean made = bugFile.createNewFile();
+      if (made) {
+        BufferedWriter bugFileOut = new BufferedWriter(new FileWriter(bugFile));
+        bugFileOut.write(model.getMondoDebugString());
+        bugFileOut.flush();
+        bugFileOut.close();
+      }
     } catch (IOException ex) {
       ex.printStackTrace();
     }
@@ -256,7 +251,7 @@ public class SkruiFabEditor {
     ret.addAll(items); // TODO: you're doing it wrong.
     return ret;
   }
-  
+
   private void drawStuff() {
     drawStencils();
     drawStructured();
@@ -273,14 +268,14 @@ public class SkruiFabEditor {
       }
     }
   }
-  
+
   private void drawStencils() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STENCIL_LAYER);
     buf.clear();
     Set<Stencil> stencils = model.getStencils();
     for (Stencil s : stencils) {
       DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
-//      DrawingBufferRoutines.drawShape(buf, s.getShape(), Color.BLACK, 4.0);      
+      //      DrawingBufferRoutines.drawShape(buf, s.getShape(), Color.BLACK, 4.0);      
     }
   }
 

@@ -24,9 +24,9 @@ public class Stencil {
   }
 
   public boolean isSame(Stencil other) {
-    return path.contains(other.path) && path.size() == other.path.size();
+    return path.containsAll(other.path) && path.size() == other.path.size();
   }
-  
+
   public Shape getShape() {
     Path2D shape = new Path2D.Double();
     List<Pt> allPoints = new ArrayList<Pt>();
@@ -39,7 +39,7 @@ public class Stencil {
       }
       allPoints.addAll(nextPoints);
     }
-    for (int i=0; i < allPoints.size(); i++) {
+    for (int i = 0; i < allPoints.size(); i++) {
       Pt pt = allPoints.get(i);
       if (i == 0) {
         shape.moveTo(pt.getX(), pt.getY());
@@ -82,8 +82,12 @@ public class Stencil {
     }
     bug("getSegmentList gets this path: " + StencilFinder.n(path));
     bug("and returns the following list of segments:");
-    for (Segment s : ret) {
-      bug(s.toString());
+    if (ret == null) {
+      bug(" <null return value>");
+    } else {
+      for (Segment s : ret) {
+        bug(s.toString());
+      }
     }
     return ret;
   }
