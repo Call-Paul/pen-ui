@@ -1,6 +1,5 @@
 package org.six11.sf.rec;
 
-import java.awt.Toolkit;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
