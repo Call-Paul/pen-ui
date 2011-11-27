@@ -110,7 +110,6 @@ public class SketchBook {
   public void addInk(Ink newInk) {
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
-    bug("Got " + rawResults + " result from raw ink recognizers.");
     boolean didSomething = false;
     for (RecognizedRawItem item : rawResults) {
       if (item.isOk()) {
@@ -223,8 +222,10 @@ public class SketchBook {
     }
     // points and constraints
     solver.replacePoint(capPt, nextPointName(), spot);
+    bug("Replacing " + StencilFinder.n(capPt) + " with " + StencilFinder.n(spot)
+        + " in all stencils. If you see this later, there's something amiss.");
     for (Stencil s : stencils) {
-      s.replacePoint(capPt,  spot);
+      s.replacePoint(capPt, spot);
     }
   }
 
@@ -358,6 +359,15 @@ public class SketchBook {
   }
 
   public void mergeStencils(Set<Stencil> newStencils) {
+    bug("Before merge:");
+    for (Stencil s : stencils) {
+      System.out.println("# " + s);
+    }
+    bug("Stencils to merge:");
+    for (Stencil s : newStencils) {
+      System.out.println("# " + s);
+    }
+    // add non-duplicate stencils first
     for (Stencil nub : newStencils) {
       boolean ok = true;
       for (Stencil old : stencils) {
@@ -369,6 +379,25 @@ public class SketchBook {
       if (ok) {
         stencils.add(nub);
       }
+    }
+
+    // then remove sub-stencils
+    Set<Stencil> doomed = new HashSet<Stencil>();
+    for (Stencil s1 : stencils) {
+      for (Stencil s2 : stencils) {
+        if (s1.isSuperset(s2)) {
+          doomed.add(s2);
+        }
+        if (s2.isSuperset(s1)) {
+          doomed.add(s1);
+        }
+      }
+    }
+    bug("Found " + doomed.size() + " sub-stencils to remove: " + num(doomed, ", "));
+    stencils.removeAll(doomed);
+    bug("After merge:");
+    for (Stencil s : stencils) {
+      System.out.println("# " + s);
     }
   }
 

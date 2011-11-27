@@ -22,7 +22,6 @@ public class Stencil {
   public Stencil(List<Pt> path, List<Segment> segs) {
     this.path = path;
     this.segs = segs;
-    bug("Stencil has " + path.size() + " path points and " + segs.size() + " segments.");
   }
 
   public boolean isSame(Stencil other) {
@@ -57,17 +56,12 @@ public class Stencil {
   }
 
   public void replacePoint(Pt older, Pt newer) {
-    int where = path.indexOf(older);
-    if (where >= 0) {
-      String before = StencilFinder.n(path);
-      path.remove(where);
-      path.add(where, newer);
-      String after = StencilFinder.n(path);
-      bug("Replaced " + StencilFinder.n(older) + " with " + StencilFinder.n(newer));
-      bug("  Before: " + before);
-      bug("  After: " + after);
+    for (int i=0; i < path.size(); i++) {
+      if (path.get(i).equals(older)) {
+        path.remove(i);
+        path.add(i, newer);
+      }
     }
-
   }
 
   /**
@@ -100,15 +94,6 @@ public class Stencil {
         break;
       }
     }
-    bug("getSegmentList gets this path: " + StencilFinder.n(path));
-    bug("and returns the following list of segments:");
-    if (ret == null) {
-      bug(" <null return value>");
-    } else {
-      for (Segment s : ret) {
-        bug(s.toString());
-      }
-    }
     return ret;
   }
 
@@ -116,6 +101,14 @@ public class Stencil {
     Area myArea = new Area(getShape());
     myArea.intersect(area);
     return myArea;
+  }
+
+  public boolean isSuperset(Stencil other) {
+    return path.size() > other.path.size() && path.containsAll(other.getPath());
+  }
+  
+  public String toString() {
+    return StencilFinder.n(path);
   }
 
 }

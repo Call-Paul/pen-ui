@@ -40,8 +40,10 @@ import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
+import org.six11.util.mesh.Mesh;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
 
@@ -284,12 +286,13 @@ public class SkruiFabEditor {
       } else {
         DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
       }
-      //      DrawingBufferRoutines.drawShape(buf, s.getShape(), Color.BLACK, 4.0);      
     }
-    for (Stencil s : later) {
-      Color rnd = Colors.getRandomLightColor();
-      DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
-          rnd /* colors.get("selected stencil") */, 0);
+    if (later.size() > 0) {
+      for (Stencil s : later) {
+        Color rnd = Colors.getRandomLightColor();
+        DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
+            rnd /* colors.get("selected stencil") */, 0);
+      }
     }
     layers.repaint();
   }

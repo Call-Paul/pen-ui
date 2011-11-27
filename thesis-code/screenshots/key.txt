@@ -52,4 +52,6 @@
 020: complete shapes are now recognized and drawn. these are called 'stencils'.
 
 021: can form stencils that share boundaries, and can select as many or as
-     needed. 
+     needed.
+
+022: joins stencils together by tossing out any that are subsets of another.
