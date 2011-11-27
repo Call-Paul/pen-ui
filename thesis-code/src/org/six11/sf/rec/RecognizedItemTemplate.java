@@ -12,6 +12,9 @@ import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import javax.naming.OperationNotSupportedException;
+
+import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
@@ -163,7 +166,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     constraints.put(slotName, new TypeConstraint(slotName, type));
   }
 
-  public Collection<RecognizedItem> apply(Collection<RecognizerPrimitive> in) {
+  public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in) {
     say("Applying template with " + in.size() + " primitive input(s): " + num(in, " "));
     List<RecognizedItem> ret = new ArrayList<RecognizedItem>();
     resetValid();
@@ -184,6 +187,11 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     return ret;
   }
 
+  @Override
+  public RecognizedRawItem applyRaw(Ink ink)  throws OperationNotSupportedException {
+    throw new OperationNotSupportedException("This recognizer can't do raw ink.");
+  }
+  
   /**
    * Attempts to fit a slot binding to this shape. This is a recursive function. Sometimes it does
    * not have enough information to evaluate a slot binding (e.g. not all slots are full), so it

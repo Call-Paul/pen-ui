@@ -56,7 +56,7 @@ public class SkruiFabEditor {
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
 
-//  private Main main;
+  //  private Main main;
   private DrawingBufferLayers layers;
   private SketchBook model;
   private GraphicDebug guibug;
@@ -66,9 +66,11 @@ public class SkruiFabEditor {
   private Colors colors;
 
   public SkruiFabEditor(Main m) {
-//    this.main = m;
+    //    this.main = m;
     this.colors = new Colors();
     colors.set("stencil", new Color(0.97f, 0.97f, 0.97f));
+    colors.set("selected stencil", new Color(0.97f, 0.5f, 0.5f));
+
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(600, 400);
@@ -76,7 +78,7 @@ public class SkruiFabEditor {
     glass = new GlassPane(this);
     af.getRootPane().setGlassPane(glass);
     glass.setVisible(true);
-    model = new SketchBook(glass);
+    model = new SketchBook(glass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
       public void constraintStepDone() {
         Runnable r = new Runnable() {
@@ -269,14 +271,27 @@ public class SkruiFabEditor {
     }
   }
 
-  private void drawStencils() {
+  public void drawStencils() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STENCIL_LAYER);
+    DrawingBuffer selBuf = layers.getLayer(GraphicDebug.DB_SELECTION);
     buf.clear();
+    selBuf.clear();
     Set<Stencil> stencils = model.getStencils();
+    Set<Stencil> later = new HashSet<Stencil>();
     for (Stencil s : stencils) {
-      DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
+      if (model.getSelection().contains(s)) {
+        later.add(s);
+      } else {
+        DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
+      }
       //      DrawingBufferRoutines.drawShape(buf, s.getShape(), Color.BLACK, 4.0);      
     }
+    for (Stencil s : later) {
+      Color rnd = Colors.getRandomLightColor();
+      DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
+          rnd /* colors.get("selected stencil") */, 0);
+    }
+    layers.repaint();
   }
 
   private void drawStructured() {

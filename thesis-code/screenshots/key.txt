@@ -50,3 +50,6 @@
      merges points, identifies length constraints, and solves the system.
 
 020: complete shapes are now recognized and drawn. these are called 'stencils'.
+
+021: can form stencils that share boundaries, and can select as many or as
+     needed. 

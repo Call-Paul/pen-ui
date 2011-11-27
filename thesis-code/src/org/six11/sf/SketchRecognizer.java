@@ -3,7 +3,10 @@ package org.six11.sf;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 
 public abstract class SketchRecognizer {
@@ -41,6 +44,8 @@ public abstract class SketchRecognizer {
     return type;
   }
 
-  public abstract Collection<RecognizedItem> apply(Collection<RecognizerPrimitive> in);
+  public abstract Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in) throws OperationNotSupportedException;
+  
+  public abstract RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException;
 
 }

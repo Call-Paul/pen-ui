@@ -3,6 +3,9 @@ package org.six11.sf.rec;
 import java.util.Collection;
 import java.util.Stack;
 
+import javax.naming.OperationNotSupportedException;
+
+import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
@@ -43,5 +46,6 @@ public class Arrow extends RecognizedItemTemplate {
   public void create(RecognizedItem item, SketchBook model) {
 
   }
+
 
 }

@@ -11,7 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.Antipodal;
@@ -42,8 +45,12 @@ public class SketchRecognizerController {
     }
     Set<RecognizedItem> success = new HashSet<RecognizedItem>();
     Set<RecognizerPrimitive> prims = extractPrimitives();
-    for (SketchRecognizer rec : recognizers) {
-      success.addAll(rec.apply(prims)); // combines values of allPrimitives
+    try {
+      for (SketchRecognizer rec : recognizers) {
+        success.addAll(rec.applyTemplate(prims));
+      }
+    } catch (OperationNotSupportedException e) {
+      e.printStackTrace();
     }
     return success;
   }
@@ -208,21 +215,16 @@ public class SketchRecognizerController {
     }
   }
 
-  public void analyzeSingleRaw(Collection<RecognizerPrimitive> rawPrim) {
-    if (rawPrim.size() != 1) {
-      bug("Warning: using analyeSingleRaw with wrong number of primitives (should be 1): "
-          + rawPrim.size());
-    } else {
-      Collection<RecognizedItem> results = new HashSet<RecognizedItem>();
+  public Collection<RecognizedRawItem> analyzeSingleRaw(Ink ink) {
+    Collection<RecognizedRawItem> results = new HashSet<RecognizedRawItem>();
+    try {
       for (SketchRecognizer rec : rawRecognizersFinished) {
-        results.addAll(rec.apply(rawPrim));
+        results.add(rec.applyRaw(ink));
       }
-      if (results.size() == 1) {
-        
-      } else if (results.size() > 1) {
-        bug(":( found too many results: " + results.size());
-      }
+    } catch (OperationNotSupportedException e) {
+      e.printStackTrace();
     }
+    return results;
   }
 
 }

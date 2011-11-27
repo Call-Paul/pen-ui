@@ -3,9 +3,11 @@ package org.six11.sf;
 import static org.six11.util.Debug.bug;
 
 import java.awt.Shape;
+import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +27,10 @@ public class Stencil {
 
   public boolean isSame(Stencil other) {
     return path.containsAll(other.path) && path.size() == other.path.size();
+  }
+
+  public List<Pt> getPath() {
+    return path;
   }
 
   public Shape getShape() {
@@ -50,6 +56,20 @@ public class Stencil {
     return shape;
   }
 
+  public void replacePoint(Pt older, Pt newer) {
+    int where = path.indexOf(older);
+    if (where >= 0) {
+      String before = StencilFinder.n(path);
+      path.remove(where);
+      path.add(where, newer);
+      String after = StencilFinder.n(path);
+      bug("Replaced " + StencilFinder.n(older) + " with " + StencilFinder.n(newer));
+      bug("  Before: " + before);
+      bug("  After: " + after);
+    }
+
+  }
+
   /**
    * Returns an ordered list of segments based on the given path and segment set. This can be used
    * to construct new Stencils.
@@ -62,7 +82,7 @@ public class Stencil {
    *          to exactly one segment in the segment set.
    * @return an ordered list of segments such that return[0] is for path[0] to path[1], and so on.
    */
-  public static List<Segment> getSegmentList(List<Pt> path, Set<Segment> allGeometry) {
+  public static List<Segment> getSegmentList(List<Pt> path, Collection<Segment> allGeometry) {
     List<Segment> ret = new ArrayList<Segment>();
     for (int i = 0; i < path.size() - 1; i++) {
       Pt a = path.get(i);
@@ -90,6 +110,12 @@ public class Stencil {
       }
     }
     return ret;
+  }
+
+  public Area intersect(Area area) {
+    Area myArea = new Area(getShape());
+    myArea.intersect(area);
+    return myArea;
   }
 
 }

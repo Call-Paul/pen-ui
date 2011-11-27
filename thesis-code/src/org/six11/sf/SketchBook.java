@@ -17,12 +17,15 @@ import java.util.Set;
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.Colors;
+import org.six11.util.gui.shape.ShapeFactory;
+import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
@@ -30,14 +33,16 @@ import org.six11.util.pen.Sequence;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
 
+import com.sun.jdi.connect.Connector.SelectedArgument;
+
 public class SketchBook {
 
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
   private DrawingBufferLayers layers;
-  private List<Ink> selection;
-  private List<Ink> selectionCopy;
+  private Set<Stencil> selection;
+  //  private List<Ink> selectionCopy;
   private GraphicDebug guibug;
   private Set<Segment> geometry;
   private ConstraintAnalyzer constraintAnalyzer;
@@ -48,12 +53,14 @@ public class SketchBook {
   private Map<RecognizedItem, Set<Constraint>> userConstraints;
   private Set<Set<RecognizedItem>> friends;
   private Set<Stencil> stencils;
+  private SkruiFabEditor editor;
 
-  public SketchBook(GlassPane glass) {
+  public SketchBook(GlassPane glass, SkruiFabEditor editor) {
+    this.editor = editor;
     this.scribbles = new ArrayList<Sequence>();
-    this.selection = new ArrayList<Ink>();
+    this.selection = new HashSet<Stencil>();
     this.cornerFinder = new CornerFinder();
-    this.selectionCopy = new ArrayList<Ink>();
+    //    this.selectionCopy = new ArrayList<Ink>();
     this.geometry = new HashSet<Segment>();
     this.stencils = new HashSet<Stencil>();
     //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
@@ -75,11 +82,11 @@ public class SketchBook {
     recognizer.add(rec);
   }
 
-  public List<Ink> getSelectionCopy() {
-    return selectionCopy;
-  }
+  //  public List<Ink> getSelectionCopy() {
+  //    return selectionCopy;
+  //  }
 
-  public List<Ink> getSelection() {
+  public Set<Stencil> getSelection() {
     return selection;
   }
 
@@ -102,14 +109,24 @@ public class SketchBook {
 
   public void addInk(Ink newInk) {
     // this is the part where encircle gestures should be found since they have precedence
-    Collection<RecognizerPrimitive> rawPrim = Collections.singleton(RecognizerPrimitive.makeRaw(newInk));
-    recognizer.analyzeSingleRaw(rawPrim);
-    cornerFinder.findCorners(newInk);
-    ink.add(newInk);
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-    Sequence scrib = newInk.getSequence();
-    DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
-        DrawingBufferLayers.DEFAULT_THICKNESS);
+    Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
+    bug("Got " + rawResults + " result from raw ink recognizers.");
+    boolean didSomething = false;
+    for (RecognizedRawItem item : rawResults) {
+      if (item.isOk()) {
+        bug("This one is ok! Activating it.");
+        item.activate(this);
+        didSomething = true;
+      }
+    }
+    if (!didSomething) {
+      cornerFinder.findCorners(newInk);
+      ink.add(newInk);
+      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+      Sequence scrib = newInk.getSequence();
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
+          DrawingBufferLayers.DEFAULT_THICKNESS);
+    }
     layers.repaint();
   }
 
@@ -179,18 +196,6 @@ public class SketchBook {
     setSelected(null);
   }
 
-  public void setSelected(Collection<Ink> selectUs) {
-    selection.clear();
-    if (selectUs != null) {
-      selection.addAll(selectUs);
-    }
-    DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SELECTION);
-    db.clear();
-    for (Ink eenk : selection) {
-      guibug.ghostlyOutlineShape(db, eenk.getSequence().getPoints(), Color.CYAN.darker());
-    }
-  }
-
   public void addGeometry(Segment seg) {
     geometry.add(seg);
   }
@@ -218,6 +223,9 @@ public class SketchBook {
     }
     // points and constraints
     solver.replacePoint(capPt, nextPointName(), spot);
+    for (Stencil s : stencils) {
+      s.replacePoint(capPt,  spot);
+    }
   }
 
   /**
@@ -331,6 +339,17 @@ public class SketchBook {
       addBug(indent, buf, seg.getType() + " " + p1 + "\t" + seg.getP1().hashCode() + "\t" + p2
           + "\t" + seg.getP2().hashCode() + "\n");
     }
+    buf.append("\n");
+    addBug(indent, buf, stencils.size() + " stencils\n");
+    indent++;
+    for (Stencil s : stencils) {
+      addBug(indent, buf, s.getPath().size() + " points: " + StencilFinder.n(s.getPath()));
+      if (selection.contains(s)) {
+        buf.append(" (selected)");
+      }
+      buf.append("\n");
+    }
+    indent--;
     return buf.toString();
   }
 
@@ -353,4 +372,42 @@ public class SketchBook {
     }
   }
 
+  public Collection<Stencil> findStencil(Area area, double d) {
+    Collection<Stencil> ret = new HashSet<Stencil>();
+    for (Stencil s : stencils) {
+      double ratio = 0;
+      Area ix = s.intersect(area);
+      if (!ix.isEmpty()) {
+        ConvexHull stencilHull = new ConvexHull(s.getPath());
+        double stencilArea = stencilHull.getConvexArea();
+        ConvexHull ixHull = new ConvexHull(ShapeFactory.makePointList(ix.getPathIterator(null)));
+        double ixArea = ixHull.getConvexArea();
+        ratio = ixArea / stencilArea;
+      }
+      if (ratio >= d) {
+        ret.add(s);
+      }
+    }
+    return ret;
+  }
+
+  //  public void setSelected(Collection<Ink> selectUs) {
+  //    selection.clear();
+  //    if (selectUs != null) {
+  //      selection.addAll(selectUs);
+  //    }
+  //    DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SELECTION);
+  //    db.clear();
+  //    for (Ink eenk : selection) {
+  //      guibug.ghostlyOutlineShape(db, eenk.getSequence().getPoints(), Color.CYAN.darker());
+  //    }
+  //  }
+
+  public void setSelected(Collection<Stencil> selectUs) {
+    selection.clear();
+    if (selectUs != null) {
+      selection.addAll(selectUs);
+    }
+    editor.drawStencils();
+  }
 }
