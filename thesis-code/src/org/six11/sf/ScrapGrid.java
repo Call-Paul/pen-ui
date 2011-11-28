@@ -5,6 +5,7 @@ import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.warn;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -14,8 +15,11 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.swing.JComponent;
 
@@ -34,12 +38,17 @@ import org.six11.util.pen.Pt;
 public class ScrapGrid extends JComponent implements PenListener, Drag.Listener {
 
   public static class GridCellContent {
-    Area area;
     Image thumb;
+    Set<Stencil> stencils;
 
-    public GridCellContent(Area area, Image thumb) {
-      this.area = area;
+    public GridCellContent(Image thumb, Set<Stencil> sourceStencils) {
       this.thumb = thumb;
+      this.stencils = new HashSet<Stencil>();
+      stencils.addAll(sourceStencils);
+    }
+
+    public Set<Stencil> getStencils() {
+      return stencils;
     }
   }
 
@@ -58,10 +67,11 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private float selectedCellThickness = 2.8f;
   private Point droppedCell = new Point(-1, -1);
   private Map<Point, GridCellContent> cells = new HashMap<Point, GridCellContent>();
-
+  private SkruiFabEditor editor;
 
   public ScrapGrid(SkruiFabEditor editor) {
     setName("ScrapGrid");
+    this.editor = editor;
     setBackground(Color.WHITE);
     gridColor = new Color(240, 240, 240);
     hoveredColor = Color.blue.darker();
@@ -155,26 +165,32 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   @Override
   public void handlePenEvent(PenEvent ev) {
-    Point cellPoint;
     switch (ev.getType()) {
       case Enter:
         break;
       case Exit:
-        hoveredCellX = -1;
-        hoveredCellY = -1;
-        repaint();
+        clearCellInfo();
         break;
       case Hover:
         hover(new Point(ev.getPt().ix(), ev.getPt().iy()));
         repaint();
         break;
       case Drag:
+        editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+        break;
+      case Down:  
         break;
       case Idle:
         break;
       default:
         bug("Unhandled pen event: " + ev.getType());
     }
+  }
+
+  private void clearCellInfo() {
+    hoveredCellX = -1;
+    hoveredCellY = -1;
+    repaint();
   }
 
   private void hover(Point pt) {
@@ -190,19 +206,33 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   @Override
   public void dragEnter(Event ev) {
-    bug("enter while dragging");
-    
   }
 
   @Override
   public void dragExit(Event ev) {
+    clearCellInfo();
     bug("exit while dragging");
   }
 
   @Override
   public void dragDrop(Event ev) {
-    // TODO Auto-generated method stub
-    
+    bug("Got drag event for dropping.");
+    SketchBook model = editor.getModel();
+    if (model.getDraggingThumb() != null) {
+      BufferedImage thumb = model.getDraggingThumb();
+      GridCellContent content = new GridCellContent(thumb, model.getSelection());
+      Point cell = getCell(ev.getPt());
+      cells.put(cell, content);
+      bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell));
+    } else {
+      bug ("damn drag thumb is null:(");
+    }
+    clearCellInfo();
+  }
+
+  public void clear() {
+    cells.clear();
+    repaint();
   }
 
 }

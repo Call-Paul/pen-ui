@@ -66,6 +66,7 @@ public class SkruiFabEditor {
   private GlassPane glass;
   private ApplicationFrame af;
   private Colors colors;
+  private ScrapGrid grid;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -97,7 +98,7 @@ public class SkruiFabEditor {
     guibug = new GraphicDebug(layers);
     model.setGuibug(guibug);
     model.setLayers(layers);
-    ScrapGrid grid = new ScrapGrid(this);
+    grid = new ScrapGrid(this);
     CutfilePane cutfile = new CutfilePane(this);
     FrontEnd fe = new FrontEnd();
     fe.add(layers, "layers");
@@ -118,6 +119,10 @@ public class SkruiFabEditor {
     af.setVisible(true);
   }
 
+  public ScrapGrid getGrid() {
+    return grid;
+  }
+    
   public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
     Graphics2D g = destImage.createGraphics();
     AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
@@ -323,6 +328,10 @@ public class SkruiFabEditor {
     }
     layers.repaint();
 
+  }
+
+  public GlassPane getGlass() {
+    return glass;
   }
 
 }

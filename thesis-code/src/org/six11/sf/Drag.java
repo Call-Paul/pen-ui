@@ -15,13 +15,19 @@ public class Drag {
   public static class Event {
 
     private Point pt;
-
-    public Event(Point pt) {
+    private GlassPane.ActivityMode mode;
+    
+    public Event(Point pt, GlassPane.ActivityMode mode) {
       this.pt = pt;
+      this.mode = mode;
     }
     
     public Point getPt() {
       return pt;
+    }
+    
+    public GlassPane.ActivityMode getMode() {
+      return mode;
     }
     
   }

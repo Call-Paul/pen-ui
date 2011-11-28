@@ -173,7 +173,8 @@ public class SketchRecognizerController {
       double straightLength = ptA.distance(ptB);
       double curvilinearLength = ink.seq.getPathLength(a, b);
       double lineLenDivCurviLen = curvilinearLength / straightLength;
-      if (lineLenDivCurviLen < 1.07) {
+      boolean isShort = curvilinearLength < 30; 
+      if (lineLenDivCurviLen < 1.07 || (isShort && lineLenDivCurviLen < 1.5)) {
         ret.add(RecognizerPrimitive.makeLine(ink, a, b, Certainty.Yes));
         ret.add(RecognizerPrimitive.makeArc(ink, a, b, Certainty.Maybe));
       } else if (lineLenDivCurviLen < 1.27) {

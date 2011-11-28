@@ -15,6 +15,7 @@ import java.awt.image.BufferedImage;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
+import org.six11.sf.GlassPane.ActivityMode;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -26,6 +27,21 @@ import org.six11.util.pen.Pt;
  */
 public class GlassPane extends JComponent implements MouseMotionListener, MouseListener {
 
+  public enum ActivityMode {
+    /**
+     * 'None' means mouse events are passed through to the components below.
+     */
+    None, 
+    /**
+     * 'DragSelection' means the user is dragging a selection from the drawing pane.
+     */
+    DragSelection, 
+    /**
+     * 'DragScrap' means the user is dragging a scrap from the scrap grid.
+     */
+    DragScrap
+  };
+
   SkruiFabEditor editor;
   Component prevComponent;
   Component dragStartComponent;
@@ -33,9 +49,11 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
 
   boolean dragging = false;
   Point dragPoint = null;
+  private ActivityMode activity;
 
   public GlassPane(SkruiFabEditor editor) {
     this.editor = editor;
+    this.activity = ActivityMode.None;
     addMouseListener(this);
     addMouseMotionListener(this);
     setOpaque(false);
@@ -70,29 +88,22 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void paintComponent(Graphics g) {
-    if (editor.getModel().isDraggingSelection()) {
+    if (activity == ActivityMode.DragSelection) {
       BufferedImage thumb = editor.getModel().getDraggingThumb();
-      g.drawImage(thumb, dragPoint.x, dragPoint.y, null);
+      if (thumb != null) {
+        g.drawImage(thumb, dragPoint.x, dragPoint.y, null);
+      }
     }
   }
 
   public void mouseDragged(MouseEvent ev) {
     dragPoint = ev.getPoint();
     MouseEventInfo mei = new MouseEventInfo(ev);
-    if (editor.getModel().isDraggingSelection()) {
-      if (prevComponent != mei.component) {
-        if (prevComponent instanceof Drag.Listener) {
-          ((Drag.Listener) mei.component).dragExit(new Drag.Event(mei.componentPoint));
-        }
-        if (mei.component instanceof Drag.Listener) {
-          ((Drag.Listener) mei.component).dragEnter(new Drag.Event(mei.componentPoint));
-        }
-      }
-      if (mei.component instanceof Drag.Listener) {
-        ((Drag.Listener) mei.component).dragMove(new Drag.Event(mei.componentPoint));
-      }
+    if (activity == ActivityMode.DragSelection) {
+      giveDrag(mei);
       repaint();
-    } else {
+    } 
+    else {
       if (prevComponent != mei.component) {
         if (prevComponent != null) {
           givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
@@ -108,6 +119,21 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
       }
     }
     prevComponent = mei.component;
+  }
+
+  private void giveDrag(MouseEventInfo mei) {
+    Drag.Event ev = new Drag.Event(mei.componentPoint, activity);
+    if (prevComponent != mei.component) {
+      if (prevComponent instanceof Drag.Listener) {
+        ((Drag.Listener) prevComponent).dragExit(ev);
+      }
+      if (mei.component instanceof Drag.Listener) {
+        ((Drag.Listener) mei.component).dragEnter(ev);
+      }
+    }
+    if (mei.component instanceof Drag.Listener) {
+      ((Drag.Listener) mei.component).dragMove(ev);
+    }
   }
 
   public void mouseMoved(MouseEvent ev) {
@@ -162,15 +188,24 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   public void mouseReleased(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
     dragPoint = null;
-    if (editor.getModel().isDraggingSelection()) {
+    if (activity == ActivityMode.DragSelection) {
       bug("Turning off selection drag.");
+      if (mei.component instanceof Drag.Listener) {
+        Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+        ((Drag.Listener) mei.component).dragDrop(dev);
+      }
       editor.getModel().setDraggingSelection(false);
+      activity = ActivityMode.None;
     } else {
       givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
       dragging = false; // drag completed.
       dragStartComponent = null;
     }
     repaint();
+  }
+
+  public void setActivity(ActivityMode mode) {
+    activity = mode;
   }
 
 }

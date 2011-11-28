@@ -58,8 +58,10 @@ public class SketchBook {
   private SkruiFabEditor editor;
   private boolean draggingSelection;
   private BufferedImage draggingThumb;
+  private GlassPane glass;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
+    this.glass = glass;
     this.editor = editor;
     this.scribbles = new ArrayList<Sequence>();
     this.selection = new HashSet<Stencil>();
@@ -259,6 +261,7 @@ public class SketchBook {
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
+    editor.getGrid().clear();
   }
 
   private void clearStructured() {
@@ -449,6 +452,7 @@ public class SketchBook {
       DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
       BufferedImage bigImage = sel.getImage();
       draggingThumb = Scalr.resize(bigImage, 48);
+      glass.setActivity(GlassPane.ActivityMode.DragSelection);
     } else {
       draggingThumb = null;
     }
