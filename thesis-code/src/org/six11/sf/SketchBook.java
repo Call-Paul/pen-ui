@@ -4,7 +4,9 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Color;
+import java.awt.Image;
 import java.awt.geom.Area;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +35,7 @@ import org.six11.util.pen.Sequence;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
 
-import com.sun.jdi.connect.Connector.SelectedArgument;
+import org.imgscalr.Scalr;
 
 public class SketchBook {
 
@@ -54,6 +56,8 @@ public class SketchBook {
   private Set<Set<RecognizedItem>> friends;
   private Set<Stencil> stencils;
   private SkruiFabEditor editor;
+  private boolean draggingSelection;
+  private BufferedImage draggingThumb;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.editor = editor;
@@ -359,14 +363,6 @@ public class SketchBook {
   }
 
   public void mergeStencils(Set<Stencil> newStencils) {
-    bug("Before merge:");
-    for (Stencil s : stencils) {
-      System.out.println("# " + s);
-    }
-    bug("Stencils to merge:");
-    for (Stencil s : newStencils) {
-      System.out.println("# " + s);
-    }
     // add non-duplicate stencils first
     for (Stencil nub : newStencils) {
       boolean ok = true;
@@ -381,7 +377,7 @@ public class SketchBook {
       }
     }
 
-    // then remove sub-stencils
+    // then remove sub-stencils. boot those that are in a superset
     Set<Stencil> doomed = new HashSet<Stencil>();
     for (Stencil s1 : stencils) {
       for (Stencil s2 : stencils) {
@@ -393,12 +389,7 @@ public class SketchBook {
         }
       }
     }
-    bug("Found " + doomed.size() + " sub-stencils to remove: " + num(doomed, ", "));
     stencils.removeAll(doomed);
-    bug("After merge:");
-    for (Stencil s : stencils) {
-      System.out.println("# " + s);
-    }
   }
 
   public Collection<Stencil> findStencil(Area area, double d) {
@@ -438,5 +429,36 @@ public class SketchBook {
       selection.addAll(selectUs);
     }
     editor.drawStencils();
+  }
+
+  public boolean isPointOverSelection(Pt where) {
+    boolean ret = false;
+    for (Stencil s : selection) {
+      Area shapeArea = new Area(s.getShape());
+      if (shapeArea.contains(where)) {
+        ret = true;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public void setDraggingSelection(boolean b) {
+    draggingSelection = b;
+    if (draggingSelection) {
+      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
+      BufferedImage bigImage = sel.getImage();
+      draggingThumb = Scalr.resize(bigImage, 48);
+    } else {
+      draggingThumb = null;
+    }
+  }
+
+  public boolean isDraggingSelection() {
+    return draggingSelection;
+  }
+  
+  public BufferedImage getDraggingThumb() {
+    return draggingThumb;
   }
 }

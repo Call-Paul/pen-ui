@@ -81,10 +81,6 @@ public class EncircleRecognizer extends SketchRecognizer {
     }
     RecognizedRawItem ret = new RecognizedRawItem(inside.size() > 0) {
       public void activate(SketchBook model) {
-        bug("OK, select these " + inside.size() + " stencils:");
-        for (Stencil s : inside) {
-          bug("  " + StencilFinder.n(s.getPath()));
-        }
         model.setSelected(inside);
       };
     };

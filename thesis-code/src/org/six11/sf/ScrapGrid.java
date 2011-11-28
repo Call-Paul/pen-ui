@@ -1,6 +1,7 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.warn;
 
 import java.awt.Color;
@@ -18,17 +19,19 @@ import java.util.Map;
 
 import javax.swing.JComponent;
 
+import org.six11.sf.Drag.Event;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
+import org.six11.util.pen.Pt;
 
 /**
  * 
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class ScrapGrid extends JComponent implements PenListener {
+public class ScrapGrid extends JComponent implements PenListener, Drag.Listener {
 
   public static class GridCellContent {
     Area area;
@@ -162,9 +165,7 @@ public class ScrapGrid extends JComponent implements PenListener {
         repaint();
         break;
       case Hover:
-        cellPoint = getCell(new Point(ev.getPt().ix(), ev.getPt().iy()));
-        hoveredCellX = cellPoint.x;
-        hoveredCellY = cellPoint.y;
+        hover(new Point(ev.getPt().ix(), ev.getPt().iy()));
         repaint();
         break;
       case Drag:
@@ -174,6 +175,34 @@ public class ScrapGrid extends JComponent implements PenListener {
       default:
         bug("Unhandled pen event: " + ev.getType());
     }
+  }
+
+  private void hover(Point pt) {
+    Point cellPoint = getCell(pt);
+    hoveredCellX = cellPoint.x;
+    hoveredCellY = cellPoint.y;
+  }
+
+  @Override
+  public void dragMove(Event ev) {
+    hover(ev.getPt());
+  }
+
+  @Override
+  public void dragEnter(Event ev) {
+    bug("enter while dragging");
+    
+  }
+
+  @Override
+  public void dragExit(Event ev) {
+    bug("exit while dragging");
+  }
+
+  @Override
+  public void dragDrop(Event ev) {
+    // TODO Auto-generated method stub
+    
   }
 
 }

@@ -225,16 +225,26 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     switch (ev.getType()) {
       case Down:
         hoverPt = null;
-        prev = ev.getPt();
-        currentScribble = new GeneralPath();
-        currentScribble.moveTo(prev.getX(), prev.getY());
-        model.startScribble(ev.getPt());
+        if (model.isPointOverSelection(ev.getPt())) {
+          bug("over selection, yay");
+          model.setDraggingSelection(true);
+        } else {
+          prev = ev.getPt();
+          currentScribble = new GeneralPath();
+          currentScribble.moveTo(prev.getX(), prev.getY());
+          model.startScribble(ev.getPt());
+          model.clearSelection();
+        }
         break;
       case Drag:
+        if (model.isDraggingSelection()) {
+          bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
+        }
         hoverPt = null;
         Pt here = ev.getPt();
         currentScribble.lineTo(here.getX(), here.getY());
         model.addScribble(ev.getPt());
+
         break;
       case Idle:
         Sequence seq = model.endScribble(ev.getPt());
