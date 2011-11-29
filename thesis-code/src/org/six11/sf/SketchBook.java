@@ -3,13 +3,10 @@ package org.six11.sf;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
-import java.awt.Color;
-import java.awt.Image;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +22,6 @@ import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
-import org.six11.util.gui.Colors;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
@@ -262,6 +258,7 @@ public class SketchBook {
     layers.clearAllBuffers();
     layers.repaint();
     editor.getGrid().clear();
+    editor.getCutfilePane().clear();
   }
 
   private void clearStructured() {

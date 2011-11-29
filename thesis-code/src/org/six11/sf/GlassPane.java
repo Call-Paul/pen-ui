@@ -6,6 +6,7 @@ import static org.six11.util.Debug.warn;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -31,11 +32,11 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     /**
      * 'None' means mouse events are passed through to the components below.
      */
-    None, 
+    None,
     /**
      * 'DragSelection' means the user is dragging a selection from the drawing pane.
      */
-    DragSelection, 
+    DragSelection,
     /**
      * 'DragScrap' means the user is dragging a scrap from the scrap grid.
      */
@@ -88,40 +89,51 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void paintComponent(Graphics g) {
+    Image thumb = null;
     if (activity == ActivityMode.DragSelection) {
-      BufferedImage thumb = editor.getModel().getDraggingThumb();
-      if (thumb != null) {
-        g.drawImage(thumb, dragPoint.x, dragPoint.y, null);
-      }
+      thumb = editor.getModel().getDraggingThumb();
+    } else if (activity == ActivityMode.DragScrap) {
+      thumb = editor.getGrid().getSelectedThumb();
+    }
+    if (thumb != null) {
+      g.drawImage(thumb, dragPoint.x, dragPoint.y, null);
     }
   }
 
   public void mouseDragged(MouseEvent ev) {
     dragPoint = ev.getPoint();
     MouseEventInfo mei = new MouseEventInfo(ev);
-    if (activity == ActivityMode.DragSelection) {
-      giveDrag(mei);
-      repaint();
-    } 
-    else {
-      if (prevComponent != mei.component) {
-        if (prevComponent != null) {
-          givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
-        }
-        if (mei.component != null) {
-          givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
-        }
-      }
-      Pt pt = new Pt(mei.componentPoint, ev.getWhen());
-      givePenEvent(mei.component, PenEvent.buildDragEvent(this, pt, null, 0, null, ev));
-      if (dragging && dragPoint != null /* && mod.getGestures().getGesture() != null */) {
+    switch (activity) {
+      case DragSelection:
+        giveSelectionDrag(mei);
         repaint();
-      }
+        break;
+      case DragScrap:
+        giveSelectionDrag(mei); // for the moment it is ok to re-use selection drag
+        repaint();
+        break;
+      case None:
+        if (prevComponent != mei.component) {
+          if (prevComponent != null) {
+            givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
+          }
+          if (mei.component != null) {
+            givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
+          }
+        }
+        Pt pt = new Pt(mei.componentPoint, ev.getWhen());
+        givePenEvent(mei.component, PenEvent.buildDragEvent(this, pt, null, 0, null, ev));
+        if (dragging && dragPoint != null /* && mod.getGestures().getGesture() != null */) {
+          repaint();
+        }
+        break;
+      default:
+        bug("unhandled state: " + activity);
     }
     prevComponent = mei.component;
   }
 
-  private void giveDrag(MouseEventInfo mei) {
+  private void giveSelectionDrag(MouseEventInfo mei) {
     Drag.Event ev = new Drag.Event(mei.componentPoint, activity);
     if (prevComponent != mei.component) {
       if (prevComponent instanceof Drag.Listener) {
@@ -138,18 +150,24 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
 
   public void mouseMoved(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
-    if (prevComponent != mei.component) {
-      if (prevComponent != null) {
-        givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
-      }
-      if (mei.component != null) {
-        givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
-      }
+    switch (activity) {
+      case None:
+        if (prevComponent != mei.component) {
+          if (prevComponent != null) {
+            givePenEvent(prevComponent, PenEvent.buildExitEvent(this, ev));
+          }
+          if (mei.component != null) {
+            givePenEvent(mei.component, PenEvent.buildEnterEvent(this, ev));
+          }
+        }
+        prevComponent = mei.component;
+        Pt translated = new Pt(ev);
+        translated.setLocation(mei.componentPoint.getX(), mei.componentPoint.getY());
+        givePenEvent(mei.component, PenEvent.buildHoverEvent(this, translated));
+        break;
+      default:
+        bug("unhandled state: " + activity);
     }
-    prevComponent = mei.component;
-    Pt translated = new Pt(ev);
-    translated.setLocation(mei.componentPoint.getX(), mei.componentPoint.getY());
-    givePenEvent(mei.component, PenEvent.buildHoverEvent(this, translated));
   }
 
   /**
@@ -172,40 +190,63 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
 
   public void mousePressed(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
-    dragging = true;
-    dragPoint = ev.getPoint();
-    prevComponent = mei.component;
-    if (mei.componentPoint == null) {
-      bug("mei.componentPoint is null");
-    }
+    switch (activity) {
+      case None:
+        dragging = true;
+        dragPoint = ev.getPoint();
+        prevComponent = mei.component;
+        if (mei.componentPoint == null) {
+          bug("mei.componentPoint is null");
+        }
 
-    // now give it to component if we can.
-    givePenEvent(mei.component,
-        PenEvent.buildDownEvent(this, new Pt(mei.componentPoint, ev.getWhen()), ev));
-    dragStartComponent = mei.component;
+        // now give it to component if we can.
+        givePenEvent(mei.component,
+            PenEvent.buildDownEvent(this, new Pt(mei.componentPoint, ev.getWhen()), ev));
+        dragStartComponent = mei.component;
+        break;
+      default:
+        bug("unhandled state: " + activity);
+    }
   }
 
   public void mouseReleased(MouseEvent ev) {
     MouseEventInfo mei = new MouseEventInfo(ev);
     dragPoint = null;
-    if (activity == ActivityMode.DragSelection) {
-      bug("Turning off selection drag.");
-      if (mei.component instanceof Drag.Listener) {
-        Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
-        ((Drag.Listener) mei.component).dragDrop(dev);
-      }
-      editor.getModel().setDraggingSelection(false);
-      activity = ActivityMode.None;
-    } else {
-      givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
-      dragging = false; // drag completed.
-      dragStartComponent = null;
+    switch (activity) {
+      case DragSelection:
+        bug("Turning off selection drag.");
+        if (mei.component instanceof Drag.Listener) {
+          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+          ((Drag.Listener) mei.component).dragDrop(dev);
+        }
+        editor.getModel().setDraggingSelection(false);
+        activity = ActivityMode.None;
+        break;
+      case DragScrap:
+        if (mei.component instanceof Drag.Listener) {
+          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+          ((Drag.Listener) mei.component).dragDrop(dev);
+        }
+        editor.getGrid().clearSelection();
+        activity = ActivityMode.None;
+        break;
+      case None:
+        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
+        dragging = false; // drag completed.
+        dragStartComponent = null;
+        break;
+      default:
+        bug("unhandled state: " + activity);
     }
     repaint();
   }
 
   public void setActivity(ActivityMode mode) {
     activity = mode;
+  }
+
+  public ActivityMode getActivity() {
+    return activity;
   }
 
 }

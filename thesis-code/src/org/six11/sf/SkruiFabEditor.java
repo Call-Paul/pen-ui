@@ -67,6 +67,7 @@ public class SkruiFabEditor {
   private ApplicationFrame af;
   private Colors colors;
   private ScrapGrid grid;
+  private CutfilePane cutfile;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -99,7 +100,7 @@ public class SkruiFabEditor {
     model.setGuibug(guibug);
     model.setLayers(layers);
     grid = new ScrapGrid(this);
-    CutfilePane cutfile = new CutfilePane(this);
+    cutfile = new CutfilePane(this);
     FrontEnd fe = new FrontEnd();
     fe.add(layers, "layers");
     fe.add(grid, "grid");
@@ -332,6 +333,10 @@ public class SkruiFabEditor {
 
   public GlassPane getGlass() {
     return glass;
+  }
+
+  public CutfilePane getCutfilePane() {
+    return cutfile;
   }
 
 }

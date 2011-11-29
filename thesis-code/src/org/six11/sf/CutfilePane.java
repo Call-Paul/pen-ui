@@ -10,9 +10,14 @@ import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.swing.JPanel;
 
+import org.six11.sf.Drag.Event;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
@@ -31,7 +36,7 @@ import com.lowagie.text.pdf.PdfWriter;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class CutfilePane extends JPanel implements PenListener {
+public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   public static double PX_PER_INCH = 1.0 / 72.0;
   public static double CUTFILE_MAX_WIDTH_INCHES = 24.0;
@@ -39,8 +44,12 @@ public class CutfilePane extends JPanel implements PenListener {
 
   private BoundingBox cutfileBB;
   private boolean dropBorder;
+  private SkruiFabEditor editor;
+  private List<Stencil> stencils;
 
   public CutfilePane(SkruiFabEditor editor) {
+    this.editor = editor;
+    this.stencils = new ArrayList<Stencil>();
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
     setPreferredSize(new Dimension(300, 200));
@@ -50,9 +59,9 @@ public class CutfilePane extends JPanel implements PenListener {
     Graphics2D g = (Graphics2D) g1;
     g.setColor(getBackground());
     Rectangle2D vizSize = getVisibleRect();
-//    double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
-//    double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
-//    double scale = Math.min(sx, sy); 
+    //    double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
+    //    double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
+    //    double scale = Math.min(sx, sy); 
     g.fill(getVisibleRect());
     if (dropBorder) {
       float t = 1.5f;
@@ -63,8 +72,10 @@ public class CutfilePane extends JPanel implements PenListener {
           vizSize.getWidth() - t, vizSize.getHeight() - t);
       g.draw(recDst);
     }
+    g.setColor(Color.BLACK);
+    g.drawString(stencils.size() + " stencils", 10, 10);
   }
-  
+
   private BoundingBox getBoundingBox() {
     return cutfileBB;
   }
@@ -108,6 +119,51 @@ public class CutfilePane extends JPanel implements PenListener {
     }
     document.close();
     bug("Wrote " + file.getAbsolutePath());
+  }
+
+  @Override
+  public void dragMove(Event ev) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void dragEnter(Event ev) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void dragExit(Event ev) {
+    // TODO Auto-generated method stub
+
+  }
+
+  @Override
+  public void dragDrop(Event ev) {
+    bug("Cutfile got drop");
+    switch (ev.getMode()) {
+      case DragScrap:
+        addStencils(editor.getGrid().getSelectedStencils());
+        break;
+      case DragSelection:
+        addStencils(editor.getModel().getSelection());
+        break;
+      case None:
+        break;
+      default:
+        bug("unhandled state: " + ev.getMode());
+    }
+  }
+
+  private void addStencils(Set<Stencil> selection) {
+    stencils.addAll(selection);
+    repaint();
+  }
+  
+  public void clear() {
+    stencils.clear();
+    repaint();
   }
 
 }

@@ -85,6 +85,32 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     return new Point(cellX, cellY);
   }
 
+  private GridCellContent getSelectedCellContent() {
+    GridCellContent ret = null;
+    if (selectedCellX >= 0 && selectedCellY >= 0) {
+      ret = cells.get(new Point(selectedCellX, selectedCellY));
+    }
+    return ret;
+  }
+
+  public Image getSelectedThumb() {
+    Image ret = null;
+    GridCellContent content = getSelectedCellContent();
+    if (content != null) {
+      ret = content.thumb;
+    }
+    return ret;
+  }
+
+  public Set<Stencil> getSelectedStencils() {
+    Set<Stencil> ret = new HashSet<Stencil>();
+    GridCellContent content = getSelectedCellContent();
+    if (content != null) {
+      ret = content.stencils;
+    }
+    return ret;
+  }
+
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
     AffineTransform before = new AffineTransform(g.getTransform());
@@ -169,16 +195,19 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       case Enter:
         break;
       case Exit:
-        clearCellInfo();
+        clearHover();
         break;
       case Hover:
         hover(new Point(ev.getPt().ix(), ev.getPt().iy()));
         repaint();
         break;
       case Drag:
-        editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+        if (editor.getGlass().getActivity() == GlassPane.ActivityMode.None) {
+          select(new Point(ev.getPt().ix(), ev.getPt().iy()));
+          editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+        }
         break;
-      case Down:  
+      case Down:
         break;
       case Idle:
         break;
@@ -187,7 +216,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     }
   }
 
-  private void clearCellInfo() {
+  private void clearHover() {
     hoveredCellX = -1;
     hoveredCellY = -1;
     repaint();
@@ -197,6 +226,14 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     Point cellPoint = getCell(pt);
     hoveredCellX = cellPoint.x;
     hoveredCellY = cellPoint.y;
+    repaint();
+  }
+
+  private void select(Point pt) {
+    Point cellPoint = getCell(pt);
+    selectedCellX = cellPoint.x;
+    selectedCellY = cellPoint.y;
+    repaint();
   }
 
   @Override
@@ -210,28 +247,48 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   @Override
   public void dragExit(Event ev) {
-    clearCellInfo();
+    clearHover();
     bug("exit while dragging");
   }
 
   @Override
   public void dragDrop(Event ev) {
     bug("Got drag event for dropping.");
-    SketchBook model = editor.getModel();
-    if (model.getDraggingThumb() != null) {
-      BufferedImage thumb = model.getDraggingThumb();
-      GridCellContent content = new GridCellContent(thumb, model.getSelection());
-      Point cell = getCell(ev.getPt());
-      cells.put(cell, content);
-      bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell));
-    } else {
-      bug ("damn drag thumb is null:(");
+    switch (editor.getGlass().getActivity()) {
+      case DragSelection:
+        SketchBook model = editor.getModel();
+        if (model.getDraggingThumb() != null) {
+          BufferedImage thumb = model.getDraggingThumb();
+          GridCellContent content = new GridCellContent(thumb, model.getSelection());
+          Point cell = getCell(ev.getPt());
+          cells.put(cell, content);
+          bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell));
+        } else {
+          bug("damn drag thumb is null:(");
+        }
+        break;
+      case DragScrap:
+        GridCellContent content = getSelectedCellContent();
+        Point cell = getCell(ev.getPt());
+        cells.put(cell, content);
+        bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell)
+            + " via scrap drag");
+        break;
+      default:
+        bug("unhandled state: " + editor.getGlass().getActivity());
     }
-    clearCellInfo();
+
+    clearHover();
   }
 
   public void clear() {
     cells.clear();
+    repaint();
+  }
+
+  public void clearSelection() {
+    selectedCellX = -1;
+    selectedCellY = -1;
     repaint();
   }
 
