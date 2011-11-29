@@ -204,7 +204,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       case Drag:
         if (editor.getGlass().getActivity() == GlassPane.ActivityMode.None) {
           select(new Point(ev.getPt().ix(), ev.getPt().iy()));
-          editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+          if (getSelectedCellContent() != null) {
+            editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+          }
         }
         break;
       case Down:
@@ -269,6 +271,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
         break;
       case DragScrap:
         GridCellContent content = getSelectedCellContent();
+        cells.remove(new Point(selectedCellX, selectedCellY));
         Point cell = getCell(ev.getPt());
         cells.put(cell, content);
         bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell)

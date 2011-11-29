@@ -46,9 +46,11 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   private boolean dropBorder;
   private SkruiFabEditor editor;
   private List<Stencil> stencils;
+  private Material material;
 
   public CutfilePane(SkruiFabEditor editor) {
     this.editor = editor;
+    this.material = new Material(Material.Units.Inch, 24, 18);
     this.stencils = new ArrayList<Stencil>();
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
@@ -158,9 +160,14 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   private void addStencils(Set<Stencil> selection) {
     stencils.addAll(selection);
+    doStencilLayout();
     repaint();
   }
   
+  private void doStencilLayout() {
+    
+  }
+
   public void clear() {
     stencils.clear();
     repaint();

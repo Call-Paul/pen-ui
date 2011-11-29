@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Pt;
 
 public class Stencil {
@@ -109,6 +110,10 @@ public class Stencil {
   
   public String toString() {
     return StencilFinder.n(path);
+  }
+
+  public BoundingBox getBoundingBox() {
+    return new BoundingBox(path);
   }
 
 }
