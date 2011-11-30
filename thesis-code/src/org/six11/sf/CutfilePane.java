@@ -159,13 +159,11 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   }
 
   private void addStencils(Set<Stencil> selection) {
-    stencils.addAll(selection);
-    doStencilLayout();
+    for (Stencil s : selection) {
+      material.addStencil(s);
+    }
+    material.layoutStencils();
     repaint();
-  }
-  
-  private void doStencilLayout() {
-    
   }
 
   public void clear() {

@@ -2,6 +2,7 @@ package org.six11.sf;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Pt;
@@ -23,6 +24,7 @@ public class Material {
   private double height;
   private BoundingBox materialBB;
   private BoundingBox stencilBB;
+  Set<Stencil> stencils;
 
   public Material(Units units, double width, double height) {
     this.units = units;
@@ -34,40 +36,44 @@ public class Material {
   }
 
   public void addStencil(Stencil s) {
-
-    BoundingBox sBB = s.getBoundingBox();
-    sBB.translateToOrigin();
-    Pt topRight = stencilBB.getTopRight();
-    sBB.translate(topRight);
-    BoundingBox proposed = stencilBB.copy();
-    proposed.add(sBB.getRectangle());
-    boolean ok = false;
-    if (materialBB.getRectangle().contains(proposed.getMinX(), proposed.getMinY(),
-        proposed.getWidth(), proposed.getHeight())) {
-      ok = true;
-    } else {
-      Pt botLeft = stencilBB.getBotLeft();
-      sBB.translateToOrigin();
-      sBB.translate(botLeft);
-      proposed = stencilBB.copy();
-      proposed.add(sBB.getRectangle());
-      ok = materialBB.getRectangle().contains(proposed.getMinX(), proposed.getMinY(),
-          proposed.getWidth(), proposed.getHeight());
-    }
-    if (ok) {
-      //       fill in this part. need to translate by the right amount. get a copy of the stencil's path and move each point by some amt... 
-
-      //      double dx = sBB.getMinX();
-      //      double dy = sBB.getMinY();
-      //      List<Pt> finishedPoints = new ArrayList<Pt>();
-      //      for (Pt pt : s.getPath()) {
-      //        Pt finishedPoint = pt.copyXYT();
-      //        finishedPoint.getTranslated(dx, dy);
-      //      }
-    } else {
-      bug("Can't fit stencil inside material bounds.");
-    }
-
+    stencils.add(s);
   }
 
+  public void layoutStencils() {
+    stencilBB = new BoundingBox();
+    for (Stencil s : stencils) {
+      BoundingBox sBB = s.getBoundingBox();
+      sBB.translateToOrigin();
+      Pt topRight = stencilBB.getTopRight();
+      sBB.translate(topRight);
+      BoundingBox proposed = stencilBB.copy();
+      proposed.add(sBB.getRectangle());
+      boolean ok = false;
+      if (materialBB.getRectangle().contains(proposed.getMinX(), proposed.getMinY(),
+          proposed.getWidth(), proposed.getHeight())) {
+        ok = true;
+      } else {
+        Pt botLeft = stencilBB.getBotLeft();
+        sBB.translateToOrigin();
+        sBB.translate(botLeft);
+        proposed = stencilBB.copy();
+        proposed.add(sBB.getRectangle());
+        ok = materialBB.getRectangle().contains(proposed.getMinX(), proposed.getMinY(),
+            proposed.getWidth(), proposed.getHeight());
+      }
+      if (ok) {
+        // the top left corner of the stencil is sBB.topLeft 
+
+        //      double dx = sBB.getMinX();
+        //      double dy = sBB.getMinY();
+        //      List<Pt> finishedPoints = new ArrayList<Pt>();
+        //      for (Pt pt : s.getPath()) {
+        //        Pt finishedPoint = pt.copyXYT();
+        //        finishedPoint.getTranslated(dx, dy);
+        //      }
+      } else {
+        bug("Can't fit stencil inside material bounds.");
+      }
+    }
+  }
 }
