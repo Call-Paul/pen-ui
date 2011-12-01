@@ -49,9 +49,17 @@
 019: video showing user making a box. the system identifies junctions,
      merges points, identifies length constraints, and solves the system.
 
-020: complete shapes are now recognized and drawn. these are called 'stencils'.
+020: complete shapes are now recognized and drawn. these are called 
+     'stencils'.
 
 021: can form stencils that share boundaries, and can select as many or as
      needed.
 
-022: joins stencils together by tossing out any that are subsets of another.
+022: joins stencils together by tossing out any that are subsets of
+     another.
+
+023: stencil with many right angle and same length constraints has been
+     placed in scrap grid and several copies put in the cutfile.
+
+024: the constraint system does not settle down to an error-free state,
+     even though this particular set of constraints should do so.

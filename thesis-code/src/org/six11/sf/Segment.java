@@ -16,7 +16,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
-public abstract class Segment {
+public class Segment {
 
   int id;
   private static int ID_COUNTER = 1;
@@ -27,14 +27,15 @@ public abstract class Segment {
 
   List<Pt> points;
   Type type;
-//  Line line;
-  Sequence spline;
-  //  boolean[] terms;
+//  Sequence spline;
   Ink ink;
+  boolean termA, termB;
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     this.ink = ink;
     this.points = points;
+    this.termA = termA;
+    this.termB = termB;
     for (Pt pt : points) {
       if (pt.getTime() == 0) {
         Debug.stacktrace("point has zero time stamp!", 7);
@@ -44,6 +45,15 @@ public abstract class Segment {
     //    terms = new boolean[] {
     //        termA, termB
     //    };
+    id = ID_COUNTER++;
+  }
+
+  public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
+    this.ink = ink;
+    this.points = points;
+    this.termA = termA;
+    this.termB = termB;
+    this.type = t;
     id = ID_COUNTER++;
   }
 
@@ -162,17 +172,17 @@ public abstract class Segment {
       roughLength = roughLength + points.get(i).distance(points.get(i + 1));
     }
     int numSteps = (int) ceil(min(roughLength / 100, 10));
-    spline = Functions.makeNaturalSpline(numSteps, points);
+    Sequence spline = Functions.makeNaturalSpline(numSteps, points);
     //    }
     return spline;
   }
-
-  /**
-   * If you modify the segment externally, call this so cached stuff is re-calcuated.
-   */
-  public void setModified() {
-    spline = null;
-  }
+//
+//  /**
+//   * If you modify the segment externally, call this so cached stuff is re-calcuated.
+//   */
+//  public void setModified() {
+//    spline = null;
+//  }
 
   public List<Pt> asPolyline() {
     return points;
@@ -216,6 +226,15 @@ public abstract class Segment {
       ret.addAll(asPolyline());
     }
     
+    return ret;
+  }
+
+  public Segment copy() {
+    List<Pt> copiedPoints = new ArrayList<Pt>();
+    for (Pt pt : points) {
+      copiedPoints.add(pt.copyXYT());
+    }
+    Segment ret = new Segment(this.ink, copiedPoints, termA, termB, type);
     return ret;
   }
 

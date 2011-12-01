@@ -7,9 +7,11 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -38,20 +40,17 @@ import com.lowagie.text.pdf.PdfWriter;
  */
 public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
-  public static double PX_PER_INCH = 1.0 / 72.0;
   public static double CUTFILE_MAX_WIDTH_INCHES = 24.0;
   public static double CUTFILE_MAX_HEIGHT_INCHES = 16.0;
 
   private BoundingBox cutfileBB;
   private boolean dropBorder;
   private SkruiFabEditor editor;
-  private List<Stencil> stencils;
   private Material material;
 
   public CutfilePane(SkruiFabEditor editor) {
     this.editor = editor;
-    this.material = new Material(Material.Units.Inch, 24, 18);
-    this.stencils = new ArrayList<Stencil>();
+    this.material = new Material(Material.Units.Inch, CUTFILE_MAX_HEIGHT_INCHES, CUTFILE_MAX_HEIGHT_INCHES);
     setName("CutfilePane");
     setBackground(new Color(250, 240, 200));
     setPreferredSize(new Dimension(300, 200));
@@ -61,9 +60,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     Graphics2D g = (Graphics2D) g1;
     g.setColor(getBackground());
     Rectangle2D vizSize = getVisibleRect();
-    //    double sx = (vizSize.getWidth() * PX_PER_INCH) / CUTFILE_MAX_WIDTH_INCHES;
-    //    double sy = (vizSize.getHeight() * PX_PER_INCH) / CUTFILE_MAX_HEIGHT_INCHES;
-    //    double scale = Math.min(sx, sy); 
+
     g.fill(getVisibleRect());
     if (dropBorder) {
       float t = 1.5f;
@@ -75,11 +72,17 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       g.draw(recDst);
     }
     g.setColor(Color.BLACK);
-    g.drawString(stencils.size() + " stencils", 10, 10);
+    g.drawString(material.countStencils() + " stencils", 10, 10);
+    BufferedImage im = material.getSmallImage(getWidth(), getHeight());
+    if (im != null) {
+      g.setColor(Color.LIGHT_GRAY);
+      g.fill(new Rectangle2D.Double(0, 0, im.getWidth(), im.getHeight()));
+      g.drawImage(im, 0, 0, null);
+    }
   }
 
   private BoundingBox getBoundingBox() {
-    return cutfileBB;
+    return material.getCutBoundingBox();
   }
 
   public void handlePenEvent(PenEvent ev) {
@@ -93,7 +96,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
    * @param file
    */
   public void print(File file) {
-    bug("Ensure the cutfile has been arranged prior to calling 'print'. I removed this in the purge of 11/11/11...");
     BoundingBox bb = getBoundingBox();
     int w = bb.getWidthInt();
     int h = bb.getHeightInt();
@@ -111,7 +113,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       tp.setWidth(w);
       tp.setHeight(h);
       g2.translate(-bb.getX(), -bb.getY());
-      // TODO: print stencils here...     printStencils(g2);
+      material.drawStencils(g2, Color.BLUE, "outline");
       g2.dispose();
       cb.addTemplate(tp, 0, 0);
     } catch (DocumentException ex) {
@@ -160,14 +162,22 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   private void addStencils(Set<Stencil> selection) {
     for (Stencil s : selection) {
-      material.addStencil(s);
+      material.addStencil(s.getShape());
     }
     material.layoutStencils();
+    try {
+      File file = editor.getPdfOutputFile();
+      print(editor.getPdfOutputFile());
+      bug("Printed to '" + file.getAbsolutePath() + "'");
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
     repaint();
   }
 
   public void clear() {
-    stencils.clear();
+    material.clear();
     repaint();
   }
 

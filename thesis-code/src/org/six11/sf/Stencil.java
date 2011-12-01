@@ -1,16 +1,12 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-
 import java.awt.Shape;
 import java.awt.geom.Area;
-import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Pt;
@@ -114,6 +110,18 @@ public class Stencil {
 
   public BoundingBox getBoundingBox() {
     return new BoundingBox(path);
+  }
+
+  public Stencil getAnonymousCopy() {
+    List<Pt> anonPts = new ArrayList<Pt>();
+    List<Segment> anonSegs = new ArrayList<Segment>();
+    for (Pt pt : path) {
+      anonPts.add(pt.copyXYT());
+    }
+    for (Segment seg : segs) {
+      anonSegs.add(seg.copy());
+    }
+    return new Stencil(anonPts, anonSegs);
   }
 
 }

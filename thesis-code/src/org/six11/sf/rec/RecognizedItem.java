@@ -46,18 +46,15 @@ public class RecognizedItem {
     this.targets = new HashMap<String, Object>();
     for (String cName : template.getConstraints().keySet()) {
       RecognizerConstraint c = template.getConstraints().get(cName);
-      if (c.getNumSlots() > 1) {
+      if (!(c instanceof TypeConstraint)) {
         RecognizerPrimitive[] arguments = c.makeArguments(bindSlot, bindObj);
         Certainty result = c.check(arguments);
         constraints.put(cName, result);
       }
     }
     
-    
     for (int i = 0; i < bindSlot.size(); i++) {
-      String slot = bindSlot.get(i);
       subshapes.put(bindSlot.get(i), bindObj.get(i));
-
     }
 
     // make a debugging string.
@@ -76,6 +73,10 @@ public class RecognizedItem {
 
   public String toString() {
     return debugString;
+  }
+  
+  public Map<String, Certainty> getCertainties() {
+    return constraints;
   }
 
   public Collection<RecognizerPrimitive> getSubshapes() {
@@ -108,5 +109,24 @@ public class RecognizedItem {
   
   public Segment getSegmentTarget(String targetKey) {
     return (Segment) targets.get(targetKey);
+  }
+
+  public boolean conflictsWith(RecognizedItem other) {
+    boolean conflict = false;
+    Collection<RecognizerPrimitive> listA = other.getSubshapes();
+    Collection<RecognizerPrimitive> listB = getSubshapes();
+    for (RecognizerPrimitive p : listA) {
+      if (listB.contains(p)) {
+        conflict = true;
+        break;
+      }
+    }
+    for (RecognizerPrimitive p : listB) {
+      if (listA.contains(p)) {
+        conflict = true;
+        break;
+      }
+    }
+    return conflict;
   }  
 }

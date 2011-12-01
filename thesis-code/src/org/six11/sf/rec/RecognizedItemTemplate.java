@@ -188,10 +188,10 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   }
 
   @Override
-  public RecognizedRawItem applyRaw(Ink ink)  throws OperationNotSupportedException {
+  public RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException {
     throw new OperationNotSupportedException("This recognizer can't do raw ink.");
   }
-  
+
   /**
    * Attempts to fit a slot binding to this shape. This is a recursive function. Sometimes it does
    * not have enough information to evaluate a slot binding (e.g. not all slots are full), so it
@@ -293,9 +293,9 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     for (Map.Entry<String, Certainty> entry : constraintResults.entrySet()) {
       say(entry.getKey() + " = " + entry.getValue());
     }
-//    for (String cName : constraintResults.keySet()) {
-//      say(cName + " = " + constraintResults.get(cName));
-//    }
+    //    for (String cName : constraintResults.keySet()) {
+    //      say(cName + " = " + constraintResults.get(cName));
+    //    }
     return ret; // the return value is either No (fail) or something else (success);
   }
 
@@ -367,7 +367,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
     bug("draw not implemented for " + name + ". override me.");
   }
-  
+
   protected double getAlpha(double distance, double min, double max) {
     double ret = 0;
     if (distance < min) {
@@ -381,5 +381,27 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     return ret;
   }
 
-
+  /**
+   * Attempts to resolve a conflict between two recognized items by returning a collection of the
+   * items that should be ignored.
+   * 
+   * @return
+   */
+  public static Collection<RecognizedItem> resolveConflict(RecognizedItem itemA,
+      RecognizedItem itemB) {
+    Collection<RecognizedItem> ret = new HashSet<RecognizedItem>();
+    String[] types = new String[] {
+        itemA.getTemplate().getName(), itemB.getTemplate().getName()
+    };
+    if (typesAre(types, RightAngleBrace.NAME, SameLengthGesture.NAME)) {
+      ret.addAll(RightAngleBrace.resolveConflictSameLengthGesture(itemA, itemB));
+    } else {
+      bug("Don't know how to resolve conflict between " + num(types, " and "));
+    }
+    return ret;
+  }
+  
+  private static boolean typesAre(String[] in, String nameA, String nameB) {
+    return (in[0].equals(nameA) && in[1].equals(nameB)) || (in[0].equals(nameB) && in[1].equals(nameA)); 
+  }
 }

@@ -35,7 +35,10 @@ import javax.swing.SwingUtilities;
 
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.RecognizedItem;
+import org.six11.sf.rec.RecognizedItemTemplate;
+import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
+import org.six11.util.data.Lists;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
 import org.six11.util.layout.FrontEnd;
@@ -123,7 +126,7 @@ public class SkruiFabEditor {
   public ScrapGrid getGrid() {
     return grid;
   }
-    
+
   public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
     Graphics2D g = destImage.createGraphics();
     AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
@@ -214,13 +217,21 @@ public class SkruiFabEditor {
     }
   }
 
+  public File getPdfOutputFile() throws IOException {
+    File outfile = new File("cutfile.pdf");
+    if (!outfile.exists()) {
+      outfile.createNewFile();
+    }
+    return outfile;
+  }
+
   @SuppressWarnings("unchecked")
   public void go() {
-    bug("+----------------------------------------------------------------------------------------");
-    bug("|                                          ");
-    bug("|                                          go");
-    bug("|                                          ");
-    bug("+----------------------------------------------------------------------------------------");
+    bug("+---------------------------------------------------------------------------------------+");
+    bug("|                                                                                       |");
+    bug("|                                       ~ go ~                                          |");
+    bug("|                                                                                       |");
+    bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
     Collection<Segment> segs = new HashSet<Segment>();
     for (Ink stroke : unstruc) {
@@ -258,7 +269,28 @@ public class SkruiFabEditor {
    */
   private Collection<RecognizedItem> filterRecognizedItems(Collection<RecognizedItem> items) {
     Collection<RecognizedItem> ret = new HashSet<RecognizedItem>();
-    ret.addAll(items); // TODO: you're doing it wrong.
+    RecognizedItem[] cull = items.toArray(new RecognizedItem[items.size()]);
+    Set<RecognizedItem> doomed = new HashSet<RecognizedItem>();
+    for (int i = 0; i < cull.length; i++) {
+      if (!doomed.contains(cull[i])) {
+        RecognizedItem candidate = cull[i];
+        Collection<RecognizerPrimitive> bunchA = candidate.getSubshapes();
+        for (int j = i + 1; j < cull.length; j++) {
+          if (!doomed.contains(cull[j])) {
+            RecognizedItem other = cull[j];
+            Collection<RecognizerPrimitive> bunchB = other.getSubshapes();
+            if (Lists.hasOverlap(bunchA, bunchB)) {
+              Collection<RecognizedItem> removeUs = RecognizedItemTemplate.resolveConflict(candidate, other);
+              doomed.addAll(removeUs);
+            }
+          }
+        }
+      }
+    }
+    bug("There are " + doomed.size() + " recognized things to remove from the collection of " + items.size() + " items");
+    items.removeAll(doomed);
+    bug("... now there are " + items.size() + " items");
+    ret.addAll(items);
     return ret;
   }
 

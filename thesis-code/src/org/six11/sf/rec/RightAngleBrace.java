@@ -50,10 +50,17 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     super(model, NAME);
     addPrimitive("line1", RecognizerPrimitive.Type.Line);
     addPrimitive("line2", RecognizerPrimitive.Type.Line);
+    Interval yesInterval = new Interval(0, 30);
+    Interval maybeInterval = new Interval(0, 50);
+    
     addConstraint(new Coincident("c1", "line1.p2", "line2.p1"));
     addConstraint(new EqualLength("c2", "line1", "line2"));
     addConstraint(new AngleConstraint("c3", new Interval(toRadians(82), toRadians(98)),
         new Interval(toRadians(70), toRadians(110)), "line1", "line2"));
+    addConstraint(new LineLengthConstraint("c4", yesInterval, maybeInterval, "line1"));
+    addConstraint(new LineLengthConstraint("c5", yesInterval, maybeInterval, "line2"));
+    getConstraint("c4").setDebugging(true);
+    getConstraint("c5").setDebugging(true);
   }
 
   public RecognizedItem makeItem(Stack<String> slots, Stack<RecognizerPrimitive> prims) {
@@ -163,6 +170,21 @@ public class RightAngleBrace extends RecognizedItemTemplate {
         DrawingBufferRoutines.lines(buf, points, color, 1.0);
       }
     }
+  }
+
+  public static Collection<RecognizedItem> resolveConflictSameLengthGesture(RecognizedItem itemA,
+      RecognizedItem itemB) {
+    Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
+    bug("Resolving conflict between...");
+    bug(itemA.getTemplate().getName() + ": " + num(itemA.getCertainties()));
+    bug(" ... and ...");
+    bug(itemB.getTemplate().getName() + ": " + num(itemB.getCertainties()));
+    if (itemA.getTemplate().equals(RightAngleBrace.NAME)) {
+      doomed.add(itemA);
+    } else {
+      doomed.add(itemB);
+    }
+    return doomed;
   }
 
 }

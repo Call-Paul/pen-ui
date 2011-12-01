@@ -21,20 +21,23 @@ import org.six11.util.solve.MultisourceNumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
 
-// import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
 
 public class SameLengthGesture extends RecognizedItemTemplate {
 
   private static final String TARGET_A = "targetA";
   private static final String TARGET_B = "targetB";
+  public static final String NAME = "SameLengthGesture";
 
   public SameLengthGesture(SketchBook model) {
-    super(model, "SameLengthGesture");
+    super(model, NAME);
     addPrimitive("line1", RecognizerPrimitive.Type.Line);
     addPrimitive("line2", RecognizerPrimitive.Type.Line);
-    addConstraint(new LineLengthConstraint("c1", new Interval(0, 100), "line1"));
-    addConstraint(new LineLengthConstraint("c2", new Interval(0, 100), "line2"));
+    Interval yesInterval = new Interval(0, 40);
+    Interval maybeInterval = new Interval(0, 60);
+    addConstraint(new LineLengthConstraint("c1", yesInterval, maybeInterval, "line1"));
+    addConstraint(new LineLengthConstraint("c2", yesInterval, maybeInterval, "line2"));
     addConstraint(new EqualLength("c3", "line1", "line2"));
   }
 
