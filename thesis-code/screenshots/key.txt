@@ -63,3 +63,7 @@
 
 024: the constraint system does not settle down to an error-free state,
      even though this particular set of constraints should do so.
+
+025: scribble gesture to erase a segment
+
+026: circle some endpoints to merge them
