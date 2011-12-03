@@ -124,4 +124,8 @@ public class Stencil {
     return new Stencil(anonPts, anonSegs);
   }
 
+  public boolean involves(Segment seg) {
+    return segs.contains(seg);
+  }
+
 }

@@ -3,20 +3,25 @@ package org.six11.sf;
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
 import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
 
+import java.awt.Shape;
+import java.awt.geom.Area;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
 import org.six11.util.Debug;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
-public class Segment {
+public class Segment implements HasFuzzyArea {
 
   int id;
   private static int ID_COUNTER = 1;
@@ -236,6 +241,22 @@ public class Segment {
     }
     Segment ret = new Segment(this.ink, copiedPoints, termA, termB, type);
     return ret;
+  }
+
+  public Area getFuzzyArea() {
+    Area fuzzy = new Area();
+    List<Pt> pl = getPointList();
+    for (int i=0; i < pl.size() - 1; i++) {
+      Pt a = pl.get(i);
+      Pt b = pl.get(i+1);
+      Shape s = ShapeFactory.getFuzzyRectangle(a, b, 5.0); 
+      fuzzy.add(new Area(s));
+    }
+    return fuzzy;
+  }
+
+  public boolean involves(Pt p) {
+    return p == getP1() || p == getP2();
   }
 
 }

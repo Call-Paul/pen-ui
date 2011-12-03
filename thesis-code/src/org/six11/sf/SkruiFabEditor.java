@@ -294,7 +294,7 @@ public class SkruiFabEditor {
     return ret;
   }
 
-  private void drawStuff() {
+  public void drawStuff() {
     drawStencils();
     drawStructured();
   }

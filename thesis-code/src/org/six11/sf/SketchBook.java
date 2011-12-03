@@ -15,6 +15,7 @@ import java.util.Set;
 
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.EncircleRecognizer;
+import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RecognizerPrimitive;
@@ -22,6 +23,7 @@ import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
+import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
@@ -75,6 +77,7 @@ public class SketchBook {
     solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
+    addRecognizer(new EraseGestureRecognizer(this));
     addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
@@ -203,6 +206,29 @@ public class SketchBook {
 
   public void removeGeometry(Segment seg) {
     geometry.remove(seg);
+    boolean keep1 = false;
+    boolean keep2 = false;
+    for (Segment s : geometry) {
+      if (s.involves(seg.getP1())) {
+        keep1 = true;
+      }
+      if (s.involves(seg.getP2())) {
+        keep2 = true;
+      }
+    }
+    if (!keep1) {
+      solver.removePoint(seg.getP1());
+    }
+    if (!keep2) {
+      solver.removePoint(seg.getP2());
+    }
+    Set<Stencil> doomed = new HashSet<Stencil>();
+    for (Stencil stencil : stencils){
+      if (stencil.involves(seg)) {
+        doomed.add(stencil);
+      }
+    }
+    stencils.removeAll(doomed);
   }
 
   public Set<Segment> getGeometry() {
@@ -461,5 +487,44 @@ public class SketchBook {
   
   public BufferedImage getDraggingThumb() {
     return draggingThumb;
+  }
+
+  public Collection<Pt> findPoints(Area area) {
+    Collection<Pt> ret = new HashSet<Pt>();
+    for (Segment seg : geometry) {
+      if (area.contains(seg.getP1())) {
+        ret.add(seg.getP1());
+      }
+      if (area.contains(seg.getP2())) {
+        ret.add(seg.getP2());
+      }
+    }
+    return ret;
+  }
+
+  public void eraseUnderArea(Area area) {
+    bug("Erasing under area...");
+    Segment eraseMe = null;
+    double bestRatio = 0;
+    for (Segment seg : geometry) {
+      Area segmentArea = seg.getFuzzyArea();
+      Area ix = (Area) area.clone();
+      ix.intersect(segmentArea);
+      if (!ix.isEmpty()) {
+        double surfaceArea = Areas.approxArea(ix, 1.0);
+        double segSurfaceArea = Areas.approxArea(segmentArea, 1.0);
+        double ratio = surfaceArea / segSurfaceArea;
+        if (ratio > bestRatio) {
+          eraseMe = seg;
+        }
+        bug(seg + " intersection: " + num(surfaceArea) + "/" + num(segSurfaceArea) + " = " + num(ratio));
+      } else {
+        bug("Segment " + seg.getId() + " is not involved.");
+      }
+    }
+    if (eraseMe != null) {
+      removeGeometry(eraseMe);
+    }
+    editor.drawStuff();
   }
 }
