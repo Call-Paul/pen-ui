@@ -98,6 +98,15 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
+    System.out.println("-----");
+    for (Segment seg : allGeometry) {
+      System.out.println(seg.getType() + " from " + n(seg.getP1()) + " to " + n(seg.getP2()));
+    }
+    System.out.println();
+    for (Map.Entry<Pt, Set<Pt>> vals : adjacent.entrySet()) {
+      System.out.println("  " + n(vals.getKey()) + ": " + n(vals.getValue()));
+    }
+    System.out.println("-----");
   }
 
   public static String n(Pt pt) {

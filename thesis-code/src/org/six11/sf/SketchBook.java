@@ -492,6 +492,16 @@ public class SketchBook {
     return draggingThumb;
   }
 
+  public Collection<Segment> findRelatedSegments(Pt pt) {
+    Collection<Segment> ret = new HashSet<Segment>();
+    for (Segment seg : geometry) {
+      if (seg.involves(pt)) {
+        ret.add(seg);
+      }
+    }
+    return ret;
+  }
+  
   public Collection<Pt> findPoints(Area area) {
     Collection<Pt> ret = new HashSet<Pt>();
     for (Segment seg : geometry) {

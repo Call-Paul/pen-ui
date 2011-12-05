@@ -30,36 +30,85 @@ public class Segment implements HasFuzzyArea {
     Line, Curve, Unknown, EllipticalArc
   };
 
-  List<Pt> points;
+  //  List<Pt> points; // going to replace this soon
+
+  private Pt p1, p2; // start/end points. these can be moved around externally
+
+  // parametric points: they are dependent on p1 and p2, so internal code here
+  // might have to adjust them if p1 or p2 change.
+  private double[] pri; // parametric points primary coordinate, along vector from p1 to p2
+  private double[] alt; // parametric points secondary coordinate, orthogonal to the above
+
+  // transient variables that describe the parametric point sequence for the current values
+  // of p1 and p2.
+  private transient Pt paraP1Loc = null;
+  private transient Pt paraP2Loc = null;
+  private transient List<Pt> paraPoints = null;
+  private transient Shape paraShape = null;
+
   Type type;
-//  Sequence spline;
+  //  Sequence spline;
   Ink ink;
   boolean termA, termB;
+  
+  protected Segment() {
+    // ensure subclass calls init();
+  }
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
-    this.ink = ink;
-    this.points = points;
-    this.termA = termA;
-    this.termB = termB;
-    for (Pt pt : points) {
-      if (pt.getTime() == 0) {
-        Debug.stacktrace("point has zero time stamp!", 7);
-      }
-    }
-    this.type = Type.Unknown;
-    //    terms = new boolean[] {
-    //        termA, termB
-    //    };
-    id = ID_COUNTER++;
+    this(ink, points, termA, termB, Type.Unknown);
+    //    this.ink = ink;
+    //    this.points = points;
+    //    this.p0 = points.get(0);
+    //    this.p1 = points.get(points.size() - 1);
+    //    this.pri = new double[points.size()];
+    //    this.alt = new double[points.size()];
+    //    calculateParameters(points);
+    //    this.termA = termA;
+    //    this.termB = termB;
+    //    for (Pt pt : points) {
+    //      if (pt.getTime() == 0) {
+    //        Debug.stacktrace("point has zero time stamp!", 7);
+    //      }
+    //    }
+    //    this.type = Type.Unknown;
+    //    id = ID_COUNTER++;
   }
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
+    init(ink, points, termA, termB, t);
+  }
+  
+  protected final void init(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
     this.ink = ink;
-    this.points = points;
+    this.p1 = points.get(0);
+    this.p2 = points.get(points.size() - 1);
+    this.pri = new double[points.size()];
+    this.alt = new double[points.size()];
+    calculateParameters(points);
     this.termA = termA;
     this.termB = termB;
     this.type = t;
     id = ID_COUNTER++;
+  }
+
+  private final void calculateParameters(List<Pt> points) {
+    Vec v = new Vec(p1, p2);
+    double vMag = v.mag();
+    Line line = new Line(p1, p2);
+    for (int i = 0; i < points.size(); i++) {
+      if (points.get(i).isSameLocation(p1)) {
+        pri[i] = 0;
+        alt[i] = 0;
+      } else {
+        Pt ix = Functions.getNearestPointOnLine(points.get(i), line, true); // retains the 'r' double value
+        int whichSide = Functions.getPartition(points.get(i), line);
+        double dist = ix.distance(points.get(i)) * whichSide;
+        pri[i] = ix.getDouble("r");
+        alt[i] = dist / vMag;
+      }
+      //      System.out.println(num(pri[i]) + "\t" + num(alt[i]));
+    }
   }
 
   public Ink getOriginalInk() {
@@ -102,11 +151,11 @@ public class Segment implements HasFuzzyArea {
   }
 
   public Pt getP1() {
-    return points.get(0);
+    return p1; //points.get(0);
   }
 
   public Pt getP2() {
-    return points.get(points.size() - 1);
+    return p2; // points.get(points.size() - 1);
   }
 
   public Line asLine() {
@@ -124,11 +173,35 @@ public class Segment implements HasFuzzyArea {
   }
 
   public double ctrlPointLength() {
+    doPara();
     double ret = 0;
-    for (int i = 0; i < points.size() - 1; i++) {
-      ret += points.get(i).distance(points.get(i + 1));
+    for (int i = 0; i < paraPoints.size() - 1; i++) {
+      ret += paraPoints.get(i).distance(paraPoints.get(i + 1));
     }
     return ret;
+  }
+
+  private void doPara() {
+    if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
+        || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
+      paraP1Loc = p1.copyXYT();
+      paraP2Loc = p2.copyXYT();
+      paraPoints = new ArrayList<Pt>();
+      Vec v = new Vec(p1, p2).getUnitVector();
+      double fullLen = p1.distance(p2);
+      Vec vNorm = v.getNormal().getFlip();
+      for (int i=0; i < pri.length; i++) {
+        double priComponent = pri[i] * fullLen;
+        double altComponent = alt[i] * fullLen;
+        Pt spot = p1.getTranslated(v, priComponent);
+        spot = spot.getTranslated(vNorm, altComponent);
+        paraPoints.add(i, spot);
+      }
+      paraPoints.set(0, p1);
+      paraPoints.set(paraPoints.size() - 1, p2);
+      paraShape = null;
+      bug("Did the thing");
+    }
   }
 
   public Vec getStartDir() {
@@ -171,26 +244,23 @@ public class Segment implements HasFuzzyArea {
   }
 
   public Sequence asSpline() {
-    //    if (spline == null) {
+    doPara();
     double roughLength = 0;
-    for (int i = 0; i < points.size() - 1; i++) {
-      roughLength = roughLength + points.get(i).distance(points.get(i + 1));
+    for (int i = 0; i < paraPoints.size() - 1; i++) {
+      roughLength = roughLength + paraPoints.get(i).distance(paraPoints.get(i + 1));
     }
     int numSteps = (int) ceil(min(roughLength / 100, 10));
-    Sequence spline = Functions.makeNaturalSpline(numSteps, points);
-    //    }
+    List<Pt> paraPointList = new ArrayList<Pt>();
+    for (Pt pt : paraPoints) {
+      paraPointList.add(pt);
+    }
+    Sequence spline = Functions.makeNaturalSpline(numSteps, paraPointList);
     return spline;
   }
-//
-//  /**
-//   * If you modify the segment externally, call this so cached stuff is re-calcuated.
-//   */
-//  public void setModified() {
-//    spline = null;
-//  }
 
   public List<Pt> asPolyline() {
-    return points;
+    doPara();
+    return paraPoints;
   }
 
   public boolean isNear(Pt point, double dist) {
@@ -199,7 +269,8 @@ public class Segment implements HasFuzzyArea {
     if (type == Segment.Type.Line) {
       where = Functions.getNearestPointOnLine(point, asLine());
     } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-      where = Functions.getNearestPointOnPolyline(point, points);
+      doPara();
+      where = Functions.getNearestPointOnPolyline(point, paraPoints);
     }
     if (where != null && where.distance(point) <= dist) {
       ret = true;
@@ -208,35 +279,34 @@ public class Segment implements HasFuzzyArea {
   }
 
   public void replace(Pt capPt, Pt spot) {
-    if (capPt == getP1()) {
-      points.remove(0);
-      points.add(0, spot);
+    if (capPt == p1) {
+      p1 = spot;
     }
-    if (capPt == getP2()) {
-      points.remove(points.size() - 1);
-      points.add(spot);
+    if (capPt == p2) {
+      p2 = spot;
     }
   }
 
   /**
    * Returns a list of points that define the geometry of this segment. For lines this is simply two
-   * points. For splines and elliptical arcs there might be many more. 
+   * points. For splines and elliptical arcs there might be many more.
    */
   public List<Pt> getPointList() {
     List<Pt> ret = new ArrayList<Pt>();
-    if (type == Type.Line){
+    if (type == Type.Line) {
       ret.add(getP1());
       ret.add(getP2());
     } else {
       ret.addAll(asPolyline());
     }
-    
+
     return ret;
   }
 
   public Segment copy() {
     List<Pt> copiedPoints = new ArrayList<Pt>();
-    for (Pt pt : points) {
+    doPara();
+    for (Pt pt : paraPoints) {
       copiedPoints.add(pt.copyXYT());
     }
     Segment ret = new Segment(this.ink, copiedPoints, termA, termB, type);
@@ -246,10 +316,10 @@ public class Segment implements HasFuzzyArea {
   public Area getFuzzyArea() {
     Area fuzzy = new Area();
     List<Pt> pl = getPointList();
-    for (int i=0; i < pl.size() - 1; i++) {
+    for (int i = 0; i < pl.size() - 1; i++) {
       Pt a = pl.get(i);
-      Pt b = pl.get(i+1);
-      Shape s = ShapeFactory.getFuzzyRectangle(a, b, 5.0); 
+      Pt b = pl.get(i + 1);
+      Shape s = ShapeFactory.getFuzzyRectangle(a, b, 5.0);
       fuzzy.add(new Area(s));
     }
     return fuzzy;

@@ -74,10 +74,8 @@ public class EraseGestureRecognizer extends SketchRecognizer {
           angleStats.addData(toDegrees(ang));
         }
       }
-      bug("Angle statistics: ");
       angleStats.printDebug();
       if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
-        bug("** ERASE! maybe. ** ");
         ConvexHull hull = ink.getHull();
         final Area area = new Area(hull.getHullShape());
         final Collection<Segment> doomed = pickDoomedSegments(area);
@@ -91,12 +89,10 @@ public class EraseGestureRecognizer extends SketchRecognizer {
         };
       }
     }
-    bug("-- (" + lines + "/" + total + ")");
     return ret;
   }
   
   public Collection<Segment> pickDoomedSegments(Area area) {
-    bug("Pickign thigns to erase under area...");
     Segment eraseMe = null;
     double bestRatio = 0;
     Collection<Segment> maybeDoomed = new HashSet<Segment>();

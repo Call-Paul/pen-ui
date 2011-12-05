@@ -10,6 +10,7 @@ import java.util.List;
 import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.Ink;
+import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.SketchRecognizer.Type;
@@ -147,9 +148,14 @@ public class EncircleRecognizer extends SketchRecognizer {
           public void activate(SketchBook model) {
             Pt centroid = Functions.getMean(points);
             bug("Replacing " + points.size() + " points with " + num(centroid));
+            Collection<Segment> related = new HashSet<Segment>();
             for (Pt pt : points) {
               model.replace(pt, centroid);
+              related.addAll(model.findRelatedSegments(centroid));
             }
+            bug("Found " + related.size() + " related segments.");
+            model.getEditor().findStencils(related);
+            model.getEditor().drawStuff();
           }
         };
       }

@@ -233,6 +233,9 @@ public class SkruiFabEditor {
     bug("|                                                                                       |");
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
+    if (unstruc.isEmpty()) {
+      bug ("No ink to work with...");
+    }
     Collection<Segment> segs = new HashSet<Segment>();
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
@@ -250,8 +253,8 @@ public class SkruiFabEditor {
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
-    StencilFinder sf = new StencilFinder(segs, model.getGeometry());
-    model.mergeStencils(sf.getNewStencils());
+    
+    findStencils(segs);
     model.getConstraints().wakeUp();
     model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
@@ -259,6 +262,11 @@ public class SkruiFabEditor {
     drawStructured();
     drawRecognized(items);
     layers.repaint();
+  }
+  
+  public void findStencils(Collection<Segment> segs) {
+    StencilFinder sf = new StencilFinder(segs, model.getGeometry());
+    model.mergeStencils(sf.getNewStencils());
   }
 
   /**

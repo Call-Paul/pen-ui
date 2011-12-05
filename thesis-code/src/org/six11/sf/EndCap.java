@@ -14,6 +14,8 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
 public class EndCap {
+  
+  private static double endcapLengthMultiplier = 1.0 / 40.0;
 
   public static class Group {
     Set<EndCap.Intersection> intersections = new HashSet<EndCap.Intersection>();
@@ -95,7 +97,7 @@ public class EndCap {
     this.pt = (end == WhichEnd.Start ? seg.getP1() : seg.getP2());
     this.dir = (end == WhichEnd.Start ? seg.getStartDir() : seg.getEndDir()).getFlip();
     double dist = seg.getP1().distance(seg.getP2());
-    double rad = dist / 20;
+    double rad = dist * endcapLengthMultiplier;
     this.area = new Area();
     area.add(new Area(new Circle(pt, rad)));
     area.add(makeTriangle(pt, dir, rad, rad * 6));
