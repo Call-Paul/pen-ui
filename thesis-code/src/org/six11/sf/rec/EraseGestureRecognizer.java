@@ -14,6 +14,7 @@ import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.util.data.Statistics;
+import org.six11.util.gui.shape.Areas;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Vec;
@@ -77,15 +78,48 @@ public class EraseGestureRecognizer extends SketchRecognizer {
       angleStats.printDebug();
       if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
         bug("** ERASE! maybe. ** ");
-        final Area area = ink.getArea();
+        ConvexHull hull = ink.getHull();
+        final Area area = new Area(hull.getHullShape());
+        final Collection<Segment> doomed = pickDoomedSegments(area);
         ret = new RecognizedRawItem(true) {
           public void activate(SketchBook model) {
-            model.eraseUnderArea(area);
+            for (Segment seg : doomed) {
+              model.removeGeometry(seg);
+            }
+            model.getEditor().drawStuff();
           }
         };
       }
     }
     bug("-- (" + lines + "/" + total + ")");
     return ret;
+  }
+  
+  public Collection<Segment> pickDoomedSegments(Area area) {
+    bug("Pickign thigns to erase under area...");
+    Segment eraseMe = null;
+    double bestRatio = 0;
+    Collection<Segment> maybeDoomed = new HashSet<Segment>();
+    for (Segment seg : model.getGeometry()) {
+      Area segmentArea = seg.getFuzzyArea();
+      Area ix = (Area) area.clone();
+      ix.intersect(segmentArea);
+      if (!ix.isEmpty()) {
+        double surfaceArea = Areas.approxArea(ix, 1.0);
+        double segSurfaceArea = Areas.approxArea(segmentArea, 1.0);
+        double ratio = surfaceArea / segSurfaceArea;
+        if (ratio > bestRatio) {
+          eraseMe = seg;
+          bestRatio = ratio;
+        }
+        if (ratio >= 0.5) {
+          maybeDoomed.add(seg);
+        }
+      }
+    }
+    if (maybeDoomed.isEmpty() && eraseMe != null) {
+      maybeDoomed.add(eraseMe);
+    }
+    return maybeDoomed;
   }
 }

@@ -287,9 +287,7 @@ public class SkruiFabEditor {
         }
       }
     }
-    bug("There are " + doomed.size() + " recognized things to remove from the collection of " + items.size() + " items");
     items.removeAll(doomed);
-    bug("... now there are " + items.size() + " items");
     ret.addAll(items);
     return ret;
   }

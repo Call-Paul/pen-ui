@@ -3,6 +3,7 @@ package org.six11.sf;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
+import java.awt.Color;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -83,6 +84,10 @@ public class SketchBook {
     addRecognizer(new SameLengthGesture(this));
   }
 
+  public SkruiFabEditor getEditor() {
+    return editor;
+  }
+  
   private void addRecognizer(SketchRecognizer rec) {
     recognizer.add(rec);
   }
@@ -250,8 +255,6 @@ public class SketchBook {
     }
     // points and constraints
     solver.replacePoint(capPt, nextPointName(), spot);
-    bug("Replacing " + StencilFinder.n(capPt) + " with " + StencilFinder.n(spot)
-        + " in all stencils. If you see this later, there's something amiss.");
     for (Stencil s : stencils) {
       s.replacePoint(capPt, spot);
     }
@@ -500,31 +503,5 @@ public class SketchBook {
       }
     }
     return ret;
-  }
-
-  public void eraseUnderArea(Area area) {
-    bug("Erasing under area...");
-    Segment eraseMe = null;
-    double bestRatio = 0;
-    for (Segment seg : geometry) {
-      Area segmentArea = seg.getFuzzyArea();
-      Area ix = (Area) area.clone();
-      ix.intersect(segmentArea);
-      if (!ix.isEmpty()) {
-        double surfaceArea = Areas.approxArea(ix, 1.0);
-        double segSurfaceArea = Areas.approxArea(segmentArea, 1.0);
-        double ratio = surfaceArea / segSurfaceArea;
-        if (ratio > bestRatio) {
-          eraseMe = seg;
-        }
-        bug(seg + " intersection: " + num(surfaceArea) + "/" + num(segSurfaceArea) + " = " + num(ratio));
-      } else {
-        bug("Segment " + seg.getId() + " is not involved.");
-      }
-    }
-    if (eraseMe != null) {
-      removeGeometry(eraseMe);
-    }
-    editor.drawStuff();
   }
 }

@@ -6,6 +6,7 @@ import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
@@ -87,6 +88,11 @@ public class Ink {
 
   public void setAnalyzed(boolean v) {
     analyzed = v;
+  }
+
+  public ConvexHull getHull() {
+    ConvexHull ret = new ConvexHull(seq.getPoints());
+    return ret;
   }
 
 }
