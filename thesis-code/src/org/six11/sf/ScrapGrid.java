@@ -261,7 +261,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
         SketchBook model = editor.getModel();
         if (model.getDraggingThumb() != null) {
           BufferedImage thumb = model.getDraggingThumb();
-          GridCellContent content = new GridCellContent(thumb, model.getSelection());
+          GridCellContent content = new GridCellContent(thumb, model.getSelectedStencils());
           Point cell = getCell(ev.getPt());
           cells.put(cell, content);
           bug("Put " + content.getStencils().size() + " stencils in grid location " + num(cell));

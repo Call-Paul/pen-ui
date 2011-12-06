@@ -325,7 +325,7 @@ public class SkruiFabEditor {
     Set<Stencil> stencils = model.getStencils();
     Set<Stencil> later = new HashSet<Stencil>();
     for (Stencil s : stencils) {
-      if (model.getSelection().contains(s)) {
+      if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {
         DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
@@ -344,6 +344,22 @@ public class SkruiFabEditor {
   private void drawStructured() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
+    Color selectionColor = new Color(128, 128, 255, 200);
+    for (Segment seg : model.getSelectedSegments()) {
+      switch (seg.getType()) {
+        case Curve:
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
+          break;
+        case EllipticalArc:
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
+          break;
+        case Line:
+          DrawingBufferRoutines.line(buf, seg.asLine(), selectionColor, 3.8);
+          break;
+        case Unknown:
+          break;
+      }
+    }
     for (Segment seg : model.getGeometry()) {
       if (!model.getConstraints().getPoints().contains(seg.getP1())) {
         bug("Segment P1 is unknown to constraint system.");

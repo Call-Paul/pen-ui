@@ -4,5 +4,5 @@ import java.awt.geom.Area;
 
 public interface HasFuzzyArea {
 
-  public Area getFuzzyArea();
+  public Area getFuzzyArea(double fuzzyFactor);
 }

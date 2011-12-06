@@ -200,7 +200,6 @@ public class Segment implements HasFuzzyArea {
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
       paraShape = null;
-      bug("Did the thing");
     }
   }
 
@@ -313,13 +312,13 @@ public class Segment implements HasFuzzyArea {
     return ret;
   }
 
-  public Area getFuzzyArea() {
+  public Area getFuzzyArea(double fuzzyFactor) {
     Area fuzzy = new Area();
     List<Pt> pl = getPointList();
     for (int i = 0; i < pl.size() - 1; i++) {
       Pt a = pl.get(i);
       Pt b = pl.get(i + 1);
-      Shape s = ShapeFactory.getFuzzyRectangle(a, b, 5.0);
+      Shape s = ShapeFactory.getFuzzyRectangle(a, b, fuzzyFactor);
       fuzzy.add(new Area(s));
     }
     return fuzzy;

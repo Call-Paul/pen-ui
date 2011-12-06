@@ -98,8 +98,12 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
+//    printAdjacencyTable(allGeometry);
+  }
+  
+  private void printAdjacencyTable(Collection<Segment> geom) {
     System.out.println("-----");
-    for (Segment seg : allGeometry) {
+    for (Segment seg : geom) {
       System.out.println(seg.getType() + " from " + n(seg.getP1()) + " to " + n(seg.getP2()));
     }
     System.out.println();

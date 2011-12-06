@@ -151,7 +151,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
         addStencils(editor.getGrid().getSelectedStencils());
         break;
       case DragSelection:
-        addStencils(editor.getModel().getSelection());
+        addStencils(editor.getModel().getSelectedStencils());
         break;
       case None:
         break;

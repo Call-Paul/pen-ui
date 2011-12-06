@@ -74,7 +74,7 @@ public class EraseGestureRecognizer extends SketchRecognizer {
           angleStats.addData(toDegrees(ang));
         }
       }
-      angleStats.printDebug();
+//      angleStats.printDebug();
       if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
         ConvexHull hull = ink.getHull();
         final Area area = new Area(hull.getHullShape());
@@ -97,7 +97,7 @@ public class EraseGestureRecognizer extends SketchRecognizer {
     double bestRatio = 0;
     Collection<Segment> maybeDoomed = new HashSet<Segment>();
     for (Segment seg : model.getGeometry()) {
-      Area segmentArea = seg.getFuzzyArea();
+      Area segmentArea = seg.getFuzzyArea(5.0);
       Area ix = (Area) area.clone();
       ix.intersect(segmentArea);
       if (!ix.isEmpty()) {

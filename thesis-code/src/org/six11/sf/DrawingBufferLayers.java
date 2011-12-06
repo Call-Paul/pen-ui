@@ -233,7 +233,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           currentScribble = new GeneralPath();
           currentScribble.moveTo(prev.getX(), prev.getY());
           model.startScribble(ev.getPt());
-          model.clearSelection();
+          model.clearSelectedStencils();
         }
         break;
       case Drag:

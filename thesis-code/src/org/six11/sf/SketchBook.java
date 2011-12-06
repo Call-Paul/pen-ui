@@ -42,7 +42,8 @@ public class SketchBook {
   List<Ink> ink;
 
   private DrawingBufferLayers layers;
-  private Set<Stencil> selection;
+  private Set<Stencil> selectedStencils;
+  private Set<Segment> selectedSegments;
   //  private List<Ink> selectionCopy;
   private GraphicDebug guibug;
   private Set<Segment> geometry;
@@ -58,12 +59,14 @@ public class SketchBook {
   private boolean draggingSelection;
   private BufferedImage draggingThumb;
   private GlassPane glass;
+  private boolean lastInkWasSelection;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
     this.scribbles = new ArrayList<Sequence>();
-    this.selection = new HashSet<Stencil>();
+    this.selectedStencils = new HashSet<Stencil>();
+    this.selectedSegments = new HashSet<Segment>();
     this.cornerFinder = new CornerFinder();
     //    this.selectionCopy = new ArrayList<Ink>();
     this.geometry = new HashSet<Segment>();
@@ -78,8 +81,9 @@ public class SketchBook {
     solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
+    addRecognizer(new SelectGestureRecognizer(this));
     addRecognizer(new EraseGestureRecognizer(this));
-    addRecognizer(new Arrow(this));
+    //    addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
   }
@@ -87,7 +91,7 @@ public class SketchBook {
   public SkruiFabEditor getEditor() {
     return editor;
   }
-  
+
   private void addRecognizer(SketchRecognizer rec) {
     recognizer.add(rec);
   }
@@ -96,8 +100,8 @@ public class SketchBook {
   //    return selectionCopy;
   //  }
 
-  public Set<Stencil> getSelection() {
-    return selection;
+  public Set<Stencil> getSelectedStencils() {
+    return selectedStencils;
   }
 
   public Set<Stencil> getStencils() {
@@ -123,7 +127,6 @@ public class SketchBook {
     boolean didSomething = false;
     for (RecognizedRawItem item : rawResults) {
       if (item.isOk()) {
-        bug("This one is ok! Activating it.");
         item.activate(this);
         didSomething = true;
       }
@@ -135,6 +138,8 @@ public class SketchBook {
       Sequence scrib = newInk.getSequence();
       DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
           DrawingBufferLayers.DEFAULT_THICKNESS);
+      bug("setting last ink was selection to false");
+      lastInkWasSelection = false;
     }
     layers.repaint();
   }
@@ -201,8 +206,12 @@ public class SketchBook {
   //    return ret;
   //  }
 
-  public void clearSelection() {
-    setSelected(null);
+  public void clearSelectedStencils() {
+    setSelectedStencils(null);
+  }
+
+  public void clearSelectedSegments() {
+    setSelectedSegments(null);
   }
 
   public void addGeometry(Segment seg) {
@@ -211,6 +220,7 @@ public class SketchBook {
 
   public void removeGeometry(Segment seg) {
     geometry.remove(seg);
+    selectedSegments.remove(seg);
     boolean keep1 = false;
     boolean keep2 = false;
     for (Segment s : geometry) {
@@ -228,7 +238,7 @@ public class SketchBook {
       solver.removePoint(seg.getP2());
     }
     Set<Stencil> doomed = new HashSet<Stencil>();
-    for (Stencil stencil : stencils){
+    for (Stencil stencil : stencils) {
       if (stencil.involves(seg)) {
         doomed.add(stencil);
       }
@@ -279,7 +289,8 @@ public class SketchBook {
 
   public void clearAll() {
     clearInk();
-    clearSelection();
+    clearSelectedStencils();
+    clearSelectedSegments();
     clearStructured();
     getConstraints().clearConstraints();
     friends = new HashSet<Set<RecognizedItem>>();
@@ -378,7 +389,7 @@ public class SketchBook {
     indent++;
     for (Stencil s : stencils) {
       addBug(indent, buf, s.getPath().size() + " points: " + StencilFinder.n(s.getPath()));
-      if (selection.contains(s)) {
+      if (selectedStencils.contains(s)) {
         buf.append(" (selected)");
       }
       buf.append("\n");
@@ -421,6 +432,22 @@ public class SketchBook {
     stencils.removeAll(doomed);
   }
 
+  /**
+   * Find a set of segments whose fuzzy areas (Segment.getFuzzyArea()) intersect the given Area.
+   */
+  public Collection<Segment> findSegments(Area area, double fuzzyFactor) {
+    Collection<Segment> ret = new HashSet<Segment>();
+    for (Segment seg : geometry) {
+      Area segmentArea = seg.getFuzzyArea(fuzzyFactor);
+      Area ix = (Area) area.clone();
+      ix.intersect(segmentArea);
+      if (!ix.isEmpty()) {
+        ret.add(seg);
+      }
+    }
+    return ret;
+  }
+
   public Collection<Stencil> findStencil(Area area, double d) {
     Collection<Stencil> ret = new HashSet<Stencil>();
     for (Stencil s : stencils) {
@@ -440,29 +467,30 @@ public class SketchBook {
     return ret;
   }
 
-  //  public void setSelected(Collection<Ink> selectUs) {
-  //    selection.clear();
-  //    if (selectUs != null) {
-  //      selection.addAll(selectUs);
-  //    }
-  //    DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SELECTION);
-  //    db.clear();
-  //    for (Ink eenk : selection) {
-  //      guibug.ghostlyOutlineShape(db, eenk.getSequence().getPoints(), Color.CYAN.darker());
-  //    }
-  //  }
-
-  public void setSelected(Collection<Stencil> selectUs) {
-    selection.clear();
+  public void setSelectedStencils(Collection<Stencil> selectUs) {
+    selectedStencils.clear();
     if (selectUs != null) {
-      selection.addAll(selectUs);
+      selectedStencils.addAll(selectUs);
     }
     editor.drawStencils();
   }
 
+  public void setSelectedSegments(Collection<Segment> selectUs) {
+    bug("last ink was selection? " + lastInkWasSelection + ". selectUs null? " + (selectUs == null));
+    if (!lastInkWasSelection || selectUs == null) {
+      bug("clearing selected segments");
+      selectedSegments.clear();
+    }
+    lastInkWasSelection = true;
+    if (selectUs != null) {
+      selectedSegments.addAll(selectUs);
+    }
+    editor.drawStuff();
+  }
+
   public boolean isPointOverSelection(Pt where) {
     boolean ret = false;
-    for (Stencil s : selection) {
+    for (Stencil s : selectedStencils) {
       Area shapeArea = new Area(s.getShape());
       if (shapeArea.contains(where)) {
         ret = true;
@@ -487,7 +515,7 @@ public class SketchBook {
   public boolean isDraggingSelection() {
     return draggingSelection;
   }
-  
+
   public BufferedImage getDraggingThumb() {
     return draggingThumb;
   }
@@ -501,7 +529,7 @@ public class SketchBook {
     }
     return ret;
   }
-  
+
   public Collection<Pt> findPoints(Area area) {
     Collection<Pt> ret = new HashSet<Pt>();
     for (Segment seg : geometry) {
@@ -514,4 +542,9 @@ public class SketchBook {
     }
     return ret;
   }
+
+  public Set<Segment> getSelectedSegments() {
+    return selectedSegments;
+  }
+
 }

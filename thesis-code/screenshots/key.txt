@@ -67,3 +67,6 @@
 025: scribble gesture to erase a segment
 
 026: circle some endpoints to merge them
+
+027: curves and ellipses can be latched (now using parametric points
+     inside segments). also can select segments by overtracing them.

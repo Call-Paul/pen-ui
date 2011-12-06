@@ -133,7 +133,7 @@ public class EncircleRecognizer extends SketchRecognizer {
         if (stencilsInside.size() > 0) {
           ret = new RecognizedRawItem(stencilsInside.size() > 0) {
             public void activate(SketchBook model) {
-              model.setSelected(stencilsInside);
+              model.setSelectedStencils(stencilsInside);
             };
           };
         }
@@ -147,13 +147,11 @@ public class EncircleRecognizer extends SketchRecognizer {
         ret = new RecognizedRawItem(true) {
           public void activate(SketchBook model) {
             Pt centroid = Functions.getMean(points);
-            bug("Replacing " + points.size() + " points with " + num(centroid));
             Collection<Segment> related = new HashSet<Segment>();
             for (Pt pt : points) {
               model.replace(pt, centroid);
               related.addAll(model.findRelatedSegments(centroid));
             }
-            bug("Found " + related.size() + " related segments.");
             model.getEditor().findStencils(related);
             model.getEditor().drawStuff();
           }
