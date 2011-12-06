@@ -29,6 +29,7 @@ import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.Constraint;
@@ -221,6 +222,7 @@ public class SketchBook {
   public void removeGeometry(Segment seg) {
     geometry.remove(seg);
     selectedSegments.remove(seg);
+    editor.getGlass().setGatherText(selectedSegments.size() == 1);
     boolean keep1 = false;
     boolean keep2 = false;
     for (Segment s : geometry) {
@@ -476,7 +478,6 @@ public class SketchBook {
   }
 
   public void setSelectedSegments(Collection<Segment> selectUs) {
-    bug("last ink was selection? " + lastInkWasSelection + ". selectUs null? " + (selectUs == null));
     if (!lastInkWasSelection || selectUs == null) {
       bug("clearing selected segments");
       selectedSegments.clear();
@@ -485,6 +486,7 @@ public class SketchBook {
     if (selectUs != null) {
       selectedSegments.addAll(selectUs);
     }
+    editor.getGlass().setGatherText(selectedSegments.size() == 1);
     editor.drawStuff();
   }
 
@@ -545,6 +547,38 @@ public class SketchBook {
 
   public Set<Segment> getSelectedSegments() {
     return selectedSegments;
+  }
+
+  public boolean isSelected(Segment s) {
+    return selectedSegments.contains(s);
+  }
+
+  public void deselectSegments(Collection<Segment> unselectUs) {
+    selectedSegments.removeAll(unselectUs);
+    editor.getGlass().setGatherText(selectedSegments.size() == 1);
+  }
+
+  public void addTextProgress(String string) {
+    DrawingBuffer db = layers.getLayer("text");
+    db.clear();
+    bug("cleared");
+    if (selectedSegments.size() == 1) {
+      Segment seg = selectedSegments.toArray(new Segment[1])[0];
+      Pt mid = seg.getVisualMidpoint();
+      DrawingBufferRoutines.text(db, mid, string, Color.BLACK);
+      lastInkWasSelection = false;
+    }
+    layers.repaint();
+  }
+
+  public void addTextFinished(String string) {
+    DrawingBuffer db = layers.getLayer("text");
+    db.clear();
+    if (selectedSegments.size() == 1) {
+      Segment seg = selectedSegments.toArray(new Segment[1])[0];
+      bug("constrain " + seg + " to " + string);
+    }
+    lastInkWasSelection = false;
   }
 
 }

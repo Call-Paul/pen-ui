@@ -50,6 +50,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
     //      DrawingBufferRoutines.fillShape(db, under.getFuzzyArea(3.5), new Color(0, 0, 255, 120), 0.5);
     //    }
     final Collection<Segment> selectUs = new HashSet<Segment>();
+    final Collection<Segment> unselectUs = new HashSet<Segment>();
     //    boolean selectedSomething = false;
     Vec inkVec = new Vec(ink.getSequence().getFirst(), ink.getSequence().getLast());
     for (Segment undy : underneath) {
@@ -60,7 +61,6 @@ public class SelectGestureRecognizer extends SketchRecognizer {
         stats.addData(near.distance(pt));
       }
       if (stats.getMax() < 10.0 || (stats.getMax() < 15.0 && stats.getMean() < 5.0)) {
-
         double ang = 0;
         if (undy.getType() == Segment.Type.Line) {
           ang = Math.min(abs(Functions.getSignedAngleBetween(undy.getStartDir(), inkVec)),
@@ -69,8 +69,13 @@ public class SelectGestureRecognizer extends SketchRecognizer {
           bug("angle: " + num(ang));
         }
         if (ang < 20) {
-          bug("** Select " + undy);
-          selectUs.add(undy);
+          if (model.isSelected(undy)) {
+            bug("** De-select " + undy);
+            unselectUs.add(undy);
+          } else {
+            bug("** Select " + undy);
+            selectUs.add(undy);
+          }
         }
         //        selectedSomething = true;
       }
@@ -80,10 +85,11 @@ public class SelectGestureRecognizer extends SketchRecognizer {
     if (selectUs.isEmpty()) {
       bug("Selected nothing");
     }
-    if (!selectUs.isEmpty()) {
+    if (!selectUs.isEmpty() || !unselectUs.isEmpty()) {
       ret = new RecognizedRawItem(true) {
         public void activate(SketchBook model) {
           model.setSelectedSegments(selectUs);
+          model.deselectSegments(unselectUs);
           model.getEditor().drawStuff();
         }
       };

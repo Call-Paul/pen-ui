@@ -83,6 +83,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     // see if either s1 or s2 has an existing length constraint
     Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
     filters.add(VariableBank.getTypeFilter(DistanceConstraint.class));
+    
     Set<Constraint> results = model.getConstraints().getVars().searchConstraints(filters);
     Set<Constraint> existing = new HashSet<Constraint>();
     for (Constraint distConst : results) {

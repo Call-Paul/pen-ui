@@ -327,5 +327,16 @@ public class Segment implements HasFuzzyArea {
   public boolean involves(Pt p) {
     return p == getP1() || p == getP2();
   }
+  
+  public Pt[] getEndpointArray() {
+    return new Pt[] { p1, p2 };
+  }
+
+  public Pt getVisualMidpoint() {
+    doPara();
+    List<Pt> bigList = asPolyline();
+    int midIdx = bigList.size() / 2;
+    return bigList.get(midIdx);
+  }
 
 }

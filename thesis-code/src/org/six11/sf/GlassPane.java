@@ -3,11 +3,16 @@ package org.six11.sf;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.warn;
 
+import java.awt.AWTEvent;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.AWTEventListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -47,17 +52,55 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   Component prevComponent;
   Component dragStartComponent;
   Component dragEndComponent;
+  StringBuilder numberInput;
+  boolean gatherText;
 
   boolean dragging = false;
   Point dragPoint = null;
   private ActivityMode activity;
 
-  public GlassPane(SkruiFabEditor editor) {
+  public GlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
     this.activity = ActivityMode.None;
+    numberInput = new StringBuilder();
+    gatherText = false;
     addMouseListener(this);
     addMouseMotionListener(this);
     setOpaque(false);
+    long eventMask = AWTEvent.KEY_EVENT_MASK;
+    Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
+      public void eventDispatched(AWTEvent ev) {
+        if (gatherText) {
+          if (ev.getID() == KeyEvent.KEY_TYPED && ev instanceof KeyEvent) {
+            KeyEvent kev = (KeyEvent) ev;
+            boolean ok = false;
+            try {
+              int val = Integer.parseInt("" + kev.getKeyChar());
+              ok = true;
+              numberInput.append(val);
+            } catch (NumberFormatException ex) {
+              // ignore
+            }
+            if (!ok) {
+              if (kev.getKeyChar() == '.' && !numberInput.toString().contains(".")) {
+                numberInput.append('.');
+                ok = true;
+              }
+            }
+            if (ok) {
+              editor.getModel().addTextProgress(numberInput.toString());
+            }
+          } else if (ev.getID() == KeyEvent.KEY_RELEASED) {
+            KeyEvent kev = (KeyEvent) ev;
+            if (kev.getKeyCode() == KeyEvent.VK_ENTER) {
+              editor.getModel().addTextFinished(numberInput.toString());
+              numberInput.setLength(0);
+              kev.consume();
+            }
+          }
+        }
+      }
+    }, eventMask);
   }
 
   private class MouseEventInfo {
@@ -80,6 +123,16 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
     }
   }
 
+  public void setGatherText(boolean value) {
+    if (value != gatherText) {
+      bug("gather text: " + value);
+    }
+    gatherText = value;
+    if (!gatherText) {
+      numberInput.setLength(0);
+    }
+  }
+  
   private void givePenEvent(Component component, PenEvent ev) {
     if (component instanceof PenListener) {
       ((PenListener) component).handlePenEvent(ev);

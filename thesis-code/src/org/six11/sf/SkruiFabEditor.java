@@ -12,7 +12,9 @@ import java.awt.Container;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
@@ -151,15 +153,16 @@ public class SkruiFabEditor {
     // 2. Fill action map with named actions.
     //
     // 2a. Start with keys for toggling layers 0--9
-    for (int num = 0; num < 10; num++) {
-      final String numStr = "" + num;
-      KeyStroke numKey = KeyStroke.getKeyStroke(numStr.charAt(0));
-      actions.put("DEBUG " + num, new NamedAction("Toggle Debug Layer " + num, numKey) {
-        public void activate() {
-          guibug.whackLayerVisibility(numStr);
-        }
-      });
-    }
+    //    for (int num = 0; num < 10; num++) {
+    //      final String numStr = "" + num;
+    //      KeyStroke numKey = KeyStroke.getKeyStroke(numStr.charAt(0));
+    //      actions.put("DEBUG " + num, new NamedAction("Toggle Debug Layer " + num, numKey) {
+    //        public void activate() {
+    //          guibug.whackLayerVisibility(numStr);
+    //        }
+    //      });
+    //    }
+
     //
     // 2b. Now give actions for other commands like printing, saving,
     // launching ICBMs, etc
@@ -198,6 +201,7 @@ public class SkruiFabEditor {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
       }
     }
+    
   }
 
   protected void debugState() {
@@ -234,7 +238,7 @@ public class SkruiFabEditor {
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
     if (unstruc.isEmpty()) {
-      bug ("No ink to work with...");
+      bug("No ink to work with...");
     }
     Collection<Segment> segs = new HashSet<Segment>();
     for (Ink stroke : unstruc) {
@@ -253,7 +257,7 @@ public class SkruiFabEditor {
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
-    
+
     findStencils(segs);
     model.getConstraints().wakeUp();
     model.clearInk();
@@ -263,7 +267,7 @@ public class SkruiFabEditor {
     drawRecognized(items);
     layers.repaint();
   }
-  
+
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(segs, model.getGeometry());
     model.mergeStencils(sf.getNewStencils());
@@ -288,7 +292,8 @@ public class SkruiFabEditor {
             RecognizedItem other = cull[j];
             Collection<RecognizerPrimitive> bunchB = other.getSubshapes();
             if (Lists.hasOverlap(bunchA, bunchB)) {
-              Collection<RecognizedItem> removeUs = RecognizedItemTemplate.resolveConflict(candidate, other);
+              Collection<RecognizedItem> removeUs = RecognizedItemTemplate.resolveConflict(
+                  candidate, other);
               doomed.addAll(removeUs);
             }
           }
