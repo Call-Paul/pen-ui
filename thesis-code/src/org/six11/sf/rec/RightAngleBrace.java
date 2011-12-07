@@ -12,6 +12,7 @@ import java.util.Stack;
 import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
+import org.six11.sf.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
@@ -120,7 +121,61 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     Constraint rightAngleConstraint = new OrientationConstraint(s1.getP1(), s1.getP2(), s2.getP1(),
         s2.getP2(), new NumericValue(Math.toRadians(90)));
     rightAngleConstraint.setSecretName(NAME);
-    model.registerConstraint(item, rightAngleConstraint);
+    UserConstraint uc = makeUserConstraint(item, rightAngleConstraint);
+    model.addUserConstraint(uc);
+    //    model.registerConstraint(item, rightAngleConstraint);
+  }
+
+  private UserConstraint makeUserConstraint(final RecognizedItem item,
+      Constraint rightAngleConstraint) {
+    UserConstraint ret = new UserConstraint(item.getInk(), rightAngleConstraint) {
+      public void draw(DrawingBuffer buf, Pt hoverPoint) {
+        if (hoverPoint != null) {
+          Pt fulcrum = null;
+          Pt left = null;
+          Pt right = null;
+          Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
+          Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
+          if (s1.getP1() == s2.getP1()) {
+            fulcrum = s1.getP1();
+            left = s1.getP2();
+            right = s2.getP2();
+          } else if (s1.getP1() == s2.getP2()) {
+            fulcrum = s1.getP1();
+            left = s1.getP2();
+            right = s2.getP1();
+          } else if (s1.getP2() == s2.getP1()) {
+            fulcrum = s1.getP2();
+            left = s1.getP1();
+            right = s2.getP2();
+          } else if (s1.getP2() == s2.getP2()) {
+            fulcrum = s1.getP2();
+            left = s1.getP1();
+            right = s2.getP1();
+          }
+          if (fulcrum == null || left == null || right == null) {
+            // do nothing
+          } else {
+            Vec leftV = new Vec(fulcrum, left).getUnitVector();
+            Vec rightV = new Vec(fulcrum, right).getUnitVector();
+            Vec diagonal = Vec.sum(leftV, rightV).getUnitVector();
+            double root2 = Math.sqrt(2);
+            double braceLen = 16;
+            Pt braceCorner = fulcrum.getTranslated(diagonal, root2 * braceLen);
+            Pt braceLeft = fulcrum.getTranslated(leftV, braceLen);
+            Pt braceRight = fulcrum.getTranslated(rightV, braceLen);
+            List<Pt> points = new ArrayList<Pt>();
+            points.add(braceLeft);
+            points.add(braceCorner);
+            points.add(braceRight);
+            double alpha = Math.max(0.1, getAlpha(fulcrum.distance(hoverPoint), 10, 80));
+            Color color = new Color(1, 0, 0, (float) alpha);
+            DrawingBufferRoutines.lines(buf, points, color, 1.0);
+          }
+        }
+      }
+    };
+    return ret;
   }
 
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {

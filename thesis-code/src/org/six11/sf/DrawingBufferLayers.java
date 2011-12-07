@@ -268,12 +268,16 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private void drawConstraints() {
     DrawingBuffer buf = getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
     buf.clear();
-    for (Constraint c : model.getConstraints().getConstraints()) {
-      RecognizedItem item = model.getConstraintItem(c);
-      if (item != null) {
-        item.getTemplate().draw(c, item, buf, getHoverPoint());
-      }
+    for (UserConstraint c : model.getUserConstraints()) {
+      c.draw(buf, getHoverPoint());
     }
+    
+//    for (Constraint c : model.getConstraints().getConstraints()) {
+//      RecognizedItem item = model.getConstraintItem(c);
+//      if (item != null) {
+//        item.getTemplate().draw(c, item, buf, getHoverPoint());
+//      }
+//    }
   }
 
   /**

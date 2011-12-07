@@ -6,18 +6,23 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
+import org.six11.sf.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
+import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
 
@@ -83,31 +88,27 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     // see if either s1 or s2 has an existing length constraint
     Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
     filters.add(VariableBank.getTypeFilter(DistanceConstraint.class));
-    
+    filters.add(ConstraintFilters.getInvolvesFilter(s1.getEndpointArray(), s2.getEndpointArray()));
     Set<Constraint> results = model.getConstraints().getVars().searchConstraints(filters);
-    Set<Constraint> existing = new HashSet<Constraint>();
-    for (Constraint distConst : results) {
-      if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
-        existing.add(distConst);
-      }
-      if (distConst.involves(s2.getP1()) && distConst.involves(s2.getP2())) {
-        existing.add(distConst);
-      }
-    }
     Set<Constraint> addUs = new HashSet<Constraint>();
-    if (existing.size() == 0) {
+    UserConstraint uc = null;
+    if (results.size() == 0) {
       MultisourceNumericValue dist = new MultisourceNumericValue(mkSource(s1), mkSource(s2));
       addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), dist));
       addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), dist));
-      // model.getConstraints().addConstraint();
-      //      model.getConstraints().addConstraint();
-    } else if (existing.size() == 1) {
+      uc = makeUserConstraint(item, addUs);
+    } else if (results.size() == 1) {
       bug("Adding to the existing distance constraint.");
       // use existing numeric value
-      DistanceConstraint distConst = (DistanceConstraint) existing.toArray(new Constraint[1])[0];
-      MultisourceNumericValue val = (MultisourceNumericValue) distConst.getValue();
-      RecognizedItem otherDistItem = model.getConstraintItem(distConst);
-      model.setFriends(otherDistItem, item);
+      DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
+      uc = model.getUserConstraint(distConst);
+      uc.addInk(item.getInk());
+
+      NumericValue numeric = distConst.getValue();
+      if (numeric instanceof MultisourceNumericValue) {
+        MultisourceNumericValue val = (MultisourceNumericValue) numeric;
+      }
+      //      model.setFriends(otherDistItem, item);
       if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
         // s1 already constrained. incorporate s2's length and give it constraint
         val.addValue(mkSource(s2));//s2.length());
@@ -117,13 +118,49 @@ public class SameLengthGesture extends RecognizedItemTemplate {
         val.addValue(mkSource(s1));
         addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), distConst.getValue()));
       }
-    } else if (existing.size() > 1) {
-      bug("Warning: creating this distance constraint would conflict with " + existing.size()
+      for (Constraint addMe : addUs) {
+        uc.addConstraint(addMe);
+      }
+    } else if (results.size() > 1) {
+      bug("Warning: creating this distance constraint would conflict with " + results.size()
           + " current constraints. I refuse.");
     }
-    for (Constraint c : addUs) {
-      model.registerConstraint(item, c);
+
+    model.addUserConstraint(uc);
+    //    for (Constraint c : addUs) {
+    //      model.registerConstraint(item, c);
+    //    }
+  }
+
+  public static UserConstraint makeUserConstraint(RecognizedItem item, Set<Constraint> addUs) {
+    Collection<Ink> strokes = new HashSet<Ink>();
+    if (item != null) {
+      strokes.addAll(item.getInk());
     }
+    UserConstraint ret = new UserConstraint(strokes, addUs.toArray(new Constraint[0])) {
+      public void draw(DrawingBuffer buf, Pt hoverPoint) {
+        if (hoverPoint != null) {
+          double nearest = Double.MAX_VALUE;
+          for (Constraint c : getConstraints()) {
+            DistanceConstraint dc = (DistanceConstraint) c;
+            Line line = dc.getCurrentSegment();
+            double d = Functions.getDistanceBetweenPointAndSegment(hoverPoint, line);
+            nearest = Math.min(d, nearest);
+          }
+          if (nearest < 50) {
+            double alpha = Math.max(0.1, getAlpha(nearest, 10, 80));
+            Color color = new Color(1, 0, 0, (float) alpha);
+            for (Constraint c : getConstraints()) {
+              DistanceConstraint dc = (DistanceConstraint) c;
+              Pt mid = Functions.getMean(dc.getP1(), dc.getP2());
+              DrawingBufferRoutines.acuteHash(buf, mid, new Vec(dc.getP1(), dc.getP2()), 12, 1.0,
+                  color);
+            }
+          }
+        }
+      }
+    };
+    return ret;
   }
 
   private MultisourceNumericValue.Source mkSource(final Segment seg) {
@@ -135,31 +172,32 @@ public class SameLengthGesture extends RecognizedItemTemplate {
   }
 
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
-    if (hoverPoint != null) {
-      Segment s1 = item.getSegmentTarget(TARGET_A);
-      Segment s2 = item.getSegmentTarget(TARGET_B);
-      double d1 = Functions.getDistanceBetweenPointAndSegment(hoverPoint, s1.asLine());
-      double d2 = Functions.getDistanceBetweenPointAndSegment(hoverPoint, s2.asLine());
-      double d = Math.min(d1, d2);
-      if (d < 50) {
-        double alpha = getAlpha(d, 5, 20);
-        Color color = new Color(1, 0, 0, (float) alpha);
-        Set<RecognizedItem> f = model.findFriends(item);
-        Set<Segment> allSegs = new HashSet<Segment>();
-        if (f == null) {
-          allSegs.add(s1);
-          allSegs.add(s2);
-        } else {
-          for (RecognizedItem ri : f) {
-            allSegs.add(ri.getSegmentTarget(TARGET_A));
-            allSegs.add(ri.getSegmentTarget(TARGET_B));
-          }
-        }
-        for (Segment seg : allSegs) {
-          Pt mid = Functions.getMean(seg.getP1(), seg.getP2());
-          DrawingBufferRoutines.acuteHash(buf, mid, seg.getStartDir(), 12, 1.5, color);
-        }
-      }
-    }
+    //    if (hoverPoint != null) {
+    //      Segment s1 = item.getSegmentTarget(TARGET_A);
+    //      Segment s2 = item.getSegmentTarget(TARGET_B);
+    //      double d1 = Functions.getDistanceBetweenPointAndSegment(hoverPoint, s1.asLine());
+    //      double d2 = Functions.getDistanceBetweenPointAndSegment(hoverPoint, s2.asLine());
+    //      double d = Math.min(d1, d2);
+    //      if (d < 50) {
+    //        double alpha = getAlpha(d, 5, 20);
+    //        Color color = new Color(1, 0, 0, (float) alpha);
+    //        Set<RecognizedItem> f = model.findFriends(item);
+    //        Set<Segment> allSegs = new HashSet<Segment>();
+    //        if (f == null) {
+    //          allSegs.add(s1);
+    //          allSegs.add(s2);
+    //        } else {
+    //          for (RecognizedItem ri : f) {
+    //            allSegs.add(ri.getSegmentTarget(TARGET_A));
+    //            allSegs.add(ri.getSegmentTarget(TARGET_B));
+    //          }
+    //        }
+    //        for (Segment seg : allSegs) {
+    //          Pt mid = Functions.getMean(seg.getP1(), seg.getP2());
+    //          DrawingBufferRoutines.acuteHash(buf, mid, seg.getStartDir(), 12, 1.5, color);
+    //        }
+    //      }
+    //    }
+    bug("not drawing gesture atm");
   }
 }

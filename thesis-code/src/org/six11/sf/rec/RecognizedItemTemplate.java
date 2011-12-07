@@ -368,7 +368,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     bug("draw not implemented for " + name + ". override me.");
   }
 
-  protected double getAlpha(double distance, double min, double max) {
+  public static double getAlpha(double distance, double min, double max) {
     double ret = 0;
     if (distance < min) {
       ret = 1;

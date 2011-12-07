@@ -8,34 +8,35 @@ import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.six11.sf.rec.Arrow;
+import org.imgscalr.Scalr;
+import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.EraseGestureRecognizer;
-import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedRawItem;
-import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
-import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
-
-import org.imgscalr.Scalr;
+import org.six11.util.solve.DistanceConstraint;
+import org.six11.util.solve.MultisourceNumericValue;
+import org.six11.util.solve.NumericValue;
+import org.six11.util.solve.VariableBank;
+import org.six11.util.solve.VariableBank.ConstraintFilter;
 
 public class SketchBook {
 
@@ -53,8 +54,9 @@ public class SketchBook {
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
   private SketchRecognizerController recognizer;
-  private Map<RecognizedItem, Set<Constraint>> userConstraints;
-  private Set<Set<RecognizedItem>> friends;
+  private Set<UserConstraint> userConstraints;
+  //  private Map<UserConstraint, Set<Constraint>> userConstraints;
+//  private Set<Set<UserConstraint>> friends;
   private Set<Stencil> stencils;
   private SkruiFabEditor editor;
   private boolean draggingSelection;
@@ -73,8 +75,9 @@ public class SketchBook {
     this.geometry = new HashSet<Segment>();
     this.stencils = new HashSet<Stencil>();
     //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
-    this.userConstraints = new HashMap<RecognizedItem, Set<Constraint>>();
-    this.friends = new HashSet<Set<RecognizedItem>>();
+    //    this.userConstraints = new HashMap<UserConstraint, Set<Constraint>>();
+    this.userConstraints = new HashSet<UserConstraint>();
+//    this.friends = new HashSet<Set<UserConstraint>>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
@@ -295,7 +298,8 @@ public class SketchBook {
     clearSelectedSegments();
     clearStructured();
     getConstraints().clearConstraints();
-    friends = new HashSet<Set<RecognizedItem>>();
+    userConstraints.clear();
+//    friends = new HashSet<Set<UserConstraint>>();
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
@@ -321,57 +325,15 @@ public class SketchBook {
     getConstraints().wakeUp();
   }
 
-  public void registerConstraint(RecognizedItem item, Constraint someConstraint) {
-    getConstraints().addConstraint(someConstraint);
-    //    userConstraints.put(someConstraint, item);
-    if (userConstraints.get(item) == null) {
-      userConstraints.put(item, new HashSet<Constraint>());
-    }
-    userConstraints.get(item).add(someConstraint);
-    for (RecognizerPrimitive prim : item.getSubshapes()) {
-      removeRelated(prim.getInk());
-    }
-  }
-
-  public RecognizedItem getConstraintItem(Constraint c) {
-    RecognizedItem ret = null;
-    for (RecognizedItem item : userConstraints.keySet()) {
-      if (userConstraints.get(item).contains(c)) {
+  public UserConstraint getUserConstraint(Constraint c) {
+    UserConstraint ret = null;
+    for (UserConstraint item : userConstraints) {
+      if (item.getConstraints().contains(c)) {
         ret = item;
         break;
       }
     }
     return ret;
-  }
-
-  public void setFriends(RecognizedItem... items) {
-    Set<RecognizedItem> f = null;
-    for (RecognizedItem item : items) {
-      f = findFriends(item);
-      if (f != null) {
-        break;
-      }
-    }
-    if (f == null) {
-      f = new HashSet<RecognizedItem>();
-      friends.add(f);
-    }
-    for (RecognizedItem item : items) {
-      f.add(item);
-    }
-    bug("The following are now friends: " + num(f, " "));
-
-  }
-
-  public Set<RecognizedItem> findFriends(RecognizedItem item) {
-    Set<RecognizedItem> f = null;
-    for (Set<RecognizedItem> click : friends) {
-      if (click.contains(item)) {
-        f = click;
-        break;
-      }
-    }
-    return f;
   }
 
   public String getMondoDebugString() {
@@ -575,10 +537,52 @@ public class SketchBook {
     DrawingBuffer db = layers.getLayer("text");
     db.clear();
     if (selectedSegments.size() == 1) {
-      Segment seg = selectedSegments.toArray(new Segment[1])[0];
-      bug("constrain " + seg + " to " + string);
+      try {
+        Segment seg = selectedSegments.toArray(new Segment[1])[0];
+        double len = Double.parseDouble(string);
+        constrainSegmentLength(seg, len);
+      } catch (NumberFormatException george) {
+      }
     }
     lastInkWasSelection = false;
   }
 
+  private void constrainSegmentLength(Segment seg, double len) {
+    bug("constrain " + seg + " to " + num(len));
+    Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
+    filters.add(VariableBank.getTypeFilter(DistanceConstraint.class));
+    filters.add(ConstraintFilters.getInvolvesFilter(seg.getEndpointArray()));
+    Set<Constraint> results = getConstraints().getVars().searchConstraints(filters);
+    bug("There are " + results.size() + " existing length constraints related to " + seg);
+    if (results.size() == 0) {
+      Constraint distConst = new DistanceConstraint(seg.getP1(), seg.getP2(), new NumericValue(len));
+      UserConstraint uc = SameLengthGesture.makeUserConstraint(null, Collections.singleton(distConst));
+      bug("Adding user constraint for numeric distance");
+      addUserConstraint(uc);
+      //      registerConstraint(distConst);
+    } else if (results.size() == 1) {
+      DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
+      NumericValue numVal = distConst.getValue();
+      bug("Found one constraint. value: " + numVal.getClass() + " = " + numVal.getValue());
+      if (numVal instanceof MultisourceNumericValue) {
+        MultisourceNumericValue val = (MultisourceNumericValue) numVal;
+        //        RecognizedItem otherDistItem = getConstraintItem(distConst);
+      }
+    }
+  }
+
+  public void addUserConstraint(UserConstraint uc) {
+    userConstraints.add(uc);
+    for (Constraint c : uc.getConstraints()) {
+      getConstraints().addConstraint(c);
+    }
+    for (Ink itemInk : uc.getInk()) {
+      removeRelated(itemInk);
+    }
+    getConstraints().wakeUp();
+  }
+
+  public Collection<UserConstraint> getUserConstraints() {
+    return userConstraints;
+  }
 }

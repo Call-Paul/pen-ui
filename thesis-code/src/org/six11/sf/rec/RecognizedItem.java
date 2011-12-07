@@ -2,9 +2,11 @@ package org.six11.sf.rec;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Stack;
 
+import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.DrawingBuffer;
@@ -128,5 +130,13 @@ public class RecognizedItem {
       }
     }
     return conflict;
+  }
+
+  public Collection<Ink> getInk() {
+    Collection<Ink> ret = new HashSet<Ink>();
+    for (RecognizerPrimitive p : getSubshapes()) {
+      ret.add(p.getInk());
+    }
+    return ret;
   }  
 }
