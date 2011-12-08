@@ -128,7 +128,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
 
   private UserConstraint makeUserConstraint(final RecognizedItem item,
       Constraint rightAngleConstraint) {
-    UserConstraint ret = new UserConstraint(item.getInk(), rightAngleConstraint) {
+    UserConstraint ret = new UserConstraint("Right Angle", item.getInk(), rightAngleConstraint) {
       public void draw(DrawingBuffer buf, Pt hoverPoint) {
         if (hoverPoint != null) {
           Pt fulcrum = null;

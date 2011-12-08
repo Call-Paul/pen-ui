@@ -56,7 +56,7 @@ public class SketchBook {
   private SketchRecognizerController recognizer;
   private Set<UserConstraint> userConstraints;
   //  private Map<UserConstraint, Set<Constraint>> userConstraints;
-//  private Set<Set<UserConstraint>> friends;
+  //  private Set<Set<UserConstraint>> friends;
   private Set<Stencil> stencils;
   private SkruiFabEditor editor;
   private boolean draggingSelection;
@@ -77,7 +77,7 @@ public class SketchBook {
     //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
     //    this.userConstraints = new HashMap<UserConstraint, Set<Constraint>>();
     this.userConstraints = new HashSet<UserConstraint>();
-//    this.friends = new HashSet<Set<UserConstraint>>();
+    //    this.friends = new HashSet<Set<UserConstraint>>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
@@ -228,6 +228,7 @@ public class SketchBook {
     editor.getGlass().setGatherText(selectedSegments.size() == 1);
     boolean keep1 = false;
     boolean keep2 = false;
+    Set<Constraint> dead = new HashSet<Constraint>();
     for (Segment s : geometry) {
       if (s.involves(seg.getP1())) {
         keep1 = true;
@@ -237,10 +238,10 @@ public class SketchBook {
       }
     }
     if (!keep1) {
-      solver.removePoint(seg.getP1());
+      dead.addAll(solver.removePoint(seg.getP1()));
     }
     if (!keep2) {
-      solver.removePoint(seg.getP2());
+      dead.addAll(solver.removePoint(seg.getP2()));
     }
     Set<Stencil> doomed = new HashSet<Stencil>();
     for (Stencil stencil : stencils) {
@@ -249,6 +250,19 @@ public class SketchBook {
       }
     }
     stencils.removeAll(doomed);
+    Set<UserConstraint> removeUs = new HashSet<UserConstraint>();
+    for (UserConstraint uc : userConstraints) {
+      int before = uc.getConstraints().size();
+      bug("Before, " + uc + " has " + before);
+      uc.getConstraints().removeAll(dead);
+      int after = uc.getConstraints().size();
+      bug("After, " + uc + " has " + after);
+      if (uc.getConstraints().isEmpty()) {
+        bug("Will remove empty user constraint: " + uc);
+        removeUs.add(uc);
+      }
+    }
+    userConstraints.removeAll(removeUs);
   }
 
   public Set<Segment> getGeometry() {
@@ -299,7 +313,7 @@ public class SketchBook {
     clearStructured();
     getConstraints().clearConstraints();
     userConstraints.clear();
-//    friends = new HashSet<Set<UserConstraint>>();
+    //    friends = new HashSet<Set<UserConstraint>>();
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
@@ -556,7 +570,8 @@ public class SketchBook {
     bug("There are " + results.size() + " existing length constraints related to " + seg);
     if (results.size() == 0) {
       Constraint distConst = new DistanceConstraint(seg.getP1(), seg.getP2(), new NumericValue(len));
-      UserConstraint uc = SameLengthGesture.makeUserConstraint(null, Collections.singleton(distConst));
+      UserConstraint uc = SameLengthGesture.makeUserConstraint(null,
+          Collections.singleton(distConst));
       bug("Adding user constraint for numeric distance");
       addUserConstraint(uc);
       //      registerConstraint(distConst);
@@ -566,7 +581,7 @@ public class SketchBook {
       bug("Found one constraint. value: " + numVal.getClass() + " = " + numVal.getValue());
       if (numVal instanceof MultisourceNumericValue) {
         MultisourceNumericValue val = (MultisourceNumericValue) numVal;
-        //        RecognizedItem otherDistItem = getConstraintItem(distConst);
+        // RecognizedItem otherDistItem = getConstraintItem(distConst);
       }
     }
   }
@@ -576,6 +591,7 @@ public class SketchBook {
     for (Constraint c : uc.getConstraints()) {
       getConstraints().addConstraint(c);
     }
+    bug(userConstraints.size() + " user constraints.");
     for (Ink itemInk : uc.getInk()) {
       removeRelated(itemInk);
     }

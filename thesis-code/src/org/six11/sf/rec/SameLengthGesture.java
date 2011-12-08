@@ -103,20 +103,26 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
       uc = model.getUserConstraint(distConst);
       uc.addInk(item.getInk());
-
       NumericValue numeric = distConst.getValue();
       if (numeric instanceof MultisourceNumericValue) {
+        bug("It is numeric.");
         MultisourceNumericValue val = (MultisourceNumericValue) numeric;
-      }
-      //      model.setFriends(otherDistItem, item);
-      if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
-        // s1 already constrained. incorporate s2's length and give it constraint
-        val.addValue(mkSource(s2));//s2.length());
-        addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), distConst.getValue()));
+        if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
+          // s1 already constrained. incorporate s2's length and give it constraint
+          val.addValue(mkSource(s2));//s2.length());
+          addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), distConst.getValue()));
+        } else {
+          // same as above but reverse the segments.
+          val.addValue(mkSource(s1));
+          addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), distConst.getValue()));
+        }
       } else {
-        // same as above but reverse the segments.
-        val.addValue(mkSource(s1));
-        addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), distConst.getValue()));
+        bug("The existing distance constraint is numeric. Just copy the numeric value into the new one.");
+        if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
+          addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), numeric));
+        } else {
+          addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), numeric));
+        }
       }
       for (Constraint addMe : addUs) {
         uc.addConstraint(addMe);
@@ -137,7 +143,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     if (item != null) {
       strokes.addAll(item.getInk());
     }
-    UserConstraint ret = new UserConstraint(strokes, addUs.toArray(new Constraint[0])) {
+    UserConstraint ret = new UserConstraint("Same Length", strokes, addUs.toArray(new Constraint[0])) {
       public void draw(DrawingBuffer buf, Pt hoverPoint) {
         if (hoverPoint != null) {
           double nearest = Double.MAX_VALUE;
@@ -152,9 +158,15 @@ public class SameLengthGesture extends RecognizedItemTemplate {
             Color color = new Color(1, 0, 0, (float) alpha);
             for (Constraint c : getConstraints()) {
               DistanceConstraint dc = (DistanceConstraint) c;
+              Vec segDir = new Vec(dc.getP1(), dc.getP2());
               Pt mid = Functions.getMean(dc.getP1(), dc.getP2());
-              DrawingBufferRoutines.acuteHash(buf, mid, new Vec(dc.getP1(), dc.getP2()), 12, 1.0,
-                  color);
+              if (dc.getValue() instanceof MultisourceNumericValue) {
+                DrawingBufferRoutines.acuteHash(buf, mid, segDir, 12, 1.0, color);
+              } else {
+                Vec segDirNorm = segDir.getNormal();
+                Pt textLoc = mid.getTranslated(segDirNorm, 8);
+                DrawingBufferRoutines.text(buf, textLoc, num(dc.getValue().getValue()), color);
+              }
             }
           }
         }
