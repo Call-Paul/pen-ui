@@ -22,6 +22,7 @@ import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameLengthGesture;
+import org.six11.sf.rec.SelectGestureRecognizer;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.shape.ShapeFactory;
@@ -46,17 +47,15 @@ public class SketchBook {
   private DrawingBufferLayers layers;
   private Set<Stencil> selectedStencils;
   private Set<Segment> selectedSegments;
-  //  private List<Ink> selectionCopy;
   private GraphicDebug guibug;
   private Set<Segment> geometry;
+  private Set<Pt> guidePoints;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
   private int pointCounter = 1;
   private SketchRecognizerController recognizer;
   private Set<UserConstraint> userConstraints;
-  //  private Map<UserConstraint, Set<Constraint>> userConstraints;
-  //  private Set<Set<UserConstraint>> friends;
   private Set<Stencil> stencils;
   private SkruiFabEditor editor;
   private boolean draggingSelection;
@@ -71,13 +70,10 @@ public class SketchBook {
     this.selectedStencils = new HashSet<Stencil>();
     this.selectedSegments = new HashSet<Segment>();
     this.cornerFinder = new CornerFinder();
-    //    this.selectionCopy = new ArrayList<Ink>();
     this.geometry = new HashSet<Segment>();
+    this.guidePoints = new HashSet<Pt>();
     this.stencils = new HashSet<Stencil>();
-    //    this.userConstraints = new HashMap<Constraint, RecognizedItem>();
-    //    this.userConstraints = new HashMap<UserConstraint, Set<Constraint>>();
     this.userConstraints = new HashSet<UserConstraint>();
-    //    this.friends = new HashSet<Set<UserConstraint>>();
     this.ink = new ArrayList<Ink>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
@@ -87,6 +83,7 @@ public class SketchBook {
     addRecognizer(new EncircleRecognizer(this));
     addRecognizer(new SelectGestureRecognizer(this));
     addRecognizer(new EraseGestureRecognizer(this));
+    addRecognizer(new DotReferenceGestureRecognizer(this));
     //    addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
@@ -99,10 +96,6 @@ public class SketchBook {
   private void addRecognizer(SketchRecognizer rec) {
     recognizer.add(rec);
   }
-
-  //  public List<Ink> getSelectionCopy() {
-  //    return selectionCopy;
-  //  }
 
   public Set<Stencil> getSelectedStencils() {
     return selectedStencils;
@@ -122,21 +115,35 @@ public class SketchBook {
 
   public void setGuibug(GraphicDebug gb) {
     this.guibug = gb;
-    //    this.cornerFinder.setGuibug(gb);
   }
 
   public void addInk(Ink newInk) {
+    cornerFinder.findCorners(newInk);
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
-    boolean didSomething = false;
-    for (RecognizedRawItem item : rawResults) {
-      if (item.isOk()) {
-        item.activate(this);
-        didSomething = true;
+    // iterate through everything and remove the trumps
+    Set<RecognizedRawItem> doomed = new HashSet<RecognizedRawItem>();
+    for (RecognizedRawItem a : rawResults) {
+      if (!doomed.contains(a)) {
+        for (RecognizedRawItem b : rawResults) {
+          if (a != b && !doomed.contains(b) && a.trumps(b)) {
+            bug(a + " trumps " + b);
+            doomed.add(b);
+          }
+        }
       }
     }
+    if (!doomed.isEmpty()) {
+      bug("Removing " + doomed.size() + " items from recognition list due to trump behavior: "
+          + num(doomed, " "));
+    }
+    rawResults.removeAll(doomed);
+    boolean didSomething = false;
+    for (RecognizedRawItem item : rawResults) {
+      item.activate(this);
+      didSomething = true;
+    }
     if (!didSomething) {
-      cornerFinder.findCorners(newInk);
       ink.add(newInk);
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       Sequence scrib = newInk.getSequence();
@@ -313,7 +320,7 @@ public class SketchBook {
     clearStructured();
     getConstraints().clearConstraints();
     userConstraints.clear();
-    //    friends = new HashSet<Set<UserConstraint>>();
+    guidePoints.clear();
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
@@ -600,5 +607,14 @@ public class SketchBook {
 
   public Collection<UserConstraint> getUserConstraints() {
     return userConstraints;
+  }
+
+  public void addGuidePoint(Pt p) {
+    guidePoints.add(p);
+    editor.drawStuff();
+  }
+
+  public Set<Pt> getGuidePoints() {
+    return guidePoints;
   }
 }

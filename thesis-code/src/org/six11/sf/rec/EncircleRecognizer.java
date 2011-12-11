@@ -7,8 +7,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
@@ -66,7 +64,7 @@ public class EncircleRecognizer extends SketchRecognizer {
         prev = pt;
       }
     }
-    Pt[] pair = null;    
+    Pt[] pair = null;
     for (Pt s : start) {
       for (Pt e : end) {
         if (pair == null) {
@@ -114,12 +112,12 @@ public class EncircleRecognizer extends SketchRecognizer {
 
   @Override
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in)
-      throws OperationNotSupportedException {
-    throw new OperationNotSupportedException("This recognizer can't do templates.");
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException("This recognizer can't do templates.");
   }
 
   @Override
-  public RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException {
+  public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     Sequence seq = ink.getSequence();
     final Collection<Stencil> stencilsInside = new HashSet<Stencil>();
@@ -131,7 +129,7 @@ public class EncircleRecognizer extends SketchRecognizer {
         Area area = new Area(seq);
         stencilsInside.addAll(model.findStencil(area, 0.8));
         if (stencilsInside.size() > 0) {
-          ret = new RecognizedRawItem(stencilsInside.size() > 0) {
+          ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT) {
             public void activate(SketchBook model) {
               model.setSelectedStencils(stencilsInside);
             };
@@ -144,7 +142,9 @@ public class EncircleRecognizer extends SketchRecognizer {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       if (points.size() > 0) {
-        ret = new RecognizedRawItem(true) {
+        ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE,
+            RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
+            RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
           public void activate(SketchBook model) {
             Pt centroid = Functions.getMean(points);
             Collection<Segment> related = new HashSet<Segment>();

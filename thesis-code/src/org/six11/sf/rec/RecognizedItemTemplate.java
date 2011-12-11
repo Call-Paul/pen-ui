@@ -188,8 +188,8 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   }
 
   @Override
-  public RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException {
-    throw new OperationNotSupportedException("This recognizer can't do raw ink.");
+  public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException("This recognizer can't do raw ink.");
   }
 
   /**

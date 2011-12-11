@@ -24,8 +24,8 @@ public class ConstraintAnalyzer {
   }
 
   public void analyze(Collection<Segment> segs) {
-//    DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
-//    bugBuf.clear();
+    //    DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
+    //    bugBuf.clear();
     Set<EndCap> caps = getCurrentEndCaps(model.getGeometry()); // set of all endcaps
     Set<EndCap> newCaps = getCurrentEndCaps(segs); // set of recently added endcaps (based on struc)
     Set<EndCap.Intersection> examined = new HashSet<EndCap.Intersection>();
@@ -37,7 +37,7 @@ public class ConstraintAnalyzer {
           EndCap.Intersection ix = c1.intersectInCap(c2);
           if (ix.intersects) {
             success.add(ix);
-//            DrawingBufferRoutines.dot(bugBuf, ix.pt, 4, 0.4, Color.BLACK, Color.BLUE);
+            //            DrawingBufferRoutines.dot(bugBuf, ix.pt, 4, 0.4, Color.BLACK, Color.BLUE);
           }
           examined.add(ix);
         }
@@ -53,41 +53,41 @@ public class ConstraintAnalyzer {
       ;
     for (EndCap.Group group : groups) {
       Pt spot = group.adjustMembers(); // note: spot does not have time data
-//      DrawingBufferRoutines.dot(bugBuf, spot, 4, 0.4, Color.BLACK, Color.MAGENTA);
+      //      DrawingBufferRoutines.dot(bugBuf, spot, 4, 0.4, Color.BLACK, Color.MAGENTA);
       for (Pt capPt : group.getPoints()) {
         model.replace(capPt, spot);
       }
     }
 
-//    // Now the fun part: look at new segment lengths and see if they are similar to other segments.
-//    final ClusterThing<Segment> lengthClusters = new ClusterThing<Segment>() {
-//      public double query(Segment t) {
-//        return t.length();
-//      }
-//    };
-//    for (Segment seg : segs) {
-//      lengthClusters.add(seg);
-//    }
-//    lengthClusters.computeClusters();
-//
-//    ClusterThing.ClusterFilter<Segment> filter = lengthClusters.getRatioFilter(0.9);
-//    List<Cluster<Segment>> similar = lengthClusters.search(filter);
-//    for (Cluster<Segment> cluster : similar) {
-//      if (cluster.getMembers().size() > 1) {
-//        double sum = 0;
-//        int n = 0;
-//        for (Segment s : cluster.getMembers()) {
-//          sum = sum + s.length();
-//          n++;
-//        }
-//        double len = sum / n;
-//        for (Segment s : cluster.getMembers()) {
-//          DistanceConstraint lengthConstraint = new DistanceConstraint(s.getP1(), s.getP2(),
-//              new NumericValue(len));
-//          model.getConstraints().addConstraint(lengthConstraint);
-//        }
-//      }
-//    }
+    //    // Now the fun part: look at new segment lengths and see if they are similar to other segments.
+    //    final ClusterThing<Segment> lengthClusters = new ClusterThing<Segment>() {
+    //      public double query(Segment t) {
+    //        return t.length();
+    //      }
+    //    };
+    //    for (Segment seg : segs) {
+    //      lengthClusters.add(seg);
+    //    }
+    //    lengthClusters.computeClusters();
+    //
+    //    ClusterThing.ClusterFilter<Segment> filter = lengthClusters.getRatioFilter(0.9);
+    //    List<Cluster<Segment>> similar = lengthClusters.search(filter);
+    //    for (Cluster<Segment> cluster : similar) {
+    //      if (cluster.getMembers().size() > 1) {
+    //        double sum = 0;
+    //        int n = 0;
+    //        for (Segment s : cluster.getMembers()) {
+    //          sum = sum + s.length();
+    //          n++;
+    //        }
+    //        double len = sum / n;
+    //        for (Segment s : cluster.getMembers()) {
+    //          DistanceConstraint lengthConstraint = new DistanceConstraint(s.getP1(), s.getP2(),
+    //              new NumericValue(len));
+    //          model.getConstraints().addConstraint(lengthConstraint);
+    //        }
+    //      }
+    //    }
     model.getConstraints().wakeUp();
     model.getLayers().repaint();
   }
@@ -129,7 +129,9 @@ public class ConstraintAnalyzer {
   private Set<EndCap> getCurrentEndCaps(Collection<Segment> segs) {
     Set<EndCap> ret = new HashSet<EndCap>();
     for (Segment seg : segs) {
-      ret.addAll(seg.getEndCaps());
+      if (seg.hasEndCaps()) {
+        ret.addAll(seg.getEndCaps());
+      }
     }
     return ret;
   }

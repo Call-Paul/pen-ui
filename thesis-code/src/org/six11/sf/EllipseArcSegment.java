@@ -6,8 +6,8 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
+//import static org.six11.util.Debug.bug;
 
 public class EllipseArcSegment extends Segment {
 
@@ -17,8 +17,7 @@ public class EllipseArcSegment extends Segment {
     // and last points in the list. So get the elliptical region, and transform it two times so it
     // does begin and end at those points.
     RotatedEllipse ellie = Functions.createEllipse(points);
-    double aspect = ellie.getMinorRadius() / ellie.getMajorRadius();
-    bug("aspect: " + num(aspect));
+//    double aspect = ellie.getMinorRadius() / ellie.getMajorRadius();
     int n = points.size();
     ellie.setArcRegion(points.get(0), points.get(n / 2), points.get(n - 1));
     int len = (int) Math.ceil(Functions.getCurvilinearLength(points));

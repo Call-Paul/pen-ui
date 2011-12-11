@@ -1,4 +1,4 @@
-package org.six11.sf;
+package org.six11.sf.rec;
 
 import java.awt.Color;
 import java.awt.geom.Area;
@@ -10,9 +10,11 @@ import static java.lang.Math.abs;
 
 import javax.naming.OperationNotSupportedException;
 
-import org.six11.sf.rec.RecognizedItem;
-import org.six11.sf.rec.RecognizedRawItem;
-import org.six11.sf.rec.RecognizerPrimitive;
+import org.six11.sf.Ink;
+import org.six11.sf.Segment;
+import org.six11.sf.SketchBook;
+import org.six11.sf.SketchRecognizer;
+import org.six11.sf.SketchRecognizer.Type;
 import org.six11.util.data.Statistics;
 import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
@@ -33,13 +35,13 @@ public class SelectGestureRecognizer extends SketchRecognizer {
 
   @Override
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in)
-      throws OperationNotSupportedException {
-    throw new OperationNotSupportedException(
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException(
         "can't use this recognizer to look at primitives. i need ink");
   }
 
   @Override
-  public RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException {
+  public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     Area totalArea = ShapeFactory.getFuzzyArea(ink.getSequence().getPoints(), 3.5);
     //    DrawingBuffer db = model.getLayers().getLayer("select gesture");
@@ -86,7 +88,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
       bug("Selected nothing");
     }
     if (!selectUs.isEmpty() || !unselectUs.isEmpty()) {
-      ret = new RecognizedRawItem(true) {
+      ret = new RecognizedRawItem(true, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
         public void activate(SketchBook model) {
           model.setSelectedSegments(selectUs);
           model.deselectSegments(unselectUs);

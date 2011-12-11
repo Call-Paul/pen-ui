@@ -120,12 +120,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     g.draw(rec);
   }
 
-  //  protected void fire(PenEvent pev) {
-  //    for (PenListener pl : penListeners) {
-  //      pl.handlePenEvent(pev);
-  //    }
-  //  }
-
   /**
    * Make a new layer with a specific key (e.g. "dots"), a human-readable name (e.g.
    * "segment junctions"), a z-depth, and a default visibility setting. Layers with lower z-values

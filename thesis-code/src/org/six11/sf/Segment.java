@@ -27,7 +27,7 @@ public class Segment implements HasFuzzyArea {
   private static int ID_COUNTER = 1;
 
   public static enum Type {
-    Line, Curve, Unknown, EllipticalArc
+    Line, Curve, Unknown, EllipticalArc, Dot
   };
 
   //  List<Pt> points; // going to replace this soon
@@ -45,40 +45,25 @@ public class Segment implements HasFuzzyArea {
   private transient Pt paraP2Loc = null;
   private transient List<Pt> paraPoints = null;
   private transient Shape paraShape = null;
+  private transient double paraLength = 0;
 
   Type type;
   //  Sequence spline;
   Ink ink;
   boolean termA, termB;
-  
+
   protected Segment() {
     // ensure subclass calls init();
   }
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     this(ink, points, termA, termB, Type.Unknown);
-    //    this.ink = ink;
-    //    this.points = points;
-    //    this.p0 = points.get(0);
-    //    this.p1 = points.get(points.size() - 1);
-    //    this.pri = new double[points.size()];
-    //    this.alt = new double[points.size()];
-    //    calculateParameters(points);
-    //    this.termA = termA;
-    //    this.termB = termB;
-    //    for (Pt pt : points) {
-    //      if (pt.getTime() == 0) {
-    //        Debug.stacktrace("point has zero time stamp!", 7);
-    //      }
-    //    }
-    //    this.type = Type.Unknown;
-    //    id = ID_COUNTER++;
   }
 
   public Segment(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
     init(ink, points, termA, termB, t);
   }
-  
+
   protected final void init(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
     this.ink = ink;
     this.p1 = points.get(0);
@@ -93,6 +78,10 @@ public class Segment implements HasFuzzyArea {
   }
 
   private final void calculateParameters(List<Pt> points) {
+    if (p1 == p2) {
+      bug("Going to have problems since the points for this segment are the same.");
+
+    }
     Vec v = new Vec(p1, p2);
     double vMag = v.mag();
     Line line = new Line(p1, p2);
@@ -190,7 +179,7 @@ public class Segment implements HasFuzzyArea {
       Vec v = new Vec(p1, p2).getUnitVector();
       double fullLen = p1.distance(p2);
       Vec vNorm = v.getNormal().getFlip();
-      for (int i=0; i < pri.length; i++) {
+      for (int i = 0; i < pri.length; i++) {
         double priComponent = pri[i] * fullLen;
         double altComponent = alt[i] * fullLen;
         Pt spot = p1.getTranslated(v, priComponent);
@@ -200,6 +189,7 @@ public class Segment implements HasFuzzyArea {
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
       paraShape = null;
+      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
     }
   }
 
@@ -264,17 +254,60 @@ public class Segment implements HasFuzzyArea {
 
   public boolean isNear(Pt point, double dist) {
     boolean ret = false;
-    Pt where = null;
-    if (type == Segment.Type.Line) {
-      where = Functions.getNearestPointOnLine(point, asLine());
-    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-      doPara();
-      where = Functions.getNearestPointOnPolyline(point, paraPoints);
-    }
+    Pt where = getNearestPoint(point);
+    //    if (type == Segment.Type.Line) {
+    //      where = Functions.getNearestPointOnLine(point, asLine());
+    //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+    //      doPara();
+    //      where = Functions.getNearestPointOnPolyline(point, paraPoints);
+    //    }
     if (where != null && where.distance(point) <= dist) {
       ret = true;
     }
     return ret;
+  }
+
+  /**
+   * Get the parameter that places this point along the parametric representation. 0 is coincident
+   * with p1, while 1 is coincident with p2.
+   * 
+   * @param pt
+   * @return
+   */
+  public double getPointParam(Pt pt) {
+    double ret = Double.MAX_VALUE;
+    doPara();
+    List<Pt> pts = getPointList();
+    double runningDist = 0;
+    double foundAt = 0;
+    for (int i = 0; i < pts.size() - 1; i++) {
+      if (foundAt == 0) {
+        double u = Functions.getPointSegmentParam(pt, pts.get(i), pts.get(i + 1));
+        if (u >= 0.0 && u <= 1.0) {
+          foundAt = runningDist + u * pts.get(i).distance(pts.get(i + 1));
+          bug("Found correct segment. runningDist= " + num(runningDist) + ", u=" + num(u)
+              + ", foundAt=" + num(foundAt));
+        }
+      }
+      runningDist = runningDist + pts.get(i).distance(pts.get(i + 1));
+    }
+    ret = foundAt / runningDist;
+    bug("Returning " + num(foundAt) + " / " + num(runningDist) + " = " + num(ret));
+    return ret;
+  }
+
+  public Pt getNearestPoint(Pt pt) {
+    Pt where = null;
+    if (type == Segment.Type.Line) {
+      where = Functions.getNearestPointOnLine(pt, asLine(), true);
+    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+      doPara();
+      where = Functions.getNearestPointOnPolyline(pt, paraPoints);
+    } else if (type == Segment.Type.Dot) {
+      where = getP1().copyXYT();
+      where.setDouble("r", 0);
+    }
+    return where;
   }
 
   public void replace(Pt capPt, Pt spot) {
@@ -327,9 +360,11 @@ public class Segment implements HasFuzzyArea {
   public boolean involves(Pt p) {
     return p == getP1() || p == getP2();
   }
-  
+
   public Pt[] getEndpointArray() {
-    return new Pt[] { p1, p2 };
+    return new Pt[] {
+        p1, p2
+    };
   }
 
   public Pt getVisualMidpoint() {
@@ -337,6 +372,16 @@ public class Segment implements HasFuzzyArea {
     List<Pt> bigList = asPolyline();
     int midIdx = bigList.size() / 2;
     return bigList.get(midIdx);
+  }
+
+  /**
+   * Tells you if calls to getEndCaps() and getStart/EndDir() will be meaningful. By default all
+   * segments do---override this and return false if your segment doesn't use this.
+   * 
+   * @return
+   */
+  public boolean hasEndCaps() {
+    return true;
   }
 
 }

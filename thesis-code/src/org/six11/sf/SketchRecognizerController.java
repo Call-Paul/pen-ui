@@ -49,7 +49,7 @@ public class SketchRecognizerController {
       for (SketchRecognizer rec : recognizers) {
         success.addAll(rec.applyTemplate(prims));
       }
-    } catch (OperationNotSupportedException e) {
+    } catch (UnsupportedOperationException e) {
       e.printStackTrace();
     }
     return success;
@@ -173,7 +173,7 @@ public class SketchRecognizerController {
       double straightLength = ptA.distance(ptB);
       double curvilinearLength = ink.seq.getPathLength(a, b);
       double lineLenDivCurviLen = curvilinearLength / straightLength;
-      boolean isShort = curvilinearLength < 30; 
+      boolean isShort = curvilinearLength < 30;
       if (lineLenDivCurviLen < 1.07 || (isShort && lineLenDivCurviLen < 1.5)) {
         ret.add(RecognizerPrimitive.makeLine(ink, a, b, Certainty.Yes));
         ret.add(RecognizerPrimitive.makeArc(ink, a, b, Certainty.Maybe));
@@ -220,9 +220,12 @@ public class SketchRecognizerController {
     Collection<RecognizedRawItem> results = new HashSet<RecognizedRawItem>();
     try {
       for (SketchRecognizer rec : rawRecognizersFinished) {
-        results.add(rec.applyRaw(ink));
+        RecognizedRawItem result = rec.applyRaw(ink);
+        if (result.isOk()) {
+          results.add(result);
+        }
       }
-    } catch (OperationNotSupportedException e) {
+    } catch (UnsupportedOperationException e) {
       e.printStackTrace();
     }
     return results;

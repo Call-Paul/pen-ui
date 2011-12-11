@@ -9,11 +9,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+import org.six11.util.pen.Antipodal;
+import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
+import static org.six11.util.Debug.bug;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -24,9 +28,9 @@ public class CornerFinder {
   public static final double minPatchSize = 10;
   public static final double lineErrorThreshold = 1.5;
   public static final double ellipseErrorThreshold = 0.5; // TODO: change
-  
-  private GraphicDebug guibug;
-  
+
+  //  private GraphicDebug guibug;
+
   public CornerFinder() {
 
   }
@@ -35,7 +39,7 @@ public class CornerFinder {
   public Set<Segment> findCorners(Ink ink) {
     assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
     isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
-//    guibug.drawJunctions(ink.seq);
+    //    guibug.drawJunctions(ink.seq);
     makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
     Set<Segment> ret = new HashSet<Segment>();
     ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
@@ -60,7 +64,7 @@ public class CornerFinder {
       }
     }
   }
-  
+
   /**
    * Sets the sequence's SEGMENT_JUNCTIONS attribute, which is a List<Integer> indicating where
    * segment boundaries are. It includes the endpoints of the stroke.
@@ -139,13 +143,19 @@ public class CornerFinder {
     junctions.add(seq.size() - 1);
     seq.setAttribute(SEGMENT_JUNCTIONS, junctions);
   }
-  
+
   @SuppressWarnings("unchecked")
   private void makeSegments(Ink ink) {
     List<Integer> juncts = (List<Integer>) ink.seq.getAttribute(SEGMENT_JUNCTIONS);
     List<Segment> segments = new ArrayList<Segment>();
-    for (int i = 0; i < juncts.size() - 1; i++) {
-      segments.add(identifySegment(ink, juncts.get(i), juncts.get(i + 1)));
+    Dot dot = detectDot(ink);
+    if (dot.getCertainty() == Certainty.Yes || dot.getCertainty() == Certainty.Maybe) {
+      bug("woo found a dot");
+      segments.add(dot);
+    } else {
+      for (int i = 0; i < juncts.size() - 1; i++) {
+        segments.add(identifySegment(ink, juncts.get(i), juncts.get(i + 1)));
+      }
     }
     ink.seq.setAttribute(SEGMENTS, segments);
   }
@@ -155,7 +165,8 @@ public class CornerFinder {
     double segLength = ink.seq.getPathLength(i, j);
     int numPatches = (int) ceil(segLength / minPatchSize);
     double patchLength = segLength / (double) numPatches;
-    List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength).getPoints();
+    List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength)
+        .getPoints();
     int a = 0;
     int b = patch.size() - 1;
     Line line = new Line(patch.get(a), patch.get(b));
@@ -170,7 +181,23 @@ public class CornerFinder {
     return ret;
   }
 
-//  public void setGuibug(GraphicDebug gb) {
-//    this.guibug = gb;
-//  }
+  private Dot detectDot(Ink ink) {
+    ConvexHull hull = new ConvexHull(ink.seq.getPoints());
+    Antipodal antipodes = new Antipodal(hull.getHull());
+    double density = (double) ink.seq.size() / antipodes.getArea();
+    double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
+    Certainty cert = Certainty.Unknown;
+    if (areaPerAspect < 58) {
+      cert = Certainty.Yes;
+    } else if (areaPerAspect < 120) {
+      cert = Certainty.Maybe;
+    } else if (areaPerAspect / (0.3 + density) < 120) {
+      cert = Certainty.Maybe;
+    } else {
+      cert = Certainty.No;
+    }
+    Dot dot = new Dot(hull.getConvexCentroid(), cert); // will insert the dot into seq's primitives list.
+    return dot;
+  }
+
 }

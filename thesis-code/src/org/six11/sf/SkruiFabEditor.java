@@ -308,6 +308,7 @@ public class SkruiFabEditor {
   public void drawStuff() {
     drawStencils();
     drawStructured();
+    drawGuides();
   }
 
   private void drawRecognized(Collection<RecognizedItem> items) {
@@ -342,6 +343,15 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
             rnd /* colors.get("selected stencil") */, 0);
       }
+    }
+    layers.repaint();
+  }
+  
+  private void drawGuides() {
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES);
+    buf.clear();
+    for (Pt pt : model.getGuidePoints()) {
+      DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, Color.RED);
     }
     layers.repaint();
   }

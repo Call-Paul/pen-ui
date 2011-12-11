@@ -3,10 +3,9 @@ package org.six11.sf.rec;
 import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import static java.lang.Math.toDegrees;
-
-import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.CornerFinder;
 import org.six11.sf.Ink;
@@ -24,22 +23,23 @@ import static org.six11.util.Debug.num;
 
 public class EraseGestureRecognizer extends SketchRecognizer {
 
-  private CornerFinder cf;
+//  private CornerFinder cf;
 
   public EraseGestureRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
-    this.cf = new CornerFinder();
+//    this.cf = new CornerFinder();
   }
 
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in)
-      throws OperationNotSupportedException {
-    throw new OperationNotSupportedException("This recognizer can't do templates.");
+      throws UnsupportedOperationException {
+    throw new UnsupportedOperationException("sorry babe");
   }
 
   @Override
-  public RecognizedRawItem applyRaw(Ink ink) throws OperationNotSupportedException {
+  public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-    Set<Segment> segs = cf.findCorners(ink);
+//    Set<Segment> segs = cf.findCorners(ink);
+    List<Segment> segs = (List<Segment>) ink.getSegments();
     int lines = 0;
     int total = 0;
     Statistics lengthStats = new Statistics();
@@ -74,12 +74,13 @@ public class EraseGestureRecognizer extends SketchRecognizer {
           angleStats.addData(toDegrees(ang));
         }
       }
-//      angleStats.printDebug();
+      
+      // if we found an erase gesture, make a recognized item that removes stuff below it.
       if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
         ConvexHull hull = ink.getHull();
         final Area area = new Area(hull.getHullShape());
         final Collection<Segment> doomed = pickDoomedSegments(area);
-        ret = new RecognizedRawItem(true) {
+        ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
           public void activate(SketchBook model) {
             for (Segment seg : doomed) {
               model.removeGeometry(seg);

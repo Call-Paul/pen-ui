@@ -13,7 +13,7 @@ import org.six11.util.pen.Sequence;
 public class GraphicDebug {
 
   private DrawingBufferLayers layers;
-  // these are the keyboard-activated layers, mostly for debugging.
+  // these are the keyboard-activated layers
   public static final String DB_STENCIL_LAYER = "0";
   public static final String DB_STRUCTURED_INK = "1";
   public static final String DB_CONSTRAINT_LAYER = "2";
@@ -24,6 +24,7 @@ public class GraphicDebug {
   public static final String DB_HIGHLIGHTS = "7";
   public static final String DB_SELECTION = "8";
   public static final String DB_UNSTRUCTURED_INK = "9";
+  public static final String DB_GUIDES = "guides";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;

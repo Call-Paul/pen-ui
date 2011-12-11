@@ -4,6 +4,7 @@ import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.util.List;
 
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.ConvexHull;
@@ -93,6 +94,11 @@ public class Ink {
   public ConvexHull getHull() {
     ConvexHull ret = new ConvexHull(seq.getPoints());
     return ret;
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<Segment> getSegments() {
+    return (List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS);
   }
 
 }
