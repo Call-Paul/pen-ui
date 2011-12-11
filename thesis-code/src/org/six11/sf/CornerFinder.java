@@ -18,6 +18,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -185,6 +186,7 @@ public class CornerFinder {
     ConvexHull hull = new ConvexHull(ink.seq.getPoints());
     Antipodal antipodes = new Antipodal(hull.getHull());
     double density = (double) ink.seq.size() / antipodes.getArea();
+    bug("density: " + num(density));
     double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
     Certainty cert = Certainty.Unknown;
     if (areaPerAspect < 58) {

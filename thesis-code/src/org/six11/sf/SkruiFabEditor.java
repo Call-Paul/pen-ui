@@ -201,7 +201,7 @@ public class SkruiFabEditor {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
       }
     }
-    
+
   }
 
   protected void debugState() {
@@ -224,7 +224,10 @@ public class SkruiFabEditor {
   public File getPdfOutputFile() throws IOException {
     File outfile = new File("cutfile.pdf");
     if (!outfile.exists()) {
-      outfile.createNewFile();
+      boolean happened = outfile.createNewFile();
+      if (!happened) {
+        bug("Was unable to create the output file.");
+      }
     }
     return outfile;
   }
@@ -346,12 +349,12 @@ public class SkruiFabEditor {
     }
     layers.repaint();
   }
-  
+
   private void drawGuides() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES);
     buf.clear();
-    for (Pt pt : model.getGuidePoints()) {
-      DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, Color.RED);
+    for (GuidePoint gpt : model.getGuidePoints()) {
+      DrawingBufferRoutines.dot(buf, gpt.getLocation(), 4, 0.4, Color.BLACK, Color.RED);
     }
     layers.repaint();
   }

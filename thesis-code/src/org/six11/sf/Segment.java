@@ -44,8 +44,8 @@ public class Segment implements HasFuzzyArea {
   private transient Pt paraP1Loc = null;
   private transient Pt paraP2Loc = null;
   private transient List<Pt> paraPoints = null;
-  private transient Shape paraShape = null;
-  private transient double paraLength = 0;
+//  private transient Shape paraShape = null;
+//  private transient double paraLength = 0;
 
   Type type;
   //  Sequence spline;
@@ -86,18 +86,40 @@ public class Segment implements HasFuzzyArea {
     double vMag = v.mag();
     Line line = new Line(p1, p2);
     for (int i = 0; i < points.size(); i++) {
-      if (points.get(i).isSameLocation(p1)) {
+      Pt target = points.get(i);
+      if (target.isSameLocation(p1)) {
         pri[i] = 0;
         alt[i] = 0;
       } else {
-        Pt ix = Functions.getNearestPointOnLine(points.get(i), line, true); // retains the 'r' double value
-        int whichSide = Functions.getPartition(points.get(i), line);
-        double dist = ix.distance(points.get(i)) * whichSide;
-        pri[i] = ix.getDouble("r");
-        alt[i] = dist / vMag;
+        Vec toTarget = calculateParameterForPoint(vMag, line, target);
+        pri[i] = toTarget.getX();
+        alt[i] = toTarget.getY();
       }
       //      System.out.println(num(pri[i]) + "\t" + num(alt[i]));
     }
+  }
+
+  /**
+   * Calculate the parameter for the target point along the given line segment.
+   * 
+   * @param vMag
+   *          the length of the line. passed in so it can be calculated one time, and used in a
+   *          loop.
+   * @param line
+   *          the segment as a line.
+   * @param target
+   *          the point we are seeking to parameterize
+   * @return a vector that can be used in conjunction with the line's start/end points that describe
+   *         where the target point is. The X component is how far along the target is in the
+   *         direction of the line (from start to end), and the Y component is orthogonal to it.
+   *         The sign of the Y component is determined by Functions.getPartition(target, line).
+   */
+  public static Vec calculateParameterForPoint(double vMag, Line line, Pt target) {
+    Pt ix = Functions.getNearestPointOnLine(target, line, true); // retains the 'r' double value
+    int whichSide = Functions.getPartition(target, line);
+    double dist = ix.distance(target) * whichSide;
+    Vec toTarget = new Vec(ix.getDouble("r"), dist / vMag);
+    return toTarget;
   }
 
   public Ink getOriginalInk() {
@@ -188,8 +210,8 @@ public class Segment implements HasFuzzyArea {
       }
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
-      paraShape = null;
-      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
+//      paraShape = null;
+//      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
     }
   }
 

@@ -17,6 +17,7 @@ import java.util.Set;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.rec.ConstraintFilters;
+import org.six11.sf.rec.DotReferenceGestureRecognizer;
 import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedRawItem;
@@ -49,7 +50,7 @@ public class SketchBook {
   private Set<Segment> selectedSegments;
   private GraphicDebug guibug;
   private Set<Segment> geometry;
-  private Set<Pt> guidePoints;
+  private Set<GuidePoint> guidePoints;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
@@ -71,7 +72,7 @@ public class SketchBook {
     this.selectedSegments = new HashSet<Segment>();
     this.cornerFinder = new CornerFinder();
     this.geometry = new HashSet<Segment>();
-    this.guidePoints = new HashSet<Pt>();
+    this.guidePoints = new HashSet<GuidePoint>();
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
@@ -594,27 +595,29 @@ public class SketchBook {
   }
 
   public void addUserConstraint(UserConstraint uc) {
-    userConstraints.add(uc);
-    for (Constraint c : uc.getConstraints()) {
-      getConstraints().addConstraint(c);
+    if (uc != null) {
+      userConstraints.add(uc);
+      for (Constraint c : uc.getConstraints()) {
+        getConstraints().addConstraint(c);
+      }
+      bug(userConstraints.size() + " user constraints.");
+      for (Ink itemInk : uc.getInk()) {
+        removeRelated(itemInk);
+      }
+      getConstraints().wakeUp();
     }
-    bug(userConstraints.size() + " user constraints.");
-    for (Ink itemInk : uc.getInk()) {
-      removeRelated(itemInk);
-    }
-    getConstraints().wakeUp();
   }
 
   public Collection<UserConstraint> getUserConstraints() {
     return userConstraints;
   }
 
-  public void addGuidePoint(Pt p) {
+  public void addGuidePoint(GuidePoint p) {
     guidePoints.add(p);
     editor.drawStuff();
   }
 
-  public Set<Pt> getGuidePoints() {
+  public Set<GuidePoint> getGuidePoints() {
     return guidePoints;
   }
 }

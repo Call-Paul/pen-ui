@@ -1,12 +1,18 @@
-package org.six11.sf;
+package org.six11.sf.rec;
 
 import java.util.Collection;
 import java.util.List;
 
-import org.six11.sf.rec.RecognizedItem;
-import org.six11.sf.rec.RecognizedRawItem;
-import org.six11.sf.rec.RecognizerPrimitive;
+import org.six11.sf.Dot;
+import org.six11.sf.GuidePoint;
+import org.six11.sf.Ink;
+import org.six11.sf.Segment;
+import org.six11.sf.SketchBook;
+import org.six11.sf.SketchRecognizer;
+import org.six11.sf.SketchRecognizer.Type;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Vec;
 
 import static org.six11.util.Debug.bug;
 
@@ -45,11 +51,11 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
       for (Segment seg : model.getGeometry()) {
         if (loc.distance(seg.getP1()) < NEARNESS_THRESHOLD) {
           bug("dot is near segment " + seg.id + " endpoint 1");
-          ret = makeItem(seg.getP1());
+          ret = makeEndpointItem(seg, true);
           ok = true;
         } else if (loc.distance(seg.getP2()) < NEARNESS_THRESHOLD) {
           bug("dot is near segment " + seg.id + " endpoint 2");
-          ret = makeItem(seg.getP2());
+          ret = makeEndpointItem(seg, false);
           ok = true;
         } else if (seg.isNear(loc, NEARNESS_THRESHOLD)) {
           bug("dot is near segment " + seg.id + " interior");
@@ -70,15 +76,17 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  private RecognizedRawItem makeNearItem(Segment seg, Pt loc) {
+  private RecognizedRawItem makeNearItem(final Segment seg, Pt loc) {
     Pt nearPt = seg.getNearestPoint(loc);
-    double param = seg.getPointParam(nearPt);
+    Line line = seg.asLine();
+    Vec lineVec = new Vec(seg.getP1(), seg.getP2());
+    final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
     
     RecognizedRawItem ret = new RecognizedRawItem(true, RecognizedRawItem.FAT_DOT_REFERENCE_POINT,
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
       public void activate(SketchBook model) {
-//        model.addGuidePoint(new GuidePoint());
+        model.addGuidePoint(new GuidePoint(seg, param));
       }
     };
     return ret;
@@ -89,7 +97,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
       public void activate(SketchBook model) {
-        model.addGuidePoint(pt);
+        model.addGuidePoint(new GuidePoint(pt));
       }
     };
     return ret;
@@ -101,9 +109,9 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
       public void activate(SketchBook model) {
         if (b) {
-          model.addGuidePoint(seg.getP1().copyXYT());
+          model.addGuidePoint(new GuidePoint(seg, new Vec(0, 0)));
         } else {
-          model.addGuidePoint(seg.getP2().copyXYT());
+          model.addGuidePoint(new GuidePoint(seg, new Vec(1, 0)));
         }
       }
     };
