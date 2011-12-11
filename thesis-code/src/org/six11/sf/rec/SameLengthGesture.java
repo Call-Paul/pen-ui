@@ -154,7 +154,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
             nearest = Math.min(d, nearest);
           }
           if (nearest < 50) {
-            double alpha = Math.max(0.1, getAlpha(nearest, 10, 80));
+            double alpha = getAlpha(nearest, 10, 80, 0.1);
             Color color = new Color(1, 0, 0, (float) alpha);
             for (Constraint c : getConstraints()) {
               DistanceConstraint dc = (DistanceConstraint) c;

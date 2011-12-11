@@ -168,7 +168,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
             points.add(braceLeft);
             points.add(braceCorner);
             points.add(braceRight);
-            double alpha = Math.max(0.1, getAlpha(fulcrum.distance(hoverPoint), 10, 80));
+            double alpha = getAlpha(fulcrum.distance(hoverPoint), 10, 80, 0.1);
             Color color = new Color(1, 0, 0, (float) alpha);
             DrawingBufferRoutines.lines(buf, points, color, 1.0);
           }
@@ -217,7 +217,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
         points.add(braceLeft);
         points.add(braceCorner);
         points.add(braceRight);
-        double alpha = Math.max(0.1, getAlpha(fulcrum.distance(hoverPoint), 10, 80));
+        double alpha = getAlpha(fulcrum.distance(hoverPoint), 10, 80, 0.1);
         Color color = new Color(1, 0, 0, (float) alpha);
         DrawingBufferRoutines.lines(buf, points, color, 1.0);
       }

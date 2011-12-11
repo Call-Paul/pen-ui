@@ -90,7 +90,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Components.antialias(g);
-    drawConstraints();
+    model.getEditor().drawConstraints();
+    model.getEditor().drawDerivedGuides();
+    
     for (DrawingBuffer buffer : layers) {
       if (buffer.isVisible() && useCachedImages) {
         buffer.paste(g);
@@ -257,21 +259,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         break;
     }
     repaint();
-  }
-
-  private void drawConstraints() {
-    DrawingBuffer buf = getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
-    buf.clear();
-    for (UserConstraint c : model.getUserConstraints()) {
-      c.draw(buf, getHoverPoint());
-    }
-    
-//    for (Constraint c : model.getConstraints().getConstraints()) {
-//      RecognizedItem item = model.getConstraintItem(c);
-//      if (item != null) {
-//        item.getTemplate().draw(c, item, buf, getHoverPoint());
-//      }
-//    }
   }
 
   /**

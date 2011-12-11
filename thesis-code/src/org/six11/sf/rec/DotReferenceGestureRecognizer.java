@@ -50,15 +50,12 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
       // cases 1 and 2
       for (Segment seg : model.getGeometry()) {
         if (loc.distance(seg.getP1()) < NEARNESS_THRESHOLD) {
-          bug("dot is near segment " + seg.id + " endpoint 1");
           ret = makeEndpointItem(seg, true);
           ok = true;
         } else if (loc.distance(seg.getP2()) < NEARNESS_THRESHOLD) {
-          bug("dot is near segment " + seg.id + " endpoint 2");
           ret = makeEndpointItem(seg, false);
           ok = true;
         } else if (seg.isNear(loc, NEARNESS_THRESHOLD)) {
-          bug("dot is near segment " + seg.id + " interior");
           ret = makeNearItem(seg, loc);
           ok = true;
         }

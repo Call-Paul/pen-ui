@@ -70,3 +70,13 @@
 
 027: curves and ellipses can be latched (now using parametric points
      inside segments). also can select segments by overtracing them.
+
+028: three guide points, one active. this gives a line and circle to the
+     place where the pen is hovering
+
+029: three guide points, two active. this gives a bunch of circles, a
+     line connecting them, the midpoint, and the line orthogonal to the
+     connecting line through the midpoint
+
+030: three guide points, all three active. this gives a circle and the
+     circle's center.

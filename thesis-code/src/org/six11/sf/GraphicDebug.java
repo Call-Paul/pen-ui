@@ -25,6 +25,7 @@ public class GraphicDebug {
   public static final String DB_SELECTION = "8";
   public static final String DB_UNSTRUCTURED_INK = "9";
   public static final String DB_GUIDES = "guides";
+  public static final String DB_GUIDES_DERIVED = "guides derived";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;

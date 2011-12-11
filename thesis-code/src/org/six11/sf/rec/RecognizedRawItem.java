@@ -14,6 +14,7 @@ public abstract class RecognizedRawItem {
   public static final String ENCIRCLE_ENDPOINTS_TO_MERGE = "Encircle Endpoints to Merge";
   public static final String SCRIBBLE_TO_ERASE = "Scribble to Erase";
   public static final String FAT_DOT_REFERENCE_POINT = "Fat Dot Reference Point";
+  public static final String FAT_DOT_SELECT = "Fat Dot Selection";
   public static final String OVERTRACE_TO_SELECT_SEGMENT = "Overtrace to Select Segment";
   
   private boolean ok;

@@ -63,6 +63,10 @@ public class SkruiFabEditor {
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
 
+  private Color selectionColor = new Color(255, 128, 128, 200);
+  private Color inertColor = new Color(128, 128, 128, 100);
+  private Color derivedGuideColor = new Color(220, 220, 220, 0);
+
   //  private Main main;
   private DrawingBufferLayers layers;
   private SketchBook model;
@@ -350,19 +354,47 @@ public class SkruiFabEditor {
     layers.repaint();
   }
 
+  public void drawConstraints() {
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
+    buf.clear();
+    for (UserConstraint c : model.getUserConstraints()) {
+      c.draw(buf, layers.getHoverPoint());
+    }
+  }
+
   private void drawGuides() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES);
     buf.clear();
+    Color c;
+    double r;
     for (GuidePoint gpt : model.getGuidePoints()) {
-      DrawingBufferRoutines.dot(buf, gpt.getLocation(), 4, 0.4, Color.BLACK, Color.RED);
+      if (model.getActiveGuidePoints().contains(gpt)) {
+        r = 4.0;
+        c = selectionColor;
+      } else {
+        r = 3.0;
+        c = inertColor;
+      }
+      DrawingBufferRoutines.dot(buf, gpt.getLocation(), r, r * 0.1, Color.BLACK, c);
     }
+
     layers.repaint();
+  }
+
+  public void drawDerivedGuides() {
+    if (layers.getHoverPoint() != null) {
+      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES_DERIVED);
+      buf.clear();
+      for (Guide g : model.getDerivedGuides()) {
+        g.draw(buf, layers.getHoverPoint(), derivedGuideColor, layers.getBounds());
+      }
+    }
   }
 
   private void drawStructured() {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
-    Color selectionColor = new Color(128, 128, 255, 200);
+
     for (Segment seg : model.getSelectedSegments()) {
       switch (seg.getType()) {
         case Curve:

@@ -4,6 +4,7 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Set;
 import org.imgscalr.Scalr;
 import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
+import org.six11.sf.rec.DotSelectGestureRecognizer;
 import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedRawItem;
@@ -30,8 +32,11 @@ import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.DistanceConstraint;
@@ -63,6 +68,8 @@ public class SketchBook {
   private BufferedImage draggingThumb;
   private GlassPane glass;
   private boolean lastInkWasSelection;
+  private List<GuidePoint> activeGuidePoints;
+  private Set<Guide> derivedGuides;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -73,6 +80,8 @@ public class SketchBook {
     this.cornerFinder = new CornerFinder();
     this.geometry = new HashSet<Segment>();
     this.guidePoints = new HashSet<GuidePoint>();
+    this.activeGuidePoints = new ArrayList<GuidePoint>();
+    this.derivedGuides = new HashSet<Guide>();
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
@@ -85,6 +94,7 @@ public class SketchBook {
     addRecognizer(new SelectGestureRecognizer(this));
     addRecognizer(new EraseGestureRecognizer(this));
     addRecognizer(new DotReferenceGestureRecognizer(this));
+    addRecognizer(new DotSelectGestureRecognizer(this));
     //    addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
@@ -122,6 +132,7 @@ public class SketchBook {
     cornerFinder.findCorners(newInk);
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
+
     // iterate through everything and remove the trumps
     Set<RecognizedRawItem> doomed = new HashSet<RecognizedRawItem>();
     for (RecognizedRawItem a : rawResults) {
@@ -150,7 +161,6 @@ public class SketchBook {
       Sequence scrib = newInk.getSequence();
       DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
           DrawingBufferLayers.DEFAULT_THICKNESS);
-      bug("setting last ink was selection to false");
       lastInkWasSelection = false;
     }
     layers.repaint();
@@ -322,6 +332,8 @@ public class SketchBook {
     getConstraints().clearConstraints();
     userConstraints.clear();
     guidePoints.clear();
+    activeGuidePoints.clear();
+    derivedGuides.clear();
     layers.clearScribble();
     layers.clearAllBuffers();
     layers.repaint();
@@ -619,5 +631,80 @@ public class SketchBook {
 
   public Set<GuidePoint> getGuidePoints() {
     return guidePoints;
+  }
+
+  public Set<Guide> getDerivedGuides() {
+    return derivedGuides;
+  }
+
+  public void toggleGuidePoint(GuidePoint gpt) {
+    if (activeGuidePoints.contains(gpt)) {
+      activeGuidePoints.remove(gpt);
+    } else {
+      activeGuidePoints.add(gpt);
+    }
+    // fix the derived guides
+    derivedGuides.clear();
+    Pt[] pts = new Pt[activeGuidePoints.size()];
+    int i = 0;
+    for (GuidePoint g : activeGuidePoints) {
+      pts[i++] = g.getLocation();
+    }
+    switch (activeGuidePoints.size()) {
+      case 1:
+        derivedGuides.add(makeDerivedCircle(pts[0], null, false));
+        derivedGuides.add(new GuideLine(pts[0], null));
+        break;
+      case 2:
+        derivedGuides.add(new GuideLine(pts[0], pts[1]));
+        derivedGuides.add(makeDerivedCircle(pts[0], pts[1], true));
+        derivedGuides.add(makeDerivedCircle(pts[0], pts[1], false));
+        derivedGuides.add(makeDerivedCircle(pts[1], pts[0], false));
+        Pt mid = Functions.getMean(pts);
+        derivedGuides.add(new GuidePoint(mid));
+        Vec v = new Vec(pts[0], pts[1]).getNormal();
+        Pt elsewhere = v.add(mid);
+        derivedGuides.add(new GuideLine(mid, elsewhere));
+        break;
+      case 3:
+        Pt center = Functions.getCircleCenter(pts[0], pts[1], pts[2]);
+        derivedGuides.add(new GuidePoint(center));
+        derivedGuides.add(makeDerivedCircle(center, pts[1], false));
+        break;
+      default:
+    }
+    bug("There are now " + activeGuidePoints.size() + " active guide points and "
+        + derivedGuides.size() + " derived guides");
+    editor.drawStuff();
+  }
+
+  /**
+   * Makes a circle based on two points. If bothOnOutside is true, it returns a circle where a and b
+   * are on opposite sides (the circle center is the midpoint of a and b). Otherwise, it uses point
+   * a as the circle center and point b as a reference point on the outside.
+   * 
+   * @param a
+   *          circle center or an outside point
+   * @param b
+   *          an outside point, or null if the radius is not fixed and if the current hover point
+   *          should be used
+   * @param bothOnOutside
+   *          determines the sematics of point a.
+   * @return
+   */
+  private Guide makeDerivedCircle(Pt a, Pt b, boolean bothOnOutside) {
+    bug("makeDerivedCircle(" + num(a) + ", " + num(b) + ", " + bothOnOutside + ")");
+    Guide ret = null;
+    if (bothOnOutside) {
+      Pt mid = Functions.getMean(a, b);
+      ret = makeDerivedCircle(mid, b, false);
+    } else {
+      ret = new GuideCircle(a, b);
+    }
+    return ret;
+  }
+
+  public List<GuidePoint> getActiveGuidePoints() {
+    return activeGuidePoints;
   }
 }
