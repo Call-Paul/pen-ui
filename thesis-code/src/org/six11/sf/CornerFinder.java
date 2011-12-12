@@ -151,7 +151,6 @@ public class CornerFinder {
     List<Segment> segments = new ArrayList<Segment>();
     Dot dot = detectDot(ink);
     if (dot.getCertainty() == Certainty.Yes || dot.getCertainty() == Certainty.Maybe) {
-      bug("woo found a dot");
       segments.add(dot);
     } else {
       for (int i = 0; i < juncts.size() - 1; i++) {
@@ -186,7 +185,6 @@ public class CornerFinder {
     ConvexHull hull = new ConvexHull(ink.seq.getPoints());
     Antipodal antipodes = new Antipodal(hull.getHull());
     double density = (double) ink.seq.size() / antipodes.getArea();
-    bug("density: " + num(density));
     double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
     Certainty cert = Certainty.Unknown;
     if (areaPerAspect < 58) {

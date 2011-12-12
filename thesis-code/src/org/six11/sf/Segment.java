@@ -27,7 +27,7 @@ public class Segment implements HasFuzzyArea {
   private static int ID_COUNTER = 1;
 
   public static enum Type {
-    Line, Curve, Unknown, EllipticalArc, Dot
+    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc
   };
 
   //  List<Pt> points; // going to replace this soon
@@ -78,10 +78,6 @@ public class Segment implements HasFuzzyArea {
   }
 
   private final void calculateParameters(List<Pt> points) {
-    if (p1 == p2) {
-      bug("Going to have problems since the points for this segment are the same.");
-
-    }
     Vec v = new Vec(p1, p2);
     double vMag = v.mag();
     Line line = new Line(p1, p2);

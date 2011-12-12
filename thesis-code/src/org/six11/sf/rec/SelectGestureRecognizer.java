@@ -68,14 +68,11 @@ public class SelectGestureRecognizer extends SketchRecognizer {
           ang = Math.min(abs(Functions.getSignedAngleBetween(undy.getStartDir(), inkVec)),
               abs(Functions.getSignedAngleBetween(undy.getEndDir(), inkVec)));
           ang = toDegrees(ang);
-          bug("angle: " + num(ang));
         }
         if (ang < 20) {
           if (model.isSelected(undy)) {
-            bug("** De-select " + undy);
             unselectUs.add(undy);
           } else {
-            bug("** Select " + undy);
             selectUs.add(undy);
           }
         }
@@ -83,9 +80,6 @@ public class SelectGestureRecognizer extends SketchRecognizer {
       }
       //      bug("For " + undy + "...");
       //      stats.printDebug();
-    }
-    if (selectUs.isEmpty()) {
-      bug("Selected nothing");
     }
     if (!selectUs.isEmpty() || !unselectUs.isEmpty()) {
       ret = new RecognizedRawItem(true, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {

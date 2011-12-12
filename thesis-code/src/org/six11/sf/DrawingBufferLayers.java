@@ -92,7 +92,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     Components.antialias(g);
     model.getEditor().drawConstraints();
     model.getEditor().drawDerivedGuides();
-    
+
     for (DrawingBuffer buffer : layers) {
       if (buffer.isVisible() && useCachedImages) {
         buffer.paste(g);
@@ -222,10 +222,11 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void handlePenEvent(PenEvent ev) {
     switch (ev.getType()) {
       case Down:
+        model.retainVisibleGuides();
         hoverPt = null;
         if (model.isPointOverSelection(ev.getPt())) {
           bug("over selection, yay");
-          model.setDraggingSelection(true);
+          model.setDraggingSelection(true);          
         } else {
           prev = ev.getPt();
           currentScribble = new GeneralPath();

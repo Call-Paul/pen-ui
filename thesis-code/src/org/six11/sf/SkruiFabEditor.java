@@ -244,10 +244,29 @@ public class SkruiFabEditor {
     bug("|                                                                                       |");
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
+    Collection<Segment> segs = new HashSet<Segment>();
     if (unstruc.isEmpty()) {
       bug("No ink to work with...");
+    } else {
+      Set<Guide> passed = new HashSet<Guide>();
+      for (Ink stroke : unstruc) {
+        passed.clear();
+        Segment guidedSeg = null;
+        for (Guide g : stroke.guides) {
+          if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
+            if (g instanceof GuidePoint) {
+              g.adjust(stroke, 0, stroke.seq.size() - 1);
+            } else {
+              passed.add(g);
+            }
+            bug("** Guide " + g + " claims this entire stroke.");
+          }
+        }
+        if (passed.size() == 1) {
+          guidedSeg = passed.toArray(new Guide[1])[0].adjust(stroke, 0, stroke.seq.size() - 1);
+        }
+      }
     }
-    Collection<Segment> segs = new HashSet<Segment>();
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
       segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
@@ -257,6 +276,7 @@ public class SkruiFabEditor {
       model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
       model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
       model.addGeometry(seg);
+
     }
     model.getConstraintAnalyzer().analyze(segs);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();

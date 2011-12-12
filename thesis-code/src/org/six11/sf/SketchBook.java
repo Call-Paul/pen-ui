@@ -70,6 +70,7 @@ public class SketchBook {
   private boolean lastInkWasSelection;
   private List<GuidePoint> activeGuidePoints;
   private Set<Guide> derivedGuides;
+  private Set<Guide> retainedVisibleGuides;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -82,6 +83,7 @@ public class SketchBook {
     this.guidePoints = new HashSet<GuidePoint>();
     this.activeGuidePoints = new ArrayList<GuidePoint>();
     this.derivedGuides = new HashSet<Guide>();
+    this.retainedVisibleGuides = new HashSet<Guide>();
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
@@ -139,15 +141,10 @@ public class SketchBook {
       if (!doomed.contains(a)) {
         for (RecognizedRawItem b : rawResults) {
           if (a != b && !doomed.contains(b) && a.trumps(b)) {
-            bug(a + " trumps " + b);
             doomed.add(b);
           }
         }
       }
-    }
-    if (!doomed.isEmpty()) {
-      bug("Removing " + doomed.size() + " items from recognition list due to trump behavior: "
-          + num(doomed, " "));
     }
     rawResults.removeAll(doomed);
     boolean didSomething = false;
@@ -155,7 +152,9 @@ public class SketchBook {
       item.activate(this);
       didSomething = true;
     }
+
     if (!didSomething) {
+      newInk.setGuides(retainedVisibleGuides);
       ink.add(newInk);
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       Sequence scrib = newInk.getSequence();
@@ -673,8 +672,6 @@ public class SketchBook {
         break;
       default:
     }
-    bug("There are now " + activeGuidePoints.size() + " active guide points and "
-        + derivedGuides.size() + " derived guides");
     editor.drawStuff();
   }
 
@@ -706,5 +703,17 @@ public class SketchBook {
 
   public List<GuidePoint> getActiveGuidePoints() {
     return activeGuidePoints;
+  }
+
+  public void retainVisibleGuides() {
+    retainedVisibleGuides.clear();
+    for (Guide g : derivedGuides) {
+      retainedVisibleGuides.add(g.getFixedCopy());
+    }
+    //    retainedVisibleGuides.addAll(derivedGuides);
+    retainedVisibleGuides.addAll(guidePoints);
+    for (Guide g : retainedVisibleGuides) {
+      g.setFixedHover(layers.getHoverPoint());
+    }
   }
 }

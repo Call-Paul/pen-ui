@@ -7,15 +7,17 @@ import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class GuidePoint extends Guide {
 
   private Segment seg;
   private Vec param;
   private Pt pt;
-  
+
   public GuidePoint(Segment seg, Vec param) {
     this.seg = seg;
     this.param = param;
@@ -44,7 +46,7 @@ public class GuidePoint extends Guide {
     } else if (pt != null) {
       ret = pt;
     }
-    
+
     if (ret == null) {
       bug("Warning: getLocation() only returns null if something has gone terribly wrong. Note: getLocation() is returning null.");
     }
@@ -61,4 +63,41 @@ public class GuidePoint extends Guide {
     DrawingBufferRoutines.dot(buf, spot, 3.0, 0.3, alphaBlack, c);
   }
 
+  public boolean claims(Sequence seq, int start, int end) {
+    Pt where = getLocation();
+    double closest = Math.min(seq.get(start).distance(where), seq.get(end).distance(where));
+    return (closest < 6.0);
+  }
+
+  public String toString() {
+    return "point: " + num(getLocation());
+  }
+
+  public boolean isDynamic() {
+    return false;
+  }
+
+  @Override
+  public Guide getFixedCopy() {
+    GuidePoint ret;
+    if (pt == null) {
+      ret = new GuidePoint(seg, param);
+    } else {
+      ret = new GuidePoint(pt);
+    }
+    return ret;
+  }
+
+  @Override
+  public Segment adjust(Ink ink, int start, int end) {
+    Pt where = getLocation();
+    double d1 = ink.seq.get(start).distance(where);
+    double d2 = ink.seq.get(end).distance(where);
+    if (d1 < d2) {
+      ink.getSequence().get(start).setLocation(where.getX(), where.getY());
+    } else {
+      ink.getSequence().get(end).setLocation(where.getX(), where.getY());
+    }
+    return null;
+  }
 }

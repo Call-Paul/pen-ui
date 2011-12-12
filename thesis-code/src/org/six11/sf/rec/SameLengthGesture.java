@@ -73,9 +73,13 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     if (segs1.size() == 1 && segs2.size() == 1) {
       Segment[] seg1 = segs1.toArray(new Segment[1]);
       Segment[] seg2 = segs2.toArray(new Segment[1]);
-      item.addTarget(SameLengthGesture.TARGET_A, seg1[0]);
-      item.addTarget(SameLengthGesture.TARGET_B, seg2[0]);
-      ret = Certainty.Yes;
+      if (seg1[0] != seg2[0]) {
+        item.addTarget(SameLengthGesture.TARGET_A, seg1[0]);
+        item.addTarget(SameLengthGesture.TARGET_B, seg2[0]);
+        ret = Certainty.Yes;
+      } else {
+        bug("Not going to make a line same length as itself, dawg");
+      }
     }
     return ret;
   }
@@ -143,7 +147,8 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     if (item != null) {
       strokes.addAll(item.getInk());
     }
-    UserConstraint ret = new UserConstraint("Same Length", strokes, addUs.toArray(new Constraint[0])) {
+    UserConstraint ret = new UserConstraint("Same Length", strokes,
+        addUs.toArray(new Constraint[0])) {
       public void draw(DrawingBuffer buf, Pt hoverPoint) {
         if (hoverPoint != null) {
           double nearest = Double.MAX_VALUE;

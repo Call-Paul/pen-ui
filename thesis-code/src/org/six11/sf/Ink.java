@@ -4,12 +4,16 @@ import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+
+import static org.six11.util.Debug.bug;
 
 /**
  * 
@@ -24,10 +28,12 @@ public class Ink {
   protected Path2D path;
   protected boolean analyzed;
   protected Sequence seq;
+  protected Set<Guide> guides;
 
   public Ink(Sequence seq) {
     this.seq = seq;
     created = System.currentTimeMillis();
+    this.guides = new HashSet<Guide>();
   }
 
   public Rectangle2D getBounds() {
@@ -99,6 +105,14 @@ public class Ink {
   @SuppressWarnings("unchecked")
   public List<Segment> getSegments() {
     return (List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS);
+  }
+
+  public void setGuides(Set<Guide> retainedVisibleGuides) {
+    guides.clear();
+    guides.addAll(retainedVisibleGuides);
+    for (Guide g : guides) {
+      bug("  Guide: " + g);
+    }
   }
 
 }
