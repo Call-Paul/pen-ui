@@ -98,7 +98,7 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
-//    printAdjacencyTable(allGeometry);
+    printAdjacencyTable(allGeometry);
   }
   
   private void printAdjacencyTable(Collection<Segment> geom) {

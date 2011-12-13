@@ -249,6 +249,7 @@ public class SkruiFabEditor {
       bug("No ink to work with...");
     } else {
       Set<Guide> passed = new HashSet<Guide>();
+      Set<Ink> passedInk = new HashSet<Ink>();
       for (Ink stroke : unstruc) {
         passed.clear();
         Segment guidedSeg = null;
@@ -259,13 +260,18 @@ public class SkruiFabEditor {
             } else {
               passed.add(g);
             }
+            passedInk.add(stroke);
             bug("** Guide " + g + " claims this entire stroke.");
           }
         }
         if (passed.size() == 1) {
           guidedSeg = passed.toArray(new Guide[1])[0].adjust(stroke, 0, stroke.seq.size() - 1);
+          bug("adding guided segment: " + guidedSeg);
+          segs.add(guidedSeg);
         }
       }
+      bug("Removing " + passedInk.size() + " ink strokes");
+      unstruc.removeAll(passedInk);
     }
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
@@ -426,6 +432,9 @@ public class SkruiFabEditor {
         case Line:
           DrawingBufferRoutines.line(buf, seg.asLine(), selectionColor, 3.8);
           break;
+        case CircularArc:
+          DrawingBufferRoutines.drawShape(buf, seg.asArc(), selectionColor, 3.8);
+          break;
         case Unknown:
           break;
       }
@@ -446,6 +455,9 @@ public class SkruiFabEditor {
           break;
         case Line:
           DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);
+          break;
+        case CircularArc:
+          DrawingBufferRoutines.drawShape(buf, seg.asArc(), Color.BLUE, 1.8);
           break;
         case Unknown:
           break;

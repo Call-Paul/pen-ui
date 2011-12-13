@@ -12,6 +12,8 @@ import org.six11.util.pen.IntersectionData;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class EndCap {
   
@@ -93,7 +95,6 @@ public class EndCap {
   public EndCap(Segment seg, WhichEnd end) {
     this.seg = seg;
     this.end = end;
-    
     this.pt = (end == WhichEnd.Start ? seg.getP1() : seg.getP2());
     this.dir = (end == WhichEnd.Start ? seg.getStartDir() : seg.getEndDir()).getFlip();
     double dist = seg.getP1().distance(seg.getP2());

@@ -88,7 +88,7 @@ public class Ink {
       moveMe.setLocation(moveMe.getX() + dx, moveMe.getY() + dy);
     }
   }
-  
+
   public boolean isAnalyzed() {
     return analyzed;
   }
@@ -110,9 +110,6 @@ public class Ink {
   public void setGuides(Set<Guide> retainedVisibleGuides) {
     guides.clear();
     guides.addAll(retainedVisibleGuides);
-    for (Guide g : guides) {
-      bug("  Guide: " + g);
-    }
   }
 
 }

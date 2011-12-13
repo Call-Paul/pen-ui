@@ -32,20 +32,20 @@ public class Segment implements HasFuzzyArea {
 
   //  List<Pt> points; // going to replace this soon
 
-  private Pt p1, p2; // start/end points. these can be moved around externally
+  protected Pt p1, p2; // start/end points. these can be moved around externally
 
   // parametric points: they are dependent on p1 and p2, so internal code here
   // might have to adjust them if p1 or p2 change.
-  private double[] pri; // parametric points primary coordinate, along vector from p1 to p2
-  private double[] alt; // parametric points secondary coordinate, orthogonal to the above
+  protected double[] pri; // parametric points primary coordinate, along vector from p1 to p2
+  protected double[] alt; // parametric points secondary coordinate, orthogonal to the above
 
   // transient variables that describe the parametric point sequence for the current values
   // of p1 and p2.
-  private transient Pt paraP1Loc = null;
-  private transient Pt paraP2Loc = null;
-  private transient List<Pt> paraPoints = null;
-//  private transient Shape paraShape = null;
-//  private transient double paraLength = 0;
+  protected transient Pt paraP1Loc = null;
+  protected transient Pt paraP2Loc = null;
+  protected transient List<Pt> paraPoints = null;
+  //  private transient Shape paraShape = null;
+  //  private transient double paraLength = 0;
 
   Type type;
   //  Sequence spline;
@@ -107,8 +107,8 @@ public class Segment implements HasFuzzyArea {
    *          the point we are seeking to parameterize
    * @return a vector that can be used in conjunction with the line's start/end points that describe
    *         where the target point is. The X component is how far along the target is in the
-   *         direction of the line (from start to end), and the Y component is orthogonal to it.
-   *         The sign of the Y component is determined by Functions.getPartition(target, line).
+   *         direction of the line (from start to end), and the Y component is orthogonal to it. The
+   *         sign of the Y component is determined by Functions.getPartition(target, line).
    */
   public static Vec calculateParameterForPoint(double vMag, Line line, Pt target) {
     Pt ix = Functions.getNearestPointOnLine(target, line, true); // retains the 'r' double value
@@ -126,7 +126,7 @@ public class Segment implements HasFuzzyArea {
     StringBuilder buf = new StringBuilder();
     switch (getType()) {
       case Curve:
-        buf.append("C");
+        buf.append("S");
         break;
       case EllipticalArc:
         buf.append("E");
@@ -137,6 +137,11 @@ public class Segment implements HasFuzzyArea {
       case Unknown:
         buf.append("?");
         break;
+      case CircularArc:
+        buf.append("C");
+        break;
+      default:
+        bug("Unknown segment type: " + getType());
     }
     buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
     return buf.toString();
@@ -188,7 +193,13 @@ public class Segment implements HasFuzzyArea {
     return ret;
   }
 
-  private void doPara() {
+  /**
+   * On exit, the variables that start with 'para' are set, most importantly, paraPoints. their
+   * locations depend on the segment's authoritative state. For lines, ellipses, and splines, this
+   * is simply p1 and p2. If a segment type can't be deformed by a simple affine transform, it
+   * should override this.
+   */
+  protected void doPara() {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
       paraP1Loc = p1.copyXYT();
@@ -206,8 +217,8 @@ public class Segment implements HasFuzzyArea {
       }
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
-//      paraShape = null;
-//      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
+      //      paraShape = null;
+      //      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
     }
   }
 
@@ -222,6 +233,8 @@ public class Segment implements HasFuzzyArea {
         Sequence spline = asSpline(); // spline should reliably give the direction at the ends
         ret = new Vec(spline.get(0), spline.get(1)).getUnitVector();
         break;
+      default:
+        bug("Unknown segment type!");
     }
     return ret;
   }
@@ -400,6 +413,11 @@ public class Segment implements HasFuzzyArea {
    */
   public boolean hasEndCaps() {
     return true;
+  }
+
+  public Shape asArc() {
+    bug("This sould never be called. override it.");
+    return null;
   }
 
 }
