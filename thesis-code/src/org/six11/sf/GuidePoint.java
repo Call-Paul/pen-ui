@@ -93,10 +93,7 @@ public class GuidePoint extends Guide {
   public Segment adjust(Ink ink, int start, int end) {
     Pt where = getLocation();
     List<Segment> segs = ink.getSegments();
-    if (segs == null) {
-      bug("This ink does not have segments yet.");
-    } else {
-      bug("There are " + segs.size() + " segments for this ink:");
+    if (segs != null) {
       Pt closestPt = null;
       double closestDist = Double.MAX_VALUE;
       for (Segment s : segs) {
@@ -106,11 +103,10 @@ public class GuidePoint extends Guide {
           closestPt = s.getP1();
         }
         if (s.getP2() != null && s.getP2().distance(where) < closestDist) {
-          closestDist = s.getP1().distance(where);
-          closestPt = s.getP1();
+          closestDist = s.getP2().distance(where);
+          closestPt = s.getP2();
         }
       }
-      bug("Closest point is " + num(closestDist) + " away. Adjusting " + num(closestPt) + " now");
       closestPt.setLocation(where);
     }
     return null;

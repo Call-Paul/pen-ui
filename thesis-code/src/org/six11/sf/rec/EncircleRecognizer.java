@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
@@ -35,7 +36,7 @@ public class EncircleRecognizer extends SketchRecognizer {
   //    return ret;
   //  }
 
-  private double getNearestEncircleDist2(Sequence seq) {
+  private double getNearestEncircleDistShortSequence(Sequence seq) {
     double ret = Double.MAX_VALUE;
     double len = seq.length();
     Collection<Pt> start = new HashSet<Pt>();
@@ -84,7 +85,7 @@ public class EncircleRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  private int getNearestEncircleDist(Sequence seq) {
+  private int getNearestEncircleDistLongSequence(Sequence seq) {
     // start at the end and look for the point seq[i] that is closest to the first point seq[0].
     // Only look at the last 20% of the sequence
     Pt start = seq.getFirst();
@@ -123,7 +124,7 @@ public class EncircleRecognizer extends SketchRecognizer {
     final Collection<Stencil> stencilsInside = new HashSet<Stencil>();
     double len = seq.length();
     if (len > 200) {
-      int bestIdx = getNearestEncircleDist(seq);
+      int bestIdx = getNearestEncircleDistLongSequence(seq);
       double bestDist = seq.get(bestIdx).distance(seq.get(0));
       if (bestDist < 50) {
         Area area = new Area(seq);
@@ -138,15 +139,39 @@ public class EncircleRecognizer extends SketchRecognizer {
       }
     }
 
-    if (len <= 200 && getNearestEncircleDist2(seq) < 6.5) {
+    if (len <= 200 && getNearestEncircleDistShortSequence(seq) < 6.5) {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
-      if (points.size() > 0) {
+      final Collection<GuidePoint> guides = model.findGuidePoints(area);
+      boolean eraseGuide = false;
+      if (points.size() > 0 && guides.size() == 1) {
+        // see if all the points are coincident with the single guide point. If so, remove the guide point.
+        final GuidePoint singleGuide = guides.toArray(new GuidePoint[1])[0];
+        Pt loc = singleGuide.getLocation();
+        boolean ok = true;
+        for (Pt pt : points) {
+          if (!pt.isSameLocation(loc)) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) {
+          ret = makeRemoveGuidePoint(singleGuide);
+          eraseGuide = true;
+        }
+      }
+      if (!eraseGuide && points.size() > 0) {
         ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE,
             RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
             RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
           public void activate(SketchBook model) {
-            Pt centroid = Functions.getMean(points);
+            Pt centroid = null;
+            if (guides.size() == 1) {
+              bug("Using guide point");
+              centroid = guides.toArray(new GuidePoint[1])[0].getLocation();
+            } else {
+              centroid = Functions.getMean(points);
+            }
             Collection<Segment> related = new HashSet<Segment>();
             for (Pt pt : points) {
               model.replace(pt, centroid);
@@ -156,9 +181,21 @@ public class EncircleRecognizer extends SketchRecognizer {
             model.getEditor().drawStuff();
           }
         };
+      } else if (guides.size() == 1) {
+        final GuidePoint removeMe = guides.toArray(new GuidePoint[1])[0];
+        ret = makeRemoveGuidePoint(removeMe);
       }
     }
 
     return ret;
+  }
+
+  private RecognizedRawItem makeRemoveGuidePoint(final GuidePoint singleGuide) {
+    return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_GUIDE_POINT_TO_DELETE,
+        RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
+      public void activate(SketchBook model) {
+        model.removeGuidePoint(singleGuide);
+      }
+    };
   }
 }

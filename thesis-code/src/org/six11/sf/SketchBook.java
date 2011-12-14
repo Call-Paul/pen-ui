@@ -717,4 +717,19 @@ public class SketchBook {
       g.setFixedHover(layers.getHoverPoint());
     }
   }
+
+  public Collection<GuidePoint> findGuidePoints(Area area) {
+    Collection<GuidePoint> ret = new HashSet<GuidePoint>();
+    for (GuidePoint gp : guidePoints) {
+      if (area.contains(gp.getLocation())) {
+        ret.add(gp);
+      }
+    }
+    return ret;
+  }
+
+  public void removeGuidePoint(GuidePoint removeMe) {
+    guidePoints.remove(removeMe);
+    editor.drawStuff();
+  }
 }
