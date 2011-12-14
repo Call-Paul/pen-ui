@@ -2,6 +2,7 @@ package org.six11.sf;
 
 import java.awt.Color;
 import java.awt.Rectangle;
+import java.util.List;
 
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.util.pen.DrawingBuffer;
@@ -91,12 +92,26 @@ public class GuidePoint extends Guide {
   @Override
   public Segment adjust(Ink ink, int start, int end) {
     Pt where = getLocation();
-    double d1 = ink.seq.get(start).distance(where);
-    double d2 = ink.seq.get(end).distance(where);
-    if (d1 < d2) {
-      ink.getSequence().get(start).setLocation(where.getX(), where.getY());
+    List<Segment> segs = ink.getSegments();
+    if (segs == null) {
+      bug("This ink does not have segments yet.");
     } else {
-      ink.getSequence().get(end).setLocation(where.getX(), where.getY());
+      bug("There are " + segs.size() + " segments for this ink:");
+      Pt closestPt = null;
+      double closestDist = Double.MAX_VALUE;
+      for (Segment s : segs) {
+        bug("  " + s);
+        if (s.getP1() != null && s.getP1().distance(where) < closestDist) {
+          closestDist = s.getP1().distance(where);
+          closestPt = s.getP1();
+        }
+        if (s.getP2() != null && s.getP2().distance(where) < closestDist) {
+          closestDist = s.getP1().distance(where);
+          closestPt = s.getP1();
+        }
+      }
+      bug("Closest point is " + num(closestDist) + " away. Adjusting " + num(closestPt) + " now");
+      closestPt.setLocation(where);
     }
     return null;
   }

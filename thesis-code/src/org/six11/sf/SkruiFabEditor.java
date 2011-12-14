@@ -256,12 +256,14 @@ public class SkruiFabEditor {
         for (Guide g : stroke.guides) {
           if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
             if (g instanceof GuidePoint) {
+              bug("** Guide " + g + " is near an endpoint.");
               g.adjust(stroke, 0, stroke.seq.size() - 1);
             } else {
+              bug("** Guide " + g + " claims this entire stroke.");
               passed.add(g);
-            }
-            passedInk.add(stroke);
-            bug("** Guide " + g + " claims this entire stroke.");
+              passedInk.add(stroke);
+            }              
+            
           }
         }
         if (passed.size() == 1) {
