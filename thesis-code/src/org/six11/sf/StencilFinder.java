@@ -16,10 +16,12 @@ import static org.six11.util.Debug.num;
 
 public class StencilFinder {
 
+  private static int ID_COUNTER = 1;
   private Set<Stencil> stencils;
   private Map<Pt, Set<Pt>> adjacent;
   private Stack<Pt> newPoints;
   private Set<List<Pt>> paths;
+  private final int id = ID_COUNTER++;
 
   public StencilFinder(Collection<Segment> newSegs, Set<Segment> allGeometry) {
     this.stencils = new HashSet<Stencil>();
@@ -34,6 +36,7 @@ public class StencilFinder {
       }
     }
     makeAdjacency(allGeometry);
+//    printAdjacencyTable(allGeometry);
     Stack<Pt> initialPath = new Stack<Pt>();
     for (Pt newPt : newPoints) {
       if (adjacent.containsKey(newPt)) {
@@ -87,7 +90,6 @@ public class StencilFinder {
         bug("  " + n(pt) + ": " + n(adjacent.get(pt)));
       }
     }
-
   }
 
   private final void makeAdjacency(Set<Segment> allGeometry) {
@@ -98,11 +100,14 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
-    printAdjacencyTable(allGeometry);
+  }
+  
+  private String ident() {
+    return "(adjacency table for finder #" + id + ")";
   }
   
   private void printAdjacencyTable(Collection<Segment> geom) {
-    System.out.println("-----");
+    System.out.println("-- table based on segment geometry --- " + ident());
     for (Segment seg : geom) {
       System.out.println(seg.getType() + " from " + n(seg.getP1()) + " to " + n(seg.getP2()));
     }
@@ -110,11 +115,17 @@ public class StencilFinder {
     for (Map.Entry<Pt, Set<Pt>> vals : adjacent.entrySet()) {
       System.out.println("  " + n(vals.getKey()) + ": " + n(vals.getValue()));
     }
-    System.out.println("-----");
+  }
+  
+  private void printAdjacencyTable() {
+    System.out.println("-- adjacency table --- " + ident());
+    for (Map.Entry<Pt, Set<Pt>> vals : adjacent.entrySet()) {
+      System.out.println("  " + n(vals.getKey()) + ": " + n(vals.getValue()));
+    }
   }
 
   public static String n(Pt pt) {
-    return pt.getString("name");
+    return pt.getString("name") + " (" + pt.hashCode() + ")";
   }
 
   public static String n(Collection<Pt> pts) {
@@ -134,6 +145,8 @@ public class StencilFinder {
       adjacent.put(p1, new HashSet<Pt>());
     }
     adjacent.get(p1).add(p2);
+//    bug("Just associated " + n(p1) + " => " + n(p2) + ". Table is currently:");
+//    printAdjacencyTable();
   }
 
   public Set<Stencil> getNewStencils() {

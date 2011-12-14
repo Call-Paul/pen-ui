@@ -270,7 +270,6 @@ public class SkruiFabEditor {
           segs.add(guidedSeg);
         }
       }
-      bug("Removing " + passedInk.size() + " ink strokes");
       unstruc.removeAll(passedInk);
     }
     for (Ink stroke : unstruc) {

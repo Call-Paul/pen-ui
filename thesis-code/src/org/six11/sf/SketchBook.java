@@ -295,12 +295,15 @@ public class SketchBook {
   }
 
   public void replace(Pt capPt, Pt spot) {
+    if (!ConstraintSolver.hasName(spot)) {
+      ConstraintSolver.setName(spot, nextPointName());
+    }
+    // points and constraints
+    solver.replacePoint(capPt, spot);
     // segment geometry
     for (Segment seg : geometry) {
       seg.replace(capPt, spot);
     }
-    // points and constraints
-    solver.replacePoint(capPt, nextPointName(), spot);
     for (Stencil s : stencils) {
       s.replacePoint(capPt, spot);
     }
@@ -474,7 +477,6 @@ public class SketchBook {
 
   public void setSelectedSegments(Collection<Segment> selectUs) {
     if (!lastInkWasSelection || selectUs == null) {
-      bug("clearing selected segments");
       selectedSegments.clear();
     }
     lastInkWasSelection = true;
@@ -690,7 +692,6 @@ public class SketchBook {
    * @return
    */
   private Guide makeDerivedCircle(Pt a, Pt b, boolean bothOnOutside) {
-    bug("makeDerivedCircle(" + num(a) + ", " + num(b) + ", " + bothOnOutside + ")");
     Guide ret = null;
     if (bothOnOutside) {
       Pt mid = Functions.getMean(a, b);
