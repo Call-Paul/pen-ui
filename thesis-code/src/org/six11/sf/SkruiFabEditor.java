@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import static java.lang.Math.toDegrees;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -40,6 +41,7 @@ import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.sf.rec.RecognizerPrimitive;
 import org.six11.sf.rec.RightAngleBrace;
+import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
@@ -49,8 +51,11 @@ import org.six11.util.mesh.Mesh;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -60,6 +65,7 @@ import org.six11.util.solve.ConstraintSolver;
 public class SkruiFabEditor {
 
   private static String ACTION_GO = "Go";
+  private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
 
@@ -171,12 +177,11 @@ public class SkruiFabEditor {
     // 2b. Now give actions for other commands like printing, saving,
     // launching ICBMs, etc
 
-    // actions.put(ACTION_PRINT, new NamedAction("Print",
-    // KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
-    // public void activate() {
-    // print();
-    // }
-    // });
+    actions.put(ACTION_PRINT, new NamedAction("Print", KeyStroke.getKeyStroke(KeyEvent.VK_P, 0)) {
+      public void activate() {
+        print();
+      }
+    });
     actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
       public void activate() {
         go();
@@ -236,6 +241,11 @@ public class SkruiFabEditor {
     return outfile;
   }
 
+  private void print() {
+    File outFile = new File(System.getProperty("user.dir"), "skruifab-" + Debug.nowFilenameFriendly() + ".pdf");
+    layers.print(outFile);
+  }
+
   @SuppressWarnings("unchecked")
   public void go() {
     bug("+---------------------------------------------------------------------------------------+");
@@ -256,7 +266,6 @@ public class SkruiFabEditor {
         for (Guide g : stroke.guides) {
           if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
             if (g instanceof GuidePoint) {
-              bug("** Guide " + g + " is near an endpoint.");
               g.adjust(stroke, 0, stroke.seq.size() - 1);
             } else {
               bug("** Guide " + g + " claims this entire stroke.");
@@ -422,6 +431,9 @@ public class SkruiFabEditor {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
 
+    // ------------------------------------------------------------ DRAW SELECTED SEGMENTS
+    //
+    //
     for (Segment seg : model.getSelectedSegments()) {
       switch (seg.getType()) {
         case Curve:
@@ -440,6 +452,10 @@ public class SkruiFabEditor {
           break;
       }
     }
+    
+    // ------------------------------------------------------------ DRAW ALL SEGMENTS
+    //
+    //
     for (Segment seg : model.getGeometry()) {
       if (!model.getConstraints().getPoints().contains(seg.getP1())) {
         bug("Segment P1 is unknown to constraint system.");
@@ -452,7 +468,9 @@ public class SkruiFabEditor {
           DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.CYAN, 1.8);
           break;
         case EllipticalArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
+//          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
+          ((EllipseArcSegment) seg).drawDebug(buf);
+          ((EllipseArcSegment) seg).drawArc(buf);
           break;
         case Line:
           DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);

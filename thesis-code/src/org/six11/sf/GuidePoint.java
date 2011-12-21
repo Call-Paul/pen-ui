@@ -27,6 +27,24 @@ public class GuidePoint extends Guide {
   public GuidePoint(Pt pt) {
     this.pt = pt;
   }
+  
+  public boolean isPinnedToSegment() {
+    return seg != null;
+  }
+  
+  public Segment getSegment() {
+    return seg;
+  }
+  
+  /**
+   * A guide point can change locations. This erases the seg and param values.
+   * @param pt
+   */
+  public void setLocation(Pt pt) {
+    this.pt = pt;
+    this.seg = null;
+    this.param = null;
+  }
 
   public Pt getLocation() {
     Pt ret = null;

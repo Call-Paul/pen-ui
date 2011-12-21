@@ -167,16 +167,22 @@ public class CornerFinder {
     double patchLength = segLength / (double) numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength)
         .getPoints();
-    int a = 0;
-    int b = patch.size() - 1;
-    Line line = new Line(patch.get(a), patch.get(b));
-    double lineError = Functions.getLineError(line, patch, a, b);
-    if (lineError < lineErrorThreshold) {
-      ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
-    } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
-      ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+    boolean debugging_ellipse = true;
+    if (!debugging_ellipse) {
+      int a = 0;
+      int b = patch.size() - 1;
+      Line line = new Line(patch.get(a), patch.get(b));
+      double lineError = Functions.getLineError(line, patch, a, b);
+      if (lineError < lineErrorThreshold) {
+        ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
+        ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      } else {
+        ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      }
     } else {
-      ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      bug("Debugging ellipse");
+      ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     }
     return ret;
   }

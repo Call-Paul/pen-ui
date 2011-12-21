@@ -145,7 +145,9 @@ public class EncircleRecognizer extends SketchRecognizer {
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
       boolean eraseGuide = false;
       if (points.size() > 0 && guides.size() == 1) {
-        // see if all the points are coincident with the single guide point. If so, remove the guide point.
+        // one or more endpoints and exactly one guide point.
+
+        // see if all the points are coincident with the single guide point.
         final GuidePoint singleGuide = guides.toArray(new GuidePoint[1])[0];
         Pt loc = singleGuide.getLocation();
         boolean ok = true;
@@ -156,6 +158,8 @@ public class EncircleRecognizer extends SketchRecognizer {
           }
         }
         if (ok) {
+          // all endpoints are already at the guide point. In this case the gesture means
+          // the user wants to remove the guide point.
           ret = makeRemoveGuidePoint(singleGuide);
           eraseGuide = true;
         }
@@ -168,7 +172,27 @@ public class EncircleRecognizer extends SketchRecognizer {
             Pt centroid = null;
             if (guides.size() == 1) {
               bug("Using guide point");
-              centroid = guides.toArray(new GuidePoint[1])[0].getLocation();
+              GuidePoint gp = guides.toArray(new GuidePoint[1])[0];
+              centroid = gp.getLocation();
+              bug("guidepoint pinned? " + gp.isPinnedToSegment());
+              if (gp.isPinnedToSegment()) {
+                Collection<Segment> related = new HashSet<Segment>();
+                for (Pt pt : points) {
+                  related.addAll(model.findRelatedSegments(pt));
+                }
+                bug("There are " + related + " related segments to the selected points");
+                boolean isRelated = false;
+                for (Segment s : related) {
+                  if (s == gp.getSegment()) {
+                    isRelated = true;
+                    break;
+                  }
+                }
+                if (isRelated) {
+                  bug("One of them is the related segment.");
+                  gp.setLocation(centroid);
+                }
+              }
             } else {
               centroid = Functions.getMean(points);
             }
@@ -181,20 +205,22 @@ public class EncircleRecognizer extends SketchRecognizer {
             model.getEditor().drawStuff();
           }
         };
-      } else if (guides.size() == 1) {
-        final GuidePoint removeMe = guides.toArray(new GuidePoint[1])[0];
-        ret = makeRemoveGuidePoint(removeMe);
+      } else if (guides.size() > 0) {
+        bug("Removing all guides.");
+        ret = makeRemoveGuidePoint(guides.toArray(new GuidePoint[0]));
       }
     }
 
     return ret;
   }
 
-  private RecognizedRawItem makeRemoveGuidePoint(final GuidePoint singleGuide) {
+  private RecognizedRawItem makeRemoveGuidePoint(final GuidePoint... guides) {
     return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_GUIDE_POINT_TO_DELETE,
         RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
       public void activate(SketchBook model) {
-        model.removeGuidePoint(singleGuide);
+        for (GuidePoint singleGuide : guides) {
+          model.removeGuidePoint(singleGuide);
+        }
       }
     };
   }
