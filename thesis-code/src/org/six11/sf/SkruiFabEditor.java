@@ -21,7 +21,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,10 +46,8 @@ import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
-import org.six11.util.mesh.Mesh;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
@@ -468,9 +465,9 @@ public class SkruiFabEditor {
           DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.CYAN, 1.8);
           break;
         case EllipticalArc:
-//          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
-          ((EllipseArcSegment) seg).drawDebug(buf);
-          ((EllipseArcSegment) seg).drawArc(buf);
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
+//          ((EllipseArcSegment) seg).initArc(buf);
+//          ((EllipseArcSegment) seg).drawArc(buf);
           break;
         case Line:
           DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);

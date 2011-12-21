@@ -17,8 +17,8 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
+//import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -29,8 +29,6 @@ public class CornerFinder {
   public static final double minPatchSize = 10;
   public static final double lineErrorThreshold = 1.5;
   public static final double ellipseErrorThreshold = 0.5; // TODO: change
-
-  //  private GraphicDebug guibug;
 
   public CornerFinder() {
 
@@ -167,22 +165,16 @@ public class CornerFinder {
     double patchLength = segLength / (double) numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength)
         .getPoints();
-    boolean debugging_ellipse = true;
-    if (!debugging_ellipse) {
-      int a = 0;
-      int b = patch.size() - 1;
-      Line line = new Line(patch.get(a), patch.get(b));
-      double lineError = Functions.getLineError(line, patch, a, b);
-      if (lineError < lineErrorThreshold) {
-        ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
-      } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
-        ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
-      } else {
-        ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
-      }
-    } else {
-      bug("Debugging ellipse");
+    int a = 0;
+    int b = patch.size() - 1;
+    Line line = new Line(patch.get(a), patch.get(b));
+    double lineError = Functions.getLineError(line, patch, a, b);
+    if (lineError < lineErrorThreshold) {
+      ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+    } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
       ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+    } else {
+      ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     }
     return ret;
   }

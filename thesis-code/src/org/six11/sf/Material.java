@@ -6,20 +6,15 @@ import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.imgscalr.Scalr;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.shape.ShapeFactory;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
-
-import com.sun.xml.internal.ws.wsdl.writer.document.Part;
 
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
