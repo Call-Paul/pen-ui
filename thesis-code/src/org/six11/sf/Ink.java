@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Path2D;
@@ -9,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -20,7 +22,7 @@ import static org.six11.util.Debug.bug;
  * 
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
-public class Ink {
+public class Ink implements HasFuzzyArea {
 
   protected long created;
   protected Rectangle2D bounds;
@@ -29,6 +31,7 @@ public class Ink {
   protected boolean analyzed;
   protected Sequence seq;
   protected Set<Guide> guides;
+  private Area fuzzy;
 
   public Ink(Sequence seq) {
     this.seq = seq;
@@ -110,6 +113,20 @@ public class Ink {
   public void setGuides(Set<Guide> retainedVisibleGuides) {
     guides.clear();
     guides.addAll(retainedVisibleGuides);
+  }
+
+  public Area getFuzzyArea(double fuzzyFactor) {
+    if (fuzzy == null) {
+      fuzzy = new Area();
+      List<Pt> pl = seq.getPoints();
+      for (int i = 0; i < pl.size() - 1; i++) {
+        Pt a = pl.get(i);
+        Pt b = pl.get(i + 1);
+        Shape s = ShapeFactory.getFuzzyRectangle(a, b, fuzzyFactor);
+        fuzzy.add(new Area(s));
+      }
+    }
+    return fuzzy;
   }
 
 }

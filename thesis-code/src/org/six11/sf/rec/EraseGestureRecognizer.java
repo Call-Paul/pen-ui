@@ -12,10 +12,14 @@ import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
+import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.data.Statistics;
 import org.six11.util.gui.shape.Areas;
+import org.six11.util.pen.Antipodal;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Pt;
+import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
 import static org.six11.util.Debug.bug;
@@ -23,11 +27,11 @@ import static org.six11.util.Debug.num;
 
 public class EraseGestureRecognizer extends SketchRecognizer {
 
-//  private CornerFinder cf;
+  //  private CornerFinder cf;
 
   public EraseGestureRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
-//    this.cf = new CornerFinder();
+    //    this.cf = new CornerFinder();
   }
 
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in)
@@ -35,64 +39,102 @@ public class EraseGestureRecognizer extends SketchRecognizer {
     throw new UnsupportedOperationException("sorry babe");
   }
 
-  @Override
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-//    Set<Segment> segs = cf.findCorners(ink);
-    List<Segment> segs = (List<Segment>) ink.getSegments();
-    int lines = 0;
-    int total = 0;
-    Statistics lengthStats = new Statistics();
-    for (Segment seg : segs) {
-      if (seg.getType() == Segment.Type.Line) {
-        lengthStats.addData(seg.length());
-        lines++;
-      }
-      total++;
+    Statistics statsX = new Statistics();
+    Statistics statsY = new Statistics();
+    long elapsed = ink.getSequence().getLast().getTime() - ink.getSequence().getFirst().getTime();
+    Sequence seq = Functions.getNormalizedSequence(ink.getSequence(), 5.0);
+    for (Pt pt : seq) {
+      statsX.addData(pt.getX());
+      statsY.addData(pt.getY());
     }
-    if (lines >= 5 && (((double) lines / (double) total) >= 6.0 / 7.0)) {
-      Set<Vec> directions = new HashSet<Vec>();
-      double median = lengthStats.getMedian();
-      for (Segment seg : segs) {
-        if (seg.getType() == Segment.Type.Line) {
-          Vec v = new Vec(seg.getP1(), seg.getP2());
-          if (v.mag() > median / 2) {
-            directions.add(v);
-          }
-        }
-      }
-      Vec[] dirs = directions.toArray(new Vec[directions.size()]);
-      Statistics angleStats = new Statistics();
-      for (int i = 0; i < dirs.length; i++) {
-        Vec cursor = dirs[i];
-        for (int j = i + 1; j < dirs.length; j++) {
-          Vec v = dirs[j];
-          double ang = Math.abs(Functions.getSignedAngleBetween(cursor, v));
-          if (ang > Math.PI / 2) {
-            ang = Math.abs(Functions.getSignedAngleBetween(cursor.getFlip(), v));
-          }
-          angleStats.addData(toDegrees(ang));
-        }
-      }
-      
-      // if we found an erase gesture, make a recognized item that removes stuff below it.
-      if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
-        ConvexHull hull = ink.getHull();
-        final Area area = new Area(hull.getHullShape());
-        final Collection<Segment> doomed = pickDoomedSegments(area);
-        ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
-          public void activate(SketchBook model) {
+    double dx = (statsX.getMax() - statsX.getMin());
+    double dy = (statsY.getMax() - statsY.getMin());
+    double area = dx * dy;
+    double densityX = ((double) statsX.getN()) / dx;
+    double densityY = ((double) statsY.getN()) / dy;
+    double density = densityX * densityY;
+    if (area > 100 && elapsed > 500 && density > 2.0) {
+      ConvexHull hull = ink.getHull();
+      final Area hullArea = new Area(hull.getHullShape());
+      final Collection<Segment> doomed = pickDoomedSegments(hullArea);
+      final Collection<Ink> doomedInk = pickDoomedInk(hullArea, ink);
+      ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
+        public void activate(SketchBook model) {
+          if (doomedInk.size() > 0) {
+            for (Ink ink : doomedInk) {
+              model.removeInk(ink);
+            }
+          } else {
             for (Segment seg : doomed) {
               model.removeGeometry(seg);
             }
-            model.getEditor().drawStuff();
           }
-        };
-      }
+          model.getEditor().drawStuff();
+        }
+      };
     }
     return ret;
   }
-  
+//
+//  public RecognizedRawItem applyRawOld(Ink ink) throws UnsupportedOperationException {
+//    RecognizedRawItem ret = RecognizedRawItem.noop();
+//    //    Set<Segment> segs = cf.findCorners(ink);
+//    List<Segment> segs = (List<Segment>) ink.getSegments();
+//    int lines = 0;
+//    int total = 0;
+//    Statistics lengthStats = new Statistics();
+//    for (Segment seg : segs) {
+//      if (seg.getType() == Segment.Type.Line) {
+//        lengthStats.addData(seg.length());
+//        lines++;
+//      }
+//      total++;
+//    }
+//    if (lines >= 5 && (((double) lines / (double) total) >= 6.0 / 7.0)) {
+//      Set<Vec> directions = new HashSet<Vec>();
+//      double median = lengthStats.getMedian();
+//      for (Segment seg : segs) {
+//        if (seg.getType() == Segment.Type.Line) {
+//          Vec v = new Vec(seg.getP1(), seg.getP2());
+//          if (v.mag() > median / 2) {
+//            directions.add(v);
+//          }
+//        }
+//      }
+//      Vec[] dirs = directions.toArray(new Vec[directions.size()]);
+//      Statistics angleStats = new Statistics();
+//      for (int i = 0; i < dirs.length; i++) {
+//        Vec cursor = dirs[i];
+//        for (int j = i + 1; j < dirs.length; j++) {
+//          Vec v = dirs[j];
+//          double ang = Math.abs(Functions.getSignedAngleBetween(cursor, v));
+//          if (ang > Math.PI / 2) {
+//            ang = Math.abs(Functions.getSignedAngleBetween(cursor.getFlip(), v));
+//          }
+//          angleStats.addData(toDegrees(ang));
+//        }
+//      }
+//
+//      // if we found an erase gesture, make a recognized item that removes stuff below it.
+//      if (angleStats.getMedian() < 10.0 && angleStats.getMean() < 10.0) {
+//        ConvexHull hull = ink.getHull();
+//        final Area area = new Area(hull.getHullShape());
+//        final Collection<Segment> doomed = pickDoomedSegments(area);
+//        ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
+//          public void activate(SketchBook model) {
+//            for (Segment seg : doomed) {
+//              model.removeGeometry(seg);
+//            }
+//            model.getEditor().drawStuff();
+//          }
+//        };
+//      }
+//    }
+//    return ret;
+//  }
+
   public Collection<Segment> pickDoomedSegments(Area area) {
     Segment eraseMe = null;
     double bestRatio = 0;
@@ -119,4 +161,35 @@ public class EraseGestureRecognizer extends SketchRecognizer {
     }
     return maybeDoomed;
   }
+
+  private Collection<Ink> pickDoomedInk(Area area, Ink gestureInk) {
+    Collection<Ink> doomed = new HashSet<Ink>();
+    double bestRatio = 0;
+    Ink eraseMe = null;
+    for (Ink ink : model.getUnanalyzedInk()) {
+      if (ink == gestureInk) {
+        continue;
+      }
+      Area inkArea = ink.getFuzzyArea(5.0);
+      Area ix = (Area) area.clone();
+      ix.intersect(inkArea);
+      if (!ix.isEmpty()) {
+        double surfaceArea = Areas.approxArea(ix, 1.0);
+        double segSurfaceArea = Areas.approxArea(inkArea, 1.0);
+        double ratio = surfaceArea / segSurfaceArea;
+        if (ratio > bestRatio) {
+          eraseMe = ink;
+          bestRatio = ratio;
+        }
+        if (ratio >= 0.5) {
+          doomed.add(ink);
+        }
+      }
+    }
+    if (doomed.isEmpty() && eraseMe != null) {
+      doomed.add(eraseMe);
+    }
+    return doomed;
+  }
+
 }

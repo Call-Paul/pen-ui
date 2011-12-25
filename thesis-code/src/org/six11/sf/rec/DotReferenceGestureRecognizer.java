@@ -66,7 +66,6 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
       // case 3 yet to do when I have suggestions working
       // case 4 yet to do when I have guides working
       if (!ok) {
-        bug("dot is not near anything.");
         ret = makeItem(dot.getP1());
       }
     }

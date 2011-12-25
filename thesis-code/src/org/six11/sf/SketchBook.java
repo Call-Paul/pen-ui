@@ -167,8 +167,13 @@ public class SketchBook {
 
   public void removeInk(Ink oldInk) {
     ink.remove(oldInk);
-    // TODO: remove from drawing buffer and redraw
-    bug("Not implemented");
+    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+    buf.clear();
+    for (Ink eenk : ink) {
+      Sequence scrib = eenk.getSequence();
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
+          DrawingBufferLayers.DEFAULT_THICKNESS);
+    }
   }
 
   /**

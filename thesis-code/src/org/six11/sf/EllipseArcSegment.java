@@ -65,7 +65,6 @@ public class EllipseArcSegment extends Segment {
     buf.append(getAngleCode(t2, t3)); // b to c
     buf.append(getAngleCode(t1, t3)); // a to c
     String code = buf.toString();
-    bug("Code: " + code);
     // there are eight possible values for the angle code. +++, ++-, +-+, etc.
     // two aren't possible (++- and --+).
     // two others don't require adjustment (+++ and ---).
