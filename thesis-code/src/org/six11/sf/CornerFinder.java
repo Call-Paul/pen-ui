@@ -17,8 +17,9 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+
+// import static org.six11.util.Debug.num;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -180,22 +181,28 @@ public class CornerFinder {
   }
 
   private Dot detectDot(Ink ink) {
-    ConvexHull hull = new ConvexHull(ink.seq.getPoints());
-    Antipodal antipodes = new Antipodal(hull.getHull());
-    double density = (double) ink.seq.size() / antipodes.getArea();
-    double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
-    Certainty cert = Certainty.Unknown;
-    if (areaPerAspect < 58) {
-      cert = Certainty.Yes;
-    } else if (areaPerAspect < 120) {
-      cert = Certainty.Maybe;
-    } else if (areaPerAspect / (0.3 + density) < 120) {
-      cert = Certainty.Maybe;
+    long time = ink.seq.getDuration();
+    Dot ret = null;
+    if (time < 180) {
+      ret = new Dot(ink.seq.getFirst(), Certainty.No);
     } else {
-      cert = Certainty.No;
+      ConvexHull hull = new ConvexHull(ink.seq.getPoints());
+      Antipodal antipodes = new Antipodal(hull.getHull());
+      double density = (double) ink.seq.size() / antipodes.getArea();
+      double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
+      Certainty cert = Certainty.Unknown;
+      if (areaPerAspect < 58) {
+        cert = Certainty.Yes;
+      } else if (areaPerAspect < 120) {
+        cert = Certainty.Maybe;
+      } else if (areaPerAspect / (0.3 + density) < 120) {
+        cert = Certainty.Maybe;
+      } else {
+        cert = Certainty.No;
+      }
+      ret = new Dot(hull.getConvexCentroid(), cert); // will insert the dot into seq's primitives list.
     }
-    Dot dot = new Dot(hull.getConvexCentroid(), cert); // will insert the dot into seq's primitives list.
-    return dot;
+    return ret;
   }
 
 }
