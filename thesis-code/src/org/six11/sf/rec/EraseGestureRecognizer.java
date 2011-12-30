@@ -27,11 +27,8 @@ import static org.six11.util.Debug.num;
 
 public class EraseGestureRecognizer extends SketchRecognizer {
 
-  //  private CornerFinder cf;
-
   public EraseGestureRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
-    //    this.cf = new CornerFinder();
   }
 
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in)
@@ -41,20 +38,9 @@ public class EraseGestureRecognizer extends SketchRecognizer {
 
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-    Statistics statsX = new Statistics();
-    Statistics statsY = new Statistics();
     long elapsed = ink.getSequence().getLast().getTime() - ink.getSequence().getFirst().getTime();
-    Sequence seq = Functions.getNormalizedSequence(ink.getSequence(), 5.0);
-    for (Pt pt : seq) {
-      statsX.addData(pt.getX());
-      statsY.addData(pt.getY());
-    }
-    double dx = (statsX.getMax() - statsX.getMin());
-    double dy = (statsY.getMax() - statsY.getMin());
-    double area = dx * dy;
-    double densityX = ((double) statsX.getN()) / dx;
-    double densityY = ((double) statsY.getN()) / dy;
-    double density = densityX * densityY;
+    double area = ink.getSequence().getRoughArea();
+    double density = ink.getSequence().getRoughDensity();
     if (area > 100 && elapsed > 500 && density > 2.0) {
       ConvexHull hull = ink.getHull();
       final Area hullArea = new Area(hull.getHullShape());
