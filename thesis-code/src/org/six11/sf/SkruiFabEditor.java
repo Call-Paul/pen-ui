@@ -84,8 +84,8 @@ public class SkruiFabEditor {
   public SkruiFabEditor(Main m) {
     //    this.main = m;
     this.colors = new Colors();
-    colors.set("stencil", new Color(0.97f, 0.97f, 0.97f));
-    colors.set("selected stencil", new Color(0.97f, 0.5f, 0.5f));
+    colors.set("stencil", new Color(0.8f, 0.8f, 0.8f, 0.5f));
+    colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
 
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
@@ -381,7 +381,7 @@ public class SkruiFabEditor {
       for (Stencil s : later) {
         Color rnd = Colors.getRandomLightColor();
         DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
-            rnd /* colors.get("selected stencil") */, 0);
+            colors.get("selected stencil"), 0);
       }
     }
     layers.repaint();
