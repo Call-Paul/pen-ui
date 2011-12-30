@@ -11,34 +11,76 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
+import static java.lang.Math.atan2;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 public class CircularArcSegment extends Segment {
 
   private Vec centerParameterization;
-  private int arcSide;
+  private Vec arcMidParameterization;
+//  private int arcSide;
 
   public CircularArcSegment(Ink ink, List<Pt> points, Pt initialCenter, double initialRadius,
       boolean termA, boolean termB) {
-    init(ink, points, termA, termB, Type.CircularArc);
-    // p1 and p2 are valid after init is called. just need to move them to be on the circle
+    Pt rawP1 = points.get(0);
+    Pt rawP2 = points.get(points.size() / 2);
+    Pt rawP3 = points.get(points.size() - 1);
     CircleArc arc = new CircleArc(initialCenter, initialRadius);
-    Pt p1ix = Functions.getIntersectionPoint(arc, new Line(p1, initialCenter));
-    Pt p2ix = Functions.getIntersectionPoint(arc, new Line(p2, initialCenter));
-    p1.setLocation(p1ix);
-    p2.setLocation(p2ix);
+    Pt arc1 = Functions.getIntersectionPoint(arc, new Line(rawP1, initialCenter));
+    Pt arc2 = Functions.getIntersectionPoint(arc, new Line(rawP2, initialCenter));
+    Pt arc3 = Functions.getIntersectionPoint(arc, new Line(rawP3, initialCenter));
+    List<Pt> surface = initArc(arc1, arc2, arc3, initialCenter);
     // now need to determine which side the center is on, and what the parametric coordinate of the center is.
-    Vec v = new Vec(p1, p2);
+    Vec v = new Vec(arc1, arc3);
     double vMag = v.mag();
-    Line line = new Line(p1, p2);
-    Pt roughlyArcMid = points.get(points.size() / 2);
-    Pt circleIntersectionPt = Functions.getIntersectionPoint(arc, new Line(roughlyArcMid,
-        initialCenter));
-    arcSide = Functions.getPartition(circleIntersectionPt, p1, p2);
+    Line line = new Line(surface.get(0), surface.get(surface.size() - 1));
+////    Pt roughlyArcMid = points.get(points.size() / 2);
+//    Pt circleIntersectionPt = Functions.getIntersectionPoint(arc, new Line(roughlyArcMid,
+//        initialCenter));
+//    arcSide = Functions.getPartition(circleIntersectionPt, arc1, arc3);
     centerParameterization = calculateParameterForPoint(vMag, line, initialCenter);
+    arcMidParameterization = calculateParameterForPoint(vMag, line, arc2);
+    bug("center param: " + num(centerParameterization) + ", arcMid param: " + num(arcMidParameterization));
+    init(ink, surface, termA, termB, Type.CircularArc);
   }
 
+  private double getParam(Pt target, Pt center) {
+    return atan2(target.y - center.y, target.x - center.x);
+  }
+  
+  public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center) {
+    double arc1T = getParam(arc1, center);
+    double arc2T = getParam(arc2, center);
+    double arc3T = getParam(arc3, center);
+    List<Pt> surface = new ArrayList<Pt>();
+    List<Double> arcParams = Functions.makeMonotonicallyIncreasingAngles(arc1T, arc2T, arc3T);
+    double numSteps = 60;
+    double start = arcParams.get(0);
+    double end = arcParams.get(2);
+    double step = (end - start) / numSteps;
+    double r = arc1.distance(center);
+    for (double t = start; t <= end; t += step) {
+      surface.add(getCircularPoint(t, r, center));
+    }
+    return surface;
+  }
+  
+  /**
+   * Returns a point on the circle boundary, parameterized by the given radial angle. If you call
+   * this a bunch of times for t=0..2pi you sample the entire circle.
+   */
+  public Pt getCircularPoint(double t, double r, Pt center) {
+    double x = (r * cos(t));
+    double y = (r * sin(t));
+    Pt ret = new Pt(x + center.x, y + center.y);
+    return ret;
+  }
+
+  
+  @Override
   protected void doPara() {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
@@ -63,6 +105,10 @@ public class CircularArcSegment extends Segment {
   }
 
   private Pt getCenter() {
+    return getParameterizedPoint(centerParameterization);
+  }
+  
+  private Pt getParameterizedPoint(Vec parameterization) {
     Pt ret = null;
     Vec chord = new Vec(getP1(), getP2()).getUnitVector();
     if (chord.isZero()) {
@@ -70,13 +116,17 @@ public class CircularArcSegment extends Segment {
     } else {
       double fullLen = getP1().distance(getP2());
       Vec vNorm = chord.getNormal().getFlip();
-      double cx = centerParameterization.getX() * fullLen;
-      double cy = centerParameterization.getY() * fullLen;
+      double cx = parameterization.getX() * fullLen;
+      double cy = parameterization.getY() * fullLen;
       Pt spot = getP1().getTranslated(chord, cx);
       spot = spot.getTranslated(vNorm, cy);
       ret = spot;
     }
     return ret;
+  }
+  
+  private Pt getArcMid() {
+    return getParameterizedPoint(arcMidParameterization);
   }
 
   /**
@@ -98,21 +148,7 @@ public class CircularArcSegment extends Segment {
 
   public Shape asArc() {
     doPara();
-    Pt c = getCenter();
-    double r = c.distance(p1);
-    Pt chordMid = Functions.getMean(getP1(), getP2());
-    Line line = new Line(c, chordMid);
-    CircleArc arc = new CircleArc(c, r);
-    Pt[] ix = Functions.getIntersectionPoints(arc, line);
-    int centerSide = (centerParameterization.getY() < 0) ? -1 : 1;
-    int which;
-    if (arcSide == centerSide) {
-      which = ix[0].distance(c) < ix[1].distance(c) ? 0 : 1;
-    } else {
-      which = ix[0].distance(chordMid) < ix[1].distance(chordMid) ? 0 : 1;
-    }
-    Pt mid = ix[which];
-    return ShapeFactory.makeArc(getP1(), mid, getP2());
+    return ShapeFactory.makeArc(getP1(), getArcMid(), getP2());
   }
 
 }
