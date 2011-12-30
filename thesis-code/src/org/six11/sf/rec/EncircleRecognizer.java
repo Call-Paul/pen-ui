@@ -29,13 +29,6 @@ public class EncircleRecognizer extends SketchRecognizer {
     super(model, Type.SingleRaw);
   }
 
-  //  public Collection<RecognizedItem> apply(Collection<RecognizerPrimitive> in) {
-  //    Collection<RecognizedItem> ret = new HashSet<RecognizedItem>();
-  //    
-  //    
-  //    return ret;
-  //  }
-
   private double getNearestEncircleDistShortSequence(Sequence seq) {
     double ret = Double.MAX_VALUE;
     double len = seq.length();
@@ -130,7 +123,8 @@ public class EncircleRecognizer extends SketchRecognizer {
         Area area = new Area(seq);
         stencilsInside.addAll(model.findStencil(area, 0.8));
         if (stencilsInside.size() > 0) {
-          ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT) {
+          ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
+              RecognizedRawItem.FAT_DOT_REFERENCE_POINT, RecognizedRawItem.FAT_DOT_SELECT) {
             public void activate(SketchBook model) {
               model.setSelectedStencils(stencilsInside);
             };
@@ -138,8 +132,8 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
       }
     }
-
-    if (len <= 200 && getNearestEncircleDistShortSequence(seq) < 6.5) {
+    bug("density: " + num(ink.getSequence().getRoughDensity()));
+    if (len <= 200 && ink.getSequence().getRoughDensity() <= 2.0 && getNearestEncircleDistShortSequence(seq) < 6.5) {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
@@ -216,7 +210,8 @@ public class EncircleRecognizer extends SketchRecognizer {
 
   private RecognizedRawItem makeRemoveGuidePoint(final GuidePoint... guides) {
     return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_GUIDE_POINT_TO_DELETE,
-        RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {
+        RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
+        RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT, RecognizedRawItem.FAT_DOT_SELECT) {
       public void activate(SketchBook model) {
         for (GuidePoint singleGuide : guides) {
           model.removeGuidePoint(singleGuide);
