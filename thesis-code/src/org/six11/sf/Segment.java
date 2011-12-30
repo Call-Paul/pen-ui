@@ -217,8 +217,6 @@ public class Segment implements HasFuzzyArea {
       }
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
-      //      paraShape = null;
-      //      paraLength = Functions.getPathLength(paraPoints, 0, paraPoints.size() - 1);
     }
   }
 

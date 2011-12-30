@@ -12,7 +12,6 @@ import static org.six11.util.Debug.bug;
 public class EllipseArcSegment extends Segment {
 
   RotatedEllipse ellie;
-  private int numSegments = 60;
 
   public EllipseArcSegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     // The ellipse is fit using regression, and does not necessarily begin and end at the first 
