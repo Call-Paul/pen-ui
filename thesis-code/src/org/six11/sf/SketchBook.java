@@ -55,7 +55,7 @@ public class SketchBook {
   private Set<Segment> selectedSegments;
   private GraphicDebug guibug;
   private Set<Segment> geometry;
-  private Set<GuidePoint> guidePoints;
+  private List<GuidePoint> guidePoints;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
@@ -80,7 +80,7 @@ public class SketchBook {
     this.selectedSegments = new HashSet<Segment>();
     this.cornerFinder = new CornerFinder();
     this.geometry = new HashSet<Segment>();
-    this.guidePoints = new HashSet<GuidePoint>();
+    this.guidePoints = new ArrayList<GuidePoint>();
     this.activeGuidePoints = new ArrayList<GuidePoint>();
     this.derivedGuides = new HashSet<Guide>();
     this.retainedVisibleGuides = new HashSet<Guide>();
@@ -141,6 +141,7 @@ public class SketchBook {
       if (!doomed.contains(a)) {
         for (RecognizedRawItem b : rawResults) {
           if (a != b && !doomed.contains(b) && a.trumps(b)) {
+            bug(a + " trumps " + b);
             doomed.add(b);
           }
         }
@@ -632,10 +633,11 @@ public class SketchBook {
 
   public void addGuidePoint(GuidePoint p) {
     guidePoints.add(p);
+    toggleGuidePoint(p);
     editor.drawStuff();
   }
 
-  public Set<GuidePoint> getGuidePoints() {
+  public List<GuidePoint> getGuidePoints() {
     return guidePoints;
   }
 
@@ -648,6 +650,9 @@ public class SketchBook {
       activeGuidePoints.remove(gpt);
     } else {
       activeGuidePoints.add(gpt);
+    }
+    while (activeGuidePoints.size() > 3) {
+      activeGuidePoints.remove(0);
     }
     // fix the derived guides
     derivedGuides.clear();
@@ -716,7 +721,6 @@ public class SketchBook {
     for (Guide g : derivedGuides) {
       retainedVisibleGuides.add(g.getFixedCopy());
     }
-    //    retainedVisibleGuides.addAll(derivedGuides);
     retainedVisibleGuides.addAll(guidePoints);
     for (Guide g : retainedVisibleGuides) {
       g.setFixedHover(layers.getHoverPoint());
@@ -735,6 +739,9 @@ public class SketchBook {
 
   public void removeGuidePoint(GuidePoint removeMe) {
     guidePoints.remove(removeMe);
+    if (activeGuidePoints.contains(removeMe)) {
+      toggleGuidePoint(removeMe);
+    }
     editor.drawStuff();
   }
 }
