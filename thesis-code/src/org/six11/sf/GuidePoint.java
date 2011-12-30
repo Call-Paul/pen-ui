@@ -27,17 +27,18 @@ public class GuidePoint extends Guide {
   public GuidePoint(Pt pt) {
     this.pt = pt;
   }
-  
+
   public boolean isPinnedToSegment() {
     return seg != null;
   }
-  
+
   public Segment getSegment() {
     return seg;
   }
-  
+
   /**
    * A guide point can change locations. This erases the seg and param values.
+   * 
    * @param pt
    */
   public void setLocation(Pt pt) {
@@ -82,6 +83,10 @@ public class GuidePoint extends Guide {
     DrawingBufferRoutines.dot(buf, spot, 3.0, 0.3, alphaBlack, c);
   }
 
+  /**
+   * Tells you if seq[start] or seq[end] is near the guide point's location, within some short
+   * tolerance like 6 pixels.
+   */
   public boolean claims(Sequence seq, int start, int end) {
     Pt where = getLocation();
     double closest = Math.min(seq.get(start).distance(where), seq.get(end).distance(where));
