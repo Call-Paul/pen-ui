@@ -226,7 +226,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         hoverPt = null;
         if (model.isPointOverSelection(ev.getPt())) {
           bug("over selection, yay");
-          model.setDraggingSelection(true);          
+          model.setDraggingSelection(true);
         } else {
           prev = ev.getPt();
           currentScribble = new GeneralPath();
@@ -241,9 +241,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
         hoverPt = null;
         Pt here = ev.getPt();
-        currentScribble.lineTo(here.getX(), here.getY());
+        if (currentScribble != null) {
+          currentScribble.lineTo(here.getX(), here.getY());
+        }
         model.addScribble(ev.getPt());
-
         break;
       case Idle:
         Sequence seq = model.endScribble(ev.getPt());
