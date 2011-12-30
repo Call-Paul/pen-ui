@@ -80,3 +80,6 @@
 
 030: three guide points, all three active. this gives a circle and the
      circle's center.
+
+031: circular guides improved, bug fixed so stencils involving circles
+     use perfect geometry (vs. raw input). selected stencils have alpha.
