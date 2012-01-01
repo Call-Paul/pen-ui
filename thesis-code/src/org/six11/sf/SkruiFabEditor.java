@@ -12,9 +12,7 @@ import java.awt.Container;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
@@ -27,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import static java.lang.Math.toDegrees;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -48,11 +45,11 @@ import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
+import org.six11.util.solve.ConstraintSolver.State;
+//import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -96,9 +93,12 @@ public class SkruiFabEditor {
     glass.setVisible(true);
     model = new SketchBook(glass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
-      public void constraintStepDone() {
+      public void constraintStepDone(final ConstraintSolver.State state) {
         Runnable r = new Runnable() {
           public void run() {
+            if (state == State.Solved) {
+              model.fixDerivedGuides();
+            }
             if (layers != null) {
               drawStuff();
             }
@@ -136,14 +136,14 @@ public class SkruiFabEditor {
     return grid;
   }
 
-  public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
-    Graphics2D g = destImage.createGraphics();
-    AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
-    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    g.drawImage(sourceImage, xform, null);
-    g.dispose();
-  }
+//  public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
+//    Graphics2D g = destImage.createGraphics();
+//    AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
+//    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+//    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+//    g.drawImage(sourceImage, xform, null);
+//    g.dispose();
+//  }
 
   Container getContentPane() {
     return af.getContentPane();
@@ -379,7 +379,6 @@ public class SkruiFabEditor {
     }
     if (later.size() > 0) {
       for (Stencil s : later) {
-        Color rnd = Colors.getRandomLightColor();
         DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
             colors.get("selected stencil"), 0);
       }
@@ -410,7 +409,10 @@ public class SkruiFabEditor {
       }
       DrawingBufferRoutines.dot(buf, gpt.getLocation(), r, r * 0.1, Color.BLACK, c);
     }
-
+    if (model.isDraggingGuide()) {
+      GuidePoint gpt = model.getDraggingGuide();
+      DrawingBufferRoutines.dot(buf, gpt.getLocation(), 5, 5 * 0.1, Color.BLACK, Color.ORANGE);
+    }
     layers.repaint();
   }
 
@@ -466,8 +468,6 @@ public class SkruiFabEditor {
           break;
         case EllipticalArc:
           DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
-//          ((EllipseArcSegment) seg).initArc(buf);
-//          ((EllipseArcSegment) seg).drawArc(buf);
           break;
         case Line:
           DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);

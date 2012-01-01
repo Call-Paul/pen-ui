@@ -12,16 +12,13 @@ import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import org.six11.sf.GlassPane.ActivityMode;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -258,7 +255,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
         dragStartComponent = mei.component;
         break;
       default:
-        bug("unhandled state: " + activity);
+        bug("unhandled mouse press state: " + activity);
     }
   }
 

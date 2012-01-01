@@ -71,6 +71,7 @@ public class SketchBook {
   private List<GuidePoint> activeGuidePoints;
   private Set<Guide> derivedGuides;
   private Set<Guide> retainedVisibleGuides;
+  private GuidePoint draggingGuidePoint;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -654,6 +655,12 @@ public class SketchBook {
     while (activeGuidePoints.size() > 3) {
       activeGuidePoints.remove(0);
     }
+    fixDerivedGuides();
+
+    editor.drawStuff();
+  }
+
+  public void fixDerivedGuides() {
     // fix the derived guides
     derivedGuides.clear();
     Pt[] pts = new Pt[activeGuidePoints.size()];
@@ -678,13 +685,14 @@ public class SketchBook {
         derivedGuides.add(new GuideLine(mid, elsewhere));
         break;
       case 3:
-        Pt center = Functions.getCircleCenter(pts[0], pts[1], pts[2]);
-        derivedGuides.add(new GuidePoint(center));
-        derivedGuides.add(makeDerivedCircle(center, pts[1], false));
+        if (!Functions.arePointsColinear(pts)) {
+          Pt center = Functions.getCircleCenter(pts[0], pts[1], pts[2]);
+          derivedGuides.add(new GuidePoint(center));
+          derivedGuides.add(makeDerivedCircle(center, pts[1], false));
+        }
         break;
       default:
     }
-    editor.drawStuff();
   }
 
   /**
@@ -742,6 +750,44 @@ public class SketchBook {
     if (activeGuidePoints.contains(removeMe)) {
       toggleGuidePoint(removeMe);
     }
+    editor.drawStuff();
+  }
+
+  public Collection<GuidePoint> findGuidePoints(Pt pt, boolean activeOnly) {
+    Collection<GuidePoint> ret = new HashSet<GuidePoint>();
+    Collection<GuidePoint> in = activeOnly ? activeGuidePoints : guidePoints;
+    if (activeOnly) {
+      for (GuidePoint gpt : in) {
+        if (gpt.getLocation().distance(pt) < 6) {
+          ret.add(gpt);
+        }
+      }
+    }
+    return ret;
+  }
+
+  public void setDraggingGuidePoint(GuidePoint dragMe) {
+    if (dragMe != null) {
+      bug("Dragging guide point!");
+    } else {
+      bug("Stop dragging guide point!");
+      getConstraints().wakeUp();
+    }
+    draggingGuidePoint = dragMe;
+    editor.drawStuff();
+  }
+
+  public boolean isDraggingGuide() {
+    return draggingGuidePoint != null;
+  }
+
+  public GuidePoint getDraggingGuide() {
+    return draggingGuidePoint;
+  }
+
+  public void dragGuidePoint(Pt pt) {
+    draggingGuidePoint.setLocation(pt);
+    fixDerivedGuides();
     editor.drawStuff();
   }
 }

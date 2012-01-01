@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -59,6 +60,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   Pt prev;
   GeneralPath currentScribble;
   private Pt hoverPt;
+  private GuidePoint draggingGP;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
@@ -228,28 +230,49 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           bug("over selection, yay");
           model.setDraggingSelection(true);
         } else {
-          prev = ev.getPt();
-          currentScribble = new GeneralPath();
-          currentScribble.moveTo(prev.getX(), prev.getY());
+          Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
+          if (nearbyGuidePoints.isEmpty()) {
+            prev = ev.getPt();
+            currentScribble = new GeneralPath();
+            currentScribble.moveTo(prev.getX(), prev.getY());
+          } else {
+            GuidePoint nearestGP = null;
+            double nearestDist = Double.MAX_VALUE;
+            for (GuidePoint gpt : nearbyGuidePoints) {
+              double d = gpt.getLocation().distance(ev.getPt());
+              if (d < nearestDist) {
+                nearestDist = d;
+                nearestGP = gpt;
+              }
+            }
+            model.setDraggingGuidePoint(nearestGP);
+          }
           model.startScribble(ev.getPt());
           model.clearSelectedStencils();
         }
         break;
       case Drag:
-        if (model.isDraggingSelection()) {
-          bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
-        }
         hoverPt = null;
         Pt here = ev.getPt();
-        if (currentScribble != null) {
-          currentScribble.lineTo(here.getX(), here.getY());
+        if (model.isDraggingSelection()) {
+          bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
+        } else if (model.isDraggingGuide()) {
+          model.dragGuidePoint(here);
+        } else {
+          if (currentScribble != null) {
+            currentScribble.lineTo(here.getX(), here.getY());
+          }
+          model.addScribble(ev.getPt());
         }
-        model.addScribble(ev.getPt());
         break;
       case Idle:
-        Sequence seq = model.endScribble(ev.getPt());
-        model.addInk(new Ink(seq));
-        clearScribble();
+        if (model.isDraggingGuide()) {
+          model.setDraggingGuidePoint(null);
+        } else {
+          Sequence seq = model.endScribble(ev.getPt());
+          model.addInk(new Ink(seq));
+          clearScribble();
+        }
         break;
       case Enter:
         break;

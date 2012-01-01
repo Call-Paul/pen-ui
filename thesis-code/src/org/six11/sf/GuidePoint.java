@@ -42,16 +42,20 @@ public class GuidePoint extends Guide {
    * @param pt
    */
   public void setLocation(Pt pt) {
-    this.pt = pt;
-    this.seg = null;
-    this.param = null;
+    bug("Set location. Old pt: " + num(this.pt) + ", old seg: " + seg + ", old param: " + num(param));
+    getLocation().setLocation(pt.getX(), pt.getY());
+//    this.pt = pt;
+//    this.seg = null;
+//    this.param = null;
   }
 
   public Pt getLocation() {
     Pt ret = null;
     if (seg != null && param != null) {
       if (param.isZero()) {
-        ret = seg.getP1().copyXYT();
+        ret = seg.getP1(); /*seg.getP1().copyXYT();*/
+      } else if (param.getX() == 1.0) {
+        ret = seg.getP2();
       } else {
         Pt p1 = seg.getP1();
         Pt p2 = seg.getP2();
