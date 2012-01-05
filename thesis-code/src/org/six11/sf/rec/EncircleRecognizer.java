@@ -132,7 +132,6 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
       }
     }
-    bug("density: " + num(ink.getSequence().getRoughDensity()));
     if (len <= 200 && ink.getSequence().getRoughDensity() <= 2.0 && getNearestEncircleDistShortSequence(seq) < 6.5) {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
