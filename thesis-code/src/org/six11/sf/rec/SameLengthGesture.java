@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.six11.sf.Ink;
+import org.six11.sf.Material;
 import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
@@ -100,7 +101,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       MultisourceNumericValue dist = new MultisourceNumericValue(mkSource(s1), mkSource(s2));
       addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), dist));
       addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), dist));
-      uc = makeUserConstraint(item, addUs);
+      uc = makeUserConstraint(model, item, addUs);
     } else if (results.size() == 1) {
       bug("Adding to the existing distance constraint.");
       // use existing numeric value
@@ -142,7 +143,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     //    }
   }
 
-  public static UserConstraint makeUserConstraint(RecognizedItem item, Set<Constraint> addUs) {
+  public static UserConstraint makeUserConstraint(final SketchBook model, RecognizedItem item, Set<Constraint> addUs) {
     Collection<Ink> strokes = new HashSet<Ink>();
     if (item != null) {
       strokes.addAll(item.getInk());
@@ -170,7 +171,9 @@ public class SameLengthGesture extends RecognizedItemTemplate {
               } else {
                 Vec segDirNorm = segDir.getNormal();
                 Pt textLoc = mid.getTranslated(segDirNorm, 8);
-                DrawingBufferRoutines.text(buf, textLoc, num(dc.getValue().getValue()), color);
+                Material.Units units = model.getMasterUnits();
+                double asUnits = Material.fromPixels(units, dc.getValue().getValue());
+                DrawingBufferRoutines.text(buf, textLoc, num(asUnits), color);
               }
             }
           }

@@ -47,8 +47,10 @@ import com.lowagie.text.pdf.PdfWriter;
 @SuppressWarnings("serial")
 public class DrawingBufferLayers extends JComponent implements PenListener {
 
-  public final static Color DEFAULT_COLOR = Color.BLACK;
-  public final static float DEFAULT_THICKNESS = 1.8f;
+  public final static Color DEFAULT_DRY_COLOR = Color.GRAY.darker();
+  public final static float DEFAULT_DRY_THICKNESS = 1.4f;
+  public final static Color DEFAULT_WET_COLOR = Color.BLACK;
+  public final static float DEFAULT_WET_THICKNESS = 1.8f;
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
@@ -103,8 +105,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     }
     if (currentScribble != null) {
-      g.setColor(DEFAULT_COLOR);
-      float thick = DEFAULT_THICKNESS;
+      g.setColor(DEFAULT_WET_COLOR);
+      float thick = DEFAULT_WET_THICKNESS;
       g.setStroke(Strokes.get(thick));
       g.draw(currentScribble);
     }

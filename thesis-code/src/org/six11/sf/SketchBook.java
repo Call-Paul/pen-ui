@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.imgscalr.Scalr;
+import org.six11.sf.Material.Units;
 import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
 import org.six11.sf.rec.DotSelectGestureRecognizer;
@@ -72,6 +73,7 @@ public class SketchBook {
   private Set<Guide> derivedGuides;
   private Set<Guide> retainedVisibleGuides;
   private GuidePoint draggingGuidePoint;
+  private Material.Units masterUnits = Units.Centimeter;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -160,8 +162,8 @@ public class SketchBook {
       ink.add(newInk);
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       Sequence scrib = newInk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
-          DrawingBufferLayers.DEFAULT_THICKNESS);
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_DRY_COLOR,
+          DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
       lastInkWasSelection = false;
     }
     layers.repaint();
@@ -173,8 +175,8 @@ public class SketchBook {
     buf.clear();
     for (Ink eenk : ink) {
       Sequence scrib = eenk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_COLOR,
-          DrawingBufferLayers.DEFAULT_THICKNESS);
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_DRY_COLOR,
+          DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
     }
   }
 
@@ -582,6 +584,7 @@ public class SketchBook {
       try {
         Segment seg = selectedSegments.toArray(new Segment[1])[0];
         double len = Double.parseDouble(string);
+        len = Material.toPixels(masterUnits, len);
         constrainSegmentLength(seg, len);
       } catch (NumberFormatException george) {
       }
@@ -598,7 +601,7 @@ public class SketchBook {
     bug("There are " + results.size() + " existing length constraints related to " + seg);
     if (results.size() == 0) {
       Constraint distConst = new DistanceConstraint(seg.getP1(), seg.getP2(), new NumericValue(len));
-      UserConstraint uc = SameLengthGesture.makeUserConstraint(null,
+      UserConstraint uc = SameLengthGesture.makeUserConstraint(this, null,
           Collections.singleton(distConst));
       bug("Adding user constraint for numeric distance");
       addUserConstraint(uc);
@@ -789,5 +792,9 @@ public class SketchBook {
     draggingGuidePoint.setLocation(pt);
     fixDerivedGuides();
     editor.drawStuff();
+  }
+
+  public Units getMasterUnits() {
+    return masterUnits;
   }
 }

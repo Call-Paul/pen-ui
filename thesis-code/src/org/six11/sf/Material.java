@@ -23,7 +23,10 @@ import static org.six11.util.Debug.num;
 
 public class Material {
 
-  public static double PX_PER_INCH = 1.0 / 72.0;
+  public static double INCH_PER_PX = 1.0 / 72.0;
+  public static double CM_PER_PX = 1.0 / 37.795275591;
+  public static double M_PER_PX = 1.0 / 3779.527559055;
+  public static double MM_PER_PX = 1.0 / 3.779527559;
 
   public enum Units {
     Inch, Centimeter, Millimeter, Meter, Pixel,
@@ -44,7 +47,7 @@ public class Material {
     this.stencilBB = new BoundingBox();
     this.shapes = new HashMap<Shape, Pt>();
     materialBB.add(0, 0);
-    materialBB.add(new Pt(toPixels(width), toPixels(height)));
+    materialBB.add(new Pt(toPixels(units, width), toPixels(units, height)));
     bug("Material bounds: " + materialBB);
   }
 
@@ -63,23 +66,54 @@ public class Material {
   /**
    * Converts the input value (in Units) to pixels.
    */
-  private double toPixels(double v) {
+  public static double toPixels(Units units, double v) {
     double ret = 0;
     switch (units) {
       case Centimeter:
+        ret = v / CM_PER_PX;
         break;
       case Inch:
-        ret = v / PX_PER_INCH;
+        ret = v / INCH_PER_PX;
         break;
       case Meter:
+        bug("toPixels not implemented for " + units);
         break;
       case Millimeter:
+        bug("toPixels not implemented for " + units);
         break;
       case Pixel:
         ret = v;
         break;
       default:
         bug("Can't convert unit type " + units + " to pixels.");
+    }
+    return ret;
+  }
+
+  /**
+   * Converts the input value (in pixels) to the given Unit value. (e.g. params Units.Inch, 72.0
+   * returns 1.0 because 72 pixels equal one inch.)
+   */
+  public static double fromPixels(Units units, double v) {
+    double ret = 0.0;
+    switch (units) {
+      case Centimeter:
+        ret = CM_PER_PX * v;
+        break;
+      case Inch:
+        ret = INCH_PER_PX * v;
+        break;
+      case Meter:
+        bug("fromPixels not implemented for " + units);
+        break;
+      case Millimeter:
+        bug("fromPixels not implemented for " + units);
+        break;
+      case Pixel:
+        ret = v;
+        break;
+      default:
+        bug("Can't convert from pixels to unit type " + units);
     }
     return ret;
   }
@@ -96,20 +130,15 @@ public class Material {
     double cursorX = 0;
     double cursorY = 0;
     double maxY = 0;
-    int stencilCount = 0;
     for (Shape s : unpositionedShapes) {
-      stencilCount++;
-      bug("typewriter algo for stencil " + stencilCount);
       BoundingBox sBB = new BoundingBox(s.getBounds2D());
       if (cursorX + sBB.getWidth() > materialBB.getMaxX()) {
         cursorX = 0;
         cursorY = maxY;
-        bug("exceeded stencil X boundary. zipping back to x = 0, y = " + num(cursorY));
       }
       sBB.translateToOrigin();
       sBB.translate(cursorX, cursorY);
       if (materialBB.getRectangle().contains(sBB.getRectangle())) {
-        bug("place stencil in rectangle.");
         place(s, cursorX, cursorY);
         cursorX += sBB.getWidth();
         maxY = Math.max(maxY, cursorY + sBB.getHeight());
