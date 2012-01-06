@@ -40,6 +40,7 @@ import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -73,6 +74,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private Timer fsTickTimer;
   private int fsTickTimeout = 45;
   private long fsStartTime;
+  private Pt fsLastDeformPt;
   Pt prev;
   GeneralPath currentScribble;
   private Pt hoverPt;
@@ -115,13 +117,23 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.setStateEntryCode("idle", new Runnable() {
       @Override
       public void run() {
+        fsDown = null;
+        fsNearestSeg = null; // segment currently flow-selected
+        fsNearestPt = null; // point on segment currently selected
         fsTimer.stop();
+        model.getEditor().drawStuff();
       }
     });
     f.setStateEntryCode("flow", new Runnable() {
       @Override
       public void run() {
         fsTickTimer.restart();
+      }
+    });
+    f.setStateExitCode("op", new Runnable() {
+      @Override
+      public void run() {
+        fsSaveChanges();
       }
     });
     f.addTransition(new Transition("down", "idle", "draw"));
@@ -174,12 +186,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   private void fsGrowSelection() {
-    bug("grow selection. segment: " + fsNearestSeg + ". point: " + num(fsNearestPt));
     long t = System.currentTimeMillis() - fsStartTime;
     double f = fsFull(t);
-    bug("f(" + t + ") = " + num(f));
     List<Pt> def = fsNearestSeg.getDeformedPoints();
-    double piHalf = Math.PI / 2.0;
     for (int i = 0; i < def.size(); i++) {
       Pt pt = def.get(i);
       double effort = pt.getDouble("fsEffort");
@@ -188,19 +197,45 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       if (effort < f) {
         s = (Math.cos(numerator / f) + 1.0) / 2.0;
       }
-      bug("c(" + i + ") = " + num(effort));
-      bug("s(" + i + ", " + t + ") = " + num(s));
       pt.setDouble("fsStrength", s);
     }
-    model.getEditor().drawFS();
+    model.getEditor().drawStuff();
   }
 
+  private void fsDeform(Pt recent) {
+    if (fsLastDeformPt != null && fsNearestSeg != null) {
+      Vec dir = new Vec(fsLastDeformPt, recent);
+      double m = dir.mag();
+      List<Pt> def = fsNearestSeg.getDeformedPoints();
+      for (Pt pt : def) {
+        double s = pt.getDouble("fsStrength");
+        Vec amt = dir.getVectorOfMagnitude(s * m);
+        if (Double.isNaN(amt.getX()) || Double.isNaN(amt.getY())) {
+          // avoid scary NaNs.
+        } else {
+          pt.move(amt);
+        }
+      }
+    }
+    fsLastDeformPt = recent;
+    model.getEditor().drawStuff();
+  }
+
+  private void fsSaveChanges() {
+    if (fsNearestSeg != null) {
+      List<Pt> def = fsNearestSeg.getDeformedPoints();
+      fsNearestSeg.calculateParameters(def);
+      fsNearestSeg.clearDeformation();
+      bug("Just saved changes, I think.");
+    }
+  }
+  
   private double fsFull(long elapsed) {
     // fully select P pixels per second
     double p = 70;
     return ((double) elapsed * p) / 1000.0;
   }
-  
+
   public Segment getFlowSelectionSegment() {
     return fsNearestSeg;
   }
@@ -223,6 +258,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
       if (nearestSeg != null) {
         bug("Nearest seg/point set.");
+        fsLastDeformPt = null;
         fsNearestSeg = nearestSeg;
         fsNearestPt = nearestPoint;
         fsNearestSeg.storeParaPointsForDeformation();
@@ -231,6 +267,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         bug("Found " + distance.length + " distances. they are " + num(distance));
         for (int i = 0; i < distance.length; i++) {
           def.get(i).setDouble("fsEffort", distance[i]);
+          def.get(i).setDouble("fsStrength", 0.0); // in case it has stale data from a previous go.
         }
       }
     }
@@ -262,10 +299,14 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     model.getEditor().drawDerivedGuides();
 
     for (DrawingBuffer buffer : layers) {
-      if (buffer.isVisible() && useCachedImages) {
-        buffer.paste(g);
-      } else if (buffer.isVisible()) {
-        buffer.drawToGraphics(g);
+      try {
+        if (buffer.isVisible() && useCachedImages) {
+          buffer.paste(g);
+        } else if (buffer.isVisible()) {
+          buffer.drawToGraphics(g);
+        }
+      } catch (Exception ex) {
+        bug("Got exception while drawing, probably due to buffer size.");
       }
     }
     if (currentScribble != null) {
@@ -427,6 +468,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
         } else if (model.isDraggingGuide()) {
           model.dragGuidePoint(here);
+        } else if (fsFSM.getState().equals("op")) {
+          fsDeform(here);
         } else {
           if (currentScribble != null) {
             currentScribble.lineTo(here.getX(), here.getY());
@@ -435,12 +478,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
         break;
       case Idle:
+        boolean wasFlowSelecting = !fsFSM.getState().equals("draw");
         fsFSM.addEvent("up");
         if (model.isDraggingGuide()) {
           model.setDraggingGuidePoint(null);
         } else {
-          Sequence seq = model.endScribble(ev.getPt());
-          model.addInk(new Ink(seq));
+          if (!wasFlowSelecting) {
+            Sequence seq = model.endScribble(ev.getPt());
+            model.addInk(new Ink(seq));
+          }
           clearScribble();
         }
         break;

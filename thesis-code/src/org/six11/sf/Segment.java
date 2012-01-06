@@ -67,8 +67,6 @@ public class Segment implements HasFuzzyArea {
     this.ink = ink;
     this.p1 = points.get(0);
     this.p2 = points.get(points.size() - 1);
-    this.pri = new double[points.size()];
-    this.alt = new double[points.size()];
     calculateParameters(points);
     this.termA = termA;
     this.termB = termB;
@@ -76,7 +74,13 @@ public class Segment implements HasFuzzyArea {
     id = ID_COUNTER++;
   }
 
-  private final void calculateParameters(List<Pt> points) {
+  public final void calculateParameters(List<Pt> points) {
+    this.pri = new double[points.size()];
+    this.alt = new double[points.size()];
+    Pt start = points.get(0);
+    Pt end = points.get(points.size() - 1);
+    this.p1.setLocation(start.getX(), start.getY());
+    this.p2.setLocation(end.getX(), end.getY());
     Vec v = new Vec(p1, p2);
     double vMag = v.mag();
     Line line = new Line(p1, p2);
@@ -90,8 +94,8 @@ public class Segment implements HasFuzzyArea {
         pri[i] = toTarget.getX();
         alt[i] = toTarget.getY();
       }
-      //      System.out.println(num(pri[i]) + "\t" + num(alt[i]));
     }
+    doPara();
   }
 
   /**

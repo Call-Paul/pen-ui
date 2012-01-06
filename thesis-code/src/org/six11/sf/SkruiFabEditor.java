@@ -350,6 +350,7 @@ public class SkruiFabEditor {
     drawStencils();
     drawStructured();
     drawGuides();
+    drawFS();
   }
 
   private void drawRecognized(Collection<RecognizedItem> items) {
@@ -431,10 +432,14 @@ public class SkruiFabEditor {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
 
+    Segment fsSeg = layers.getFlowSelectionSegment();
     // ------------------------------------------------------------ DRAW SELECTED SEGMENTS
     //
     //
     for (Segment seg : model.getSelectedSegments()) {
+      if (seg == fsSeg) {
+        continue;
+      }
       switch (seg.getType()) {
         case Curve:
           DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
@@ -457,6 +462,9 @@ public class SkruiFabEditor {
     //
     //
     for (Segment seg : model.getGeometry()) {
+      if (seg == fsSeg) {
+        continue;
+      }
       if (!model.getConstraints().getPoints().contains(seg.getP1())) {
         bug("Segment P1 is unknown to constraint system.");
       }
@@ -492,18 +500,18 @@ public class SkruiFabEditor {
     return cutfile;
   }
 
-  public void drawFS() {
+  private void drawFS() {
     DrawingBuffer fsBuf = layers.getLayer(GraphicDebug.DB_FS);
     fsBuf.clear();
     Segment fsSeg = layers.getFlowSelectionSegment();
     if (fsSeg != null) {
+      DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
       List<Pt> def = fsSeg.getDeformedPoints();
       if (def != null) {
         for (int i=0; i < def.size()-1; i++) {
           Pt a = def.get(i);
           Pt b = def.get(i+1);
           double str = Math.max(a.getDouble("fsStrength"), b.getDouble("fsStrength"));
-          bug("str: " + num(str));
           Color color = new Color(1f, 0f, 0f, (float) str);
           DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
         }
