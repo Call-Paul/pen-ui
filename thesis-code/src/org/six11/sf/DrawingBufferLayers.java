@@ -1,12 +1,13 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.RoundRectangle2D;
@@ -21,20 +22,24 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 
 import javax.swing.JComponent;
+import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
-import org.six11.sf.rec.RecognizedItem;
+import org.six11.util.data.FSM;
+import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-import org.six11.util.solve.Constraint;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -58,7 +63,16 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private List<DrawingBuffer> layers;
   private Map<String, DrawingBuffer> layersByName;
   SketchBook model;
-
+  private FSM fsFSM;
+  private Timer fsTimer;
+  private Pt fsDown;
+  private Segment fsNearestSeg; // segment currently flow-selected
+  private Pt fsNearestPt; // point on segment currently selected
+  private double fsBubble = 10;
+  private int fsPauseTimeout = 900;
+  private Timer fsTickTimer;
+  private int fsTickTimeout = 45;
+  private long fsStartTime;
   Pt prev;
   GeneralPath currentScribble;
   private Pt hoverPt;
@@ -70,6 +84,156 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     layers = new ArrayList<DrawingBuffer>();
     layersByName = new HashMap<String, DrawingBuffer>();
     penListeners = new ArrayList<PenListener>();
+    initFSM();
+  }
+
+  private final void initFSM() {
+    fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent ev) {
+        checkFS();
+      }
+    });
+    fsTimer.setRepeats(false);
+    fsTickTimer = new Timer(fsTickTimeout, new ActionListener() {
+      @Override
+      public void actionPerformed(ActionEvent e) {
+        fsFSM.addEvent("tick");
+      }
+    });
+    FSM f = new FSM("Flow Selection FSM");
+    f.addState("idle");
+    f.addState("draw");
+    f.addState("flow");
+    f.addState("op");
+    f.setStateEntryCode("draw", new Runnable() {
+      @Override
+      public void run() {
+        initFSTimer();
+      }
+    });
+    f.setStateEntryCode("idle", new Runnable() {
+      @Override
+      public void run() {
+        fsTimer.stop();
+      }
+    });
+    f.setStateEntryCode("flow", new Runnable() {
+      @Override
+      public void run() {
+        fsTickTimer.restart();
+      }
+    });
+    f.addTransition(new Transition("down", "idle", "draw"));
+    f.addTransition(new Transition("up", "draw", "idle"));
+    f.addTransition(new Transition("pause", "draw", "flow") {
+      public void doAfterTransition() {
+        fsInitSelection();
+      }
+    });
+    f.addTransition(new Transition("tick", "flow", "flow") {
+      public void doAfterTransition() {
+        fsGrowSelection();
+      }
+    }); // causes flow selection to grow
+    f.addTransition(new Transition("up", "flow", "idle"));
+    f.addTransition(new Transition("move", "flow", "op"));
+    f.addTransition(new Transition("up", "op", "idle"));
+    f.addChangeListener(new ChangeListener() {
+      @Override
+      public void stateChanged(ChangeEvent ev) {
+        bug("new state: " + fsFSM.getState());
+      }
+    });
+
+    this.fsFSM = f;
+  }
+
+  private void checkFS() {
+    boolean shouldFlow = false;
+    if (currentScribble != null && fsDown != null) {
+      List<Pt> points = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
+      double maxD = 0;
+      shouldFlow = true;
+      for (Pt pt : points) {
+        maxD = Math.max(maxD, pt.distance(fsDown));
+        if (maxD > fsBubble) {
+          shouldFlow = false;
+        }
+      }
+    }
+    if (shouldFlow) {
+      fsFSM.addEvent("pause");
+    }
+  }
+
+  private void initFSTimer() {
+    fsTimer.stop();
+    fsTimer.setInitialDelay(fsPauseTimeout);
+    fsTimer.restart();
+  }
+
+  private void fsGrowSelection() {
+    bug("grow selection. segment: " + fsNearestSeg + ". point: " + num(fsNearestPt));
+    long t = System.currentTimeMillis() - fsStartTime;
+    double f = fsFull(t);
+    bug("f(" + t + ") = " + num(f));
+    List<Pt> def = fsNearestSeg.getDeformedPoints();
+    double piHalf = Math.PI / 2.0;
+    for (int i = 0; i < def.size(); i++) {
+      Pt pt = def.get(i);
+      double effort = pt.getDouble("fsEffort");
+      double numerator = effort * Math.PI;
+      double s = 0.0;
+      if (effort < f) {
+        s = (Math.cos(numerator / f) + 1.0) / 2.0;
+      }
+      bug("c(" + i + ") = " + num(effort));
+      bug("s(" + i + ", " + t + ") = " + num(s));
+      pt.setDouble("fsStrength", s);
+    }
+    model.getEditor().drawFS();
+  }
+
+  private double fsFull(long elapsed) {
+    // fully select P pixels per second
+    double p = 70;
+    return ((double) elapsed * p) / 1000.0;
+  }
+  
+  public Segment getFlowSelectionSegment() {
+    return fsNearestSeg;
+  }
+
+  private void fsInitSelection() {
+    bug("init selection");
+    fsStartTime = System.currentTimeMillis();
+    if (fsDown != null) {
+      Segment nearestSeg = null;
+      Pt nearestPoint = null;
+      double nearestDist = Double.MAX_VALUE;
+      for (Segment seg : model.getGeometry()) {
+        Pt thisPoint = seg.getNearestPoint(fsDown);
+        double thisDist = thisPoint.distance(fsDown);
+        if (thisDist < nearestDist) {
+          nearestDist = thisDist;
+          nearestSeg = seg;
+          nearestPoint = thisPoint;
+        }
+      }
+      if (nearestSeg != null) {
+        bug("Nearest seg/point set.");
+        fsNearestSeg = nearestSeg;
+        fsNearestPt = nearestPoint;
+        fsNearestSeg.storeParaPointsForDeformation();
+        List<Pt> def = fsNearestSeg.getDeformedPoints();
+        double[] distance = Functions.calculateCurvilinearDistance(def, fsNearestPt);
+        bug("Found " + distance.length + " distances. they are " + num(distance));
+        for (int i = 0; i < distance.length; i++) {
+          def.get(i).setDouble("fsEffort", distance[i]);
+        }
+      }
+    }
   }
 
   public void clearScribble() {
@@ -226,10 +390,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void handlePenEvent(PenEvent ev) {
     switch (ev.getType()) {
       case Down:
+        fsFSM.setState("idle"); // sanity check in case state got messed up
+        fsFSM.addEvent("down");
+        fsDown = ev.getPt();
         model.retainVisibleGuides();
         hoverPt = null;
         if (model.isPointOverSelection(ev.getPt())) {
-          bug("over selection, yay");
           model.setDraggingSelection(true);
         } else {
           Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
@@ -254,6 +420,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
         break;
       case Drag:
+        fsFSM.addEvent("move");
         hoverPt = null;
         Pt here = ev.getPt();
         if (model.isDraggingSelection()) {
@@ -268,6 +435,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
         break;
       case Idle:
+        fsFSM.addEvent("up");
         if (model.isDraggingGuide()) {
           model.setDraggingGuidePoint(null);
         } else {

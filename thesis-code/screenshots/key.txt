@@ -83,3 +83,5 @@
 
 031: circular guides improved, bug fixed so stencils involving circles
      use perfect geometry (vs. raw input). selected stencils have alpha.
+
+032: flow selection of splines.

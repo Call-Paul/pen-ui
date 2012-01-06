@@ -45,11 +45,12 @@ import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.ConstraintSolver.State;
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -489,6 +490,26 @@ public class SkruiFabEditor {
 
   public CutfilePane getCutfilePane() {
     return cutfile;
+  }
+
+  public void drawFS() {
+    DrawingBuffer fsBuf = layers.getLayer(GraphicDebug.DB_FS);
+    fsBuf.clear();
+    Segment fsSeg = layers.getFlowSelectionSegment();
+    if (fsSeg != null) {
+      List<Pt> def = fsSeg.getDeformedPoints();
+      if (def != null) {
+        for (int i=0; i < def.size()-1; i++) {
+          Pt a = def.get(i);
+          Pt b = def.get(i+1);
+          double str = Math.max(a.getDouble("fsStrength"), b.getDouble("fsStrength"));
+          bug("str: " + num(str));
+          Color color = new Color(1f, 0f, 0f, (float) str);
+          DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
+        }
+      }
+    }
+    layers.repaint();
   }
 
 }

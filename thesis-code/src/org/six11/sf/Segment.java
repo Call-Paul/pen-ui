@@ -44,8 +44,7 @@ public class Segment implements HasFuzzyArea {
   protected transient Pt paraP1Loc = null;
   protected transient Pt paraP2Loc = null;
   protected transient List<Pt> paraPoints = null;
-  //  private transient Shape paraShape = null;
-  //  private transient double paraLength = 0;
+  protected transient List<Pt> deformedPoints = null;
 
   Type type;
   //  Sequence spline;
@@ -120,6 +119,21 @@ public class Segment implements HasFuzzyArea {
 
   public Ink getOriginalInk() {
     return ink;
+  }
+  
+  public List<Pt> storeParaPointsForDeformation() {
+    doPara();
+    deformedPoints = new ArrayList<Pt>();
+    deformedPoints.addAll(paraPoints);
+    return deformedPoints;
+  }
+  
+  public List<Pt> getDeformedPoints() {
+    return deformedPoints;
+  }
+  
+  public void clearDeformation() {
+    deformedPoints = null;
   }
 
   public String toString() {
@@ -335,6 +349,8 @@ public class Segment implements HasFuzzyArea {
     } else if (type == Segment.Type.Dot) {
       where = getP1().copyXYT();
       where.setDouble("r", 0);
+    } else {
+      bug("getNearestPoint not implementd for type " + type);
     }
     return where;
   }

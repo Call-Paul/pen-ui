@@ -1,4 +1,11 @@
 Bugs at the moment:
 
+* Should use hairline vector thickness when generating PDF.
+
 * Removing a segment that has constraints associated with it should
   remove or alter those constraints.
+
+* Circular guide isn't being completely respected. Not sure why. Make
+  two guide points, and use them as outer points. The resulting
+  half-circle isn't completely on the guide circle for some reason.
+				   
