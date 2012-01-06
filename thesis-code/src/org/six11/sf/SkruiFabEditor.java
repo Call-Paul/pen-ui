@@ -9,12 +9,7 @@ import static org.six11.util.layout.FrontEnd.W;
 
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.RenderingHints;
 import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;

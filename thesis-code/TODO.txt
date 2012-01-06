@@ -9,3 +9,6 @@ Bugs at the moment:
   two guide points, and use them as outer points. The resulting
   half-circle isn't completely on the guide circle for some reason.
 				   
+* Flow selection should use points on the smooth spline. After
+  deforming the same section a few times the distance between the para
+  points gets bigger, making it hard to make fine edits.

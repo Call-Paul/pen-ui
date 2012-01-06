@@ -7,13 +7,11 @@ import static org.six11.util.Debug.bug;
 
 import java.awt.Shape;
 import java.awt.geom.Area;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
-import org.six11.util.Debug;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -378,7 +376,7 @@ public class Segment implements HasFuzzyArea {
       ret.add(getP1());
       ret.add(getP2());
     } else {
-      ret.addAll(asPolyline());
+      ret.addAll(asSpline().getPoints()); // changed from asPolyline.
     }
 
     return ret;

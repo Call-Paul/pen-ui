@@ -86,14 +86,14 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     layers = new ArrayList<DrawingBuffer>();
     layersByName = new HashMap<String, DrawingBuffer>();
     penListeners = new ArrayList<PenListener>();
-    initFSM();
+    fsInit();
   }
 
-  private final void initFSM() {
+  private final void fsInit() {
     fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent ev) {
-        checkFS();
+        fsCheck();
       }
     });
     fsTimer.setRepeats(false);
@@ -111,11 +111,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.setStateEntryCode("draw", new Runnable() {
       @Override
       public void run() {
-        initFSTimer();
+        fsInitTimer();
       }
     });
     f.setStateEntryCode("idle", new Runnable() {
-      @Override
       public void run() {
         fsDown = null;
         fsNearestSeg = null; // segment currently flow-selected
@@ -125,13 +124,11 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     });
     f.setStateEntryCode("flow", new Runnable() {
-      @Override
       public void run() {
         fsTickTimer.restart();
       }
     });
     f.setStateExitCode("op", new Runnable() {
-      @Override
       public void run() {
         fsSaveChanges();
       }
@@ -149,7 +146,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     }); // causes flow selection to grow
     f.addTransition(new Transition("up", "flow", "idle"));
-    f.addTransition(new Transition("move", "flow", "op"));
+    f.addTransition(new Transition("move", "flow", "op") {
+      public boolean veto() {
+        boolean ret = false;
+        if (fsCheck()) {
+          ret = true;
+        }
+        return ret;
+      }
+    });
     f.addTransition(new Transition("up", "op", "idle"));
     f.addChangeListener(new ChangeListener() {
       @Override
@@ -161,7 +166,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     this.fsFSM = f;
   }
 
-  private void checkFS() {
+  /**
+   * Checks to see if the pen has remained relatively still since the beginning of the current
+   * scribble. The 'still' region is determined by the fsBubble variable.
+   * 
+   * @return true if the pen has always remained relatively near the pen down point.
+   */
+  private boolean fsCheck() {
     boolean shouldFlow = false;
     if (currentScribble != null && fsDown != null) {
       List<Pt> points = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
@@ -177,9 +188,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     if (shouldFlow) {
       fsFSM.addEvent("pause");
     }
+    return shouldFlow;
   }
 
-  private void initFSTimer() {
+  private void fsInitTimer() {
     fsTimer.stop();
     fsTimer.setInitialDelay(fsPauseTimeout);
     fsTimer.restart();
@@ -216,6 +228,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           pt.move(amt);
         }
       }
+      fsNearestSeg.calculateParameters(def);
     }
     fsLastDeformPt = recent;
     model.getEditor().drawStuff();
@@ -226,10 +239,11 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       List<Pt> def = fsNearestSeg.getDeformedPoints();
       fsNearestSeg.calculateParameters(def);
       fsNearestSeg.clearDeformation();
+      model.getConstraints().wakeUp();
       bug("Just saved changes, I think.");
     }
   }
-  
+
   private double fsFull(long elapsed) {
     // fully select P pixels per second
     double p = 70;
