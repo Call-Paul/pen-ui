@@ -383,6 +383,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         ret.add(db.getBoundingBox());
       }
     }
+    if (currentScribble != null) {
+      List<Pt> scribPts = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
+      for (Pt pt : scribPts) {
+        ret.add(pt);
+      }
+    }
     return ret;
   }
 

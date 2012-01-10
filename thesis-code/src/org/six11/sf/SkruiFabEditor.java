@@ -235,7 +235,13 @@ public class SkruiFabEditor {
   }
 
   private void print() {
-    File outFile = new File(System.getProperty("user.dir"), "skruifab-" + Debug.nowFilenameFriendly() + ".pdf");
+    String now = Debug.nowFilenameFriendly();
+    File outFile;
+    int which = 0;
+    do {
+      outFile = new File(System.getProperty("user.dir"), "skruifab-" + now + (which == 0 ? "" : "-" + which) + ".pdf");
+      which++;
+    } while (outFile.exists());
     layers.print(outFile);
   }
 
