@@ -93,14 +93,12 @@ public class SketchBook {
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
     solver.runInBackground();
-    solver.createUI();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
     addRecognizer(new SelectGestureRecognizer(this));
     addRecognizer(new EraseGestureRecognizer(this));
     addRecognizer(new DotReferenceGestureRecognizer(this));
     addRecognizer(new DotSelectGestureRecognizer(this));
-    //    addRecognizer(new Arrow(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
   }

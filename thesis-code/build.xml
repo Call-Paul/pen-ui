@@ -75,6 +75,8 @@
     <proguard>
       -libraryjars ${java.home}/lib/rt.jar
       -libraryjars lib/junit-4.1.jar
+      -injars      lib/json.jar(!META-INF/MANIFEST.MF)
+      -injars      lib/imgscalr-lib-4.0.jar(!META-INF/MANIFEST.MF)
       -injars      lib/Jama-1.0.2.jar(!META-INF/MANIFEST.MF)
       -injars      lib/jdom.jar(!META-INF/MANIFEST.MF)
       -injars      lib/six11utils.jar(!META-INF/MANIFEST.MF)
@@ -98,6 +100,21 @@
     </proguard>
   </target>
 
+  <target name="jarBundle" depends="jar" description="Builds SIMI.app">
+    <taskdef name="jarbundler"
+	     classpath="lib/jarbundler-2.1.0.jar" 
+	     classname="net.sourceforge.jarbundler.JarBundler"/>
+    <jarbundler dir="${build.dir}" verbose="true" showPlist="true"
+	        name="Sketch It, Make It"
+	        mainclass="org.six11.sf.Main"
+	        jar="${jar.output}"
+	        icon="icons/skrui-draw.icns"
+	        version="0.1"
+	    	arguments=""
+	    	bundleid="org.six11.sf" 
+	    	jvmversion="1.6+"
+	  	/>
+  </target>
 
   <!-- ==================== Compile Target ================================== -->
 
