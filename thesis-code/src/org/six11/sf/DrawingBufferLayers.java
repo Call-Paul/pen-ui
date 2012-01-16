@@ -3,11 +3,16 @@ package org.six11.sf;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
+import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Toolkit;
+import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.RoundRectangle2D;
@@ -53,10 +58,27 @@ import com.lowagie.text.pdf.PdfWriter;
 @SuppressWarnings("serial")
 public class DrawingBufferLayers extends JComponent implements PenListener {
 
+  private static final String MOVE = "move";
+  private static final String PAUSE = "pause";
+  private static final String UP = "up";
+  private static final String DOWN = "down";
+  private static final String TICK = "tick";
+  private static final String OP = "op";
+  private static final String FLOW = "flow";
+  private static final String DRAW = "draw";
+  private static final String IDLE = "idle";
+  private static final String BUTTON_DOWN = "magic_button_down";
+  private static final String BUTTON_UP = "magic_button_up";
+  private static final String ARMED = "armed";
+  private static final String SEARCH_DIR = "search_direction";
+  private static final String LEFT = "left";
+  private static final String RIGHT = "right";
+
   public final static Color DEFAULT_DRY_COLOR = Color.GRAY.darker();
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
   public final static Color DEFAULT_WET_COLOR = Color.BLACK;
   public final static float DEFAULT_WET_THICKNESS = 1.8f;
+  protected static final int UNDO_REDO_THRESHOLD = 40;
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
@@ -67,6 +89,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private FSM fsFSM;
   private Timer fsTimer;
   private Pt fsDown;
+  private Pt searchStart;
+  private Pt dragPt;
   private Segment fsNearestSeg; // segment currently flow-selected
   private Pt fsNearestPt; // point on segment currently selected
   private double fsBubble = 10;
@@ -79,6 +103,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   GeneralPath currentScribble;
   private Pt hoverPt;
   private GuidePoint draggingGP;
+  private boolean magicDown = false;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
@@ -86,6 +111,19 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     layers = new ArrayList<DrawingBuffer>();
     layersByName = new HashMap<String, DrawingBuffer>();
     penListeners = new ArrayList<PenListener>();
+    Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
+      public void eventDispatched(AWTEvent ev) {
+        if (ev.getID() == KeyEvent.KEY_PRESSED) {
+          if (!magicDown) {
+            magicDown = true;
+            fsFSM.addEvent(BUTTON_DOWN);
+          }
+        } else if (ev.getID() == KeyEvent.KEY_RELEASED) {
+          magicDown = false;
+          fsFSM.addEvent(BUTTON_UP);
+        }
+      }
+    }, AWTEvent.KEY_EVENT_MASK);
     fsInit();
   }
 
@@ -100,21 +138,23 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     fsTickTimer = new Timer(fsTickTimeout, new ActionListener() {
       @Override
       public void actionPerformed(ActionEvent e) {
-        fsFSM.addEvent("tick");
+        fsFSM.addEvent(TICK);
       }
     });
     FSM f = new FSM("Flow Selection FSM");
-    f.addState("idle");
-    f.addState("draw");
-    f.addState("flow");
-    f.addState("op");
-    f.setStateEntryCode("draw", new Runnable() {
+    f.addState(IDLE);
+    f.addState(DRAW);
+    f.addState(FLOW);
+    f.addState(OP);
+    f.addState(ARMED);
+    f.addState(SEARCH_DIR);
+    f.setStateEntryCode(DRAW, new Runnable() {
       @Override
       public void run() {
         fsInitTimer();
       }
     });
-    f.setStateEntryCode("idle", new Runnable() {
+    f.setStateEntryCode(IDLE, new Runnable() {
       public void run() {
         fsDown = null;
         fsNearestSeg = null; // segment currently flow-selected
@@ -123,30 +163,35 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         model.getEditor().drawStuff();
       }
     });
-    f.setStateEntryCode("flow", new Runnable() {
+    f.setStateEntryCode(FLOW, new Runnable() {
       public void run() {
         fsTickTimer.restart();
       }
     });
-    f.setStateExitCode("op", new Runnable() {
+    f.setStateExitCode(OP, new Runnable() {
       public void run() {
         fsSaveChanges();
       }
     });
-    f.addTransition(new Transition("down", "idle", "draw"));
-    f.addTransition(new Transition("up", "draw", "idle"));
-    f.addTransition(new Transition("pause", "draw", "flow") {
+    f.setStateEntryCode(SEARCH_DIR, new Runnable() {
+      public void run() {
+        searchStart = fsDown.copyXYT();
+      }
+    });
+    f.addTransition(new Transition(DOWN, IDLE, DRAW));
+    f.addTransition(new Transition(UP, DRAW, IDLE));
+    f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
         fsInitSelection();
       }
     });
-    f.addTransition(new Transition("tick", "flow", "flow") {
+    f.addTransition(new Transition(TICK, FLOW, FLOW) {
       public void doAfterTransition() {
         fsGrowSelection();
       }
     }); // causes flow selection to grow
-    f.addTransition(new Transition("up", "flow", "idle"));
-    f.addTransition(new Transition("move", "flow", "op") {
+    f.addTransition(new Transition(UP, FLOW, IDLE));
+    f.addTransition(new Transition(MOVE, FLOW, OP) {
       public boolean veto() {
         boolean ret = false;
         if (fsCheck()) {
@@ -155,13 +200,50 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         return ret;
       }
     });
-    f.addTransition(new Transition("up", "op", "idle"));
-    f.addChangeListener(new ChangeListener() {
-      @Override
-      public void stateChanged(ChangeEvent ev) {
-        bug("new state: " + fsFSM.getState());
+    f.addTransition(new Transition(UP, OP, IDLE));
+    f.addTransition(new Transition(BUTTON_DOWN, IDLE, ARMED));
+    f.addTransition(new Transition(BUTTON_UP, ARMED, IDLE) {
+      public void doAfterTransition() {
+        model.getEditor().go();
       }
     });
+    f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR));
+    f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
+      public void doBeforeTransition() {
+//        bug("searchStart: " + num(searchStart) + ", dragPt: " + num(dragPt));
+        if (searchStart != null && dragPt != null) {
+          double dx = dragPt.getX() - searchStart.getX();
+          if (dx < -UNDO_REDO_THRESHOLD) {
+            searchStart = dragPt.copyXYT();
+            model.undo();
+          } else if (dx > UNDO_REDO_THRESHOLD) {
+            searchStart = dragPt.copyXYT();
+            model.redo();
+          }
+        }
+      }
+    });
+    f.addTransition(new Transition(UP, SEARCH_DIR, SEARCH_DIR) {
+      @Override
+      public void doBeforeTransition() {
+        searchStart = null;
+        dragPt = null;
+      }
+    });
+    f.addTransition(new Transition(DOWN, SEARCH_DIR, SEARCH_DIR) {
+      public void doBeforeTransition() {
+        searchStart = fsDown.copyXYT();
+        dragPt = searchStart.copyXYT();
+      }
+    });
+    f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
+
+    //    f.addChangeListener(new ChangeListener() {
+    //      @Override
+    //      public void stateChanged(ChangeEvent ev) {
+    //        bug("new state: " + fsFSM.getState());
+    //      }
+    //    });
 
     this.fsFSM = f;
   }
@@ -186,7 +268,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     }
     if (shouldFlow) {
-      fsFSM.addEvent("pause");
+      fsFSM.addEvent(PAUSE);
     }
     return shouldFlow;
   }
@@ -451,46 +533,49 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void handlePenEvent(PenEvent ev) {
     switch (ev.getType()) {
       case Down:
-        fsFSM.setState("idle"); // sanity check in case state got messed up
-        fsFSM.addEvent("down");
+        //                fsFSM.setState(IDLE); // sanity check in case state got messed up
+        fsFSM.addEvent(DOWN);
         fsDown = ev.getPt();
-        model.retainVisibleGuides();
-        hoverPt = null;
-        if (model.isPointOverSelection(ev.getPt())) {
-          model.setDraggingSelection(true);
-        } else {
-          Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
-          if (nearbyGuidePoints.isEmpty()) {
-            prev = ev.getPt();
-            currentScribble = new GeneralPath();
-            currentScribble.moveTo(prev.getX(), prev.getY());
+        if (fsFSM.getState().equals(DRAW)) {
+          model.retainVisibleGuides();
+          hoverPt = null;
+          if (model.isPointOverSelection(ev.getPt())) {
+            model.setDraggingSelection(true);
           } else {
-            GuidePoint nearestGP = null;
-            double nearestDist = Double.MAX_VALUE;
-            for (GuidePoint gpt : nearbyGuidePoints) {
-              double d = gpt.getLocation().distance(ev.getPt());
-              if (d < nearestDist) {
-                nearestDist = d;
-                nearestGP = gpt;
+            Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
+            if (nearbyGuidePoints.isEmpty()) {
+              prev = ev.getPt();
+              currentScribble = new GeneralPath();
+              currentScribble.moveTo(prev.getX(), prev.getY());
+            } else {
+              GuidePoint nearestGP = null;
+              double nearestDist = Double.MAX_VALUE;
+              for (GuidePoint gpt : nearbyGuidePoints) {
+                double d = gpt.getLocation().distance(ev.getPt());
+                if (d < nearestDist) {
+                  nearestDist = d;
+                  nearestGP = gpt;
+                }
               }
+              model.setDraggingGuidePoint(nearestGP);
             }
-            model.setDraggingGuidePoint(nearestGP);
+            model.startScribble(ev.getPt());
+            model.clearSelectedStencils();
           }
-          model.startScribble(ev.getPt());
-          model.clearSelectedStencils();
         }
         break;
       case Drag:
-        fsFSM.addEvent("move");
+        fsFSM.addEvent(MOVE);
+        dragPt = ev.getPt();
         hoverPt = null;
         Pt here = ev.getPt();
         if (model.isDraggingSelection()) {
           bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
         } else if (model.isDraggingGuide()) {
           model.dragGuidePoint(here);
-        } else if (fsFSM.getState().equals("op")) {
+        } else if (fsFSM.getState().equals(OP)) {
           fsDeform(here);
-        } else {
+        } else if (fsFSM.getState().equals(DRAW)) {
           if (currentScribble != null) {
             currentScribble.lineTo(here.getX(), here.getY());
           }
@@ -498,14 +583,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
         break;
       case Idle:
-        boolean wasFlowSelecting = !fsFSM.getState().equals("draw");
-        fsFSM.addEvent("up");
+        boolean wasDrawing = fsFSM.getState().equals(DRAW);
+        fsFSM.addEvent(UP);
         if (model.isDraggingGuide()) {
           model.setDraggingGuidePoint(null);
         } else {
-          if (!wasFlowSelecting) {
+          if (wasDrawing) {
             Sequence seq = model.endScribble(ev.getPt());
-            model.addInk(new Ink(seq));
+            SafeAction a = model.getActionFactory().addInk(new Ink(seq));
+            model.addAction(a);
           }
           clearScribble();
         }

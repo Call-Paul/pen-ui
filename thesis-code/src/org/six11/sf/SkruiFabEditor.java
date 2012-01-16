@@ -175,11 +175,11 @@ public class SkruiFabEditor {
         print();
       }
     });
-    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
-      public void activate() {
-        go();
-      }
-    });
+//    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
+//      public void activate() {
+//        go();
+//      }
+//    });
 
     actions.put(ACTION_DEBUG_STATE,
         new NamedAction("DebugState", KeyStroke.getKeyStroke(KeyEvent.VK_D, 0)) {
@@ -291,7 +291,6 @@ public class SkruiFabEditor {
       model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
       model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
       model.addGeometry(seg);
-
     }
     model.getConstraintAnalyzer().analyze(segs);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();

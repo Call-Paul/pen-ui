@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
@@ -74,6 +75,9 @@ public class SketchBook {
   private Set<Guide> retainedVisibleGuides;
   private GuidePoint draggingGuidePoint;
   private Material.Units masterUnits = Units.Centimeter;
+  private ActionFactory actionFactory;
+  private Stack<SafeAction> actions;
+  private Stack<SafeAction> redoActions;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -90,6 +94,9 @@ public class SketchBook {
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
+    this.actionFactory = new ActionFactory(this);
+    this.actions = new Stack<SafeAction>();
+    this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
     solver.runInBackground();
@@ -101,6 +108,7 @@ public class SketchBook {
     addRecognizer(new DotSelectGestureRecognizer(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
+
   }
 
   public SkruiFabEditor getEditor() {
@@ -160,8 +168,8 @@ public class SketchBook {
       ink.add(newInk);
       DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
       Sequence scrib = newInk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_DRY_COLOR,
-          DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
+          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
       lastInkWasSelection = false;
     }
     layers.repaint();
@@ -173,8 +181,8 @@ public class SketchBook {
     buf.clear();
     for (Ink eenk : ink) {
       Sequence scrib = eenk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(), DrawingBufferLayers.DEFAULT_DRY_COLOR,
-          DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
+      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
+          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
     }
   }
 
@@ -348,6 +356,8 @@ public class SketchBook {
     layers.repaint();
     editor.getGrid().clear();
     editor.getCutfilePane().clear();
+    actions.clear();
+    redoActions.clear();
   }
 
   private void clearStructured() {
@@ -794,5 +804,33 @@ public class SketchBook {
 
   public Units getMasterUnits() {
     return masterUnits;
+  }
+
+  public void undo() {
+    if (!actions.isEmpty()) {
+      SafeAction a = actions.pop();
+      bug("Undo " + a.getName());
+      redoActions.push(a);
+      a.backward();
+    }
+  }
+
+  public void redo() {
+    if (!redoActions.isEmpty()) {
+      SafeAction a = redoActions.pop();
+      bug("Redo " + a.getName());
+      actions.push(a);
+      a.forward();
+    }
+  }
+
+  public ActionFactory getActionFactory() {
+    return actionFactory;
+  }
+
+  public void addAction(SafeAction a) {
+    actions.push(a);
+    redoActions.clear();
+    a.forward();
   }
 }
