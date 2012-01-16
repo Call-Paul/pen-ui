@@ -82,7 +82,7 @@ public class SkruiFabEditor {
 
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
-    af.setSize(600, 400);
+    af.setSize(802, 399);
     createActions(af.getRootPane());
     glass = new GlassPane(this);
     af.getRootPane().setGlassPane(glass);
@@ -290,8 +290,9 @@ public class SkruiFabEditor {
     for (Segment seg : segs) {
       model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
       model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
-      model.addGeometry(seg);
     }
+    SafeAction a = model.getActionFactory().addSegments(segs);
+    model.addAction(a);
     model.getConstraintAnalyzer().analyze(segs);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);

@@ -113,14 +113,17 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     penListeners = new ArrayList<PenListener>();
     Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
       public void eventDispatched(AWTEvent ev) {
-        if (ev.getID() == KeyEvent.KEY_PRESSED) {
-          if (!magicDown) {
-            magicDown = true;
-            fsFSM.addEvent(BUTTON_DOWN);
+        KeyEvent kev = (KeyEvent) ev;
+        if (kev.getKeyCode() == KeyEvent.VK_SPACE) {
+          if (ev.getID() == KeyEvent.KEY_PRESSED) {
+            if (!magicDown) {
+              magicDown = true;
+              fsFSM.addEvent(BUTTON_DOWN);
+            }
+          } else if (ev.getID() == KeyEvent.KEY_RELEASED) {
+            magicDown = false;
+            fsFSM.addEvent(BUTTON_UP);
           }
-        } else if (ev.getID() == KeyEvent.KEY_RELEASED) {
-          magicDown = false;
-          fsFSM.addEvent(BUTTON_UP);
         }
       }
     }, AWTEvent.KEY_EVENT_MASK);
@@ -210,7 +213,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR));
     f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
       public void doBeforeTransition() {
-//        bug("searchStart: " + num(searchStart) + ", dragPt: " + num(dragPt));
+        //        bug("searchStart: " + num(searchStart) + ", dragPt: " + num(dragPt));
         if (searchStart != null && dragPt != null) {
           double dx = dragPt.getX() - searchStart.getX();
           if (dx < -UNDO_REDO_THRESHOLD) {
