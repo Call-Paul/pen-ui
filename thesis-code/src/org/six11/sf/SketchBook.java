@@ -162,7 +162,6 @@ public class SketchBook {
       item.activate(this);
       didSomething = true;
     }
-
     if (!didSomething) {
       newInk.setGuides(retainedVisibleGuides);
       ink.add(newInk);

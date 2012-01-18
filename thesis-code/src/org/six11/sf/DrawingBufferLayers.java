@@ -33,6 +33,7 @@ import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.six11.util.Debug;
 import org.six11.util.data.FSM;
 import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.BoundingBox;
@@ -71,8 +72,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private static final String BUTTON_UP = "magic_button_up";
   private static final String ARMED = "armed";
   private static final String SEARCH_DIR = "search_direction";
-  private static final String LEFT = "left";
-  private static final String RIGHT = "right";
 
   public final static Color DEFAULT_DRY_COLOR = Color.GRAY.darker();
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
@@ -132,7 +131,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   private final void fsInit() {
     fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
-      @Override
       public void actionPerformed(ActionEvent ev) {
         fsCheck();
       }
@@ -213,7 +211,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR));
     f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
       public void doBeforeTransition() {
-        //        bug("searchStart: " + num(searchStart) + ", dragPt: " + num(dragPt));
         if (searchStart != null && dragPt != null) {
           double dx = dragPt.getX() - searchStart.getX();
           if (dx < -UNDO_REDO_THRESHOLD) {
@@ -241,12 +238,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
 
-    //    f.addChangeListener(new ChangeListener() {
-    //      @Override
-    //      public void stateChanged(ChangeEvent ev) {
-    //        bug("new state: " + fsFSM.getState());
-    //      }
-    //    });
+//    f.addChangeListener(new ChangeListener() {
+//      @Override
+//      public void stateChanged(ChangeEvent ev) {
+//        bug("new state: " + fsFSM.getState());
+//      }
+//    });
 
     this.fsFSM = f;
   }
@@ -267,6 +264,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         maxD = Math.max(maxD, pt.distance(fsDown));
         if (maxD > fsBubble) {
           shouldFlow = false;
+          break;
         }
       }
     }
@@ -534,9 +532,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   public void handlePenEvent(PenEvent ev) {
+
     switch (ev.getType()) {
       case Down:
-        //                fsFSM.setState(IDLE); // sanity check in case state got messed up
         fsFSM.addEvent(DOWN);
         fsDown = ev.getPt();
         if (fsFSM.getState().equals(DRAW)) {
@@ -578,7 +576,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           model.dragGuidePoint(here);
         } else if (fsFSM.getState().equals(OP)) {
           fsDeform(here);
-        } else if (fsFSM.getState().equals(DRAW)) {
+        } else if (fsFSM.getState().equals(DRAW) || fsFSM.getState().equals(FLOW)) {
           if (currentScribble != null) {
             currentScribble.lineTo(here.getX(), here.getY());
           }
