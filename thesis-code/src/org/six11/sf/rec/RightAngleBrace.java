@@ -232,9 +232,9 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     bug(" ... and ...");
     bug(itemB.getTemplate().getName() + ": " + num(itemB.getCertainties()));
     if (itemA.getTemplate().getName().equals(RightAngleBrace.NAME)) {
-      doomed.add(itemA);
-    } else {
       doomed.add(itemB);
+    } else {
+      doomed.add(itemA);
     }
     return doomed;
   }
