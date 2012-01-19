@@ -194,6 +194,7 @@ public class EncircleRecognizer extends SketchRecognizer {
               model.replace(pt, centroid);
               related.addAll(model.findRelatedSegments(centroid));
             }
+            model.removeSingularSegments();
             model.getEditor().findStencils(related);
             model.getEditor().drawStuff();
           }
