@@ -832,4 +832,19 @@ public class SketchBook {
     redoActions.clear();
     a.forward();
   }
+
+  public void removeSingularSegments() {
+    Set<Segment> doomed = new HashSet<Segment>();
+    for (Segment s : geometry) {
+      if (s.isSingular()) {
+        doomed.add(s);
+      }
+    }
+    if (doomed.size() > 0) {
+      bug("\t*** Removing " + doomed.size() + " singular segments ***");
+      for (Segment d : doomed) {
+        removeGeometry(d);
+      }
+    }
+  }
 }
