@@ -172,7 +172,7 @@ public class CornerFinder {
     double lineError = Functions.getLineError(line, patch, a, b);
     if (lineError < lineErrorThreshold) {
       ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
-    } else if (Functions.getEllipseError(patch) < ellipseErrorThreshold) {
+    } else if (patch.size() > 3 && Functions.getEllipseError(patch) < ellipseErrorThreshold) {
       ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
     } else {
       ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
