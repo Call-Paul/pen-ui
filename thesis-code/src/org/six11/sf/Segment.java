@@ -123,6 +123,10 @@ public class Segment implements HasFuzzyArea {
     return ink;
   }
   
+  public boolean isSingular() {
+    return getP1().isSameLocation(getP2());
+  }
+  
   public List<Pt> storeParaPointsForDeformation() {
     doPara();
     deformedPoints = new ArrayList<Pt>();
