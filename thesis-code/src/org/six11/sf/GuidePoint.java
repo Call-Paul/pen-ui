@@ -37,16 +37,12 @@ public class GuidePoint extends Guide {
   }
 
   /**
-   * A guide point can change locations. This erases the seg and param values.
+   * A guide point can change locations.
    * 
    * @param pt
    */
   public void setLocation(Pt pt) {
-    bug("Set location. Old pt: " + num(this.pt) + ", old seg: " + seg + ", old param: " + num(param));
     getLocation().setLocation(pt.getX(), pt.getY());
-//    this.pt = pt;
-//    this.seg = null;
-//    this.param = null;
   }
 
   public Pt getLocation() {
