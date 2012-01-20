@@ -254,12 +254,18 @@ public class SketchBook {
   }
 
   public void removeGeometry(Segment seg) {
+    // remove from the list of known geometry.
     geometry.remove(seg);
+
+    // deselect the segment. no effect if it isn't already.
     selectedSegments.remove(seg);
+
+    // turn on/off text gathering if there is now exactly one selected seg.
     editor.getGlass().setGatherText(selectedSegments.size() == 1);
+
+    // remove points from the solver if they are no longer part of the model.
     boolean keep1 = false;
     boolean keep2 = false;
-    Set<Constraint> dead = new HashSet<Constraint>();
     for (Segment s : geometry) {
       if (s.involves(seg.getP1())) {
         keep1 = true;
@@ -268,12 +274,15 @@ public class SketchBook {
         keep2 = true;
       }
     }
+    Set<Constraint> dead = new HashSet<Constraint>();
     if (!keep1) {
       dead.addAll(solver.removePoint(seg.getP1()));
     }
     if (!keep2) {
       dead.addAll(solver.removePoint(seg.getP2()));
     }
+
+    // remove stencils if it was made with the deleted one.
     Set<Stencil> doomed = new HashSet<Stencil>();
     for (Stencil stencil : stencils) {
       if (stencil.involves(seg)) {
@@ -281,6 +290,9 @@ public class SketchBook {
       }
     }
     stencils.removeAll(doomed);
+
+    // remove related constraints from the UserConstraints, and remove the 
+    // UserConstraints when they are no longer useful.
     Set<UserConstraint> removeUs = new HashSet<UserConstraint>();
     for (UserConstraint uc : userConstraints) {
       int before = uc.getConstraints().size();
@@ -321,6 +333,44 @@ public class SketchBook {
     for (Stencil s : stencils) {
       s.replacePoint(capPt, spot);
     }
+  }
+
+  public void replace(Segment oldSeg, Segment newSeg) {
+    geometry.remove(oldSeg); // remove old geom
+    geometry.add(newSeg); // add new geom
+    if (selectedSegments.contains(oldSeg)) { // old seg is selected...
+      selectedSegments.remove(oldSeg); // deselect old segment.
+      selectedSegments.add(newSeg); // select new segment
+    }
+    // determine which end of 'oldSeg' is going to be replaced with which end of 'newSeg'.
+    Pt oldPt = null;
+    Pt newPt = null;
+    if (oldSeg.getP1() == newSeg.getP1()) { //        keep old.p1 and new.p1
+      oldPt = oldSeg.getP2();
+      newPt = newSeg.getP2();
+    } else if (oldSeg.getP1() == newSeg.getP2()) { // keep old.p1 and new.p2
+      oldPt = oldSeg.getP2();
+      newPt = newSeg.getP1();
+    } else if (oldSeg.getP2() == newSeg.getP2()) { // keep old.p2 and new.p2
+      oldPt = oldSeg.getP1();
+      newPt = newSeg.getP1();
+    } else if (oldSeg.getP2() == newSeg.getP1()) { // keep old.p2 and new.p1
+      oldPt = oldSeg.getP1();
+      newPt = newSeg.getP2();
+    } else {
+      Debug.stacktrace("Something wrong here...", 10);
+    }
+
+    if (oldPt != null && newPt != null) {
+      bug("Replacing " + StencilFinder.n(oldPt) + " with " + StencilFinder.n(newPt));
+      if (!ConstraintSolver.hasName(newPt)) {
+        ConstraintSolver.setName(newPt, nextPointName());
+      }
+      // points and constraints
+      solver.replacePoint(oldPt, newPt);
+    }
+    getConstraints().wakeUp();
+    editor.drawStuff();
   }
 
   /**
@@ -390,15 +440,16 @@ public class SketchBook {
 
   public String getMondoDebugString() {
     StringBuilder buf = new StringBuilder();
+    String format = "%14s\t%-6s\t%-6s\n";
     int indent = 0;
     addBug(indent, buf, "All debug info\n\n");
     addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
-    addBug(indent, buf, "seg type\tp1 name\tp1 hash\tp2 name\tp2 hash\n");
+    addBug(indent, buf, String.format(format, "seg-type", "p1", "p2"));
+    addBug(indent, buf, "--------------------------\n");
     for (Segment seg : geometry) {
-      String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<no name>";
-      String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<no name>";
-      addBug(indent, buf, seg.getType() + " " + p1 + "\t" + seg.getP1().hashCode() + "\t" + p2
-          + "\t" + seg.getP2().hashCode() + "\n");
+      String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<???>";
+      String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<???>";
+      addBug(indent, buf, String.format(format, seg.getType() + "", p1, p2));
     }
     buf.append("\n");
     addBug(indent, buf, stencils.size() + " stencils\n");

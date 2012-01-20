@@ -2,12 +2,14 @@ package org.six11.sf;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.six11.sf.EndCap.Intersection;
+import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
@@ -163,10 +165,13 @@ public class ConstraintAnalyzer {
           bug("dirA: " + num(dirA));
           bug("dirB: " + num(dirB));
           double ang = Functions.getSignedAngleBetween(dirA, dirB);
+          double thresh = 40.0;
+          if (buf.toString().equals("LineLine")) {
+            thresh = 160.0;
+          }
           bug("Ang: " + num(toDegrees(ang)));
-          if (abs(toDegrees(ang)) > 160.0) {
-            bug("Angle ok. Segments are of type: " + segA.getType() + " and "
-                + segB.getType());
+          if (abs(toDegrees(ang)) > thresh) {
+            bug("Angle ok. Segments are of type: " + segA.getType() + " and " + segB.getType());
             if (buf.toString().equals("LineLine")) {
               result = mergeLines(junct, segA, segB);
             } else if (buf.toString().equals("CurveCurve")) {
@@ -184,12 +189,63 @@ public class ConstraintAnalyzer {
 
   private boolean mergeCurves(Pt junct, Segment segA, Segment segB) {
     boolean ret = false;
-    bug("Implement me!");
+    boolean dirA = false;
+    boolean dirB = false;
+    dirA = segA.getP1() == junct ? false : true;
+    dirB = segB.getP1() == junct ? true : false;
+    bug("Merge Curves:");
+    bug("  segA: " + segA);
+    bug("  segB: " + segB);
+    bug(" junct: " + StencilFinder.n(junct));
+    bug("  dirA: " + dirA);
+    bug("  dirB: " + dirB);
+    List<Pt> newPoints = new ArrayList<Pt>();
+    if (dirA) {
+      newPoints.addAll(segA.asPolyline());
+    } else {
+      List<Pt> tmpA = new ArrayList<Pt>();
+      tmpA.addAll(segA.asPolyline());
+      Collections.reverse(tmpA);
+      newPoints.addAll(tmpA);
+    }
+    if (dirB) {
+      newPoints.addAll(segB.asPolyline());
+    } else {
+      List<Pt> tmpB = new ArrayList<Pt>();
+      tmpB.addAll(segB.asPolyline());
+      Collections.reverse(tmpB);
+      tmpB.remove(0);
+      newPoints.addAll(tmpB);
+    }
+
+    Segment newSpline = new CurvySegment(newPoints);
+    bug("Created replacement segment: " + newSpline);
+    model.replace(segA, newSpline);
+    model.replace(segB, newSpline);
+    ret = true;
+
     return ret;
   }
+
   private boolean mergeLines(Pt junct, Segment segA, Segment segB) {
     boolean ret = false;
-    bug("Implmement me!");
+    Pt p1 = null;
+    Pt p2 = null;
+    p1 = segA.getP1() == junct ? segA.getP2() : segA.getP1();
+    p2 = segB.getP1() == junct ? segB.getP2() : segB.getP1();
+    bug("Merge Lines:");
+    bug("  segA: " + segA);
+    bug("  segB: " + segB);
+    bug(" junct: " + StencilFinder.n(junct));
+    bug("    p1: " + StencilFinder.n(p1));
+    bug("    p2: " + StencilFinder.n(p2));
+    if (p1 != null && p2 != null) {
+      Segment newLine = new LineSegment(p1, p2);
+      bug("Created replacement segment: " + newLine);
+      model.replace(segA, newLine);
+      model.replace(segB, newLine);
+      ret = true;
+    }
     return ret;
   }
 }

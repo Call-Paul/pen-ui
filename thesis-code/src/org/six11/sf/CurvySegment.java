@@ -14,5 +14,9 @@ public class CurvySegment extends Segment {
     super(ink, points, termA, termB);
     this.type = Type.Curve;
   }
+  
+  public CurvySegment(List<Pt> points) {
+    init(null, points, false, false, Type.Curve);
+  }
 
 }
