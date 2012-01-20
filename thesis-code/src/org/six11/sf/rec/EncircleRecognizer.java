@@ -1,6 +1,7 @@
 package org.six11.sf.rec;
 
 import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.out;
 
 import java.awt.geom.Area;
 import java.util.Collection;
@@ -195,6 +196,9 @@ public class EncircleRecognizer extends SketchRecognizer {
               related.addAll(model.findRelatedSegments(centroid));
             }
             model.removeSingularSegments();
+            bug("Here are the related segments: ");
+            out(related, true, true);
+            model.getConstraintAnalyzer().mergeSegments(related);
             model.getEditor().findStencils(related);
             model.getEditor().drawStuff();
           }

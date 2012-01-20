@@ -132,15 +132,6 @@ public class SkruiFabEditor {
     return grid;
   }
 
-//  public static void copyImage(Image sourceImage, BufferedImage destImage, double scaleFactor) {
-//    Graphics2D g = destImage.createGraphics();
-//    AffineTransform xform = AffineTransform.getScaleInstance(scaleFactor, scaleFactor);
-//    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-//    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-//    g.drawImage(sourceImage, xform, null);
-//    g.dispose();
-//  }
-
   Container getContentPane() {
     return af.getContentPane();
   }
@@ -311,8 +302,8 @@ public class SkruiFabEditor {
   }
 
   public void findStencils(Collection<Segment> segs) {
-    StencilFinder sf = new StencilFinder(segs, model.getGeometry());
-    model.mergeStencils(sf.getNewStencils());
+    StencilFinder sf = new StencilFinder();
+    model.mergeStencils(sf.findStencils(segs, model.getGeometry()));
   }
 
   /**

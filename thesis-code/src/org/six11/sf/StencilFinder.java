@@ -23,10 +23,13 @@ public class StencilFinder {
   private Set<List<Pt>> paths;
   private final int id = ID_COUNTER++;
 
-  public StencilFinder(Collection<Segment> newSegs, Set<Segment> allGeometry) {
+  public StencilFinder() {
     this.stencils = new HashSet<Stencil>();
     this.newPoints = new Stack<Pt>();
     this.paths = new HashSet<List<Pt>>();
+  }
+  
+  public Set<Stencil> findStencils(Collection<Segment> newSegs, Set<Segment> allGeometry) {
     for (Segment s : newSegs) {
       if (!newPoints.contains(s.getP1())) {
         newPoints.add(s.getP1());
@@ -62,6 +65,7 @@ public class StencilFinder {
       List<Segment> segList = Stencil.getSegmentList(path, allGeometry);
       stencils.add(new Stencil(path, segList));
     }
+    return stencils;
   }
 
   private void delve(Stack<Pt> path) {
@@ -92,7 +96,7 @@ public class StencilFinder {
     }
   }
 
-  private final void makeAdjacency(Set<Segment> allGeometry) {
+  public Map<Pt, Set<Pt>>  makeAdjacency(Set<Segment> allGeometry) {
     adjacent = new HashMap<Pt, Set<Pt>>();
     for (Segment s : allGeometry) {
       Pt p1 = s.getP1();
@@ -100,6 +104,7 @@ public class StencilFinder {
       associate(p1, p2);
       associate(p2, p1);
     }
+    return adjacent;
   }
   
   private String ident() {
@@ -117,7 +122,7 @@ public class StencilFinder {
     }
   }
   
-  private void printAdjacencyTable() {
+  public void printAdjacencyTable() {
     System.out.println("-- adjacency table --- " + ident());
     for (Map.Entry<Pt, Set<Pt>> vals : adjacent.entrySet()) {
       System.out.println("  " + n(vals.getKey()) + ": " + n(vals.getValue()));
@@ -125,7 +130,7 @@ public class StencilFinder {
   }
 
   public static String n(Pt pt) {
-    return pt.getString("name") + " (" + pt.hashCode() + ")";
+    return pt.getString("name");
   }
 
   public static String n(Collection<Pt> pts) {

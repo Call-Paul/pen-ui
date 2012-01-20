@@ -18,6 +18,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.out;
 
 // import static org.six11.util.Debug.num;
 

@@ -122,22 +122,22 @@ public class Segment implements HasFuzzyArea {
   public Ink getOriginalInk() {
     return ink;
   }
-  
+
   public boolean isSingular() {
     return getP1().isSameLocation(getP2());
   }
-  
+
   public List<Pt> storeParaPointsForDeformation() {
     doPara();
     deformedPoints = new ArrayList<Pt>();
     deformedPoints.addAll(paraPoints);
     return deformedPoints;
   }
-  
+
   public List<Pt> getDeformedPoints() {
     return deformedPoints;
   }
-  
+
   public void clearDeformation() {
     deformedPoints = null;
   }
@@ -163,7 +163,11 @@ public class Segment implements HasFuzzyArea {
       default:
         bug("Unknown segment type: " + getType());
     }
-    buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
+    if (StencilFinder.n(getP1()) != null && StencilFinder.n(getP2()) != null) {
+      buf.append("[" + StencilFinder.n(getP1()) + " to " + StencilFinder.n(getP2()) + ", length: " + num(length()) + "]");
+    } else {
+      buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
+    }
     return buf.toString();
   }
 

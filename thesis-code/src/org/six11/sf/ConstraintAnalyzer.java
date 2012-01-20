@@ -1,19 +1,22 @@
 package org.six11.sf;
 
-import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.six11.sf.EndCap.Intersection;
-import org.six11.util.math.ClusterThing;
-import org.six11.util.math.ClusterThing.Cluster;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
-import org.six11.util.solve.DistanceConstraint;
-import org.six11.util.solve.NumericValue;
+import org.six11.util.pen.Vec;
+
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+import static org.six11.sf.StencilFinder.n;
+import static java.lang.Math.toDegrees;
+import static java.lang.Math.abs;
 
 public class ConstraintAnalyzer {
 
@@ -53,41 +56,11 @@ public class ConstraintAnalyzer {
       ;
     for (EndCap.Group group : groups) {
       Pt spot = group.adjustMembers(); // note: spot does not have time data
-      //      DrawingBufferRoutines.dot(bugBuf, spot, 4, 0.4, Color.BLACK, Color.MAGENTA);
+      // latch points in this group together at the spot
       for (Pt capPt : group.getPoints()) {
         model.replace(capPt, spot);
       }
     }
-
-    //    // Now the fun part: look at new segment lengths and see if they are similar to other segments.
-    //    final ClusterThing<Segment> lengthClusters = new ClusterThing<Segment>() {
-    //      public double query(Segment t) {
-    //        return t.length();
-    //      }
-    //    };
-    //    for (Segment seg : segs) {
-    //      lengthClusters.add(seg);
-    //    }
-    //    lengthClusters.computeClusters();
-    //
-    //    ClusterThing.ClusterFilter<Segment> filter = lengthClusters.getRatioFilter(0.9);
-    //    List<Cluster<Segment>> similar = lengthClusters.search(filter);
-    //    for (Cluster<Segment> cluster : similar) {
-    //      if (cluster.getMembers().size() > 1) {
-    //        double sum = 0;
-    //        int n = 0;
-    //        for (Segment s : cluster.getMembers()) {
-    //          sum = sum + s.length();
-    //          n++;
-    //        }
-    //        double len = sum / n;
-    //        for (Segment s : cluster.getMembers()) {
-    //          DistanceConstraint lengthConstraint = new DistanceConstraint(s.getP1(), s.getP2(),
-    //              new NumericValue(len));
-    //          model.getConstraints().addConstraint(lengthConstraint);
-    //        }
-    //      }
-    //    }
     model.getConstraints().wakeUp();
     model.getLayers().repaint();
   }
@@ -133,6 +106,90 @@ public class ConstraintAnalyzer {
         ret.addAll(seg.getEndCaps());
       }
     }
+    return ret;
+  }
+
+  /**
+   * This tries to locate junctions among the given input segments, and if two share a fairly
+   * oblique angle, it will merge them. For example, if you draw a line but it isn't quite long
+   * enough so you extend it by drawing another line, you can merge them into a single line. It also
+   * works for other segment types. Splines, for example, can be merged to get rid of the
+   * discontinuity at the former junction point.
+   * 
+   * This will only merge a single pair.
+   * 
+   * @param segs
+   */
+  public void mergeSegments(Collection<Segment> segs) {
+    Set<Segment> nonsingular = new HashSet<Segment>();
+    for (Segment seg : segs) {
+      if (!seg.isSingular()) {
+        nonsingular.add(seg);
+      }
+    }
+    StencilFinder sf = new StencilFinder();
+    Map<Pt, Set<Pt>> adj = sf.makeAdjacency(nonsingular);
+    sf.printAdjacencyTable();
+    StringBuilder buf = new StringBuilder();
+    for (Map.Entry<Pt, Set<Pt>> entry : adj.entrySet()) {
+      buf.setLength(0);
+      if (entry.getValue().size() == 2) {
+        bug("Found a junction at " + n(entry.getKey()));
+        List<Segment> pair = new ArrayList<Segment>();
+        for (Segment seg : nonsingular) {
+          if (seg.involves(entry.getKey())) {
+            pair.add(seg);
+            buf.append(seg.getType() + "");
+          }
+        }
+        bug("Num. segments related to that point: " + pair.size() + ", combined type string: "
+            + buf.toString());
+        if (pair.size() == 2) {
+          boolean result = false;
+          Vec dirA, dirB;
+          Pt junct = entry.getKey();
+          Segment segA = pair.get(0);
+          Segment segB = pair.get(1);
+          if (segA.getP1() == junct) {
+            dirA = segA.getStartDir();
+          } else {
+            dirA = segA.getEndDir();
+          }
+          if (segB.getP1() == junct) {
+            dirB = segB.getStartDir();
+          } else {
+            dirB = segB.getEndDir();
+          }
+          bug("dirA: " + num(dirA));
+          bug("dirB: " + num(dirB));
+          double ang = Functions.getSignedAngleBetween(dirA, dirB);
+          bug("Ang: " + num(toDegrees(ang)));
+          if (abs(toDegrees(ang)) > 160.0) {
+            bug("Angle ok. Segments are of type: " + segA.getType() + " and "
+                + segB.getType());
+            if (buf.toString().equals("LineLine")) {
+              result = mergeLines(junct, segA, segB);
+            } else if (buf.toString().equals("CurveCurve")) {
+              result = mergeCurves(junct, segA, segB);
+            }
+          }
+          if (result) {
+            bug("Merged segments " + pair.get(0) + " and " + pair.get(1) + "!");
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  private boolean mergeCurves(Pt junct, Segment segA, Segment segB) {
+    boolean ret = false;
+    bug("Implement me!");
+    return ret;
+  }
+  private boolean mergeLines(Pt junct, Segment segA, Segment segB) {
+    boolean ret = false;
+    bug("Implmement me!");
     return ret;
   }
 }
