@@ -368,19 +368,6 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     bug("draw not implemented for " + name + ". override me.");
   }
 
-  public static double getAlpha(double distance, double min, double max, double minRetVal) {
-    double ret = 0;
-    if (distance < min) {
-      ret = 1;
-    } else if (distance < max) {
-      ret = 1 - ((distance - min) / (max - min));
-      ret = Math.sqrt(ret);
-    } else {
-      ret = 0;
-    }
-    return Math.max(ret, minRetVal);
-  }
-
   /**
    * Attempts to resolve a conflict between two recognized items by returning a collection of the
    * items that should be ignored.

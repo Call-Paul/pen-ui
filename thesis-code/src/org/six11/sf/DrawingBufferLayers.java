@@ -631,4 +631,17 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     repaint();
   }
 
+  public static double getAlpha(double distance, double min, double max, double minRetVal) {
+    double ret = 0;
+    if (distance < min) {
+      ret = 1;
+    } else if (distance < max) {
+      ret = 1 - ((distance - min) / (max - min));
+      ret = Math.sqrt(ret);
+    } else {
+      ret = 0;
+    }
+    return Math.max(ret, minRetVal);
+  }
+
 }

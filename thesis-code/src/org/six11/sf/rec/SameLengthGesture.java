@@ -6,12 +6,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.Material;
 import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
-import org.six11.sf.UserConstraint;
+import org.six11.sf.constr.SameLengthUserConstraint;
+import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
@@ -107,7 +109,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       // use existing numeric value
       DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
       uc = model.getUserConstraint(distConst);
-      uc.addInk(item.getInk());
+      //      uc.addInk(item.getInk());
       NumericValue numeric = distConst.getValue();
       if (numeric instanceof MultisourceNumericValue) {
         bug("It is numeric.");
@@ -136,50 +138,18 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       bug("Warning: creating this distance constraint would conflict with " + results.size()
           + " current constraints. I refuse.");
     }
-
+    for (Ink eenk : item.getInk()) {
+      model.removeRelated(eenk);
+    }
     model.addUserConstraint(uc);
     //    for (Constraint c : addUs) {
     //      model.registerConstraint(item, c);
     //    }
   }
 
-  public static UserConstraint makeUserConstraint(final SketchBook model, RecognizedItem item, Set<Constraint> addUs) {
-    Collection<Ink> strokes = new HashSet<Ink>();
-    if (item != null) {
-      strokes.addAll(item.getInk());
-    }
-    UserConstraint ret = new UserConstraint("Same Length", strokes,
-        addUs.toArray(new Constraint[0])) {
-      public void draw(DrawingBuffer buf, Pt hoverPoint) {
-        if (hoverPoint != null) {
-          double nearest = Double.MAX_VALUE;
-          for (Constraint c : getConstraints()) {
-            DistanceConstraint dc = (DistanceConstraint) c;
-            Line line = dc.getCurrentSegment();
-            double d = Functions.getDistanceBetweenPointAndSegment(hoverPoint, line);
-            nearest = Math.min(d, nearest);
-          }
-          if (nearest < 50) {
-            double alpha = getAlpha(nearest, 10, 80, 0.1);
-            Color color = new Color(1, 0, 0, (float) alpha);
-            for (Constraint c : getConstraints()) {
-              DistanceConstraint dc = (DistanceConstraint) c;
-              Vec segDir = new Vec(dc.getP1(), dc.getP2());
-              Pt mid = Functions.getMean(dc.getP1(), dc.getP2());
-              if (dc.getValue() instanceof MultisourceNumericValue) {
-                DrawingBufferRoutines.acuteHash(buf, mid, segDir, 12, 1.0, color);
-              } else {
-                Vec segDirNorm = segDir.getNormal();
-                Pt textLoc = mid.getTranslated(segDirNorm, 8);
-                Material.Units units = model.getMasterUnits();
-                double asUnits = Material.fromPixels(units, dc.getValue().getValue());
-                DrawingBufferRoutines.text(buf, textLoc, num(asUnits), color);
-              }
-            }
-          }
-        }
-      }
-    };
+  public static UserConstraint makeUserConstraint(final SketchBook model, RecognizedItem item,
+      Set<Constraint> addUs) {
+    UserConstraint ret = new SameLengthUserConstraint(model, addUs.toArray(new Constraint[0]));
     return ret;
   }
 

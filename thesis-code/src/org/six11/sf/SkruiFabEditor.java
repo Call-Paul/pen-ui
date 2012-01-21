@@ -27,6 +27,7 @@ import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
+import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;

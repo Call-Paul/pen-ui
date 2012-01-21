@@ -7,7 +7,6 @@ import java.util.List;
 import static java.lang.Math.ceil;
 import static java.lang.Math.toDegrees;
 
-import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
@@ -39,7 +38,7 @@ public class GuideLine extends Guide {
       if (b != null) {
         residual = Functions.getDistanceBetweenPointAndLine(hoverPoint, myLine);
       }
-      float alpha = (float) RecognizedItemTemplate.getAlpha(residual, 5, 30, 0.1);
+      float alpha = (float) DrawingBufferLayers.getAlpha(residual, 5, 30, 0.1);
       Color c = new Color(in.getRed(), in.getGreen(), in.getBlue(), (int) (alpha * 255f));
       if (b == null) {
         myLine = new Line(a, hoverPoint);

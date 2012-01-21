@@ -1,9 +1,10 @@
-package org.six11.sf;
+package org.six11.sf.constr;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.six11.sf.Ink;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.Constraint;
@@ -17,33 +18,21 @@ import static org.six11.util.Debug.bug;
  * user also requests that lines C and D should be the same length, the Constraint object can be
  * added to this one, so it involves A, B, C, and D.
  */
-public class UserConstraint {
+public abstract class UserConstraint {
 
   private String name;
-  private Collection<Ink> ink;
   private Collection<Constraint> constraints;
 
-  public UserConstraint(String name, Collection<Ink> inkStrokes, Constraint... cs) {
+  public UserConstraint(String name, Constraint... cs) {
     this.name = name;
-    this.ink = new HashSet<Ink>();
-    ink.addAll(inkStrokes);
     this.constraints = new HashSet<Constraint>();
     for (Constraint c : cs) {
       constraints.add(c);
     }
   }
-
-  /**
-   * The ink stroke or strokes that were used to make the constraint or constraints. Since user
-   * constraints might be composed of several actions made over time, some of the ink might not be
-   * referenced anywhere else, so be careful.
-   */
-  public Collection<Ink> getInk() {
-    return ink;
-  }
-
-  public void addInk(Collection<Ink> inkStrokes) {
-    ink.addAll(inkStrokes);
+  
+  public String getName() {
+    return name;
   }
 
   public Collection<Constraint> getConstraints() {

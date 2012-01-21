@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Rectangle;
 import java.util.List;
 
-import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
@@ -77,7 +76,7 @@ public class GuidePoint extends Guide {
   public void draw(DrawingBuffer buf, Pt hoverPoint, Color color, Rectangle bounds) {
     Pt spot = getLocation();
     double distance = spot.distance(hoverPoint);
-    double alpha = RecognizedItemTemplate.getAlpha(distance, 5, 30, 0.1);
+    double alpha = DrawingBufferLayers.getAlpha(distance, 5, 30, 0.1);
     Color c = new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (alpha * 255.0));
     Color alphaBlack = new Color(0f, 0f, 0f, (float) alpha);
     DrawingBufferRoutines.dot(buf, spot, 3.0, 0.3, alphaBlack, c);

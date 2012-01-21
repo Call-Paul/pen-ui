@@ -3,7 +3,6 @@ package org.six11.sf;
 import java.awt.Color;
 import java.awt.Rectangle;
 
-import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -42,7 +41,7 @@ public class GuideCircle extends Guide {
       } else {
         myCircle = new Circle(center, center.distance(hoverPoint));
       }
-      float alpha = (float) RecognizedItemTemplate.getAlpha(residual, 5, 30, 0.1);
+      float alpha = (float) DrawingBufferLayers.getAlpha(residual, 5, 30, 0.1);
       Color c = new Color(in.getRed(), in.getGreen(), in.getBlue(), (int) (alpha * 255f));
       DrawingBufferRoutines.drawShape(buf, myCircle, c, 1.2);
     }

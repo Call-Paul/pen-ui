@@ -19,6 +19,7 @@ import java.util.Stack;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
+import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
 import org.six11.sf.rec.DotSelectGestureRecognizer;
@@ -461,6 +462,28 @@ public class SketchBook {
       }
       buf.append("\n");
     }
+    buf.append("\n");
+    indent--;
+    addBug(indent, buf, userConstraints.size() + " user constraints\n");
+    format = "%-20s%-4s\n";
+    addBug(indent, buf, String.format(format, "Constr. Name", "#"));
+    addBug(indent, buf, "-------------------------\n");
+    format = "%-20s%-4d\n";
+    String constrFormat = "%-20s%s\n";
+    indent++;
+    StringBuilder ptBuf = new StringBuilder();
+    for (UserConstraint uc : userConstraints) {
+      addBug(indent, buf, String.format(format, uc.getName(), uc.getConstraints().size()));
+      indent++;
+      for (Constraint c : uc.getConstraints()) {
+        ptBuf.setLength(0);
+        for (Pt cPt : c.getRelatedPoints()) {
+          ptBuf.append(StencilFinder.n(cPt) + " ");
+        }
+        addBug(indent, buf, String.format(constrFormat, c.getType(), ptBuf.toString()));
+      }
+      indent--;
+    }
     indent--;
     return buf.toString();
   }
@@ -682,9 +705,9 @@ public class SketchBook {
         getConstraints().addConstraint(c);
       }
       bug(userConstraints.size() + " user constraints.");
-      for (Ink itemInk : uc.getInk()) {
-        removeRelated(itemInk);
-      }
+//      for (Ink itemInk : uc.getInk()) {
+//        removeRelated(itemInk);
+//      }
       getConstraints().wakeUp();
     }
   }
