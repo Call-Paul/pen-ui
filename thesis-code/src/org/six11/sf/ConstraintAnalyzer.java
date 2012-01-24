@@ -131,12 +131,10 @@ public class ConstraintAnalyzer {
     }
     StencilFinder sf = new StencilFinder();
     Map<Pt, Set<Pt>> adj = sf.makeAdjacency(nonsingular);
-    sf.printAdjacencyTable();
     StringBuilder buf = new StringBuilder();
     for (Map.Entry<Pt, Set<Pt>> entry : adj.entrySet()) {
       buf.setLength(0);
       if (entry.getValue().size() == 2) {
-        bug("Found a junction at " + n(entry.getKey()));
         List<Segment> pair = new ArrayList<Segment>();
         for (Segment seg : nonsingular) {
           if (seg.involves(entry.getKey())) {
@@ -144,10 +142,7 @@ public class ConstraintAnalyzer {
             buf.append(seg.getType() + "");
           }
         }
-        bug("Num. segments related to that point: " + pair.size() + ", combined type string: "
-            + buf.toString());
         if (pair.size() == 2) {
-          boolean result = false;
           Vec dirA, dirB;
           Pt junct = entry.getKey();
           Segment segA = pair.get(0);
@@ -162,25 +157,17 @@ public class ConstraintAnalyzer {
           } else {
             dirB = segB.getEndDir();
           }
-          bug("dirA: " + num(dirA));
-          bug("dirB: " + num(dirB));
           double ang = Functions.getSignedAngleBetween(dirA, dirB);
           double thresh = 40.0;
           if (buf.toString().equals("LineLine")) {
             thresh = 160.0;
           }
-          bug("Ang: " + num(toDegrees(ang)));
           if (abs(toDegrees(ang)) > thresh) {
-            bug("Angle ok. Segments are of type: " + segA.getType() + " and " + segB.getType());
             if (buf.toString().equals("LineLine")) {
-              result = mergeLines(junct, segA, segB);
+              mergeLines(junct, segA, segB);
             } else if (buf.toString().equals("CurveCurve")) {
-              result = mergeCurves(junct, segA, segB);
+              mergeCurves(junct, segA, segB);
             }
-          }
-          if (result) {
-            bug("Merged segments " + pair.get(0) + " and " + pair.get(1) + "!");
-            break;
           }
         }
       }
@@ -193,12 +180,6 @@ public class ConstraintAnalyzer {
     boolean dirB = false;
     dirA = segA.getP1() == junct ? false : true;
     dirB = segB.getP1() == junct ? true : false;
-    bug("Merge Curves:");
-    bug("  segA: " + segA);
-    bug("  segB: " + segB);
-    bug(" junct: " + StencilFinder.n(junct));
-    bug("  dirA: " + dirA);
-    bug("  dirB: " + dirB);
     List<Pt> newPoints = new ArrayList<Pt>();
     if (dirA) {
       newPoints.addAll(segA.asPolyline());
@@ -219,7 +200,6 @@ public class ConstraintAnalyzer {
     }
 
     Segment newSpline = new CurvySegment(newPoints);
-    bug("Created replacement segment: " + newSpline);
     model.replace(segA, newSpline);
     model.replace(segB, newSpline);
     ret = true;
@@ -233,15 +213,8 @@ public class ConstraintAnalyzer {
     Pt p2 = null;
     p1 = segA.getP1() == junct ? segA.getP2() : segA.getP1();
     p2 = segB.getP1() == junct ? segB.getP2() : segB.getP1();
-    bug("Merge Lines:");
-    bug("  segA: " + segA);
-    bug("  segB: " + segB);
-    bug(" junct: " + StencilFinder.n(junct));
-    bug("    p1: " + StencilFinder.n(p1));
-    bug("    p2: " + StencilFinder.n(p2));
     if (p1 != null && p2 != null) {
       Segment newLine = new LineSegment(p1, p2);
-      bug("Created replacement segment: " + newLine);
       model.replace(segA, newLine);
       model.replace(segB, newLine);
       ret = true;

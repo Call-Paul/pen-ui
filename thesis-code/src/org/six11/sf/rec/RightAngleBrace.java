@@ -121,20 +121,19 @@ public class RightAngleBrace extends RecognizedItemTemplate {
   public void create(RecognizedItem item, SketchBook model) {
     Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
     Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
-    OrientationConstraint rightAngleConstraint = new OrientationConstraint(s1.getP1(), s1.getP2(),
-        s2.getP1(), s2.getP2(), new NumericValue(Math.toRadians(90)));
-    rightAngleConstraint.setSecretName(NAME);
-    UserConstraint uc = makeUserConstraint(rightAngleConstraint);
+    UserConstraint uc = new RightAngleUserConstraint(model, s1.getP1(), s1.getP2(), s2.getP1(),
+        s2.getP2());
     for (Ink eenk : item.getInk()) {
       model.removeRelated(eenk);
     }
     model.addUserConstraint(uc);
   }
 
-  private UserConstraint makeUserConstraint(OrientationConstraint rightAngleConstraint) {
-    UserConstraint ret = new RightAngleUserConstraint(rightAngleConstraint);
-    return ret;
-  }
+  //  private UserConstraint makeUserConstraint(OrientationConstraint rightAngleConstraint) {
+  //    UserConstraint ret = new RightAngleUserConstraint(model, s1.getP1(), s1.getP2(),
+  //        s2.getP1(), s2.getP2(), new NumericValue(Math.toRadians(90)));
+  //    return ret;
+  //  }
 
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
     if (hoverPoint != null) {

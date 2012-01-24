@@ -165,16 +165,13 @@ public class EncircleRecognizer extends SketchRecognizer {
           public void activate(SketchBook model) {
             Pt centroid = null;
             if (guides.size() == 1) {
-              bug("Using guide point");
               GuidePoint gp = guides.toArray(new GuidePoint[1])[0];
               centroid = gp.getLocation();
-              bug("guidepoint pinned? " + gp.isPinnedToSegment());
               if (gp.isPinnedToSegment()) {
                 Collection<Segment> related = new HashSet<Segment>();
                 for (Pt pt : points) {
                   related.addAll(model.findRelatedSegments(pt));
                 }
-                bug("There are " + related + " related segments to the selected points");
                 boolean isRelated = false;
                 for (Segment s : related) {
                   if (s == gp.getSegment()) {
@@ -183,7 +180,6 @@ public class EncircleRecognizer extends SketchRecognizer {
                   }
                 }
                 if (isRelated) {
-                  bug("One of them is the related segment.");
                   gp.setLocation(centroid);
                 }
               }
@@ -196,15 +192,12 @@ public class EncircleRecognizer extends SketchRecognizer {
               related.addAll(model.findRelatedSegments(centroid));
             }
             model.removeSingularSegments();
-            bug("Here are the related segments: ");
-            out(related, true, true);
             model.getConstraintAnalyzer().mergeSegments(related);
             model.getEditor().findStencils(related);
             model.getEditor().drawStuff();
           }
         };
       } else if (guides.size() > 0) {
-        bug("Removing all guides.");
         ret = makeRemoveGuidePoint(guides.toArray(new GuidePoint[0]));
       }
     }

@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.sf.Ink;
+import org.six11.sf.SketchBook;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.Constraint;
@@ -20,10 +21,12 @@ import static org.six11.util.Debug.bug;
  */
 public abstract class UserConstraint {
 
-  private String name;
-  private Collection<Constraint> constraints;
+  protected String name;
+  protected Collection<Constraint> constraints;
+  protected SketchBook model;
 
-  public UserConstraint(String name, Constraint... cs) {
+  public UserConstraint(SketchBook model, String name, Constraint... cs) {
+    this.model = model;
     this.name = name;
     this.constraints = new HashSet<Constraint>();
     for (Constraint c : cs) {
@@ -41,10 +44,12 @@ public abstract class UserConstraint {
 
   public void addConstraint(Constraint c) {
     constraints.add(c);
+    model.getConstraints().addConstraint(c);
   }
 
   public void removeConstraint(Constraint c) {
-    constraints.remove(c);
+    constraints.remove(c); // remove from my local list
+    model.getConstraints().removeConstraint(c); // and remove from constraint engine's list.
   }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
@@ -65,5 +70,8 @@ public abstract class UserConstraint {
   public String toString() {
     return name;
   }
+  
+  public abstract void removeInvalid();
+  public abstract boolean isValid();
   
 }

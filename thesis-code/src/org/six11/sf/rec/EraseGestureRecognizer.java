@@ -115,7 +115,6 @@ public class EraseGestureRecognizer extends SketchRecognizer {
       double thresh = ranked.getHighestScore() * 0.7;
       doomed.addAll(ranked.getHigherThan(thresh));
     }
-    bug("Erasing " + doomed.size() + " items.");
     return doomed;
   }
 

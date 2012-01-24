@@ -19,6 +19,7 @@ import java.util.Stack;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
+import org.six11.sf.constr.SpecificLengthConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
@@ -296,21 +297,34 @@ public class SketchBook {
     // UserConstraints when they are no longer useful.
     Set<UserConstraint> removeUs = new HashSet<UserConstraint>();
     for (UserConstraint uc : userConstraints) {
-      int before = uc.getConstraints().size();
-      bug("Before, " + uc + " has " + before);
       uc.getConstraints().removeAll(dead);
-      int after = uc.getConstraints().size();
-      bug("After, " + uc + " has " + after);
-      if (uc.getConstraints().isEmpty()) {
-        bug("Will remove empty user constraint: " + uc);
+      uc.removeInvalid();
+      if (!uc.isValid()) {
         removeUs.add(uc);
       }
     }
-    userConstraints.removeAll(removeUs);
+    for (UserConstraint uc : removeUs) {
+      removeUserConstraint(uc);
+    }
   }
 
   public Set<Segment> getGeometry() {
     return geometry;
+  }
+
+  public Segment getSegment(Pt blue, Pt green) {
+    Segment ret = null;
+    for (Segment s : geometry) {
+      if (s.involves(blue) && s.involves(green)) {
+        ret = s;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public boolean hasSegment(Pt blue, Pt green) {
+    return getConstraints().hasPoints(blue, green) && getSegment(blue, green) != null;
   }
 
   public ConstraintAnalyzer getConstraintAnalyzer() {
@@ -363,7 +377,6 @@ public class SketchBook {
     }
 
     if (oldPt != null && newPt != null) {
-      bug("Replacing " + StencilFinder.n(oldPt) + " with " + StencilFinder.n(newPt));
       if (!ConstraintSolver.hasName(newPt)) {
         ConstraintSolver.setName(newPt, nextPointName());
       }
@@ -441,9 +454,29 @@ public class SketchBook {
 
   public String getMondoDebugString() {
     StringBuilder buf = new StringBuilder();
-    String format = "%14s\t%-6s\t%-6s\n";
+    String format = "%-14s%-6s%-6s\n";
+    String constrFormat = "%-20s%s\n";
+    StringBuilder ptBuf = new StringBuilder();
     int indent = 0;
     addBug(indent, buf, "All debug info\n\n");
+    addBug(indent, buf, "Constraint Engine Points: " + getConstraints().getPoints().size() + "\n");
+    indent++;
+    for (Pt pt : getConstraints().getPoints()) {
+      addBug(indent, buf, String.format("%-6s%-4.2f %-4.2f\n", StencilFinder.n(pt), pt.getX(), pt.getY()));
+    }
+    indent--;
+    buf.append("\n");
+    addBug(indent, buf, "Constraint Engine Constraints:\n");
+    indent++;
+    for (Constraint c : getConstraints().getConstraints()) {
+      ptBuf.setLength(0);
+      for (Pt cPt : c.getRelatedPoints()) {
+        ptBuf.append(StencilFinder.n(cPt) + " ");
+      }
+      addBug(indent, buf, String.format(constrFormat, c.getType(), ptBuf.toString()));
+    }
+    indent--;
+    buf.append("\n");
     addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
     addBug(indent, buf, String.format(format, "seg-type", "p1", "p2"));
     addBug(indent, buf, "--------------------------\n");
@@ -469,9 +502,8 @@ public class SketchBook {
     addBug(indent, buf, String.format(format, "Constr. Name", "#"));
     addBug(indent, buf, "-------------------------\n");
     format = "%-20s%-4d\n";
-    String constrFormat = "%-20s%s\n";
     indent++;
-    StringBuilder ptBuf = new StringBuilder();
+    
     for (UserConstraint uc : userConstraints) {
       addBug(indent, buf, String.format(format, uc.getName(), uc.getConstraints().size()));
       indent++;
@@ -681,20 +713,16 @@ public class SketchBook {
     Set<Constraint> results = getConstraints().getVars().searchConstraints(filters);
     bug("There are " + results.size() + " existing length constraints related to " + seg);
     if (results.size() == 0) {
-      Constraint distConst = new DistanceConstraint(seg.getP1(), seg.getP2(), new NumericValue(len));
-      UserConstraint uc = SameLengthGesture.makeUserConstraint(this, null,
-          Collections.singleton(distConst));
+      UserConstraint uc = new SpecificLengthConstraint(this, seg.getP1(), seg.getP2(),
+          new NumericValue(len));
       bug("Adding user constraint for numeric distance");
       addUserConstraint(uc);
       //      registerConstraint(distConst);
     } else if (results.size() == 1) {
       DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
       NumericValue numVal = distConst.getValue();
-      bug("Found one constraint. value: " + numVal.getClass() + " = " + numVal.getValue());
-      if (numVal instanceof MultisourceNumericValue) {
-        MultisourceNumericValue val = (MultisourceNumericValue) numVal;
-        // RecognizedItem otherDistItem = getConstraintItem(distConst);
-      }
+      numVal.setValue(len);
+      getConstraints().wakeUp();
     }
   }
 
@@ -704,12 +732,22 @@ public class SketchBook {
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
-      bug(userConstraints.size() + " user constraints.");
-//      for (Ink itemInk : uc.getInk()) {
-//        removeRelated(itemInk);
-//      }
       getConstraints().wakeUp();
     }
+  }
+
+  public void removeUserConstraint(UserConstraint uc) {
+    bug("Attempting to remove user constraint " + uc.getName() + " from user constraint list. ("
+        + userConstraints.size() + " currently)");
+    if (uc != null && userConstraints.contains(uc)) {
+      bug("Ditching " + uc.getConstraints().size() + " sub-constraints inside " + uc.getName() + ".");
+      for (Constraint c : uc.getConstraints()) {
+        getConstraints().removeConstraint(c);
+      }
+      userConstraints.remove(uc);
+    }
+    bug("Afterwards, there are " + userConstraints.size() + " user constraints.");
+    getConstraints().wakeUp();
   }
 
   public Collection<UserConstraint> getUserConstraints() {
@@ -852,9 +890,7 @@ public class SketchBook {
 
   public void setDraggingGuidePoint(GuidePoint dragMe) {
     if (dragMe != null) {
-      bug("Dragging guide point!");
     } else {
-      bug("Stop dragging guide point!");
       getConstraints().wakeUp();
     }
     draggingGuidePoint = dragMe;

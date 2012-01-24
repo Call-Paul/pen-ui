@@ -1,8 +1,10 @@
 package org.six11.sf.rec;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -25,6 +27,7 @@ import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
+import org.six11.util.solve.MultisourceNumericValue.Source;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
@@ -101,9 +104,10 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     UserConstraint uc = null;
     if (results.size() == 0) {
       MultisourceNumericValue dist = new MultisourceNumericValue(mkSource(s1), mkSource(s2));
-      addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), dist));
-      addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), dist));
-      uc = makeUserConstraint(model, item, addUs);
+      SameLengthUserConstraint sluc = new SameLengthUserConstraint(model);
+      sluc.addDist(s1.getP1(), s1.getP2(), dist);
+      sluc.addDist(s2.getP1(), s2.getP2(), dist);
+      uc = sluc;
     } else if (results.size() == 1) {
       bug("Adding to the existing distance constraint.");
       // use existing numeric value
@@ -135,8 +139,24 @@ public class SameLengthGesture extends RecognizedItemTemplate {
         uc.addConstraint(addMe);
       }
     } else if (results.size() > 1) {
-      bug("Warning: creating this distance constraint would conflict with " + results.size()
-          + " current constraints. I refuse.");
+      bug("Trying to merge " + results.size() + " constraints:");
+      List<UserConstraint> ucs = new ArrayList<UserConstraint>();
+      for (Constraint c : results) {
+        ucs.add(model.getUserConstraint(c));
+      }
+      // found a few user constraints. merge them into one.
+      bug("Found " + ucs.size() + " user constraints. Should reduce that to one.");
+      SameLengthUserConstraint main = (SameLengthUserConstraint) ucs.remove(0);
+      for (UserConstraint other : ucs) {
+        Set<Constraint> replace = new HashSet<Constraint>();
+        replace.addAll(other.getConstraints());
+        model.removeUserConstraint(other);
+        for (Constraint c : replace) {
+          DistanceConstraint dc = (DistanceConstraint) c;
+          main.addDist(dc.a, dc.b, dc.getValue());
+        }
+      }
+      
     }
     for (Ink eenk : item.getInk()) {
       model.removeRelated(eenk);
