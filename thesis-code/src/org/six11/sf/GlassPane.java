@@ -121,9 +121,6 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void setGatherText(boolean value) {
-    if (value != gatherText) {
-      bug("gather text: " + value);
-    }
     gatherText = value;
     if (!gatherText) {
       numberInput.setLength(0);

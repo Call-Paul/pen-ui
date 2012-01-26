@@ -4,22 +4,18 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
-import org.six11.sf.constr.SpecificLengthConstraint;
+import org.six11.sf.constr.SameLengthUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
@@ -37,14 +33,12 @@ import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.DistanceConstraint;
-import org.six11.util.solve.MultisourceNumericValue;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
@@ -440,6 +434,15 @@ public class SketchBook {
     geometry.removeAll(doomed);
     getConstraints().wakeUp();
   }
+  
+  public Set<UserConstraint> getUserConstraints(Set<Constraint> manyC) {
+    Set<UserConstraint> ret = new HashSet<UserConstraint>();
+    for (Constraint c : manyC) {
+      ret.add(getUserConstraint(c));
+    }
+    ret.remove(null); // just in case.
+    return ret;
+  }
 
   public UserConstraint getUserConstraint(Constraint c) {
     UserConstraint ret = null;
@@ -680,7 +683,6 @@ public class SketchBook {
   public void addTextProgress(String string) {
     DrawingBuffer db = layers.getLayer("text");
     db.clear();
-    bug("cleared");
     if (selectedSegments.size() == 1) {
       Segment seg = selectedSegments.toArray(new Segment[1])[0];
       Pt mid = seg.getVisualMidpoint();
@@ -706,23 +708,23 @@ public class SketchBook {
   }
 
   private void constrainSegmentLength(Segment seg, double len) {
-    bug("constrain " + seg + " to " + num(len));
     Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
     filters.add(VariableBank.getTypeFilter(DistanceConstraint.class));
     filters.add(ConstraintFilters.getInvolvesFilter(seg.getEndpointArray()));
     Set<Constraint> results = getConstraints().getVars().searchConstraints(filters);
-    bug("There are " + results.size() + " existing length constraints related to " + seg);
-    if (results.size() == 0) {
-      UserConstraint uc = new SpecificLengthConstraint(this, seg.getP1(), seg.getP2(),
-          new NumericValue(len));
-      bug("Adding user constraint for numeric distance");
+    Set<UserConstraint> ucs = getUserConstraints(results);
+    if (ucs.size() == 0) {
+      SameLengthUserConstraint uc = new SameLengthUserConstraint(this);
+      uc.addDist(seg.getP1(), seg.getP2(), new NumericValue(len));
       addUserConstraint(uc);
-      //      registerConstraint(distConst);
-    } else if (results.size() == 1) {
-      DistanceConstraint distConst = (DistanceConstraint) results.toArray(new Constraint[1])[0];
-      NumericValue numVal = distConst.getValue();
-      numVal.setValue(len);
       getConstraints().wakeUp();
+    } else if (ucs.size() == 1) {
+      UserConstraint uc = ucs.toArray(new UserConstraint[1])[0];
+      if (uc instanceof SameLengthUserConstraint) {
+        SameLengthUserConstraint sluc = (SameLengthUserConstraint) uc;
+        sluc.setValue(new NumericValue(len));
+        getConstraints().wakeUp();
+      }
     }
   }
 
@@ -732,21 +734,17 @@ public class SketchBook {
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
-      getConstraints().wakeUp();
     }
+    getConstraints().wakeUp();
   }
 
   public void removeUserConstraint(UserConstraint uc) {
-    bug("Attempting to remove user constraint " + uc.getName() + " from user constraint list. ("
-        + userConstraints.size() + " currently)");
     if (uc != null && userConstraints.contains(uc)) {
-      bug("Ditching " + uc.getConstraints().size() + " sub-constraints inside " + uc.getName() + ".");
       for (Constraint c : uc.getConstraints()) {
         getConstraints().removeConstraint(c);
       }
       userConstraints.remove(uc);
     }
-    bug("Afterwards, there are " + userConstraints.size() + " user constraints.");
     getConstraints().wakeUp();
   }
 

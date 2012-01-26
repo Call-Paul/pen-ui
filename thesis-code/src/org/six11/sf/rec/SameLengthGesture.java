@@ -139,31 +139,89 @@ public class SameLengthGesture extends RecognizedItemTemplate {
         uc.addConstraint(addMe);
       }
     } else if (results.size() > 1) {
-      bug("Trying to merge " + results.size() + " constraints:");
-      List<UserConstraint> ucs = new ArrayList<UserConstraint>();
-      for (Constraint c : results) {
-        ucs.add(model.getUserConstraint(c));
-      }
-      // found a few user constraints. merge them into one.
-      bug("Found " + ucs.size() + " user constraints. Should reduce that to one.");
-      SameLengthUserConstraint main = (SameLengthUserConstraint) ucs.remove(0);
-      for (UserConstraint other : ucs) {
-        Set<Constraint> replace = new HashSet<Constraint>();
-        replace.addAll(other.getConstraints());
-        model.removeUserConstraint(other);
-        for (Constraint c : replace) {
-          DistanceConstraint dc = (DistanceConstraint) c;
-          main.addDist(dc.a, dc.b, dc.getValue());
-        }
-      }
-      
+      Set<UserConstraint> ucs = model.getUserConstraints(results);
+      merge(ucs); // 'uc' is left null, should have no ill effects. famous last words
     }
     for (Ink eenk : item.getInk()) {
       model.removeRelated(eenk);
     }
     model.addUserConstraint(uc);
-    //    for (Constraint c : addUs) {
-    //      model.registerConstraint(item, c);
+  }
+
+  private void merge(Set<UserConstraint> ucs) {
+    // found a few user constraints. merge them into one.
+    boolean ok = true;
+    for (UserConstraint uc : ucs) {
+      if (!(uc instanceof SameLengthUserConstraint)) {
+        ok = false;
+        bug("Error. Expected user constraint of type SameLengthUserConstraint but found "
+            + uc.getClass());
+        break;
+      }
+    }
+    if (ok) {
+      Set<SameLengthUserConstraint> slucs = new HashSet<SameLengthUserConstraint>();
+      SameLengthUserConstraint fixedSrc = null;
+      for (UserConstraint uc : ucs) {
+        SameLengthUserConstraint sluc = (SameLengthUserConstraint) uc;
+        slucs.add(sluc);
+        if (!sluc.isMultiSource()) {
+          if (fixedSrc == null) {
+            fixedSrc = sluc;
+          } else {
+            bug("When merging, I found two different fixed length user constraints. Don't know what to do, so I don't do anything.");
+            ok = false;
+            break;
+          }
+        }
+      }
+      if (ok) {
+        // two possibilities: all are multisource, or exactly one is fixed.
+        if (fixedSrc == null) {
+          // handle the 'all are multisource' first
+          bug("All merged user constraints are multisource.");
+          SameLengthUserConstraint main = slucs.toArray(new SameLengthUserConstraint[1])[0];
+          slucs.remove(main);
+          for (SameLengthUserConstraint sluc : slucs) {
+            Set<Constraint> replace = new HashSet<Constraint>();
+            replace.addAll(sluc.getConstraints());
+            model.removeUserConstraint(sluc);
+            for (Constraint c : replace) {
+              DistanceConstraint dc = (DistanceConstraint) c;
+              main.addDist(dc.a, dc.b, dc.getValue());
+            }
+          }
+        } else {
+          // exactly one is fixed.
+          slucs.remove(fixedSrc);
+          for (SameLengthUserConstraint sluc : slucs) {
+            Set<Constraint> replace = new HashSet<Constraint>();
+            replace.addAll(sluc.getConstraints());
+            model.removeUserConstraint(sluc);
+            for (Constraint c : replace) {
+              DistanceConstraint dc = (DistanceConstraint) c;
+              fixedSrc.addDist(dc.a, dc.b, fixedSrc.getValue());
+            }            
+          }
+        }
+      }
+    }
+    //    UserConstraint mainVague = ucs.toArray(new UserConstraint[1])[0];
+    //    if (mainVague instanceof SameLengthUserConstraint) {
+    //      SameLengthUserConstraint main = (SameLengthUserConstraint) mainVague;
+    //      ucs.remove(main);
+    //      for (UserConstraint other : ucs) {
+    //        Set<Constraint> replace = new HashSet<Constraint>();
+    //        replace.addAll(other.getConstraints());
+    //        model.removeUserConstraint(other);
+    //        for (Constraint c : replace) {
+    //          DistanceConstraint dc = (DistanceConstraint) c;
+    //          main.addDist(dc.a, dc.b, dc.getValue());
+    //        }
+    //      }
+    //    } else {
+    //      bug("this user constraint is the wrong type! expected SameLengthUserConstraint but got "
+    //          + mainVague.getClass());
     //    }
   }
 
