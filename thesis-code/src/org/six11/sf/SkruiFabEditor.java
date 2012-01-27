@@ -369,9 +369,7 @@ public class SkruiFabEditor {
       if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {
-        System.out.print(s + " shape: ");
         DrawingBufferRoutines.fillShape(buf, s.getShape(true), colors.get("stencil"), 0);
-        System.out.println();
       }
     }
     if (later.size() > 0) {

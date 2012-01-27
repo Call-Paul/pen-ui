@@ -17,6 +17,7 @@ import static org.six11.util.Debug.num;
 
 public class StencilFinder {
 
+  private static final int MIN_NUM_SEGS = 3;
   private static int ID_COUNTER = 1;
   private Set<Stencil> stencils;
   private Map<Pt, Set<Pt>> adjacent;
@@ -65,8 +66,7 @@ public class StencilFinder {
       }
     }
     for (List<Pt> path : pruned) {
-      List<Segment> segList = Stencil.getSegmentList(path, allGeometry);
-      stencils.add(new Stencil(model, path, segList));
+      stencils.add(new Stencil(model, path));
     }
     
     return stencils;
@@ -96,10 +96,11 @@ public class StencilFinder {
   }
 
   private void delve(Stack<Pt> path) {
+    bug("Delve: path(" + path.size() + "): " + n(path));
     Pt top = path.peek();
     try {
       for (Pt adj : adjacent.get(top)) {
-        if (path.size() > 2 && adj.equals(path.get(0))) {
+        if (path.size() > MIN_NUM_SEGS && adj.equals(path.get(0))) {
           path.push(adj);
           paths.add(new ArrayList<Pt>(path));
           path.pop();

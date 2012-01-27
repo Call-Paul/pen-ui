@@ -10,13 +10,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.six11.util.data.Lists;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class Stencil {
 
@@ -27,11 +28,15 @@ public class Stencil {
   private Set<Stencil> children;
   private SketchBook model;
 
-  public Stencil(SketchBook model, List<Pt> path, List<Segment> segs) {
+  public Stencil(SketchBook model, List<Pt> path) {
     this.model = model;
     this.path = path;
-    this.segs = segs;
+    this.segs = createSegmentList(); //Stencil.getSegmentList(path, model.getGeometry());
+    bug("Stencil was born. Path: " + StencilFinder.n(path) + ", segs: " + num(segs, " "));
     this.children = new HashSet<Stencil>();
+    if (path.size() < 4) {
+      bug(this + " has " + path.size() + " points and " + segs.size() + " segments");
+    }
   }
 
   public boolean isSame(Stencil other) {
@@ -42,22 +47,32 @@ public class Stencil {
     return path;
   }
 
+  public List<Pt> getTurnPath() {
+    List<Pt> ret = path;
+    if (segs.size() < 3) {
+      bug("Need to get better turn path points because this stencil only has " + segs.size()
+          + " segments.");
+    }
+    return ret;
+  }
+
   public boolean isClockwise() {
-    Pt c = Functions.getMean(path);
+    List<Pt> turns = getTurnPath();
+    Pt c = Functions.getMean(turns);
     double crossProd = 0;
-    for (int i = 0; i < path.size() - 1; i++) {
-      Vec a = new Vec(c, path.get(i));
-      Vec b = new Vec(c, path.get(i + 1));
+    for (int i = 0; i < turns.size() - 1; i++) {
+      Vec a = new Vec(c, turns.get(i));
+      Vec b = new Vec(c, turns.get(i + 1));
       crossProd = crossProd + a.cross(b);
+    }
+    if (Math.abs(crossProd) < 0.01) {
+      bug("cross product too close to zero to be meaningful.");
     }
     boolean ret = crossProd > 0;
     return ret;
   }
 
-  public Shape getOuterShape() {
-    Path2D shape = new Path2D.Double();
-    // the path list hold segment endpoints only. If there are curved segments, we 
-    // also need those curvy bits. That's why we use allPoints and not just path.
+  private List<Pt> getAllPoints() {
     List<Pt> allPoints = new ArrayList<Pt>();
     for (int i = 0; i < segs.size(); i++) {
       Pt p = path.get(i);
@@ -72,6 +87,14 @@ public class Stencil {
         }
       }
     }
+    return allPoints;
+  }
+
+  public Shape getOuterShape() {
+    Path2D shape = new Path2D.Double();
+    // the path list hold segment endpoints only. If there are curved segments, we 
+    // also need those curvy bits. That's why we use allPoints and not just path.
+    List<Pt> allPoints = getAllPoints();
     for (int i = 0; i < allPoints.size(); i++) {
       Pt pt = allPoints.get(i);
       if (i == 0) {
@@ -86,20 +109,7 @@ public class Stencil {
   public Shape getShape(boolean needCCW) {
     Path2D shape = new Path2D.Double();
     shape.setWindingRule(Path2D.WIND_NON_ZERO);
-    List<Pt> allPoints = new ArrayList<Pt>();
-    for (int i = 0; i < segs.size(); i++) {
-      Pt p = path.get(i);
-      Segment seg = segs.get(i);
-      List<Pt> nextPoints = seg.getPointList();
-      if (seg.getP2().equals(p)) {
-        Collections.reverse(nextPoints);
-      }
-      for (Pt np : nextPoints) {
-        if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
-          allPoints.add(np);
-        }
-      }
-    }
+    List<Pt> allPoints = getAllPoints();
     boolean cw = isClockwise();
     if ((cw && needCCW) || (!cw && !needCCW)) {
       Collections.reverse(allPoints);
@@ -158,6 +168,26 @@ public class Stencil {
       if (!ok) {
         ret = null;
         break;
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * Using 'path' and 'model', create a unique path that completes the stencil without re-using any
+   * segments. This is tricky because of 1- or 2-segment stencils.
+   */
+  private final List<Segment> createSegmentList() {
+    List<Segment> ret = new ArrayList<Segment>();
+    for (int i=0; i < path.size()- 1; i++) {
+      Collection<Segment> groupA = model.findRelatedSegments(path.get(i));
+      Collection<Segment> groupB = model.findRelatedSegments(path.get(i+1));
+      Collection<Segment> both = Lists.intersect(groupA, groupB);
+      for (Segment s : both) {
+        if (!ret.contains(s)) {
+          ret.add(s);
+          break;
+        }
       }
     }
     return ret;
@@ -256,9 +286,9 @@ public class Stencil {
 
   public boolean isValid() {
     boolean ret = true;
-    for (int i=0; i < path.size() - 1; i++) {
+    for (int i = 0; i < path.size() - 1; i++) {
       Pt a = path.get(i);
-      Pt b = path.get(i+1);
+      Pt b = path.get(i + 1);
       if (!model.hasSegment(a, b)) {
         ret = false;
         break;
