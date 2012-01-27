@@ -45,8 +45,8 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.ConstraintSolver.State;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
+//import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -55,7 +55,6 @@ import static org.six11.util.Debug.num;
  */
 public class SkruiFabEditor {
 
-  private static String ACTION_GO = "Go";
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -303,7 +302,8 @@ public class SkruiFabEditor {
   }
 
   public void findStencils(Collection<Segment> segs) {
-    StencilFinder sf = new StencilFinder();
+    bug("Finding stencils...");
+    StencilFinder sf = new StencilFinder(model);
     model.mergeStencils(sf.findStencils(segs, model.getGeometry()));
   }
 
@@ -369,12 +369,14 @@ public class SkruiFabEditor {
       if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {
-        DrawingBufferRoutines.fillShape(buf, s.getShape(), colors.get("stencil"), 0);
+        System.out.print(s + " shape: ");
+        DrawingBufferRoutines.fillShape(buf, s.getShape(true), colors.get("stencil"), 0);
+        System.out.println();
       }
     }
     if (later.size() > 0) {
       for (Stencil s : later) {
-        DrawingBufferRoutines.fillShape(selBuf, s.getShape(),
+        DrawingBufferRoutines.fillShape(selBuf, s.getShape(true),
             colors.get("selected stencil"), 0);
       }
     }
@@ -481,6 +483,11 @@ public class SkruiFabEditor {
           break;
       }
     }
+    
+    // debugging: label points
+//    for (Pt pt : model.getConstraints().getPoints()) {
+//      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), StencilFinder.n(pt), Color.BLACK);
+//    }
     layers.repaint();
 
   }

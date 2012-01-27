@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.six11.util.data.Lists;
 import org.six11.util.pen.Pt;
 import static org.six11.util.Debug.num;
 
@@ -22,13 +23,15 @@ public class StencilFinder {
   private Stack<Pt> newPoints;
   private Set<List<Pt>> paths;
   private final int id = ID_COUNTER++;
-
-  public StencilFinder() {
+  private SketchBook model;
+  
+  public StencilFinder(SketchBook model) {
+    this.model = model;
     this.stencils = new HashSet<Stencil>();
     this.newPoints = new Stack<Pt>();
     this.paths = new HashSet<List<Pt>>();
   }
-  
+
   public Set<Stencil> findStencils(Collection<Segment> newSegs, Set<Segment> allGeometry) {
     for (Segment s : newSegs) {
       if (!newPoints.contains(s.getP1())) {
@@ -39,7 +42,7 @@ public class StencilFinder {
       }
     }
     makeAdjacency(allGeometry);
-//    printAdjacencyTable(allGeometry);
+    //    printAdjacencyTable(allGeometry);
     Stack<Pt> initialPath = new Stack<Pt>();
     for (Pt newPt : newPoints) {
       if (adjacent.containsKey(newPt)) {
@@ -63,9 +66,33 @@ public class StencilFinder {
     }
     for (List<Pt> path : pruned) {
       List<Segment> segList = Stencil.getSegmentList(path, allGeometry);
-      stencils.add(new Stencil(path, segList));
+      stencils.add(new Stencil(model, path, segList));
     }
+    
     return stencils;
+  }
+
+  public static void merge(Set<Stencil> rest, Set<Stencil> done) {
+    bug("Merging. rest has " + rest.size() + ", done has " + done.size());
+    if (!rest.isEmpty()) {
+      Stencil s = Lists.removeOne(rest);
+      Set<Stencil> kids = new HashSet<Stencil>();
+      Set<Stencil> all = new HashSet<Stencil>();
+      all.addAll(rest);
+      all.addAll(done);
+      for (Stencil c : all) {
+        if (s.surrounds(c)) {
+          kids.add(c);
+        }
+      }
+      if (!kids.isEmpty()) {
+        rest.removeAll(kids);
+        done.removeAll(kids);
+        s.add(kids);
+      }
+      done.add(s);
+      merge(rest, done);
+    }
   }
 
   private void delve(Stack<Pt> path) {
@@ -96,7 +123,7 @@ public class StencilFinder {
     }
   }
 
-  public Map<Pt, Set<Pt>>  makeAdjacency(Set<Segment> allGeometry) {
+  public Map<Pt, Set<Pt>> makeAdjacency(Set<Segment> allGeometry) {
     adjacent = new HashMap<Pt, Set<Pt>>();
     for (Segment s : allGeometry) {
       Pt p1 = s.getP1();
@@ -106,11 +133,11 @@ public class StencilFinder {
     }
     return adjacent;
   }
-  
+
   private String ident() {
     return "(adjacency table for finder #" + id + ")";
   }
-  
+
   private void printAdjacencyTable(Collection<Segment> geom) {
     System.out.println("-- table based on segment geometry --- " + ident());
     for (Segment seg : geom) {
@@ -121,7 +148,7 @@ public class StencilFinder {
       System.out.println("  " + n(vals.getKey()) + ": " + n(vals.getValue()));
     }
   }
-  
+
   public void printAdjacencyTable() {
     System.out.println("-- adjacency table --- " + ident());
     for (Map.Entry<Pt, Set<Pt>> vals : adjacent.entrySet()) {
@@ -150,8 +177,8 @@ public class StencilFinder {
       adjacent.put(p1, new HashSet<Pt>());
     }
     adjacent.get(p1).add(p2);
-//    bug("Just associated " + n(p1) + " => " + n(p2) + ". Table is currently:");
-//    printAdjacencyTable();
+    //    bug("Just associated " + n(p1) + " => " + n(p2) + ". Table is currently:");
+    //    printAdjacencyTable();
   }
 
   public Set<Stencil> getNewStencils() {

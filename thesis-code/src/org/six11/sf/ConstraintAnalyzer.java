@@ -129,7 +129,7 @@ public class ConstraintAnalyzer {
         nonsingular.add(seg);
       }
     }
-    StencilFinder sf = new StencilFinder();
+    StencilFinder sf = new StencilFinder(model);
     Map<Pt, Set<Pt>> adj = sf.makeAdjacency(nonsingular);
     StringBuilder buf = new StringBuilder();
     for (Map.Entry<Pt, Set<Pt>> entry : adj.entrySet()) {

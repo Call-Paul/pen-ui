@@ -43,7 +43,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   public static double CUTFILE_MAX_WIDTH_INCHES = 24.0;
   public static double CUTFILE_MAX_HEIGHT_INCHES = 16.0;
 
-  private BoundingBox cutfileBB;
   private boolean dropBorder;
   private SkruiFabEditor editor;
   private Material material;
@@ -162,7 +161,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   private void addStencils(Set<Stencil> selection) {
     for (Stencil s : selection) {
-      material.addStencil(s.getShape());
+      material.addStencil(s.getShape(true));
     }
     material.layoutStencils();
     try {

@@ -1,5 +1,5 @@
 package org.six11.sf;
-
+//J|mmyJ0hn$
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
@@ -250,6 +250,7 @@ public class SketchBook {
   }
 
   public void removeGeometry(Segment seg) {
+    bug("remove " + seg);
     // remove from the list of known geometry.
     geometry.remove(seg);
 
@@ -280,12 +281,16 @@ public class SketchBook {
 
     // remove stencils if it was made with the deleted one.
     Set<Stencil> doomed = new HashSet<Stencil>();
+    Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
     for (Stencil stencil : stencils) {
-      if (stencil.involves(seg)) {
+      stencil.removeGeometry(seg);
+      if (!stencil.isValid()) {
         doomed.add(stencil);
+        childrenOfDoomed.addAll(stencil.getChildren());
       }
     }
     stencils.removeAll(doomed);
+    stencils.addAll(childrenOfDoomed);
 
     // remove related constraints from the UserConstraints, and remove the 
     // UserConstraints when they are no longer useful.
@@ -543,7 +548,7 @@ public class SketchBook {
     }
 
     // then remove sub-stencils. boot those that are in a superset
-    Set<Stencil> doomed = new HashSet<Stencil>();
+    Set<Stencil> doomed = new HashSet<Stencil>(); 
     for (Stencil s1 : stencils) {
       for (Stencil s2 : stencils) {
         if (s1.isSuperset(s2)) {
@@ -555,6 +560,9 @@ public class SketchBook {
       }
     }
     stencils.removeAll(doomed);
+    Set<Stencil> done = new HashSet<Stencil>();
+    StencilFinder.merge(stencils, done);
+    stencils = done;
   }
 
   /**
@@ -615,7 +623,7 @@ public class SketchBook {
   public boolean isPointOverSelection(Pt where) {
     boolean ret = false;
     for (Stencil s : selectedStencils) {
-      Area shapeArea = new Area(s.getShape());
+      Area shapeArea = new Area(s.getShape(true));
       if (shapeArea.contains(where)) {
         ret = true;
         break;
