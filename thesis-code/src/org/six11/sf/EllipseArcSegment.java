@@ -22,7 +22,7 @@ public class EllipseArcSegment extends SegmentDelegate {
     int n = points.size();
     ellie.setArcRegion(points.get(0), points.get(n / 2), points.get(n - 1));
     List<Pt> surface = ellie.initArc();
-    init(ink, surface, termA, termB, Type.EllipticalArc);
+    init(ink, surface, termA, termB, Segment.Type.EllipticalArc);
   }
 
 

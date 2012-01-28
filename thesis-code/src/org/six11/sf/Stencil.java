@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.sf.SegmentDelegate.Type;
+import org.six11.sf.Segment.Type;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
@@ -96,14 +96,14 @@ public class Stencil {
       ret = new ArrayList<Pt>();
       for (int i=0; i < path.size(); i++) {
         ret.add(path.get(i));
-        if (segs.get(i).getType() != Type.Line) {
+        if (segs.get(i).getType() != Segment.Type.Line) {
           ret.add(segs.get(i).getVisualMidpoint());
         }
       }
     } else if (segs.size() == 1) {
       bug("stencil with 1 segs...");
       Segment seg = segs.get(0);
-      if (seg.getType() != Type.Line) {
+      if (seg.getType() != Segment.Type.Line) {
         List<Pt> source = seg.asPolyline();
         int sz = source.size();
         int idx1 = sz / 3;

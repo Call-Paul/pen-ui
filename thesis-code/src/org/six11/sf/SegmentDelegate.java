@@ -21,15 +21,6 @@ import org.six11.util.pen.Vec;
 
 public class SegmentDelegate implements HasFuzzyArea {
 
-  int id;
-  private static int ID_COUNTER = 1;
-
-  public static enum Type {
-    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc
-  };
-
-  //  List<Pt> points; // going to replace this soon
-
   protected Pt p1, p2; // start/end points. these can be moved around externally
 
   // parametric points: they are dependent on p1 and p2, so internal code here
@@ -44,7 +35,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected transient List<Pt> paraPoints = null;
   protected transient List<Pt> deformedPoints = null;
 
-  Type type;
+  Segment.Type type;
   //  Sequence spline;
   Ink ink;
   boolean termA, termB;
@@ -54,14 +45,14 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public SegmentDelegate(Ink ink, List<Pt> points, boolean termA, boolean termB) {
-    this(ink, points, termA, termB, Type.Unknown);
+    this(ink, points, termA, termB, Segment.Type.Unknown);
   }
 
-  public SegmentDelegate(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
+  public SegmentDelegate(Ink ink, List<Pt> points, boolean termA, boolean termB, Segment.Type t) {
     init(ink, points, termA, termB, t);
   }
 
-  protected final void init(Ink ink, List<Pt> points, boolean termA, boolean termB, Type t) {
+  protected final void init(Ink ink, List<Pt> points, boolean termA, boolean termB, Segment.Type t) {
     this.ink = ink;
     this.p1 = points.get(0);
     this.p2 = points.get(points.size() - 1);
@@ -69,7 +60,6 @@ public class SegmentDelegate implements HasFuzzyArea {
     this.termA = termA;
     this.termB = termB;
     this.type = t;
-    id = ID_COUNTER++;
   }
 
   public final void calculateParameters(List<Pt> points) {
@@ -180,20 +170,16 @@ public class SegmentDelegate implements HasFuzzyArea {
     return ret;
   }
 
-  public int getId() {
-    return id;
-  }
-
-  public Type getType() {
+  public Segment.Type getType() {
     return type;
   }
 
   public Pt getP1() {
-    return p1; //points.get(0);
+    return p1;
   }
 
   public Pt getP2() {
-    return p2; // points.get(points.size() - 1);
+    return p2;
   }
 
   public Line asLine() {
@@ -202,9 +188,9 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public double length() {
     double ret = 0;
-    if (type == Type.Line) {
+    if (type == Segment.Type.Line) {
       ret = getP1().distance(getP2());
-    } else if (type == Type.Curve) {
+    } else if (type == Segment.Type.Curve) {
       ret = asSpline().length();
     }
     return ret;
@@ -353,12 +339,12 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public Pt getNearestPoint(Pt pt) {
     Pt where = null;
-    if (type == SegmentDelegate.Type.Line) {
+    if (type == Segment.Type.Line) {
       where = Functions.getNearestPointOnLine(pt, asLine(), true);
-    } else if (type == SegmentDelegate.Type.Curve || type == SegmentDelegate.Type.EllipticalArc) {
+    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
       doPara();
       where = Functions.getNearestPointOnPolyline(pt, paraPoints);
-    } else if (type == SegmentDelegate.Type.Dot) {
+    } else if (type == Segment.Type.Dot) {
       where = getP1().copyXYT();
       where.setDouble("r", 0);
     } else {
@@ -382,7 +368,7 @@ public class SegmentDelegate implements HasFuzzyArea {
    */
   public List<Pt> getPointList() {
     List<Pt> ret = new ArrayList<Pt>();
-    if (type == Type.Line) {
+    if (type == Segment.Type.Line) {
       ret.add(getP1());
       ret.add(getP2());
     } else {

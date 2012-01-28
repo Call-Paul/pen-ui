@@ -50,11 +50,11 @@ public class GraphicDebug {
     Color darkRed = Color.red.darker();
     Color pc = preferredColor;
     for (SegmentDelegate seg : segments) {
-      if (seg.getType() == SegmentDelegate.Type.Line) {
+      if (seg.getType() == Segment.Type.Line) {
         DrawingBufferRoutines.line(db, seg.asLine(), pc == null ? darkGreen : pc, 2.0);
-      } else if (seg.getType() == SegmentDelegate.Type.Curve) {
+      } else if (seg.getType() == Segment.Type.Curve) {
         DrawingBufferRoutines.drawShape(db, seg.asSpline(), pc == null ? darkBlue : pc, 2.0);
-      } else if (seg.getType() == SegmentDelegate.Type.EllipticalArc) {
+      } else if (seg.getType() == Segment.Type.EllipticalArc) {
         DrawingBufferRoutines.drawShape(db, seg.asPolyline(), pc == null ? darkRed : pc, 2.0);
       } else {
         bug("Unknown segment type in drawSegments: " + seg.getType());

@@ -11,7 +11,7 @@ public class LineSegment extends SegmentDelegate {
 
   public LineSegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     super(ink, points, termA, termB);
-    this.type = Type.Line;
+    this.type = Segment.Type.Line;
   }
 
   public LineSegment(Pt p1, Pt p2) {
@@ -19,7 +19,7 @@ public class LineSegment extends SegmentDelegate {
     points.add(p1);
     points.add(p2);
     bug("Building LineSegment using direct constructor with points: " + num(p1) + ", " + num(p2));
-    init(null, points, false, false, Type.Line);
+    init(null, points, false, false, Segment.Type.Line);
   }
 
 }

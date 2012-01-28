@@ -7,7 +7,6 @@ import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.util.pen.Pt;
@@ -30,7 +29,7 @@ public class DotSelectGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
-    if (segs.size() == 1 && segs.get(0).getType() == SegmentDelegate.Type.Dot) {
+    if (segs.size() == 1 && segs.get(0).getType() == Segment.Type.Dot) {
       final Segment dot = segs.get(0);
       Pt loc = dot.getP1();
       for (GuidePoint g : model.getGuidePoints()) {

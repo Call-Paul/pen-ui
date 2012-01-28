@@ -12,7 +12,6 @@ import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.SketchRecognizer.Type;
@@ -65,7 +64,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
       }
       if (stats.getMax() < 10.0 || (stats.getMax() < 15.0 && stats.getMean() < 5.0)) {
         double ang = 0;
-        if (undy.getType() == SegmentDelegate.Type.Line) {
+        if (undy.getType() == Segment.Type.Line) {
           ang = Math.min(abs(Functions.getSignedAngleBetween(undy.getStartDir(), inkVec)),
               abs(Functions.getSignedAngleBetween(undy.getEndDir(), inkVec)));
           ang = toDegrees(ang);

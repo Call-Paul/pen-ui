@@ -35,7 +35,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
-    if (segs.size() == 1 && segs.get(0).getType() == SegmentDelegate.Type.Dot) {
+    if (segs.size() == 1 && segs.get(0).getType() == Segment.Type.Dot) {
       Segment dot = segs.get(0);
       Pt loc = dot.getP1();
 

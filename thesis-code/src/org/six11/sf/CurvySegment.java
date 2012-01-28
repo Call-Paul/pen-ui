@@ -12,11 +12,11 @@ public class CurvySegment extends SegmentDelegate {
 
   public CurvySegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     super(ink, points, termA, termB);
-    this.type = Type.Curve;
+    this.type = Segment.Type.Curve;
   }
   
   public CurvySegment(List<Pt> points) {
-    init(null, points, false, false, Type.Curve);
+    init(null, points, false, false, Segment.Type.Curve);
   }
 
 }

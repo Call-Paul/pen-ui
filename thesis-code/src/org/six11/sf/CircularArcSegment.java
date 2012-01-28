@@ -44,7 +44,7 @@ public class CircularArcSegment extends SegmentDelegate {
     centerParameterization = calculateParameterForPoint(vMag, line, initialCenter);
     arcMidParameterization = calculateParameterForPoint(vMag, line, arc2);
     bug("center param: " + num(centerParameterization) + ", arcMid param: " + num(arcMidParameterization));
-    init(ink, surface, termA, termB, Type.CircularArc);
+    init(ink, surface, termA, termB, Segment.Type.CircularArc);
   }
 
   private double getParam(Pt target, Pt center) {

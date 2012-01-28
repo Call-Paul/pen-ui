@@ -1,20 +1,10 @@
 package org.six11.sf;
 
-import static java.lang.Math.ceil;
-import static java.lang.Math.min;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
 import java.awt.Shape;
 import java.awt.geom.Area;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
-import org.six11.sf.SegmentDelegate.Type;
-import org.six11.util.gui.shape.ShapeFactory;
-import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -22,12 +12,24 @@ import org.six11.util.pen.Vec;
 
 public class Segment implements HasFuzzyArea {
 
+  int id;
+  private static int ID_COUNTER = 1;
+  
+  public static enum Type {
+    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc
+  }
+
   private SegmentDelegate d;
 
   public Segment(SegmentDelegate delegate) {
     this.d = delegate;
+    id = ID_COUNTER++;
   }
 
+  public int getId() {
+    return id;
+  }
+  
   public final void calculateParameters(List<Pt> points) {
     d.calculateParameters(points);
   }
@@ -60,11 +62,7 @@ public class Segment implements HasFuzzyArea {
     return d.getEndCaps();
   }
 
-  public int getId() {
-    return d.getId();
-  }
-
-  public Type getType() {
+  public Segment.Type getType() {
     return d.getType();
   }
 
