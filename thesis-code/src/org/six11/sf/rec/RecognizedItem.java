@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Stack;
 
 import org.six11.sf.Ink;
-import org.six11.sf.SegmentDelegate;
+import org.six11.sf.Segment;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
@@ -105,12 +105,12 @@ public class RecognizedItem {
     featurePoints.put(key, pt);
   }
 
-  public void addTarget(String targetKey, SegmentDelegate seg) {
+  public void addTarget(String targetKey, Segment seg) {
     targets.put(targetKey, seg);
   }
   
-  public SegmentDelegate getSegmentTarget(String targetKey) {
-    return (SegmentDelegate) targets.get(targetKey);
+  public Segment getSegmentTarget(String targetKey) {
+    return (Segment) targets.get(targetKey);
   }
 
   public boolean conflictsWith(RecognizedItem other) {

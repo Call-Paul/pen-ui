@@ -244,7 +244,7 @@ public class SkruiFabEditor {
     bug("|                                                                                       |");
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
-    Collection<SegmentDelegate> segs = new HashSet<SegmentDelegate>();
+    Collection<Segment> segs = new HashSet<Segment>();
     if (unstruc.isEmpty()) {
       bug("No ink to work with...");
     } else {
@@ -252,7 +252,7 @@ public class SkruiFabEditor {
       Set<Ink> passedInk = new HashSet<Ink>();
       for (Ink stroke : unstruc) {
         passed.clear();
-        SegmentDelegate guidedSeg = null;
+        Segment guidedSeg = null;
         for (Guide g : stroke.guides) {
           if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
             if (g instanceof GuidePoint) {
@@ -275,10 +275,10 @@ public class SkruiFabEditor {
     }
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
-      segs.addAll((List<SegmentDelegate>) seq.getAttribute(CornerFinder.SEGMENTS));
+      segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
       stroke.setAnalyzed(true);
     }
-    for (SegmentDelegate seg : segs) {
+    for (Segment seg : segs) {
       model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
       model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
     }
@@ -301,7 +301,7 @@ public class SkruiFabEditor {
     layers.repaint();
   }
 
-  public void findStencils(Collection<SegmentDelegate> segs) {
+  public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);
     model.mergeStencils(sf.findStencils(segs));
   }
@@ -424,11 +424,11 @@ public class SkruiFabEditor {
     DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
     buf.clear();
 
-    SegmentDelegate fsSeg = layers.getFlowSelectionSegment();
+    Segment fsSeg = layers.getFlowSelectionSegment();
     // ------------------------------------------------------------ DRAW SELECTED SEGMENTS
     //
     //
-    for (SegmentDelegate seg : model.getSelectedSegments()) {
+    for (Segment seg : model.getSelectedSegments()) {
       if (seg == fsSeg) {
         continue;
       }
@@ -453,7 +453,7 @@ public class SkruiFabEditor {
     // ------------------------------------------------------------ DRAW ALL SEGMENTS
     //
     //
-    for (SegmentDelegate seg : model.getGeometry()) {
+    for (Segment seg : model.getGeometry()) {
       if (seg == fsSeg) {
         continue;
       }
@@ -500,7 +500,7 @@ public class SkruiFabEditor {
   private void drawFS() {
     DrawingBuffer fsBuf = layers.getLayer(GraphicDebug.DB_FS);
     fsBuf.clear();
-    SegmentDelegate fsSeg = layers.getFlowSelectionSegment();
+    Segment fsSeg = layers.getFlowSelectionSegment();
     if (fsSeg != null) {
       DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
       List<Pt> def = fsSeg.getDeformedPoints();

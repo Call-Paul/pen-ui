@@ -24,16 +24,16 @@ public class ActionFactory {
     return ret;
   }
 
-  public SafeAction addSegments(final Collection<SegmentDelegate> segs) {
+  public SafeAction addSegments(final Collection<Segment> segs) {
     return new SafeAction("Add Segments") {
       public void forward() {
-        for (SegmentDelegate seg : segs) {
+        for (Segment seg : segs) {
           model.addGeometry(seg);
         }
       }
 
       public void backward() {
-        for (SegmentDelegate seg : segs) {
+        for (Segment seg : segs) {
           model.removeGeometry(seg);
         }
       }

@@ -84,10 +84,10 @@ public class GuideCircle extends Guide {
     return new GuideCircle(center, isDynamic() ? fixedHover : outside);
   }
 
-  public SegmentDelegate adjust(Ink ink, int start, int end) {
+  public Segment adjust(Ink ink, int start, int end) {
     Pt spot = isDynamic() ? fixedHover : outside;
-    return new CircularArcSegment(ink, ink.seq.getSubSequence(start, end + 1).getPoints(), center,
-        spot.distance(center), true, true);
+    return new Segment(new CircularArcSegment(ink, ink.seq.getSubSequence(start, end + 1).getPoints(), center,
+        spot.distance(center), true, true));
   }
 
 }

@@ -14,11 +14,11 @@ import static org.six11.util.Debug.num;
 
 public class GuidePoint extends Guide {
 
-  private SegmentDelegate seg;
+  private Segment seg;
   private Vec param;
   private Pt pt;
 
-  public GuidePoint(SegmentDelegate seg, Vec param) {
+  public GuidePoint(Segment seg, Vec param) {
     this.seg = seg;
     this.param = param;
   }
@@ -31,7 +31,7 @@ public class GuidePoint extends Guide {
     return seg != null;
   }
 
-  public SegmentDelegate getSegment() {
+  public Segment getSegment() {
     return seg;
   }
 
@@ -112,13 +112,13 @@ public class GuidePoint extends Guide {
   }
 
   @Override
-  public SegmentDelegate adjust(Ink ink, int start, int end) {
+  public Segment adjust(Ink ink, int start, int end) {
     Pt where = getLocation();
-    List<SegmentDelegate> segs = ink.getSegments();
+    List<Segment> segs = ink.getSegments();
     if (segs != null) {
       Pt closestPt = null;
       double closestDist = Double.MAX_VALUE;
-      for (SegmentDelegate s : segs) {
+      for (Segment s : segs) {
         bug("  " + s);
         if (s.getP1() != null && s.getP1().distance(where) < closestDist) {
           closestDist = s.getP1().distance(where);

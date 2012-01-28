@@ -112,6 +112,7 @@ public class SegmentDelegate implements HasFuzzyArea {
    *         sign of the Y component is determined by Functions.getPartition(target, line).
    */
   public static Vec calculateParameterForPoint(double vMag, Line line, Pt target) {
+    // TODO: move this into Segment.
     Pt ix = Functions.getNearestPointOnLine(target, line, true); // retains the 'r' double value
     int whichSide = Functions.getPartition(target, line);
     double dist = ix.distance(target) * whichSide;
@@ -277,7 +278,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     return ret;
   }
 
-  public double getMinAngle(SegmentDelegate other) {
+  public double getMinAngle(Segment other) {
     Vec target = getStartDir();
     Vec segStart = other.getStartDir();
     Vec segEnd = other.getEndDir();
@@ -391,14 +392,14 @@ public class SegmentDelegate implements HasFuzzyArea {
     return ret;
   }
 
-  public SegmentDelegate copy() {
+  public Segment copy() {
     List<Pt> copiedPoints = new ArrayList<Pt>();
     doPara();
     for (Pt pt : paraPoints) {
       copiedPoints.add(pt.copyXYT());
     }
-    SegmentDelegate ret = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
-    return ret;
+    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
+    return new Segment(sd);
   }
 
   public Area getFuzzyArea(double fuzzyFactor) {

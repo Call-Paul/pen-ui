@@ -11,6 +11,7 @@ import java.util.Stack;
 
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
+import org.six11.sf.Segment;
 import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
@@ -85,18 +86,18 @@ public class RightAngleBrace extends RecognizedItemTemplate {
 
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
     Certainty ret = Certainty.No;
-    Set<SegmentDelegate> segs = model.getGeometry();
+    Set<Segment> segs = model.getGeometry();
     Pt hotspot = item.getFeaturePoint(CORNER_D);
     segs = SegmentFilter.makeCohortFilter(in).filter(segs);
     segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(segs);
     Interval adjacentSegAngleRange = new Interval(toRadians(70), toRadians(110));
-    Set<SegmentDelegate> avoid = new HashSet<SegmentDelegate>();
-    SegmentDelegate good1 = null;
-    SegmentDelegate good2 = null;
+    Set<Segment> avoid = new HashSet<Segment>();
+    Segment good1 = null;
+    Segment good2 = null;
     double bestAngle = 0;
-    for (SegmentDelegate seg : segs) {
-      Set<SegmentDelegate> adjacentSegs = SegmentFilter.makeCoterminalFilter(seg).filter(segs);
-      for (SegmentDelegate adjacentSeg : adjacentSegs) {
+    for (Segment seg : segs) {
+      Set<Segment> adjacentSegs = SegmentFilter.makeCoterminalFilter(seg).filter(segs);
+      for (Segment adjacentSeg : adjacentSegs) {
         if (!avoid.contains(adjacentSeg)) {
           double ang = adjacentSeg.getMinAngle(seg);
           if (toRadians(90) - ang < toRadians(90) - bestAngle
@@ -119,8 +120,8 @@ public class RightAngleBrace extends RecognizedItemTemplate {
 
   @Override
   public void create(RecognizedItem item, SketchBook model) {
-    SegmentDelegate s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
-    SegmentDelegate s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
+    Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
+    Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
     UserConstraint uc = new RightAngleUserConstraint(model, s1.getP1(), s1.getP2(), s2.getP1(),
         s2.getP2());
     for (Ink eenk : item.getInk()) {
@@ -140,8 +141,8 @@ public class RightAngleBrace extends RecognizedItemTemplate {
       Pt fulcrum = null;
       Pt left = null;
       Pt right = null;
-      SegmentDelegate s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
-      SegmentDelegate s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
+      Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
+      Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
       if (s1.getP1() == s2.getP1()) {
         fulcrum = s1.getP1();
         left = s1.getP2();

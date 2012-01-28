@@ -11,7 +11,7 @@ import java.util.Stack;
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.Material;
-import org.six11.sf.SegmentDelegate;
+import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
 import org.six11.sf.constr.SameLengthUserConstraint;
@@ -62,23 +62,23 @@ public class SameLengthGesture extends RecognizedItemTemplate {
   @Override
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
     Certainty ret = Certainty.No;
-    Set<SegmentDelegate> allSegs = model.getGeometry();
+    Set<Segment> allSegs = model.getGeometry();
     allSegs = SegmentFilter.makeCohortFilter(in).filter(allSegs);
     RecognizerPrimitive line1 = item.getSubshape("line1");
     RecognizerPrimitive line2 = item.getSubshape("line2");
 
     // 1) use a filter that only selects lines that are the sole intersecter of line1/line2.
     // (so if line1 intersects more than one thing, nothing passes. it must intersect exactly one thing.)
-    Set<SegmentDelegate> segs1 = SegmentFilter.makeIntersectFilter(line1).filter(allSegs);
-    Set<SegmentDelegate> segs2 = SegmentFilter.makeIntersectFilter(line2).filter(allSegs);
+    Set<Segment> segs1 = SegmentFilter.makeIntersectFilter(line1).filter(allSegs);
+    Set<Segment> segs2 = SegmentFilter.makeIntersectFilter(line2).filter(allSegs);
     if (segs1.size() == 1 && segs2.size() == 1) {
       // 2) use a filter that only selects lines whose midpoint is near line1 or line2's midpoint
       segs1 = SegmentFilter.makeMidpointFilter(line1, 0.3).filter(segs1);
       segs2 = SegmentFilter.makeMidpointFilter(line2, 0.3).filter(segs2);
     }
     if (segs1.size() == 1 && segs2.size() == 1) {
-      SegmentDelegate[] seg1 = segs1.toArray(new SegmentDelegate[1]);
-      SegmentDelegate[] seg2 = segs2.toArray(new SegmentDelegate[1]);
+      Segment[] seg1 = segs1.toArray(new Segment[1]);
+      Segment[] seg2 = segs2.toArray(new Segment[1]);
       if (seg1[0] != seg2[0]) {
         item.addTarget(SameLengthGesture.TARGET_A, seg1[0]);
         item.addTarget(SameLengthGesture.TARGET_B, seg2[0]);
@@ -92,8 +92,8 @@ public class SameLengthGesture extends RecognizedItemTemplate {
 
   @Override
   public void create(RecognizedItem item, SketchBook model) {
-    SegmentDelegate s1 = item.getSegmentTarget(TARGET_A);
-    SegmentDelegate s2 = item.getSegmentTarget(TARGET_B);
+    Segment s1 = item.getSegmentTarget(TARGET_A);
+    Segment s2 = item.getSegmentTarget(TARGET_B);
 
     // see if either s1 or s2 has an existing length constraint
     Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
@@ -231,7 +231,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     return ret;
   }
 
-  private MultisourceNumericValue.Source mkSource(final SegmentDelegate seg) {
+  private MultisourceNumericValue.Source mkSource(final Segment seg) {
     return new MultisourceNumericValue.Source() {
       public double getValue() {
         return seg.length();

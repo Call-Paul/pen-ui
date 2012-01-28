@@ -37,13 +37,13 @@ public class CornerFinder {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<SegmentDelegate> findCorners(Ink ink) {
+  public Set<Segment> findCorners(Ink ink) {
     assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
     isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     //    guibug.drawJunctions(ink.seq);
     makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
-    Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
-    ret.addAll((List<SegmentDelegate>) ink.seq.getAttribute(SEGMENTS));
+    Set<Segment> ret = new HashSet<Segment>();
+    ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
     return ret;
   }
 
@@ -148,10 +148,10 @@ public class CornerFinder {
   @SuppressWarnings("unchecked")
   private void makeSegments(Ink ink) {
     List<Integer> juncts = (List<Integer>) ink.seq.getAttribute(SEGMENT_JUNCTIONS);
-    List<SegmentDelegate> segments = new ArrayList<SegmentDelegate>();
+    List<Segment> segments = new ArrayList<Segment>();
     Dot dot = detectDot(ink);
     if (dot.getCertainty() == Certainty.Yes || dot.getCertainty() == Certainty.Maybe) {
-      segments.add(dot);
+      segments.add(new Segment(dot));
     } else {
       for (int i = 0; i < juncts.size() - 1; i++) {
         segments.add(identifySegment(ink, juncts.get(i), juncts.get(i + 1)));
@@ -160,8 +160,8 @@ public class CornerFinder {
     ink.seq.setAttribute(SEGMENTS, segments);
   }
 
-  private SegmentDelegate identifySegment(Ink ink, int i, int j) {
-    SegmentDelegate ret = null;
+  private Segment identifySegment(Ink ink, int i, int j) {
+    Segment ret = null;
     double segLength = ink.seq.getPathLength(i, j);
     int numPatches = (int) ceil(segLength / minPatchSize);
     double patchLength = segLength / (double) numPatches;
@@ -172,11 +172,11 @@ public class CornerFinder {
     Line line = new Line(patch.get(a), patch.get(b));
     double lineError = Functions.getLineError(line, patch, a, b);
     if (lineError < lineErrorThreshold) {
-      ret = new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      ret = new Segment(new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
     } else if (patch.size() > 3 && Functions.getEllipseError(patch) < ellipseErrorThreshold) {
-      ret = new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
     } else {
-      ret = new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1);
+      ret = new Segment(new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1));
     }
     return ret;
   }

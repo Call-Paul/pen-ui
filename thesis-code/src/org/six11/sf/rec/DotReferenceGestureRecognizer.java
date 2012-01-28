@@ -6,6 +6,7 @@ import java.util.List;
 import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
+import org.six11.sf.Segment;
 import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
@@ -33,9 +34,9 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   @Override
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-    List<SegmentDelegate> segs = ink.getSegments();
+    List<Segment> segs = ink.getSegments();
     if (segs.size() == 1 && segs.get(0).getType() == SegmentDelegate.Type.Dot) {
-      final Dot dot = (Dot) segs.get(0);
+      Segment dot = segs.get(0);
       Pt loc = dot.getP1();
 
       // The are five possibilities: 
@@ -48,7 +49,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
 
       boolean ok = false;
       // cases 1 and 2
-      for (SegmentDelegate seg : model.getGeometry()) {
+      for (Segment seg : model.getGeometry()) {
         if (loc.distance(seg.getP1()) < NEARNESS_THRESHOLD) {
           ret = makeEndpointItem(seg, true);
           ok = true;
@@ -72,7 +73,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  private RecognizedRawItem makeNearItem(final SegmentDelegate seg, Pt loc) {
+  private RecognizedRawItem makeNearItem(final Segment seg, Pt loc) {
     Pt nearPt = seg.getNearestPoint(loc);
     Line line = seg.asLine();
     Vec lineVec = new Vec(seg.getP1(), seg.getP2());
@@ -99,7 +100,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  private RecognizedRawItem makeEndpointItem(final SegmentDelegate seg, final boolean b) {
+  private RecognizedRawItem makeEndpointItem(final Segment seg, final boolean b) {
     RecognizedRawItem ret = new RecognizedRawItem(true, RecognizedRawItem.FAT_DOT_REFERENCE_POINT,
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {

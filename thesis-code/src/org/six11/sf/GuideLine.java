@@ -85,13 +85,13 @@ public class GuideLine extends Guide {
     return new GuideLine(a, isDynamic() ? fixedHover : b);
   }
 
-  public SegmentDelegate adjust(Ink ink, int start, int end) {
+  public Segment adjust(Ink ink, int start, int end) {
     double segLength = ink.seq.getPathLength(start, end);
     int numPatches = (int) ceil(segLength / CornerFinder.minPatchSize);
     double patchLength = segLength / (double) numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, start, end, patchLength)
         .getPoints();
-    SegmentDelegate ret = new LineSegment(ink, patch, start == 0, end == ink.seq.size() - 1);
+    Segment ret = new Segment(new LineSegment(ink, patch, start == 0, end == ink.seq.size() - 1));
     if (isDynamic()) {
       myLine = new Line(a, fixedHover);
     }
