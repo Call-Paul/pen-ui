@@ -163,8 +163,9 @@ public class Segment implements HasFuzzyArea {
       default:
         bug("Unknown segment type: " + getType());
     }
-    if (StencilFinder.n(getP1()) != null && StencilFinder.n(getP2()) != null) {
-      buf.append("[" + StencilFinder.n(getP1()) + " to " + StencilFinder.n(getP2()) + ", length: " + num(length()) + "]");
+    if (SketchBook.n(getP1()) != null && SketchBook.n(getP2()) != null) {
+      buf.append("[" + SketchBook.n(getP1()) + " to " + SketchBook.n(getP2()) + ", length: "
+          + num(length()) + "]");
     } else {
       buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
     }
@@ -442,6 +443,23 @@ public class Segment implements HasFuzzyArea {
   public Shape asArc() {
     bug("This sould never be called. override it.");
     return null;
+  }
+
+  /**
+   * If cursor is p1 or p2, this returns the other one. For singular segments it returns null;
+   * 
+   * @param input
+   *          should be either p1 or p2
+   * @return p1 or p2, whichever the input is not.
+   */
+  public Pt getPointOpposite(Pt input) {
+    Pt ret = null;
+    if (getP1() == input && getP2() != input) {
+      ret = getP2();
+    } else if (getP2() == input && getP1() != input) {
+      ret = getP1();
+    }
+    return ret;
   }
 
 }

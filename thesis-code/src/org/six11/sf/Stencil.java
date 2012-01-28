@@ -10,100 +10,46 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.util.data.Lists;
-import org.six11.util.gui.BoundingBox;
+import org.six11.sf.Segment.Type;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 public class Stencil {
-
-  private static int ID_COUNTER = 0;
-  private final int id = ID_COUNTER++;
   private List<Pt> path;
   private List<Segment> segs;
-  private Set<Stencil> children;
   private SketchBook model;
+  private Set<Stencil> children;
 
-  public Stencil(SketchBook model, List<Pt> path) {
+  public Stencil(SketchBook model, List<Pt> path, List<Segment> segs) {
     this.model = model;
-    this.path = path;
-    this.segs = createSegmentList(); //Stencil.getSegmentList(path, model.getGeometry());
-    bug("Stencil was born. Path: " + StencilFinder.n(path) + ", segs: " + num(segs, " "));
+    this.path = new ArrayList<Pt>(path);
+    if (path.get(0) != path.get(path.size() - 1)) {
+      path.add(path.get(0));
+    }
+    this.segs = new ArrayList<Segment>(segs);
     this.children = new HashSet<Stencil>();
-    if (path.size() < 4) {
-      bug(this + " has " + path.size() + " points and " + segs.size() + " segments");
-    }
   }
 
-  public boolean isSame(Stencil other) {
-    return path.containsAll(other.path) && path.size() == other.path.size();
+  public boolean hasPath(List<Segment> otherSegPath) {
+    return segs.containsAll(otherSegPath);
   }
 
-  public List<Pt> getPath() {
-    return path;
-  }
-
-  public List<Pt> getTurnPath() {
-    List<Pt> ret = path;
-    if (segs.size() < 3) {
-      bug("Need to get better turn path points because this stencil only has " + segs.size()
-          + " segments.");
-    }
-    return ret;
-  }
-
-  public boolean isClockwise() {
-    List<Pt> turns = getTurnPath();
-    Pt c = Functions.getMean(turns);
-    double crossProd = 0;
-    for (int i = 0; i < turns.size() - 1; i++) {
-      Vec a = new Vec(c, turns.get(i));
-      Vec b = new Vec(c, turns.get(i + 1));
-      crossProd = crossProd + a.cross(b);
-    }
-    if (Math.abs(crossProd) < 0.01) {
-      bug("cross product too close to zero to be meaningful.");
-    }
-    boolean ret = crossProd > 0;
-    return ret;
-  }
-
-  private List<Pt> getAllPoints() {
-    List<Pt> allPoints = new ArrayList<Pt>();
-    for (int i = 0; i < segs.size(); i++) {
-      Pt p = path.get(i);
-      Segment seg = segs.get(i);
-      List<Pt> nextPoints = seg.getPointList();
-      if (seg.getP2().equals(p)) {
-        Collections.reverse(nextPoints);
-      }
-      for (Pt np : nextPoints) {
-        if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
-          allPoints.add(np);
+  public void removeGeometry(Segment seg) {
+    if (segs.contains(seg)) {
+      segs.remove(seg);
+    } else {
+      Set<Stencil> doomed = new HashSet<Stencil>();
+      for (Stencil c : children) {
+        c.removeGeometry(seg);
+        if (!c.isValid()) {
+          doomed.add(c);
         }
       }
+      children.removeAll(doomed);
     }
-    return allPoints;
-  }
-
-  public Shape getOuterShape() {
-    Path2D shape = new Path2D.Double();
-    // the path list hold segment endpoints only. If there are curved segments, we 
-    // also need those curvy bits. That's why we use allPoints and not just path.
-    List<Pt> allPoints = getAllPoints();
-    for (int i = 0; i < allPoints.size(); i++) {
-      Pt pt = allPoints.get(i);
-      if (i == 0) {
-        shape.moveTo(pt.getX(), pt.getY());
-      } else {
-        shape.lineTo(pt.getX(), pt.getY());
-      }
-    }
-    return shape;
   }
 
   public Shape getShape(boolean needCCW) {
@@ -128,6 +74,126 @@ public class Stencil {
     return shape;
   }
 
+  private boolean isClockwise() {
+    List<Pt> turns = getTurnPath();
+    Pt c = Functions.getMean(turns);
+    double crossProd = 0;
+    for (int i = 0; i < turns.size() - 1; i++) {
+      Vec a = new Vec(c, turns.get(i));
+      Vec b = new Vec(c, turns.get(i + 1));
+      crossProd = crossProd + a.cross(b);
+    }
+    if (Math.abs(crossProd) < 0.01) {
+      bug("cross product too close to zero to be meaningful.");
+    }
+    boolean ret = crossProd > 0;
+    return ret;
+  }
+
+  private List<Pt> getTurnPath() {
+    List<Pt> ret = path;
+    if (segs.size() == 2) {
+      ret = new ArrayList<Pt>();
+      for (int i=0; i < path.size(); i++) {
+        ret.add(path.get(i));
+        if (segs.get(i).type != Type.Line) {
+          ret.add(segs.get(i).getVisualMidpoint());
+        }
+      }
+    } else if (segs.size() == 1) {
+      bug("stencil with 1 segs...");
+      Segment seg = segs.get(0);
+      if (seg.type != Type.Line) {
+        List<Pt> source = seg.asPolyline();
+        int sz = source.size();
+        int idx1 = sz / 3;
+        int idx2 = (2 * sz) / 3;
+        ret.add(source.get(0));
+        ret.add(source.get(idx1));
+        ret.add(source.get(idx2));
+        ret.add(source.get(source.size() - 1));
+      }
+      bug("...ends up with " + ret.size() + " points to do math with.");
+    }
+    return ret;
+  }
+
+  public Area intersect(Area area) {
+    Area myArea = new Area(getOuterShape());
+    myArea.intersect(area);
+    return myArea;
+  }
+
+  private Shape getOuterShape() {
+    Path2D shape = new Path2D.Double();
+    // the path list hold segment endpoints only. If there are curved segments, we 
+    // also need those curvy bits. That's why we use allPoints and not just path.
+    List<Pt> allPoints = getAllPoints();
+    for (int i = 0; i < allPoints.size(); i++) {
+      Pt pt = allPoints.get(i);
+      if (i == 0) {
+        shape.moveTo(pt.getX(), pt.getY());
+      } else {
+        shape.lineTo(pt.getX(), pt.getY());
+      }
+    }
+    return shape;
+  }
+
+  /**
+   * Returns the geometry defining the outside of this stencil.
+   * 
+   * @return
+   */
+  private List<Pt> getAllPoints() {
+    List<Pt> allPoints = new ArrayList<Pt>();
+    for (int i = 0; i < segs.size(); i++) {
+      Pt p = path.get(i);
+      Segment seg = segs.get(i);
+      List<Pt> nextPoints = seg.getPointList();
+      if (seg.getP2().equals(p)) {
+        Collections.reverse(nextPoints);
+      }
+      for (Pt np : nextPoints) {
+        if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
+          allPoints.add(np);
+        }
+      }
+    }
+    return allPoints;
+  }
+
+  public boolean isValid() {
+    boolean ret = true;
+    for (int i = 0; i < path.size() - 1; i++) {
+      Pt a = path.get(i);
+      Pt b = path.get(i + 1);
+      Segment s = model.getSegment(a, b);
+      if (s == null || !segs.contains(s)) {
+        ret = false;
+        break;
+      }
+    }
+    for (Segment s : segs) {
+      if (!model.hasSegment(s)) {
+        ret = false;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public Collection<Stencil> getChildren() {
+    return children;
+  }
+
+  /**
+   * Replaces the older point with the newer in any children and in this stencil. This only affects
+   * the point list and NOT the segment list, which should be updated elsewhere.
+   * 
+   * @param older
+   * @param newer
+   */
   public void replacePoint(Pt older, Pt newer) {
     for (Stencil c : children) {
       c.replacePoint(older, newer);
@@ -140,110 +206,16 @@ public class Stencil {
     }
   }
 
-  /**
-   * Returns an ordered list of segments based on the given path and segment set. This can be used
-   * to construct new Stencils.
-   * 
-   * @param path
-   *          the list of vertices of a new stencil, in order. the first element should be repeated
-   *          if you want a closed stencil.
-   * @param allGeometry
-   *          a set of possible segments. Each leg of the path from path[i] to path[i+1] corresponds
-   *          to exactly one segment in the segment set.
-   * @return an ordered list of segments such that return[0] is for path[0] to path[1], and so on.
-   */
-  public static List<Segment> getSegmentList(List<Pt> path, Collection<Segment> allGeometry) {
-    List<Segment> ret = new ArrayList<Segment>();
-    for (int i = 0; i < path.size() - 1; i++) {
-      Pt a = path.get(i);
-      Pt b = path.get(i + 1);
-      boolean ok = false;
-      for (Segment seg : allGeometry) {
-        if ((seg.getP1() == a && seg.getP2() == b) || (seg.getP1() == b && seg.getP2() == a)) {
-          ret.add(seg);
-          ok = true;
-          break;
-        }
-      }
-      if (!ok) {
-        ret = null;
-        break;
-      }
-    }
-    return ret;
+  public List<Pt> getPath() {
+    return path;
   }
 
-  /**
-   * Using 'path' and 'model', create a unique path that completes the stencil without re-using any
-   * segments. This is tricky because of 1- or 2-segment stencils.
-   */
-  private final List<Segment> createSegmentList() {
-    List<Segment> ret = new ArrayList<Segment>();
-    for (int i=0; i < path.size()- 1; i++) {
-      Collection<Segment> groupA = model.findRelatedSegments(path.get(i));
-      Collection<Segment> groupB = model.findRelatedSegments(path.get(i+1));
-      Collection<Segment> both = Lists.intersect(groupA, groupB);
-      for (Segment s : both) {
-        if (!ret.contains(s)) {
-          ret.add(s);
-          break;
-        }
-      }
-    }
-    return ret;
-  }
-
-  public Area intersect(Area area) {
-    Area myArea = new Area(getOuterShape());
-    myArea.intersect(area);
-    return myArea;
+  public boolean isSame(Stencil other) {
+    return hasPath(other.segs);
   }
 
   public boolean isSuperset(Stencil other) {
     return path.size() > other.path.size() && path.containsAll(other.getPath());
-  }
-
-  public String toString() {
-    StringBuilder buf = new StringBuilder();
-    for (Stencil c : children) {
-      buf.append(c.toString() + " ");
-    }
-    if (buf.length() > 0) {
-      buf.insert(0, "[");
-      buf.deleteCharAt(buf.length() - 1);
-      buf.append("]");
-    }
-    return "T" + id + "_" + (isClockwise() ? "cw" : "ccw") + buf.toString();//StencilFinder.n(path);
-  }
-
-  public BoundingBox getBoundingBox() {
-    return new BoundingBox(path);
-  }
-
-  //  public Stencil getAnonymousCopy() {
-  //    List<Pt> anonPts = new ArrayList<Pt>();
-  //    List<Segment> anonSegs = new ArrayList<Segment>();
-  //    for (Pt pt : path) {
-  //      anonPts.add(pt.copyXYT());
-  //    }
-  //    for (Segment seg : segs) {
-  //      anonSegs.add(seg.copy());
-  //    }
-  //    return new Stencil(anonPts, anonSegs);
-  //  }
-
-  public boolean involves(Segment seg) {
-    boolean ret = false;
-    for (Stencil c : children) {
-      if (c.involves(seg)) {
-        ret = true;
-        break;
-      }
-    }
-    if (!ret) {
-      ret = segs.contains(seg);
-    }
-    return ret;
   }
 
   public boolean surrounds(Stencil c) {
@@ -259,46 +231,21 @@ public class Stencil {
     Set<Stencil> no = new HashSet<Stencil>();
     for (Stencil k : kids) {
       for (Stencil c : children) {
-        boolean samePath = k.getPath().containsAll(c.getPath());
-        if (samePath) {
+        if (k.isSame(c)) {
           no.add(k);
         }
+        //        boolean samePath = k.getPath().containsAll(c.getPath());
+        //        if (samePath) {
+        //          no.add(k);
+        //        }
       }
     }
     kids.removeAll(no);
     children.addAll(kids);
   }
 
-  public void removeGeometry(Segment seg) {
-    if (segs.contains(seg)) {
-      segs.remove(seg);
-    } else {
-      Set<Stencil> doomed = new HashSet<Stencil>();
-      for (Stencil c : children) {
-        c.removeGeometry(seg);
-        if (!c.isValid()) {
-          doomed.add(c);
-        }
-      }
-      children.removeAll(doomed);
-    }
-  }
-
-  public boolean isValid() {
-    boolean ret = true;
-    for (int i = 0; i < path.size() - 1; i++) {
-      Pt a = path.get(i);
-      Pt b = path.get(i + 1);
-      if (!model.hasSegment(a, b)) {
-        ret = false;
-        break;
-      }
-    }
-    return ret;
-  }
-
-  public Set<Stencil> getChildren() {
-    return children;
+  public List<Segment> getSegs() {
+    return segs;
   }
 
 }

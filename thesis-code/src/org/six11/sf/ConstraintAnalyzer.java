@@ -9,14 +9,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.six11.sf.EndCap.Intersection;
-import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-import static org.six11.sf.StencilFinder.n;
+//import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.abs;
 

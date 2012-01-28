@@ -1,5 +1,6 @@
 package org.six11.sf;
-//J|mmyJ0hn$
+
+// J|mmyJ0hn$
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
@@ -326,6 +327,10 @@ public class SketchBook {
     return getConstraints().hasPoints(blue, green) && getSegment(blue, green) != null;
   }
 
+  public boolean hasSegment(Segment s) {
+    return hasSegment(s.p1, s.p2);
+  }
+  
   public ConstraintAnalyzer getConstraintAnalyzer() {
     return constraintAnalyzer;
   }
@@ -439,7 +444,7 @@ public class SketchBook {
     geometry.removeAll(doomed);
     getConstraints().wakeUp();
   }
-  
+
   public Set<UserConstraint> getUserConstraints(Set<Constraint> manyC) {
     Set<UserConstraint> ret = new HashSet<UserConstraint>();
     for (Constraint c : manyC) {
@@ -462,7 +467,7 @@ public class SketchBook {
 
   public String getMondoDebugString() {
     StringBuilder buf = new StringBuilder();
-    String format = "%-14s%-6s%-6s\n";
+    String format = "%-14s%-5s%-6s%-6s\n";
     String constrFormat = "%-20s%s\n";
     StringBuilder ptBuf = new StringBuilder();
     int indent = 0;
@@ -470,7 +475,8 @@ public class SketchBook {
     addBug(indent, buf, "Constraint Engine Points: " + getConstraints().getPoints().size() + "\n");
     indent++;
     for (Pt pt : getConstraints().getPoints()) {
-      addBug(indent, buf, String.format("%-6s%-4.2f %-4.2f\n", StencilFinder.n(pt), pt.getX(), pt.getY()));
+      addBug(indent, buf,
+          String.format("%-6s%-4.2f %-4.2f\n", SketchBook.n(pt), pt.getX(), pt.getY()));
     }
     indent--;
     buf.append("\n");
@@ -479,29 +485,29 @@ public class SketchBook {
     for (Constraint c : getConstraints().getConstraints()) {
       ptBuf.setLength(0);
       for (Pt cPt : c.getRelatedPoints()) {
-        ptBuf.append(StencilFinder.n(cPt) + " ");
+        ptBuf.append(SketchBook.n(cPt) + " ");
       }
       addBug(indent, buf, String.format(constrFormat, c.getType(), ptBuf.toString()));
     }
     indent--;
     buf.append("\n");
     addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
-    addBug(indent, buf, String.format(format, "seg-type", "p1", "p2"));
+    addBug(indent, buf, String.format(format, "seg-type", "id", "p1", "p2"));
     addBug(indent, buf, "--------------------------\n");
     for (Segment seg : geometry) {
       String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<???>";
       String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<???>";
-      addBug(indent, buf, String.format(format, seg.getType() + "", p1, p2));
+      addBug(indent, buf, String.format(format, seg.getType() + "", seg.getId() + "", p1, p2));
     }
     buf.append("\n");
     addBug(indent, buf, stencils.size() + " stencils\n");
     indent++;
     for (Stencil s : stencils) {
-      addBug(indent, buf, s.getPath().size() + " points: " + StencilFinder.n(s.getPath()));
-      if (selectedStencils.contains(s)) {
-        buf.append(" (selected)");
-      }
-      buf.append("\n");
+      addBug(indent, buf, s.toString() + "\n");
+      indent++;
+      addBug(indent, buf, s.getPath().size() + " points: " + SketchBook.n(s.getPath()) + "\n");
+      addBug(indent, buf, s.getSegs().size() + " segments: " + SketchBook.ns(s.getSegs()) + "\n");
+      indent--;
     }
     buf.append("\n");
     indent--;
@@ -511,14 +517,14 @@ public class SketchBook {
     addBug(indent, buf, "-------------------------\n");
     format = "%-20s%-4d\n";
     indent++;
-    
+
     for (UserConstraint uc : userConstraints) {
       addBug(indent, buf, String.format(format, uc.getName(), uc.getConstraints().size()));
       indent++;
       for (Constraint c : uc.getConstraints()) {
         ptBuf.setLength(0);
         for (Pt cPt : c.getRelatedPoints()) {
-          ptBuf.append(StencilFinder.n(cPt) + " ");
+          ptBuf.append(SketchBook.n(cPt) + " ");
         }
         addBug(indent, buf, String.format(constrFormat, c.getType(), ptBuf.toString()));
       }
@@ -548,7 +554,7 @@ public class SketchBook {
     }
 
     // then remove sub-stencils. boot those that are in a superset
-    Set<Stencil> doomed = new HashSet<Stencil>(); 
+    Set<Stencil> doomed = new HashSet<Stencil>();
     for (Stencil s1 : stencils) {
       for (Stencil s2 : stencils) {
         if (s1.isSuperset(s2)) {
@@ -962,5 +968,33 @@ public class SketchBook {
         removeGeometry(d);
       }
     }
+  }
+
+  public static String n(Pt pt) {
+    return pt.getString("name");
+  }
+
+  public static String n(Collection<Pt> pts) {
+    StringBuilder buf = new StringBuilder();
+    if (pts == null) {
+      buf.append("<null input!>");
+    } else {
+      for (Pt pt : pts) {
+        buf.append(n(pt) + " ");
+      }
+    }
+    return buf.toString();
+  }
+
+  public static String ns(Collection<Segment> segs) {
+    StringBuilder buf = new StringBuilder();
+    if (segs == null) {
+      buf.append("<null input!>");
+    } else {
+      for (Segment seg : segs) {
+        buf.append(seg.type + "-" + seg.id + " ");
+      }
+    }
+    return buf.toString();
   }
 }

@@ -1,28 +1,20 @@
 package org.six11.sf.rec;
 
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.out;
+//import static org.six11.util.Debug.num;
+//import static org.six11.util.Debug.out;
 
 import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
-import org.six11.sf.SketchRecognizer.Type;
 import org.six11.sf.Stencil;
-import org.six11.sf.StencilFinder;
-import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-
-import static org.six11.util.Debug.bug;
 
 public class EncircleRecognizer extends SketchRecognizer {
 

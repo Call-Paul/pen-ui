@@ -302,9 +302,8 @@ public class SkruiFabEditor {
   }
 
   public void findStencils(Collection<Segment> segs) {
-    bug("Finding stencils...");
     StencilFinder sf = new StencilFinder(model);
-    model.mergeStencils(sf.findStencils(segs, model.getGeometry()));
+    model.mergeStencils(sf.findStencils(segs));
   }
 
   /**
@@ -484,7 +483,7 @@ public class SkruiFabEditor {
     
     // debugging: label points
 //    for (Pt pt : model.getConstraints().getPoints()) {
-//      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), StencilFinder.n(pt), Color.BLACK);
+//      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
 //    }
     layers.repaint();
 
