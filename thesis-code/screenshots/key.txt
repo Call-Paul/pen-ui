@@ -87,3 +87,5 @@
 032: flow selection of splines.
 
 033: stencils with holes.
+
+034: stencils may be composed of two segments (e.g. line/ellipse or spline/spline).
