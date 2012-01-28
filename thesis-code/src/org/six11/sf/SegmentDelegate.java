@@ -36,7 +36,6 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected transient List<Pt> deformedPoints = null;
 
   Segment.Type type;
-  //  Sequence spline;
   Ink ink;
   boolean termA, termB;
 
@@ -78,36 +77,12 @@ public class SegmentDelegate implements HasFuzzyArea {
         pri[i] = 0;
         alt[i] = 0;
       } else {
-        Vec toTarget = calculateParameterForPoint(vMag, line, target);
+        Vec toTarget = Segment.calculateParameterForPoint(vMag, line, target);
         pri[i] = toTarget.getX();
         alt[i] = toTarget.getY();
       }
     }
     doPara();
-  }
-
-  /**
-   * Calculate the parameter for the target point along the given line segment.
-   * 
-   * @param vMag
-   *          the length of the line. passed in so it can be calculated one time, and used in a
-   *          loop.
-   * @param line
-   *          the segment as a line.
-   * @param target
-   *          the point we are seeking to parameterize
-   * @return a vector that can be used in conjunction with the line's start/end points that describe
-   *         where the target point is. The X component is how far along the target is in the
-   *         direction of the line (from start to end), and the Y component is orthogonal to it. The
-   *         sign of the Y component is determined by Functions.getPartition(target, line).
-   */
-  public static Vec calculateParameterForPoint(double vMag, Line line, Pt target) {
-    // TODO: move this into Segment.
-    Pt ix = Functions.getNearestPointOnLine(target, line, true); // retains the 'r' double value
-    int whichSide = Functions.getPartition(target, line);
-    double dist = ix.distance(target) * whichSide;
-    Vec toTarget = new Vec(ix.getDouble("r"), dist / vMag);
-    return toTarget;
   }
 
   public Ink getOriginalInk() {
@@ -116,6 +91,10 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public boolean isSingular() {
     return getP1().isSameLocation(getP2());
+  }
+  
+  public boolean isClosed() {
+    return (type == Segment.Type.Ellipse);
   }
 
   public List<Pt> storeParaPointsForDeformation() {
@@ -447,6 +426,11 @@ public class SegmentDelegate implements HasFuzzyArea {
       ret = getP1();
     }
     return ret;
+  }
+
+  public Shape asEllipse() {
+    bug("This sould never be called. override it.");
+    return null;
   }
 
 }

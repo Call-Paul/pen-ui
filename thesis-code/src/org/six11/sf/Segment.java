@@ -5,6 +5,7 @@ import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.List;
 
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -16,7 +17,7 @@ public class Segment implements HasFuzzyArea {
   private static int ID_COUNTER = 1;
   
   public static enum Type {
-    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc
+    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse
   }
 
   private SegmentDelegate d;
@@ -40,6 +41,10 @@ public class Segment implements HasFuzzyArea {
 
   public boolean isSingular() {
     return d.isSingular();
+  }
+  
+  public boolean isClosed() {
+    return d.isClosed();
   }
 
   public List<Pt> storeParaPointsForDeformation() {
@@ -171,6 +176,34 @@ public class Segment implements HasFuzzyArea {
 
   public Ink getInk() {
     return d.ink;
+  }
+
+  /**
+   * Calculate the parameter for the target point along the given line segment.
+   * 
+   * @param vMag
+   *          the length of the line. passed in so it can be calculated one time, and used in a
+   *          loop.
+   * @param line
+   *          the segment as a line.
+   * @param target
+   *          the point we are seeking to parameterize
+   * @return a vector that can be used in conjunction with the line's start/end points that describe
+   *         where the target point is. The X component is how far along the target is in the
+   *         direction of the line (from start to end), and the Y component is orthogonal to it. The
+   *         sign of the Y component is determined by Functions.getPartition(target, line).
+   */
+  public static Vec calculateParameterForPoint(double vMag, Line line, Pt target) {
+    // TODO: move this into Segment.
+    Pt ix = Functions.getNearestPointOnLine(target, line, true); // retains the 'r' double value
+    int whichSide = Functions.getPartition(target, line);
+    double dist = ix.distance(target) * whichSide;
+    Vec toTarget = new Vec(ix.getDouble("r"), dist / vMag);
+    return toTarget;
+  }
+
+  public Shape asEllipse() {
+    return d.asEllipse();
   }
 
 }

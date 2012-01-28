@@ -290,7 +290,10 @@ public class SketchBook {
         childrenOfDoomed.addAll(stencil.getChildren());
       }
     }
-    stencils.removeAll(doomed);
+    if (doomed.size() > 0) {
+      bug("Removing stencils: " + num(doomed, " "));
+      stencils.removeAll(doomed);
+    }
     stencils.addAll(childrenOfDoomed);
 
     // remove related constraints from the UserConstraints, and remove the 
@@ -330,7 +333,7 @@ public class SketchBook {
   public boolean hasSegment(Segment s) {
     return hasSegment(s.getP1(), s.getP2());
   }
-  
+
   public ConstraintAnalyzer getConstraintAnalyzer() {
     return constraintAnalyzer;
   }
@@ -495,8 +498,8 @@ public class SketchBook {
     addBug(indent, buf, String.format(format, "seg-type", "id", "p1", "p2"));
     addBug(indent, buf, "--------------------------\n");
     for (Segment seg : geometry) {
-      String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<???>";
-      String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<???>";
+      String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<?>";
+      String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<?>";
       addBug(indent, buf, String.format(format, seg.getType() + "", seg.getId() + "", p1, p2));
     }
     buf.append("\n");
@@ -565,7 +568,10 @@ public class SketchBook {
         }
       }
     }
-    stencils.removeAll(doomed);
+    if (doomed.size() > 0) {
+      bug("removing stencils: " + num(doomed, " "));
+      stencils.removeAll(doomed);
+    }
     Set<Stencil> done = new HashSet<Stencil>();
     StencilFinder.merge(stencils, done);
     stencils = done;
@@ -958,7 +964,7 @@ public class SketchBook {
   public void removeSingularSegments() {
     Set<Segment> doomed = new HashSet<Segment>();
     for (Segment s : geometry) {
-      if (s.isSingular()) {
+      if (s.isSingular() && !s.isClosed()) {
         doomed.add(s);
       }
     }

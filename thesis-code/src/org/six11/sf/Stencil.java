@@ -22,6 +22,8 @@ public class Stencil {
   private List<Segment> segs;
   private SketchBook model;
   private Set<Stencil> children;
+  private static int ID_COUNT = 0;
+  private int id = ID_COUNT++;
 
   public Stencil(SketchBook model, List<Pt> path, List<Segment> segs) {
     this.model = model;
@@ -31,6 +33,18 @@ public class Stencil {
     }
     this.segs = new ArrayList<Segment>(segs);
     this.children = new HashSet<Stencil>();
+  }
+
+  public Stencil(SketchBook model, Segment s) {
+    if (s.isClosed()) {
+      this.model = model;
+      this.segs = new ArrayList<Segment>();
+      segs.add(s);
+      this.path = new ArrayList<Pt>();
+      this.children = new HashSet<Stencil>();
+    } else {
+      bug("Error: created single-segment stencil with non-closed segment: " + s);
+    }
   }
 
   public boolean hasPath(List<Segment> otherSegPath) {
@@ -94,26 +108,25 @@ public class Stencil {
     List<Pt> ret = path;
     if (segs.size() == 2) {
       ret = new ArrayList<Pt>();
-      for (int i=0; i < path.size(); i++) {
+      for (int i = 0; i < path.size(); i++) {
         ret.add(path.get(i));
         if (segs.get(i).getType() != Segment.Type.Line) {
           ret.add(segs.get(i).getVisualMidpoint());
         }
       }
     } else if (segs.size() == 1) {
-      bug("stencil with 1 segs...");
       Segment seg = segs.get(0);
       if (seg.getType() != Segment.Type.Line) {
         List<Pt> source = seg.asPolyline();
         int sz = source.size();
         int idx1 = sz / 3;
         int idx2 = (2 * sz) / 3;
+        ret = new ArrayList<Pt>();
         ret.add(source.get(0));
         ret.add(source.get(idx1));
         ret.add(source.get(idx2));
         ret.add(source.get(source.size() - 1));
       }
-      bug("...ends up with " + ret.size() + " points to do math with.");
     }
     return ret;
   }
@@ -147,16 +160,20 @@ public class Stencil {
    */
   private List<Pt> getAllPoints() {
     List<Pt> allPoints = new ArrayList<Pt>();
-    for (int i = 0; i < segs.size(); i++) {
-      Pt p = path.get(i);
-      Segment seg = segs.get(i);
-      List<Pt> nextPoints = seg.getPointList();
-      if (seg.getP2().equals(p)) {
-        Collections.reverse(nextPoints);
-      }
-      for (Pt np : nextPoints) {
-        if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
-          allPoints.add(np);
+    if (segs.size() == 1) {
+      allPoints.addAll(segs.get(0).getPointList());
+    } else {
+      for (int i = 0; i < segs.size(); i++) {
+        Pt p = path.get(i);
+        Segment seg = segs.get(i);
+        List<Pt> nextPoints = seg.getPointList();
+        if (seg.getP2().equals(p)) {
+          Collections.reverse(nextPoints);
+        }
+        for (Pt np : nextPoints) {
+          if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
+            allPoints.add(np);
+          }
         }
       }
     }
@@ -165,21 +182,26 @@ public class Stencil {
 
   public boolean isValid() {
     boolean ret = true;
-    for (int i = 0; i < path.size() - 1; i++) {
-      Pt a = path.get(i);
-      Pt b = path.get(i + 1);
-      Segment s = model.getSegment(a, b);
-      if (s == null || !segs.contains(s)) {
-        ret = false;
-        break;
+    if (!isSingular()) { // single-segment stencils are always valid.
+      for (int i = 0; i < path.size() - 1; i++) {
+        Pt a = path.get(i);
+        Pt b = path.get(i + 1);
+        Segment s = model.getSegment(a, b);
+        if (s == null || !segs.contains(s)) {
+          ret = false;
+          break;
+        }
       }
-    }
-    for (Segment s : segs) {
-      if (!model.hasSegment(s)) {
-        ret = false;
-        break;
+      for (Segment s : segs) {
+        if (!model.hasSegment(s)) {
+          ret = false;
+          break;
+        }
       }
+    } else {
+      bug("Stencil " + this + " is singular so it is always valid.");
     }
+    bug("Stencil " + this + " valid? " + ret);
     return ret;
   }
 
@@ -215,7 +237,7 @@ public class Stencil {
   }
 
   public boolean isSuperset(Stencil other) {
-    return path.size() > other.path.size() && path.containsAll(other.getPath());
+    return segs.size() > other.segs.size() && segs.containsAll(other.getSegs());
   }
 
   public boolean surrounds(Stencil c) {
@@ -224,6 +246,7 @@ public class Stencil {
     Area myArea = new Area(getOuterShape());
     myArea.intersect(childArea);
     ret = myArea.equals(childArea);
+    bug("Does " + this + " surround + " + c + "? " + ret);
     return ret;
   }
 
@@ -246,6 +269,19 @@ public class Stencil {
 
   public List<Segment> getSegs() {
     return segs;
+  }
+
+  public boolean isSingular() {
+    return segs.size() == 1;
+  }
+
+  public String toString() {
+    StringBuilder buf = new StringBuilder();
+    buf.append("T" + id + ": ");
+    for (Segment s : segs) {
+      buf.append(s.getType() + "-" + s.getId() + " ");
+    }
+    return buf.toString().trim();
   }
 
 }

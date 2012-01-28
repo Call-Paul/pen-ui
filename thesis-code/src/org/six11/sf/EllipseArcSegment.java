@@ -17,8 +17,7 @@ public class EllipseArcSegment extends SegmentDelegate {
     // The ellipse is fit using regression, and does not necessarily begin and end at the first 
     // and last points in the list. So get the elliptical region, and transform it two times so it
     // does begin and end at those points.
-
-    ellie = Functions.createEllipse(points);
+    ellie = Functions.createEllipse(points, true);
     int n = points.size();
     ellie.setArcRegion(points.get(0), points.get(n / 2), points.get(n - 1));
     List<Pt> surface = ellie.initArc();

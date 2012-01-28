@@ -41,8 +41,8 @@ public class CircularArcSegment extends SegmentDelegate {
 //    Pt circleIntersectionPt = Functions.getIntersectionPoint(arc, new Line(roughlyArcMid,
 //        initialCenter));
 //    arcSide = Functions.getPartition(circleIntersectionPt, arc1, arc3);
-    centerParameterization = calculateParameterForPoint(vMag, line, initialCenter);
-    arcMidParameterization = calculateParameterForPoint(vMag, line, arc2);
+    centerParameterization = Segment.calculateParameterForPoint(vMag, line, initialCenter);
+    arcMidParameterization = Segment.calculateParameterForPoint(vMag, line, arc2);
     bug("center param: " + num(centerParameterization) + ", arcMid param: " + num(arcMidParameterization));
     init(ink, surface, termA, termB, Segment.Type.CircularArc);
   }

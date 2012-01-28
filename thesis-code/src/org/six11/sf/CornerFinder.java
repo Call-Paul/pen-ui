@@ -18,9 +18,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.out;
-
-// import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.num;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -173,10 +171,18 @@ public class CornerFinder {
     double lineError = Functions.getLineError(line, patch, a, b);
     if (lineError < lineErrorThreshold) {
       ret = new Segment(new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
-    } else if (patch.size() > 3 && Functions.getEllipseError(patch) < ellipseErrorThreshold) {
-      ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
     } else {
-      ret = new Segment(new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1));
+      double closeness = line.getLength() / segLength;
+      boolean closed = closeness < 0.1;
+      double ellipseError = Functions.getEllipseError(patch);
+      if (patch.size() > 3 && !closed && ellipseError < ellipseErrorThreshold) {
+        ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
+      } else if (patch.size() > 3 && closed && ellipseError < ellipseErrorThreshold * 2.0) {
+        bug("Closed ellipse!");
+        ret = new Segment(new EllipseSegment(ink, patch));
+      } else {
+        ret = new Segment(new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1));
+      }
     }
     return ret;
   }

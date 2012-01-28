@@ -45,8 +45,8 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.ConstraintSolver.State;
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+// import static org.six11.util.Debug.bug;
+// import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -55,6 +55,7 @@ import org.six11.util.solve.ConstraintSolver.State;
  */
 public class SkruiFabEditor {
 
+  private static final Color ELLIPSE_COLOR = Color.ORANGE.darker().darker();
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -166,11 +167,11 @@ public class SkruiFabEditor {
         print();
       }
     });
-//    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
-//      public void activate() {
-//        go();
-//      }
-//    });
+    //    actions.put(ACTION_GO, new NamedAction("Go", KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0)) {
+    //      public void activate() {
+    //        go();
+    //      }
+    //    });
 
     actions.put(ACTION_DEBUG_STATE,
         new NamedAction("DebugState", KeyStroke.getKeyStroke(KeyEvent.VK_D, 0)) {
@@ -230,7 +231,8 @@ public class SkruiFabEditor {
     File outFile;
     int which = 0;
     do {
-      outFile = new File(System.getProperty("user.dir"), "skruifab-" + now + (which == 0 ? "" : "-" + which) + ".pdf");
+      outFile = new File(System.getProperty("user.dir"), "skruifab-" + now
+          + (which == 0 ? "" : "-" + which) + ".pdf");
       which++;
     } while (outFile.exists());
     layers.print(outFile);
@@ -261,8 +263,8 @@ public class SkruiFabEditor {
               bug("** Guide " + g + " claims this entire stroke.");
               passed.add(g);
               passedInk.add(stroke);
-            }              
-            
+            }
+
           }
         }
         if (passed.size() == 1) {
@@ -279,8 +281,10 @@ public class SkruiFabEditor {
       stroke.setAnalyzed(true);
     }
     for (Segment seg : segs) {
-      model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
-      model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
+      if (!seg.isSingular()) {
+        model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
+        model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
+      }
     }
     SafeAction a = model.getActionFactory().addSegments(segs);
     model.addAction(a);
@@ -303,7 +307,18 @@ public class SkruiFabEditor {
 
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);
-    model.mergeStencils(sf.findStencils(segs));
+    Set<Stencil> newStencils = sf.findStencils(segs);
+    System.out.println("Attempting to merge " + newStencils.size() + " into " + model.getStencils().size() + " existing ones.");
+    System.out.println("\tNew Stencils:");
+    for (Stencil s : newStencils) {
+      System.out.println("\t\t" + s);
+    }
+    System.out.println("\tExisting Stencils:");
+    for (Stencil s : model.getStencils()) {
+      System.out.println("\t\t" + s);
+    }
+    
+    model.mergeStencils(newStencils);
   }
 
   /**
@@ -373,8 +388,8 @@ public class SkruiFabEditor {
     }
     if (later.size() > 0) {
       for (Stencil s : later) {
-        DrawingBufferRoutines.fillShape(selBuf, s.getShape(true),
-            colors.get("selected stencil"), 0);
+        DrawingBufferRoutines
+            .fillShape(selBuf, s.getShape(true), colors.get("selected stencil"), 0);
       }
     }
     layers.repaint();
@@ -449,7 +464,7 @@ public class SkruiFabEditor {
           break;
       }
     }
-    
+
     // ------------------------------------------------------------ DRAW ALL SEGMENTS
     //
     //
@@ -457,11 +472,13 @@ public class SkruiFabEditor {
       if (seg == fsSeg) {
         continue;
       }
-      if (!model.getConstraints().getPoints().contains(seg.getP1())) {
-        bug("Segment P1 is unknown to constraint system.");
-      }
-      if (!model.getConstraints().getPoints().contains(seg.getP2())) {
-        bug("Segment P2 is unknown to constraint system.");
+      if (!seg.isSingular()) {
+        if (!model.getConstraints().getPoints().contains(seg.getP1())) {
+          bug("Segment P1 is unknown to constraint system.");
+        }
+        if (!model.getConstraints().getPoints().contains(seg.getP2())) {
+          bug("Segment P2 is unknown to constraint system.");
+        }
       }
       switch (seg.getType()) {
         case Curve:
@@ -476,15 +493,20 @@ public class SkruiFabEditor {
         case CircularArc:
           DrawingBufferRoutines.drawShape(buf, seg.asArc(), Color.BLUE, 1.8);
           break;
+        case Ellipse:
+          DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), ELLIPSE_COLOR, 1.8);
+          break;
         case Unknown:
+        default:
+          bug("Don't know how to draw segment: " + seg);
           break;
       }
     }
-    
+
     // debugging: label points
-//    for (Pt pt : model.getConstraints().getPoints()) {
-//      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
-//    }
+    //    for (Pt pt : model.getConstraints().getPoints()) {
+    //      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
+    //    }
     layers.repaint();
 
   }
@@ -505,9 +527,9 @@ public class SkruiFabEditor {
       DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
       List<Pt> def = fsSeg.getDeformedPoints();
       if (def != null) {
-        for (int i=0; i < def.size()-1; i++) {
+        for (int i = 0; i < def.size() - 1; i++) {
           Pt a = def.get(i);
-          Pt b = def.get(i+1);
+          Pt b = def.get(i + 1);
           double str = Math.max(a.getDouble("fsStrength"), b.getDouble("fsStrength"));
           Color color = new Color(1f, 0f, 0f, (float) str);
           DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);

@@ -27,6 +27,10 @@ public class StencilFinder {
   public Set<Stencil> findStencils(Collection<Segment> newSegs) {
     Stack<Pt> newPoints = new Stack<Pt>();
     for (Segment s : newSegs) {
+      if (s.isClosed()) {
+        bug("Closed segments should be stencils!");
+        stencils.add(new Stencil(model, s));
+      }
       if (!newPoints.contains(s.getP1())) {
         newPoints.add(s.getP1());
       }
@@ -92,6 +96,7 @@ public class StencilFinder {
   }
 
   public static void merge(Set<Stencil> rest, Set<Stencil> done) {
+    bug("Try to merge " + rest.size() + " stencils into " + done.size() + " existing stencils.");
     if (!rest.isEmpty()) {
       Stencil s = Lists.removeOne(rest);
       Set<Stencil> kids = new HashSet<Stencil>();

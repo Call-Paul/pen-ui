@@ -7,7 +7,6 @@ import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.SketchRecognizer.Type;
@@ -77,7 +76,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
     Pt nearPt = seg.getNearestPoint(loc);
     Line line = seg.asLine();
     Vec lineVec = new Vec(seg.getP1(), seg.getP2());
-    final Vec param = SegmentDelegate.calculateParameterForPoint(lineVec.mag(), line, nearPt);
+    final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
     
     RecognizedRawItem ret = new RecognizedRawItem(true, RecognizedRawItem.FAT_DOT_REFERENCE_POINT,
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
