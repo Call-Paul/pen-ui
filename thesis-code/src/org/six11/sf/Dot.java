@@ -5,7 +5,7 @@ import java.util.Collections;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.Pt;
 
-public class Dot extends Segment {
+public class Dot extends SegmentDelegate {
 
   private Certainty cert;
 

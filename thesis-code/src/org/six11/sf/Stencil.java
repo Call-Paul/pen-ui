@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.six11.sf.Segment.Type;
+import org.six11.sf.SegmentDelegate.Type;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
@@ -19,25 +19,25 @@ import static org.six11.util.Debug.num;
 
 public class Stencil {
   private List<Pt> path;
-  private List<Segment> segs;
+  private List<SegmentDelegate> segs;
   private SketchBook model;
   private Set<Stencil> children;
 
-  public Stencil(SketchBook model, List<Pt> path, List<Segment> segs) {
+  public Stencil(SketchBook model, List<Pt> path, List<SegmentDelegate> segs) {
     this.model = model;
     this.path = new ArrayList<Pt>(path);
     if (path.get(0) != path.get(path.size() - 1)) {
       path.add(path.get(0));
     }
-    this.segs = new ArrayList<Segment>(segs);
+    this.segs = new ArrayList<SegmentDelegate>(segs);
     this.children = new HashSet<Stencil>();
   }
 
-  public boolean hasPath(List<Segment> otherSegPath) {
+  public boolean hasPath(List<SegmentDelegate> otherSegPath) {
     return segs.containsAll(otherSegPath);
   }
 
-  public void removeGeometry(Segment seg) {
+  public void removeGeometry(SegmentDelegate seg) {
     if (segs.contains(seg)) {
       segs.remove(seg);
     } else {
@@ -102,7 +102,7 @@ public class Stencil {
       }
     } else if (segs.size() == 1) {
       bug("stencil with 1 segs...");
-      Segment seg = segs.get(0);
+      SegmentDelegate seg = segs.get(0);
       if (seg.type != Type.Line) {
         List<Pt> source = seg.asPolyline();
         int sz = source.size();
@@ -149,7 +149,7 @@ public class Stencil {
     List<Pt> allPoints = new ArrayList<Pt>();
     for (int i = 0; i < segs.size(); i++) {
       Pt p = path.get(i);
-      Segment seg = segs.get(i);
+      SegmentDelegate seg = segs.get(i);
       List<Pt> nextPoints = seg.getPointList();
       if (seg.getP2().equals(p)) {
         Collections.reverse(nextPoints);
@@ -168,13 +168,13 @@ public class Stencil {
     for (int i = 0; i < path.size() - 1; i++) {
       Pt a = path.get(i);
       Pt b = path.get(i + 1);
-      Segment s = model.getSegment(a, b);
+      SegmentDelegate s = model.getSegment(a, b);
       if (s == null || !segs.contains(s)) {
         ret = false;
         break;
       }
     }
-    for (Segment s : segs) {
+    for (SegmentDelegate s : segs) {
       if (!model.hasSegment(s)) {
         ret = false;
         break;
@@ -244,7 +244,7 @@ public class Stencil {
     children.addAll(kids);
   }
 
-  public List<Segment> getSegs() {
+  public List<SegmentDelegate> getSegs() {
     return segs;
   }
 

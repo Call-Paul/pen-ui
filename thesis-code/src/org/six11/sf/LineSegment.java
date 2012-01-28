@@ -7,7 +7,7 @@ import org.six11.util.pen.Pt;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
-public class LineSegment extends Segment {
+public class LineSegment extends SegmentDelegate {
 
   public LineSegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
     super(ink, points, termA, termB);

@@ -17,17 +17,17 @@ import static org.six11.util.Debug.bug;
 
 public abstract class SegmentFilter {
 
-  public abstract Set<Segment> filter(Set<Segment> segments);
+  public abstract Set<SegmentDelegate> filter(Set<SegmentDelegate> segments);
 
-  public static boolean hasPoint(Pt target, Segment seg) {
+  public static boolean hasPoint(Pt target, SegmentDelegate seg) {
     return seg.getP1() == target || seg.getP2() == target;
   }
 
   public static SegmentFilter makeEndpointRadiusFilter(final Pt pt, final double radius) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment s : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate s : segments) {
           boolean answer = false;
           if (s.getP1().distance(pt) <= radius) {
             ret.add(s);
@@ -45,9 +45,9 @@ public abstract class SegmentFilter {
 
   public static SegmentFilter makeSimilarLengthFilter(final double length, final double minRatio) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment s : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate s : segments) {
           double sLen = s.length();
           double ratio = Math.min(sLen, length) / Math.max(sLen, length);
           if (ratio >= minRatio) {
@@ -63,9 +63,9 @@ public abstract class SegmentFilter {
   public static SegmentFilter makeSimilarOrientationFilter(final Vec target,
       final double maxDeviation) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment s : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate s : segments) {
           Vec segStart = s.getStartDir();
           Vec segEnd = s.getEndDir();
           double angleStart = Math.abs(Functions.getSignedAngleBetween(target, segStart));
@@ -82,13 +82,13 @@ public abstract class SegmentFilter {
 
   public static SegmentFilter makeCohortFilter(final Collection<RecognizerPrimitive> in) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
         Set<Ink> avoidUs = new HashSet<Ink>();
         for (RecognizerPrimitive prim : in) {
           avoidUs.add(prim.getInk());
         }
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment s : segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate s : segments) {
           Ink segmentInk = s.getOriginalInk();
           if (!avoidUs.contains(segmentInk)) {
             ret.add(s);
@@ -100,11 +100,11 @@ public abstract class SegmentFilter {
     return filter;
   }
 
-  public static SegmentFilter makeCoterminalFilter(final Segment reference) {
+  public static SegmentFilter makeCoterminalFilter(final SegmentDelegate reference) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment seg : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate seg : segments) {
           if (seg != reference
               && (hasPoint(reference.getP1(), seg) || hasPoint(reference.getP2(), seg))) {
             ret.add(seg);
@@ -125,10 +125,10 @@ public abstract class SegmentFilter {
   public static SegmentFilter makeMidpointFilter(final RecognizerPrimitive reference,
       final double slop) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
         Pt refMid = Functions.getMean(reference.getP1(), reference.getP2());
-        for (Segment cand : segments) {
+        for (SegmentDelegate cand : segments) {
           Pt candMid = Functions.getMean(cand.getP1(), cand.getP2());
           double radius = cand.length() * slop;
           if (refMid.distance(candMid) <= radius) {
@@ -143,9 +143,9 @@ public abstract class SegmentFilter {
 
   public static SegmentFilter makeLengthFilter(final Interval range) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment cand : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate cand : segments) {
           bug("is " + num(cand.length()) + " in " + range + "? " + (range.contains(cand.length())));
           if (range.contains(cand.length())) {
             ret.add(cand);
@@ -159,9 +159,9 @@ public abstract class SegmentFilter {
 
   public static SegmentFilter makeIntersectFilter(final RecognizerPrimitive prim) {
     SegmentFilter filter = new SegmentFilter() {
-      public Set<Segment> filter(Set<Segment> segments) {
-        Set<Segment> ret = new HashSet<Segment>();
-        for (Segment cand : segments) {
+      public Set<SegmentDelegate> filter(Set<SegmentDelegate> segments) {
+        Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+        for (SegmentDelegate cand : segments) {
           IntersectionData id = Functions.getIntersectionData(new Line(prim.getP1(), prim.getP2()),
               new Line(cand.getP1(), cand.getP2()));
           if (id.intersectsInSegments()) {

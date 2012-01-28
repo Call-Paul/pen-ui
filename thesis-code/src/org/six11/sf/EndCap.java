@@ -83,7 +83,7 @@ public class EndCap {
     Start, End
   }
 
-  private Segment seg;
+  private SegmentDelegate seg;
   private Pt pt;
   private Vec dir;
   private Area area;
@@ -92,7 +92,7 @@ public class EndCap {
   private Line line;
   private WhichEnd end;
 
-  public EndCap(Segment seg, WhichEnd end) {
+  public EndCap(SegmentDelegate seg, WhichEnd end) {
     this.seg = seg;
     this.end = end;
     this.pt = (end == WhichEnd.Start ? seg.getP1() : seg.getP2());
@@ -123,7 +123,7 @@ public class EndCap {
     return ret;
   }
 
-  public Segment getSegment() {
+  public SegmentDelegate getSegment() {
     return seg;
   }
 

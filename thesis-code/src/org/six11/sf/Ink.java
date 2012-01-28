@@ -106,8 +106,8 @@ public class Ink implements HasFuzzyArea {
   }
 
   @SuppressWarnings("unchecked")
-  public List<Segment> getSegments() {
-    return (List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS);
+  public List<SegmentDelegate> getSegments() {
+    return (List<SegmentDelegate>) seq.getAttribute(CornerFinder.SEGMENTS);
   }
 
   public void setGuides(Set<Guide> retainedVisibleGuides) {

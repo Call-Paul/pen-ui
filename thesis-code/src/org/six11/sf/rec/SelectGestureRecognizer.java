@@ -11,7 +11,7 @@ import static java.lang.Math.abs;
 import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.Ink;
-import org.six11.sf.Segment;
+import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.SketchRecognizer.Type;
@@ -47,15 +47,15 @@ public class SelectGestureRecognizer extends SketchRecognizer {
     //    DrawingBuffer db = model.getLayers().getLayer("select gesture");
     //    db.clear();
     //    DrawingBufferRoutines.fillShape(db, totalArea, new Color(255, 0, 0, 120), 0.5);
-    Collection<Segment> underneath = model.findSegments(totalArea, 3.5);
+    Collection<SegmentDelegate> underneath = model.findSegments(totalArea, 3.5);
     //    for (Segment under : underneath) {
     //      DrawingBufferRoutines.fillShape(db, under.getFuzzyArea(3.5), new Color(0, 0, 255, 120), 0.5);
     //    }
-    final Collection<Segment> selectUs = new HashSet<Segment>();
-    final Collection<Segment> unselectUs = new HashSet<Segment>();
+    final Collection<SegmentDelegate> selectUs = new HashSet<SegmentDelegate>();
+    final Collection<SegmentDelegate> unselectUs = new HashSet<SegmentDelegate>();
     //    boolean selectedSomething = false;
     Vec inkVec = new Vec(ink.getSequence().getFirst(), ink.getSequence().getLast());
-    for (Segment undy : underneath) {
+    for (SegmentDelegate undy : underneath) {
       Statistics stats = new Statistics();
       for (Pt pt : ink.getSequence()) {
         List<Pt> segPoints = undy.asPolyline();
@@ -64,7 +64,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
       }
       if (stats.getMax() < 10.0 || (stats.getMax() < 15.0 && stats.getMean() < 5.0)) {
         double ang = 0;
-        if (undy.getType() == Segment.Type.Line) {
+        if (undy.getType() == SegmentDelegate.Type.Line) {
           ang = Math.min(abs(Functions.getSignedAngleBetween(undy.getStartDir(), inkVec)),
               abs(Functions.getSignedAngleBetween(undy.getEndDir(), inkVec)));
           ang = toDegrees(ang);

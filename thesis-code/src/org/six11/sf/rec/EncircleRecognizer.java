@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
-import org.six11.sf.Segment;
+import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.Stencil;
@@ -160,12 +160,12 @@ public class EncircleRecognizer extends SketchRecognizer {
               GuidePoint gp = guides.toArray(new GuidePoint[1])[0];
               centroid = gp.getLocation();
               if (gp.isPinnedToSegment()) {
-                Collection<Segment> related = new HashSet<Segment>();
+                Collection<SegmentDelegate> related = new HashSet<SegmentDelegate>();
                 for (Pt pt : points) {
                   related.addAll(model.findRelatedSegments(pt));
                 }
                 boolean isRelated = false;
-                for (Segment s : related) {
+                for (SegmentDelegate s : related) {
                   if (s == gp.getSegment()) {
                     isRelated = true;
                     break;
@@ -178,7 +178,7 @@ public class EncircleRecognizer extends SketchRecognizer {
             } else {
               centroid = Functions.getMean(points);
             }
-            Collection<Segment> related = new HashSet<Segment>();
+            Collection<SegmentDelegate> related = new HashSet<SegmentDelegate>();
             for (Pt pt : points) {
               model.replace(pt, centroid);
               related.addAll(model.findRelatedSegments(centroid));

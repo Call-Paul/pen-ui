@@ -30,5 +30,5 @@ public abstract class Guide {
 
   public abstract Guide getFixedCopy();
 
-  public abstract Segment adjust(Ink ink, int start, int end);
+  public abstract SegmentDelegate adjust(Ink ink, int start, int end);
 }

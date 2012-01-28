@@ -32,7 +32,7 @@ public class GraphicDebug {
     this.layers = layers;
   }
 
-  public void drawSegments(List<Segment> segs) {
+  public void drawSegments(List<SegmentDelegate> segs) {
     DrawingBuffer db = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
     drawSegments(db, segs, null);
   }
@@ -44,17 +44,17 @@ public class GraphicDebug {
    * @param allSegments
    * @param preferredColor
    */
-  public void drawSegments(DrawingBuffer db, List<Segment> segments, Color preferredColor) {
+  public void drawSegments(DrawingBuffer db, List<SegmentDelegate> segments, Color preferredColor) {
     Color darkGreen = Color.green.darker();
     Color darkBlue = Color.blue.darker();
     Color darkRed = Color.red.darker();
     Color pc = preferredColor;
-    for (Segment seg : segments) {
-      if (seg.getType() == Segment.Type.Line) {
+    for (SegmentDelegate seg : segments) {
+      if (seg.getType() == SegmentDelegate.Type.Line) {
         DrawingBufferRoutines.line(db, seg.asLine(), pc == null ? darkGreen : pc, 2.0);
-      } else if (seg.getType() == Segment.Type.Curve) {
+      } else if (seg.getType() == SegmentDelegate.Type.Curve) {
         DrawingBufferRoutines.drawShape(db, seg.asSpline(), pc == null ? darkBlue : pc, 2.0);
-      } else if (seg.getType() == Segment.Type.EllipticalArc) {
+      } else if (seg.getType() == SegmentDelegate.Type.EllipticalArc) {
         DrawingBufferRoutines.drawShape(db, seg.asPolyline(), pc == null ? darkRed : pc, 2.0);
       } else {
         bug("Unknown segment type in drawSegments: " + seg.getType());

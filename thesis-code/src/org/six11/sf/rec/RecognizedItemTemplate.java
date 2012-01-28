@@ -15,7 +15,7 @@ import java.util.TreeSet;
 import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.Ink;
-import org.six11.sf.Segment;
+import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;

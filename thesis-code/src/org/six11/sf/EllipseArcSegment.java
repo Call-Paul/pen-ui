@@ -9,7 +9,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 import static org.six11.util.Debug.bug;
 
-public class EllipseArcSegment extends Segment {
+public class EllipseArcSegment extends SegmentDelegate {
 
   RotatedEllipse ellie;
 

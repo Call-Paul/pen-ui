@@ -17,7 +17,7 @@ import static java.lang.Math.sin;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
-public class CircularArcSegment extends Segment {
+public class CircularArcSegment extends SegmentDelegate {
 
   private Vec centerParameterization;
   private Vec arcMidParameterization;

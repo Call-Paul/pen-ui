@@ -37,13 +37,13 @@ public class CornerFinder {
   }
 
   @SuppressWarnings("unchecked")
-  public Set<Segment> findCorners(Ink ink) {
+  public Set<SegmentDelegate> findCorners(Ink ink) {
     assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
     isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
     //    guibug.drawJunctions(ink.seq);
     makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
-    Set<Segment> ret = new HashSet<Segment>();
-    ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
+    Set<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+    ret.addAll((List<SegmentDelegate>) ink.seq.getAttribute(SEGMENTS));
     return ret;
   }
 
@@ -148,7 +148,7 @@ public class CornerFinder {
   @SuppressWarnings("unchecked")
   private void makeSegments(Ink ink) {
     List<Integer> juncts = (List<Integer>) ink.seq.getAttribute(SEGMENT_JUNCTIONS);
-    List<Segment> segments = new ArrayList<Segment>();
+    List<SegmentDelegate> segments = new ArrayList<SegmentDelegate>();
     Dot dot = detectDot(ink);
     if (dot.getCertainty() == Certainty.Yes || dot.getCertainty() == Certainty.Maybe) {
       segments.add(dot);
@@ -160,8 +160,8 @@ public class CornerFinder {
     ink.seq.setAttribute(SEGMENTS, segments);
   }
 
-  private Segment identifySegment(Ink ink, int i, int j) {
-    Segment ret = null;
+  private SegmentDelegate identifySegment(Ink ink, int i, int j) {
+    SegmentDelegate ret = null;
     double segLength = ink.seq.getPathLength(i, j);
     int numPatches = (int) ceil(segLength / minPatchSize);
     double patchLength = segLength / (double) numPatches;

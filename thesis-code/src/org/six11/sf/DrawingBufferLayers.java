@@ -90,7 +90,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private Pt fsDown;
   private Pt searchStart;
   private Pt dragPt;
-  private Segment fsNearestSeg; // segment currently flow-selected
+  private SegmentDelegate fsNearestSeg; // segment currently flow-selected
   private Pt fsNearestPt; // point on segment currently selected
   private double fsBubble = 10;
   private int fsPauseTimeout = 900;
@@ -333,7 +333,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     return ((double) elapsed * p) / 1000.0;
   }
 
-  public Segment getFlowSelectionSegment() {
+  public SegmentDelegate getFlowSelectionSegment() {
     return fsNearestSeg;
   }
 
@@ -341,10 +341,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     bug("init selection");
     fsStartTime = System.currentTimeMillis();
     if (fsDown != null) {
-      Segment nearestSeg = null;
+      SegmentDelegate nearestSeg = null;
       Pt nearestPoint = null;
       double nearestDist = Double.MAX_VALUE;
-      for (Segment seg : model.getGeometry()) {
+      for (SegmentDelegate seg : model.getGeometry()) {
         Pt thisPoint = seg.getNearestPoint(fsDown);
         double thisDist = thisPoint.distance(fsDown);
         if (thisDist < nearestDist) {

@@ -24,9 +24,9 @@ public class StencilFinder {
     this.stencils = new HashSet<Stencil>();
   }
 
-  public Set<Stencil> findStencils(Collection<Segment> newSegs) {
+  public Set<Stencil> findStencils(Collection<SegmentDelegate> newSegs) {
     Stack<Pt> newPoints = new Stack<Pt>();
-    for (Segment s : newSegs) {
+    for (SegmentDelegate s : newSegs) {
       if (!newPoints.contains(s.getP1())) {
         newPoints.add(s.getP1());
       }
@@ -35,7 +35,7 @@ public class StencilFinder {
       }
     }
     Stack<Pt> ptPath = new Stack<Pt>();
-    Stack<Segment> segPath = new Stack<Segment>();
+    Stack<SegmentDelegate> segPath = new Stack<SegmentDelegate>();
     while (!newPoints.isEmpty()) {
       explore(newPoints.pop(), ptPath, segPath);
     }
@@ -52,7 +52,7 @@ public class StencilFinder {
    * @param segPath
    *          the list of paths taken so far
    */
-  private void explore(Pt cursor, Stack<Pt> ptPath, Stack<Segment> segPath) {
+  private void explore(Pt cursor, Stack<Pt> ptPath, Stack<SegmentDelegate> segPath) {
     //    bug("explore starting at " + SketchBook.n(cursor));
     //    bug("\tpoint path: " + SketchBook.n(ptPath));
     //    bug("\tseg path  : " + SketchBook.ns(segPath));
@@ -61,12 +61,12 @@ public class StencilFinder {
     } else {
       ptPath.push(cursor);
       // get all segments related to the cursor and explore the ones we're not on already.
-      Collection<Segment> related = model.findRelatedSegments(cursor);
+      Collection<SegmentDelegate> related = model.findRelatedSegments(cursor);
       //      int before = related.size();
       related.removeAll(segPath);
       //      int after = related.size();
       //      bug("Excluding " + (before - after) + " paths starting from " + SketchBook.n(cursor));
-      for (Segment seg : related) {
+      for (SegmentDelegate seg : related) {
         segPath.push(seg);
         Pt nextCursor = seg.getPointOpposite(cursor);
         if (nextCursor != null) {
@@ -78,7 +78,7 @@ public class StencilFinder {
     }
   }
 
-  private void maybeAddStencil(List<Pt> ptPath, List<Segment> segPath) {
+  private void maybeAddStencil(List<Pt> ptPath, List<SegmentDelegate> segPath) {
     boolean isSame = false;
     for (Stencil s : stencils) {
       if (s.hasPath(segPath)) {
@@ -113,9 +113,9 @@ public class StencilFinder {
     }
   }
 
-  public Map<Pt, Set<Pt>> makeAdjacency(Set<Segment> allGeometry) {
+  public Map<Pt, Set<Pt>> makeAdjacency(Set<SegmentDelegate> allGeometry) {
     Map<Pt, Set<Pt>> adjacent = new HashMap<Pt, Set<Pt>>();
-    for (Segment s : allGeometry) {
+    for (SegmentDelegate s : allGeometry) {
       Pt p1 = s.getP1();
       Pt p2 = s.getP2();
       associate(adjacent, p1, p2);

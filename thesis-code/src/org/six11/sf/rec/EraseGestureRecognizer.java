@@ -9,7 +9,7 @@ import static java.lang.Math.toDegrees;
 
 import org.six11.sf.CornerFinder;
 import org.six11.sf.Ink;
-import org.six11.sf.Segment;
+import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
@@ -49,7 +49,7 @@ public class EraseGestureRecognizer extends SketchRecognizer {
         if (area > 100 && density > 2.0) {
           ConvexHull hull = ink.getHull();
           final Area hullArea = new Area(hull.getHullShape());
-          final Collection<Segment> doomed = pickDoomedSegments(hullArea);
+          final Collection<SegmentDelegate> doomed = pickDoomedSegments(hullArea);
           final Collection<Ink> doomedInk = pickDoomedInk(hullArea, ink);
           ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
             public void activate(SketchBook model) {
@@ -58,7 +58,7 @@ public class EraseGestureRecognizer extends SketchRecognizer {
                   model.removeInk(ink);
                 }
               } else {
-                for (Segment seg : doomed) {
+                for (SegmentDelegate seg : doomed) {
                   model.removeGeometry(seg);
                 }
               }
@@ -73,10 +73,10 @@ public class EraseGestureRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  public Collection<Segment> pickDoomedSegments(Area area) {
-    Collection<Segment> maybeDoomed = new HashSet<Segment>();
-    RankedList<Segment> ranked = new RankedList<Segment>();
-    for (Segment seg : model.getGeometry()) {
+  public Collection<SegmentDelegate> pickDoomedSegments(Area area) {
+    Collection<SegmentDelegate> maybeDoomed = new HashSet<SegmentDelegate>();
+    RankedList<SegmentDelegate> ranked = new RankedList<SegmentDelegate>();
+    for (SegmentDelegate seg : model.getGeometry()) {
       Area segmentArea = seg.getFuzzyArea(5.0);
       Area ix = (Area) area.clone();
       ix.intersect(segmentArea);

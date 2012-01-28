@@ -51,9 +51,9 @@ public class SketchBook {
 
   private DrawingBufferLayers layers;
   private Set<Stencil> selectedStencils;
-  private Set<Segment> selectedSegments;
+  private Set<SegmentDelegate> selectedSegments;
   private GraphicDebug guibug;
-  private Set<Segment> geometry;
+  private Set<SegmentDelegate> geometry;
   private List<GuidePoint> guidePoints;
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
@@ -81,9 +81,9 @@ public class SketchBook {
     this.editor = editor;
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
-    this.selectedSegments = new HashSet<Segment>();
+    this.selectedSegments = new HashSet<SegmentDelegate>();
     this.cornerFinder = new CornerFinder();
-    this.geometry = new HashSet<Segment>();
+    this.geometry = new HashSet<SegmentDelegate>();
     this.guidePoints = new ArrayList<GuidePoint>();
     this.activeGuidePoints = new ArrayList<GuidePoint>();
     this.derivedGuides = new HashSet<Guide>();
@@ -246,11 +246,11 @@ public class SketchBook {
     setSelectedSegments(null);
   }
 
-  public void addGeometry(Segment seg) {
+  public void addGeometry(SegmentDelegate seg) {
     geometry.add(seg);
   }
 
-  public void removeGeometry(Segment seg) {
+  public void removeGeometry(SegmentDelegate seg) {
     bug("remove " + seg);
     // remove from the list of known geometry.
     geometry.remove(seg);
@@ -264,7 +264,7 @@ public class SketchBook {
     // remove points from the solver if they are no longer part of the model.
     boolean keep1 = false;
     boolean keep2 = false;
-    for (Segment s : geometry) {
+    for (SegmentDelegate s : geometry) {
       if (s.involves(seg.getP1())) {
         keep1 = true;
       }
@@ -308,13 +308,13 @@ public class SketchBook {
     }
   }
 
-  public Set<Segment> getGeometry() {
+  public Set<SegmentDelegate> getGeometry() {
     return geometry;
   }
 
-  public Segment getSegment(Pt blue, Pt green) {
-    Segment ret = null;
-    for (Segment s : geometry) {
+  public SegmentDelegate getSegment(Pt blue, Pt green) {
+    SegmentDelegate ret = null;
+    for (SegmentDelegate s : geometry) {
       if (s.involves(blue) && s.involves(green)) {
         ret = s;
         break;
@@ -327,7 +327,7 @@ public class SketchBook {
     return getConstraints().hasPoints(blue, green) && getSegment(blue, green) != null;
   }
 
-  public boolean hasSegment(Segment s) {
+  public boolean hasSegment(SegmentDelegate s) {
     return hasSegment(s.p1, s.p2);
   }
   
@@ -346,7 +346,7 @@ public class SketchBook {
     // points and constraints
     solver.replacePoint(capPt, spot);
     // segment geometry
-    for (Segment seg : geometry) {
+    for (SegmentDelegate seg : geometry) {
       seg.replace(capPt, spot);
     }
     for (Stencil s : stencils) {
@@ -354,7 +354,7 @@ public class SketchBook {
     }
   }
 
-  public void replace(Segment oldSeg, Segment newSeg) {
+  public void replace(SegmentDelegate oldSeg, SegmentDelegate newSeg) {
     geometry.remove(oldSeg); // remove old geom
     geometry.add(newSeg); // add new geom
     if (selectedSegments.contains(oldSeg)) { // old seg is selected...
@@ -433,8 +433,8 @@ public class SketchBook {
   }
 
   public void removeRelated(Ink eenk) {
-    Set<Segment> doomed = new HashSet<Segment>();
-    for (Segment seg : geometry) {
+    Set<SegmentDelegate> doomed = new HashSet<SegmentDelegate>();
+    for (SegmentDelegate seg : geometry) {
       if (seg.ink == eenk) {
         doomed.add(seg);
         getConstraints().removePoint(seg.getP1());
@@ -494,7 +494,7 @@ public class SketchBook {
     addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
     addBug(indent, buf, String.format(format, "seg-type", "id", "p1", "p2"));
     addBug(indent, buf, "--------------------------\n");
-    for (Segment seg : geometry) {
+    for (SegmentDelegate seg : geometry) {
       String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<???>";
       String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<???>";
       addBug(indent, buf, String.format(format, seg.getType() + "", seg.getId() + "", p1, p2));
@@ -574,9 +574,9 @@ public class SketchBook {
   /**
    * Find a set of segments whose fuzzy areas (Segment.getFuzzyArea()) intersect the given Area.
    */
-  public Collection<Segment> findSegments(Area area, double fuzzyFactor) {
-    Collection<Segment> ret = new HashSet<Segment>();
-    for (Segment seg : geometry) {
+  public Collection<SegmentDelegate> findSegments(Area area, double fuzzyFactor) {
+    Collection<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+    for (SegmentDelegate seg : geometry) {
       Area segmentArea = seg.getFuzzyArea(fuzzyFactor);
       Area ix = (Area) area.clone();
       ix.intersect(segmentArea);
@@ -614,7 +614,7 @@ public class SketchBook {
     editor.drawStencils();
   }
 
-  public void setSelectedSegments(Collection<Segment> selectUs) {
+  public void setSelectedSegments(Collection<SegmentDelegate> selectUs) {
     if (!lastInkWasSelection || selectUs == null) {
       selectedSegments.clear();
     }
@@ -658,9 +658,9 @@ public class SketchBook {
     return draggingThumb;
   }
 
-  public Collection<Segment> findRelatedSegments(Pt pt) {
-    Collection<Segment> ret = new HashSet<Segment>();
-    for (Segment seg : geometry) {
+  public Collection<SegmentDelegate> findRelatedSegments(Pt pt) {
+    Collection<SegmentDelegate> ret = new HashSet<SegmentDelegate>();
+    for (SegmentDelegate seg : geometry) {
       if (seg.involves(pt)) {
         ret.add(seg);
       }
@@ -670,7 +670,7 @@ public class SketchBook {
 
   public Collection<Pt> findPoints(Area area) {
     Collection<Pt> ret = new HashSet<Pt>();
-    for (Segment seg : geometry) {
+    for (SegmentDelegate seg : geometry) {
       if (area.contains(seg.getP1())) {
         ret.add(seg.getP1());
       }
@@ -681,15 +681,15 @@ public class SketchBook {
     return ret;
   }
 
-  public Set<Segment> getSelectedSegments() {
+  public Set<SegmentDelegate> getSelectedSegments() {
     return selectedSegments;
   }
 
-  public boolean isSelected(Segment s) {
+  public boolean isSelected(SegmentDelegate s) {
     return selectedSegments.contains(s);
   }
 
-  public void deselectSegments(Collection<Segment> unselectUs) {
+  public void deselectSegments(Collection<SegmentDelegate> unselectUs) {
     selectedSegments.removeAll(unselectUs);
     editor.getGlass().setGatherText(selectedSegments.size() == 1);
   }
@@ -698,7 +698,7 @@ public class SketchBook {
     DrawingBuffer db = layers.getLayer("text");
     db.clear();
     if (selectedSegments.size() == 1) {
-      Segment seg = selectedSegments.toArray(new Segment[1])[0];
+      SegmentDelegate seg = selectedSegments.toArray(new SegmentDelegate[1])[0];
       Pt mid = seg.getVisualMidpoint();
       DrawingBufferRoutines.text(db, mid, string, Color.BLACK);
       lastInkWasSelection = false;
@@ -711,7 +711,7 @@ public class SketchBook {
     db.clear();
     if (selectedSegments.size() == 1) {
       try {
-        Segment seg = selectedSegments.toArray(new Segment[1])[0];
+        SegmentDelegate seg = selectedSegments.toArray(new SegmentDelegate[1])[0];
         double len = Double.parseDouble(string);
         len = Material.toPixels(masterUnits, len);
         constrainSegmentLength(seg, len);
@@ -721,7 +721,7 @@ public class SketchBook {
     lastInkWasSelection = false;
   }
 
-  private void constrainSegmentLength(Segment seg, double len) {
+  private void constrainSegmentLength(SegmentDelegate seg, double len) {
     Set<ConstraintFilter> filters = new HashSet<ConstraintFilter>();
     filters.add(VariableBank.getTypeFilter(DistanceConstraint.class));
     filters.add(ConstraintFilters.getInvolvesFilter(seg.getEndpointArray()));
@@ -956,15 +956,15 @@ public class SketchBook {
   }
 
   public void removeSingularSegments() {
-    Set<Segment> doomed = new HashSet<Segment>();
-    for (Segment s : geometry) {
+    Set<SegmentDelegate> doomed = new HashSet<SegmentDelegate>();
+    for (SegmentDelegate s : geometry) {
       if (s.isSingular()) {
         doomed.add(s);
       }
     }
     if (doomed.size() > 0) {
       bug("\t*** Removing " + doomed.size() + " singular segments ***");
-      for (Segment d : doomed) {
+      for (SegmentDelegate d : doomed) {
         removeGeometry(d);
       }
     }
@@ -986,12 +986,12 @@ public class SketchBook {
     return buf.toString();
   }
 
-  public static String ns(Collection<Segment> segs) {
+  public static String ns(Collection<SegmentDelegate> segs) {
     StringBuilder buf = new StringBuilder();
     if (segs == null) {
       buf.append("<null input!>");
     } else {
-      for (Segment seg : segs) {
+      for (SegmentDelegate seg : segs) {
         buf.append(seg.type + "-" + seg.id + " ");
       }
     }

@@ -26,7 +26,7 @@ public class ConstraintAnalyzer {
     this.model = model;
   }
 
-  public void analyze(Collection<Segment> segs) {
+  public void analyze(Collection<SegmentDelegate> segs) {
     //    DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
     //    bugBuf.clear();
     Set<EndCap> caps = getCurrentEndCaps(model.getGeometry()); // set of all endcaps
@@ -99,9 +99,9 @@ public class ConstraintAnalyzer {
     return ret;
   }
 
-  private Set<EndCap> getCurrentEndCaps(Collection<Segment> segs) {
+  private Set<EndCap> getCurrentEndCaps(Collection<SegmentDelegate> segs) {
     Set<EndCap> ret = new HashSet<EndCap>();
-    for (Segment seg : segs) {
+    for (SegmentDelegate seg : segs) {
       if (seg.hasEndCaps()) {
         ret.addAll(seg.getEndCaps());
       }
@@ -120,9 +120,9 @@ public class ConstraintAnalyzer {
    * 
    * @param segs
    */
-  public void mergeSegments(Collection<Segment> segs) {
-    Set<Segment> nonsingular = new HashSet<Segment>();
-    for (Segment seg : segs) {
+  public void mergeSegments(Collection<SegmentDelegate> segs) {
+    Set<SegmentDelegate> nonsingular = new HashSet<SegmentDelegate>();
+    for (SegmentDelegate seg : segs) {
       if (!seg.isSingular()) {
         nonsingular.add(seg);
       }
@@ -133,8 +133,8 @@ public class ConstraintAnalyzer {
     for (Map.Entry<Pt, Set<Pt>> entry : adj.entrySet()) {
       buf.setLength(0);
       if (entry.getValue().size() == 2) {
-        List<Segment> pair = new ArrayList<Segment>();
-        for (Segment seg : nonsingular) {
+        List<SegmentDelegate> pair = new ArrayList<SegmentDelegate>();
+        for (SegmentDelegate seg : nonsingular) {
           if (seg.involves(entry.getKey())) {
             pair.add(seg);
             buf.append(seg.getType() + "");
@@ -143,8 +143,8 @@ public class ConstraintAnalyzer {
         if (pair.size() == 2) {
           Vec dirA, dirB;
           Pt junct = entry.getKey();
-          Segment segA = pair.get(0);
-          Segment segB = pair.get(1);
+          SegmentDelegate segA = pair.get(0);
+          SegmentDelegate segB = pair.get(1);
           if (segA.getP1() == junct) {
             dirA = segA.getStartDir();
           } else {
@@ -172,7 +172,7 @@ public class ConstraintAnalyzer {
     }
   }
 
-  private boolean mergeCurves(Pt junct, Segment segA, Segment segB) {
+  private boolean mergeCurves(Pt junct, SegmentDelegate segA, SegmentDelegate segB) {
     boolean ret = false;
     boolean dirA = false;
     boolean dirB = false;
@@ -197,7 +197,7 @@ public class ConstraintAnalyzer {
       newPoints.addAll(tmpB);
     }
 
-    Segment newSpline = new CurvySegment(newPoints);
+    SegmentDelegate newSpline = new CurvySegment(newPoints);
     model.replace(segA, newSpline);
     model.replace(segB, newSpline);
     ret = true;
@@ -205,14 +205,14 @@ public class ConstraintAnalyzer {
     return ret;
   }
 
-  private boolean mergeLines(Pt junct, Segment segA, Segment segB) {
+  private boolean mergeLines(Pt junct, SegmentDelegate segA, SegmentDelegate segB) {
     boolean ret = false;
     Pt p1 = null;
     Pt p2 = null;
     p1 = segA.getP1() == junct ? segA.getP2() : segA.getP1();
     p2 = segB.getP1() == junct ? segB.getP2() : segB.getP1();
     if (p1 != null && p2 != null) {
-      Segment newLine = new LineSegment(p1, p2);
+      SegmentDelegate newLine = new LineSegment(p1, p2);
       model.replace(segA, newLine);
       model.replace(segB, newLine);
       ret = true;
