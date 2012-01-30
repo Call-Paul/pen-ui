@@ -1,7 +1,7 @@
 package org.six11.sf.rec;
 
-//import static org.six11.util.Debug.num;
-//import static org.six11.util.Debug.out;
+import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
 
 import java.awt.geom.Area;
 import java.util.Collection;
@@ -9,7 +9,6 @@ import java.util.HashSet;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.Stencil;
@@ -110,10 +109,14 @@ public class EncircleRecognizer extends SketchRecognizer {
     Sequence seq = ink.getSequence();
     final Collection<Stencil> stencilsInside = new HashSet<Stencil>();
     double len = seq.length();
+    // ---------------------------------------------------------------- Select Stencil
     if (len > 200) {
       int bestIdx = getNearestEncircleDistLongSequence(seq);
       double bestDist = seq.get(bestIdx).distance(seq.get(0));
       if (bestDist < 50) {
+        // TODO: should also check the relative sizes of these areas. Don't want 
+        // to accidentally select something when you're really trying to create 
+        // a surrounding stencil, or making a hole inside one.
         Area area = new Area(seq);
         stencilsInside.addAll(model.findStencil(area, 0.8));
         if (stencilsInside.size() > 0) {
@@ -126,7 +129,8 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
       }
     }
-    if (len <= 200 && ink.getSequence().getRoughDensity() <= 2.0 && getNearestEncircleDistShortSequence(seq) < 6.5) {
+    if (len <= 200 && ink.getSequence().getRoughDensity() <= 2.0
+        && getNearestEncircleDistShortSequence(seq) < 6.5) {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
@@ -145,13 +149,19 @@ public class EncircleRecognizer extends SketchRecognizer {
           }
         }
         if (ok) {
-          // all endpoints are already at the guide point. In this case the gesture means
-          // the user wants to remove the guide point.
+          // ---------------------------------------------------------------- Remove guide point
+          // all endpoints are already at the guide point. In this case 
+          // the gesture means the user wants to remove the guide point.
           ret = makeRemoveGuidePoint(singleGuide);
           eraseGuide = true;
         }
       }
-      if (!eraseGuide && points.size() > 0) {
+      if (!eraseGuide && points.size() == 1) {
+        // ------------------------------------------------------------------ T-junction
+        bug("T-junction function *************************************** damn");
+      }
+      if (!eraseGuide && points.size() > 1) {
+        // ------------------------------------------------------------------ Merge points
         ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE,
             RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
             RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {

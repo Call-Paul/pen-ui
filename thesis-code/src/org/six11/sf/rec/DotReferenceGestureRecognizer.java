@@ -18,7 +18,7 @@ import static org.six11.util.Debug.bug;
 
 public class DotReferenceGestureRecognizer extends SketchRecognizer {
 
-  public static double NEARNESS_THRESHOLD = 4.5;
+  public static double NEARNESS_THRESHOLD = 9;
 
   public DotReferenceGestureRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
@@ -73,6 +73,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   }
 
   private RecognizedRawItem makeNearItem(final Segment seg, Pt loc) {
+    bug("Selecting internal point");
     Pt nearPt = seg.getNearestPoint(loc);
     Line line = seg.asLine();
     Vec lineVec = new Vec(seg.getP1(), seg.getP2());

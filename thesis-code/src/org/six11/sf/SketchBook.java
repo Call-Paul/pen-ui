@@ -898,7 +898,7 @@ public class SketchBook {
     Collection<GuidePoint> in = activeOnly ? activeGuidePoints : guidePoints;
     if (activeOnly) {
       for (GuidePoint gpt : in) {
-        if (gpt.getLocation().distance(pt) < 6) {
+        if (gpt.getLocation().distance(pt) < DotReferenceGestureRecognizer.NEARNESS_THRESHOLD) {
           ret.add(gpt);
         }
       }
