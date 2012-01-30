@@ -42,6 +42,7 @@ public class Stencil {
       segs.add(s);
       this.path = new ArrayList<Pt>();
       this.children = new HashSet<Stencil>();
+      bug("Made single-segment stencil for " + s);
     } else {
       bug("Error: created single-segment stencil with non-closed segment: " + s);
     }
@@ -99,6 +100,8 @@ public class Stencil {
     }
     if (Math.abs(crossProd) < 0.01) {
       bug("cross product too close to zero to be meaningful.");
+      bug("There are " + turns.size() + " points on the turn path.");
+      bug("Segments are: " + num(segs, " "));
     }
     boolean ret = crossProd > 0;
     return ret;
@@ -108,7 +111,7 @@ public class Stencil {
     List<Pt> ret = path;
     if (segs.size() == 2) {
       ret = new ArrayList<Pt>();
-      for (int i = 0; i < path.size(); i++) {
+      for (int i = 0; i < segs.size(); i++) {
         ret.add(path.get(i));
         if (segs.get(i).getType() != Segment.Type.Line) {
           ret.add(segs.get(i).getVisualMidpoint());
@@ -158,7 +161,7 @@ public class Stencil {
    * 
    * @return
    */
-  private List<Pt> getAllPoints() {
+  public List<Pt> getAllPoints() {
     List<Pt> allPoints = new ArrayList<Pt>();
     if (segs.size() == 1) {
       allPoints.addAll(segs.get(0).getPointList());

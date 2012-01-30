@@ -93,3 +93,5 @@
 035: closed segments (ellipses)
 
 036: closed segments are now automatically stencils and can nest inside others.
+
+037: can have closed splines ("blobs") and perfect circles.

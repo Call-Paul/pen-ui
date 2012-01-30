@@ -13,10 +13,12 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.six11.util.Debug;
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
@@ -95,7 +97,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public boolean isClosed() {
-    return (type == Segment.Type.Ellipse);
+    return (type == Segment.Type.Ellipse || type == Segment.Type.Blob || type == Segment.Type.Circle);
   }
 
   public List<Pt> storeParaPointsForDeformation() {
@@ -133,6 +135,12 @@ public class SegmentDelegate implements HasFuzzyArea {
         break;
       case Blob:
         buf.append("B");
+        break;
+      case Ellipse:
+        buf.append("I");
+        break;
+      case Circle:
+        buf.append("R");
         break;
       default:
         bug("Unknown segment type: " + getType());
@@ -414,7 +422,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public Shape asArc() {
-    bug("This sould never be called. override it.");
+    Debug.stacktrace("This sould never be called. override it.", 8);
     return null;
   }
 
@@ -436,7 +444,22 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public Shape asEllipse() {
-    bug("This sould never be called. override it.");
+    Debug.stacktrace("This sould never be called. override it.", 8);
+    return null;
+  }
+
+  public RotatedEllipse getEllipse() {
+    Debug.stacktrace("This sould never be called. override it.", 8);
+    return null;
+  }
+
+  public Shape asCircle() {
+    Debug.stacktrace("This sould never be called. override it.", 8);
+    return null;
+  }
+
+  public Circle getCircle() {
+    Debug.stacktrace("This sould never be called. override it.", 8);
     return null;
   }
 

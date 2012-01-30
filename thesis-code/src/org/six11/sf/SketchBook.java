@@ -599,7 +599,7 @@ public class SketchBook {
       double ratio = 0;
       Area ix = s.intersect(area);
       if (!ix.isEmpty()) {
-        ConvexHull stencilHull = new ConvexHull(s.getPath());
+        ConvexHull stencilHull = new ConvexHull(s.getAllPoints());//s.getPath());
         double stencilArea = stencilHull.getConvexArea();
         ConvexHull ixHull = new ConvexHull(ShapeFactory.makePointList(ix.getPathIterator(null)));
         double ixArea = ixHull.getConvexArea();

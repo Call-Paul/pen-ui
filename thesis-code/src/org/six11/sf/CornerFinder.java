@@ -178,7 +178,14 @@ public class CornerFinder {
       if (patch.size() > 3 && !closed && ellipseError < ellipseErrorThreshold) {
         ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
       } else if (patch.size() > 3 && closed && ellipseError < ellipseErrorThreshold * 2.0) {
-        ret = new Segment(new EllipseSegment(ink, patch));
+        EllipseSegment es = new EllipseSegment(ink, patch);
+        double ex = es.getEllipse().getEccentricity();
+        bug("Ellipse Eccentricity: " + ex);
+        if (ex < 0.7) {
+          ret = new Segment(new CircleSegment(ink, patch));
+        } else {
+          ret = new Segment(es);
+        }
       } else if (closed) {
         ret = new Segment(new Blob(ink, patch));
       } else {

@@ -28,7 +28,6 @@ public class StencilFinder {
     Stack<Pt> newPoints = new Stack<Pt>();
     for (Segment s : newSegs) {
       if (s.isClosed()) {
-        bug("Closed segments should be stencils!");
         stencils.add(new Stencil(model, s));
       }
       if (!newPoints.contains(s.getP1())) {

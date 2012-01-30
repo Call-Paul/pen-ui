@@ -5,9 +5,11 @@ import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.List;
 
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
@@ -17,7 +19,7 @@ public class Segment implements HasFuzzyArea {
   private static int ID_COUNTER = 1;
   
   public static enum Type {
-    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse, Blob
+    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse, Blob, Circle
   }
 
   private SegmentDelegate d;
@@ -205,5 +207,17 @@ public class Segment implements HasFuzzyArea {
   public Shape asEllipse() {
     return d.asEllipse();
   }
+  
+  public RotatedEllipse getEllipse() {
+    return d.getEllipse();
+  }
 
+  public Shape asCircle() {
+    return d.asCircle();
+  }
+  
+  public Circle getCircle() {
+    return d.getCircle();
+  }
+  
 }
