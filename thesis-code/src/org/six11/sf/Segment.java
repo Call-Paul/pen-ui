@@ -17,7 +17,7 @@ public class Segment implements HasFuzzyArea {
   private static int ID_COUNTER = 1;
   
   public static enum Type {
-    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse
+    Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse, Blob
   }
 
   private SegmentDelegate d;

@@ -178,8 +178,9 @@ public class CornerFinder {
       if (patch.size() > 3 && !closed && ellipseError < ellipseErrorThreshold) {
         ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
       } else if (patch.size() > 3 && closed && ellipseError < ellipseErrorThreshold * 2.0) {
-        bug("Closed ellipse!");
         ret = new Segment(new EllipseSegment(ink, patch));
+      } else if (closed) {
+        ret = new Segment(new Blob(ink, patch));
       } else {
         ret = new Segment(new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1));
       }

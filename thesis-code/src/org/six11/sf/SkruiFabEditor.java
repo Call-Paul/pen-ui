@@ -55,7 +55,8 @@ import org.six11.util.solve.ConstraintSolver.State;
  */
 public class SkruiFabEditor {
 
-  private static final Color ELLIPSE_COLOR = Color.ORANGE.darker().darker();
+  private static final Color ELLIPSE_COLOR = Color.MAGENTA.darker();
+  private static final Color BLOB_COLOR = Color.CYAN.darker();
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -495,6 +496,9 @@ public class SkruiFabEditor {
           break;
         case Ellipse:
           DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), ELLIPSE_COLOR, 1.8);
+          break;
+        case Blob:
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), BLOB_COLOR, 1.8);
           break;
         case Unknown:
         default:

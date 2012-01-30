@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
+import org.six11.util.Debug;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -92,7 +93,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public boolean isSingular() {
     return getP1().isSameLocation(getP2());
   }
-  
+
   public boolean isClosed() {
     return (type == Segment.Type.Ellipse);
   }
@@ -129,6 +130,9 @@ public class SegmentDelegate implements HasFuzzyArea {
         break;
       case CircularArc:
         buf.append("C");
+        break;
+      case Blob:
+        buf.append("B");
         break;
       default:
         bug("Unknown segment type: " + getType());
@@ -208,6 +212,9 @@ public class SegmentDelegate implements HasFuzzyArea {
       }
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
+    } else if (isSingular()) {
+      bug("doPara() called for singular segment. this is bad. stacktrace follows.");
+      Debug.stacktrace("you should not get here.", 8);
     }
   }
 
