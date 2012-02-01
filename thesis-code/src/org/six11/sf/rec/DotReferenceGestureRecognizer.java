@@ -2,6 +2,7 @@ package org.six11.sf.rec;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
@@ -10,11 +11,13 @@ import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.SketchRecognizer.Type;
+import org.six11.util.data.Lists;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class DotReferenceGestureRecognizer extends SketchRecognizer {
 
@@ -73,17 +76,29 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   }
 
   private RecognizedRawItem makeNearItem(final Segment seg, Pt loc) {
-    bug("Selecting internal point");
-    Pt nearPt = seg.getNearestPoint(loc);
-    Line line = seg.asLine();
-    Vec lineVec = new Vec(seg.getP1(), seg.getP2());
-    final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
-    
+    final Pt nearPt = seg.getNearestPoint(loc);
+
     RecognizedRawItem ret = new RecognizedRawItem(true, RecognizedRawItem.FAT_DOT_REFERENCE_POINT,
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
       public void activate(SketchBook model) {
-        model.addGuidePoint(new GuidePoint(seg, param));
+        Set<Segment> babySegments = model.splitSegment(seg, nearPt);
+//        bug("Split Point: " + num(nearPt));
+//        bug("Old: " + seg.bugStr());
+//        StringBuilder buf = new StringBuilder();
+//        for (Segment b : babySegments) {
+//          buf.append(b.bugStr() + " ");
+//        }
+//        bug("New: " + buf.toString());
+        Segment baby = Lists.getOne(babySegments);        
+        Line line = baby.asLine();
+        Vec lineVec = new Vec(baby.getP1(), baby.getP2());
+        final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
+        GuidePoint gp = new GuidePoint(baby, param);
+//        bug("Point parameter: " + num(param));
+//        bug("New Guide Point: " + Segment.bugStr(gp.getLocation()));
+        model.addGuidePoint(gp);
+//        bug("Added guide point attached to " + baby.bugStr());
       }
     };
     return ret;

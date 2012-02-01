@@ -34,6 +34,7 @@ import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
@@ -46,6 +47,7 @@ import org.six11.util.solve.VariableBank.ConstraintFilter;
 
 public class SketchBook {
 
+  private static final String POINT_NAME = "name";
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
@@ -251,7 +253,6 @@ public class SketchBook {
   }
 
   public void removeGeometry(Segment seg) {
-    bug("remove " + seg);
     // remove from the list of known geometry.
     geometry.remove(seg);
 
@@ -291,7 +292,6 @@ public class SketchBook {
       }
     }
     if (doomed.size() > 0) {
-      bug("Removing stencils: " + num(doomed, " "));
       stencils.removeAll(doomed);
     }
     stencils.addAll(childrenOfDoomed);
@@ -939,6 +939,8 @@ public class SketchBook {
       bug("Undo " + a.getName());
       redoActions.push(a);
       a.backward();
+      getConstraints().wakeUp();
+      editor.drawStuff();
     }
   }
 
@@ -948,6 +950,8 @@ public class SketchBook {
       bug("Redo " + a.getName());
       actions.push(a);
       a.forward();
+      getConstraints().wakeUp();
+      editor.drawStuff();
     }
   }
 
@@ -959,6 +963,8 @@ public class SketchBook {
     actions.push(a);
     redoActions.clear();
     a.forward();
+    getConstraints().wakeUp();
+    editor.drawStuff();
   }
 
   public void removeSingularSegments() {
@@ -977,7 +983,7 @@ public class SketchBook {
   }
 
   public static String n(Pt pt) {
-    return pt.getString("name");
+    return pt.getString(POINT_NAME);
   }
 
   public static String n(Collection<Pt> pts) {
@@ -1002,5 +1008,89 @@ public class SketchBook {
       }
     }
     return buf.toString();
+  }
+
+  public Set<Segment> splitSegment(Segment seg, Pt nearPt) {
+    Set<Segment> ret = new HashSet<Segment>();
+    List<Pt> points = seg.asPolyline();//seg.getPointList();
+    Pt spot = Functions.getNearestPointOnSequence(nearPt, points);
+    int splitIdx = -1;
+    for (int i = 0; i < points.size() - 1; i++) {
+      Pt a = points.get(i);
+      Pt b = points.get(i + 1);
+      boolean inside = Functions.arePointsColinear(new Pt[] {
+          spot, a, b
+      }) && Functions.isPointInLineSegment(spot, a, b);
+      if (inside) {
+        splitIdx = i;
+        break;
+      }
+    }
+    if (splitIdx >= 0) {
+      List<Pt> sideA = new ArrayList<Pt>();
+      for (int i=0; i <= splitIdx; i++) {
+        sideA.add(points.get(i));
+      }
+      sideA.add(nearPt);
+      List<Pt> sideB = new ArrayList<Pt>();
+      sideB.add(nearPt);
+      for (int i=splitIdx+1; i < points.size(); i++) {
+        sideB.add(points.get(i));
+      }
+      Segment segA = null;
+      Segment segB = null;
+      switch (seg.getType()) {
+        case Line:
+          segA = new Segment(new LineSegment(sideA.get(0), sideA.get(sideA.size() - 1)));
+          segB = new Segment(new LineSegment(sideB.get(0), sideB.get(sideB.size() - 1)));
+          ret.add(segA);
+          ret.add(segB);
+          break;
+        case EllipticalArc:
+          segA = new Segment(new EllipseArcSegment(sideA));
+          segB = new Segment(new EllipseArcSegment(sideB));
+          ret.add(segA);
+          ret.add(segB);
+          break;
+        case Curve:
+          segA = new Segment(new CurvySegment(sideA));
+          segB = new Segment(new CurvySegment(sideB));
+          ret.add(segA);
+          ret.add(segB);
+          break;
+        case CircularArc:      
+        case Blob:
+        case Circle:
+        case Dot:
+        case Ellipse:
+        case Unknown:
+          bug("Don't know how to split segment type " + seg.getType());
+          ret.add(seg);
+          break;        
+      }
+      if (ret.size() == 2) {
+//        bug("Made new segments:");
+//        bug("  1) " + segA.bugStr());
+//        bug("  2) " + segB.bugStr());
+//        bug("OK, I can split it into two. Keep constraints, if possible.");
+        Set<UserConstraint> ucs = new HashSet<UserConstraint>();
+        for (UserConstraint c : userConstraints) {
+          if (c.involves(seg.getP1()) && c.involves(seg.getP2())) {
+//            bug(c + " is related to the segment I am splitting.");
+            ucs.add(c);
+          }
+        }
+        SafeAction action = getActionFactory().split(seg, ret);
+        addAction(action);
+        editor.findStencils(ret);
+      }
+    }
+    
+    
+    return ret;
+  }
+
+  public static boolean hasName(Pt p) {
+    return p.hasAttribute(SketchBook.POINT_NAME);
   }
 }

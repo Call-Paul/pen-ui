@@ -95,3 +95,5 @@
 036: closed segments are now automatically stencils and can nest inside others.
 
 037: can have closed splines ("blobs") and perfect circles.
+
+038: split segments at injected points

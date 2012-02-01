@@ -282,12 +282,12 @@ public class SkruiFabEditor {
       segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
       stroke.setAnalyzed(true);
     }
-    for (Segment seg : segs) {
-      if (!seg.isSingular()) {
-        model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
-        model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
-      }
-    }
+//    for (Segment seg : segs) {
+//      if (!seg.isSingular()) {
+//        model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
+//        model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
+//      }
+//    }
     SafeAction a = model.getActionFactory().addSegments(segs);
     model.addAction(a);
     model.getConstraintAnalyzer().analyze(segs);
@@ -309,17 +309,7 @@ public class SkruiFabEditor {
 
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);
-    Set<Stencil> newStencils = sf.findStencils(segs);
-    System.out.println("Attempting to merge " + newStencils.size() + " into " + model.getStencils().size() + " existing ones.");
-    System.out.println("\tNew Stencils:");
-    for (Stencil s : newStencils) {
-      System.out.println("\t\t" + s);
-    }
-    System.out.println("\tExisting Stencils:");
-    for (Stencil s : model.getStencils()) {
-      System.out.println("\t\t" + s);
-    }
-    
+    Set<Stencil> newStencils = sf.findStencils(segs);    
     model.mergeStencils(newStencils);
   }
 
@@ -476,10 +466,10 @@ public class SkruiFabEditor {
       }
       if (!seg.isSingular()) {
         if (!model.getConstraints().getPoints().contains(seg.getP1())) {
-          bug("Segment P1 is unknown to constraint system.");
+          bug("seg.P1 is unknown to constraint system. seg = " + seg);
         }
         if (!model.getConstraints().getPoints().contains(seg.getP2())) {
-          bug("Segment P2 is unknown to constraint system.");
+          bug("seg.P2 is unknown to constraint system. seg = " + seg);
         }
       }
       switch (seg.getType()) {

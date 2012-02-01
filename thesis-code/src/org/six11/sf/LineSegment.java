@@ -18,7 +18,6 @@ public class LineSegment extends SegmentDelegate {
     List<Pt> points = new ArrayList<Pt>();
     points.add(p1);
     points.add(p2);
-    bug("Building LineSegment using direct constructor with points: " + num(p1) + ", " + num(p2));
     init(null, points, false, false, Segment.Type.Line);
   }
 

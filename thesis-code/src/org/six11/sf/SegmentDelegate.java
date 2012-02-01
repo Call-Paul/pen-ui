@@ -117,34 +117,7 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public String toString() {
     StringBuilder buf = new StringBuilder();
-    switch (getType()) {
-      case Curve:
-        buf.append("S");
-        break;
-      case EllipticalArc:
-        buf.append("E");
-        break;
-      case Line:
-        buf.append("L");
-        break;
-      case Unknown:
-        buf.append("?");
-        break;
-      case CircularArc:
-        buf.append("C");
-        break;
-      case Blob:
-        buf.append("B");
-        break;
-      case Ellipse:
-        buf.append("I");
-        break;
-      case Circle:
-        buf.append("R");
-        break;
-      default:
-        bug("Unknown segment type: " + getType());
-    }
+    buf.append(getTypeChar());
     if (SketchBook.n(getP1()) != null && SketchBook.n(getP2()) != null) {
       buf.append("[" + SketchBook.n(getP1()) + " to " + SketchBook.n(getP2()) + ", length: "
           + num(length()) + "]");
@@ -152,6 +125,38 @@ public class SegmentDelegate implements HasFuzzyArea {
       buf.append("[" + num(getP1()) + " to " + num(getP2()) + ", length: " + num(length()) + "]");
     }
     return buf.toString();
+  }
+  
+  public String bugStr() {
+    StringBuilder buf = new StringBuilder();
+    buf.append(getTypeChar());
+    buf.append("[");
+    buf.append(Segment.bugStr(getP1()) + " to " + Segment.bugStr(getP2()));
+    buf.append("]");
+    return buf.toString();
+  }
+
+  public char getTypeChar() {
+    switch (getType()) {
+      case Curve:
+        return 'S';
+      case EllipticalArc:
+        return 'E';
+      case Line:
+        return 'L';
+      case CircularArc:
+        return 'C';
+      case Blob:
+        return 'B';
+      case Ellipse:
+        return 'I';
+      case Circle:
+        return 'R';
+      default:
+      case Unknown:
+        bug("Unknown segment type: " + getType());
+        return '?';
+    }
   }
 
   public Collection<EndCap> getEndCaps() {
@@ -279,6 +284,8 @@ public class SegmentDelegate implements HasFuzzyArea {
       paraPointList.add(pt);
     }
     Sequence spline = Functions.makeNaturalSpline(numSteps, paraPointList);
+    spline.replace(0, getP1());
+    spline.replace(spline.size() - 1, getP2());
     return spline;
   }
 

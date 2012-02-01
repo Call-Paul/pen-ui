@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
@@ -47,9 +48,9 @@ public class GuidePoint extends Guide {
   public Pt getLocation() {
     Pt ret = null;
     if (seg != null && param != null) {
-      if (param.isZero()) {
+      if (Functions.eq(0.0, param.getX(), Functions.EQ_TOL)) {
         ret = seg.getP1(); /*seg.getP1().copyXYT();*/
-      } else if (param.getX() == 1.0) {
+      } else if (Functions.eq(1.0, param.getX(), Functions.EQ_TOL)) {
         ret = seg.getP2();
       } else {
         Pt p1 = seg.getP1();

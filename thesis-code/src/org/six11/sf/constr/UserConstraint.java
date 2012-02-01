@@ -73,5 +73,5 @@ public abstract class UserConstraint {
   
   public abstract void removeInvalid();
   public abstract boolean isValid();
-  
+//  public abstract void claimOnSplit(Segment original, Set<Segment> parts);
 }

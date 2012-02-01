@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.num;
+
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.util.Collection;
@@ -63,6 +65,10 @@ public class Segment implements HasFuzzyArea {
 
   public String toString() {
     return d.toString();
+  }
+  
+  public String bugStr() {
+    return d.bugStr();
   }
 
   public Collection<EndCap> getEndCaps() {
@@ -202,6 +208,16 @@ public class Segment implements HasFuzzyArea {
     double dist = ix.distance(target) * whichSide;
     Vec toTarget = new Vec(ix.getDouble("r"), dist / vMag);
     return toTarget;
+  }
+  
+  public static String bugStr(Pt pt) {
+    StringBuilder buf = new StringBuilder();
+    String name = SketchBook.n(pt);
+    if (name != null) {
+      buf.append(name + " ");
+    }
+    buf.append("(" + num(pt) + ") ");
+    return buf.toString();
   }
 
   public Shape asEllipse() {
