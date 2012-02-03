@@ -27,6 +27,7 @@ public class GraphicDebug {
   public static final String DB_GUIDES = "guides";
   public static final String DB_GUIDES_DERIVED = "guides derived";
   public static final String DB_FS = "flow selection";
+  public static final String DB_DEBUG = "debug";
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;

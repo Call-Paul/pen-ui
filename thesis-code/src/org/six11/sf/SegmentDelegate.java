@@ -7,12 +7,15 @@ import static org.six11.util.Debug.bug;
 
 import java.awt.Shape;
 import java.awt.geom.Area;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
 import org.six11.util.Debug;
+import org.six11.util.data.Lists;
+import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
@@ -126,7 +129,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     }
     return buf.toString();
   }
-  
+
   public String bugStr() {
     StringBuilder buf = new StringBuilder();
     buf.append(getTypeChar());
@@ -137,25 +140,29 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public char getTypeChar() {
-    switch (getType()) {
-      case Curve:
-        return 'S';
-      case EllipticalArc:
-        return 'E';
-      case Line:
-        return 'L';
-      case CircularArc:
-        return 'C';
-      case Blob:
-        return 'B';
-      case Ellipse:
-        return 'I';
-      case Circle:
-        return 'R';
-      default:
-      case Unknown:
-        bug("Unknown segment type: " + getType());
-        return '?';
+    if (type != null) {
+      switch (getType()) {
+        case Curve:
+          return 'S';
+        case EllipticalArc:
+          return 'E';
+        case Line:
+          return 'L';
+        case CircularArc:
+          return 'C';
+        case Blob:
+          return 'B';
+        case Ellipse:
+          return 'I';
+        case Circle:
+          return 'R';
+        default:
+        case Unknown:
+          bug("Unknown segment type: " + getType());
+          return '?';
+      }
+    } else {
+      return '?';
     }
   }
 
@@ -223,8 +230,10 @@ public class SegmentDelegate implements HasFuzzyArea {
         spot = spot.getTranslated(vNorm, altComponent);
         paraPoints.add(i, spot);
       }
+      
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
+      
     } else if (isSingular()) {
       bug("doPara() called for singular segment. this is bad. stacktrace follows.");
       Debug.stacktrace("you should not get here.", 8);
@@ -414,8 +423,14 @@ public class SegmentDelegate implements HasFuzzyArea {
   public Pt getVisualMidpoint() {
     doPara();
     List<Pt> bigList = asPolyline();
-    int midIdx = bigList.size() / 2;
-    return bigList.get(midIdx);
+    if (bigList.size() > 2) {
+      int midIdx = bigList.size() / 2;
+      return bigList.get(midIdx);
+    } else if (bigList.size() == 2) {
+      return Functions.getMean(getP1(), getP2());
+    } else {
+      return getP1().copyXYT();
+    }
   }
 
   /**
@@ -468,6 +483,21 @@ public class SegmentDelegate implements HasFuzzyArea {
   public Circle getCircle() {
     Debug.stacktrace("This sould never be called. override it.", 8);
     return null;
+  }
+
+  public Rectangle2D getBounds() {
+    BoundingBox bb = new BoundingBox();
+    bb.addAll(asPolyline());
+    return bb.getRectangle();
+  }
+
+  public boolean isPointOnPath(Pt loc, double slop) {
+    boolean ret = false;
+    Rectangle2D bounds = getBounds();
+    if (bounds.contains(loc)) {
+      ret = Functions.isPointOnPolyline(loc, asPolyline(), slop);
+    }
+    return ret;
   }
 
 }

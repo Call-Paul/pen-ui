@@ -31,10 +31,20 @@ public class EllipseArcSegment extends SegmentDelegate {
     int n = points.size();
     ellie.setArcRegion(points.get(0), points.get(n / 2), points.get(n - 1));
     List<Pt> surface = ellie.initArc();
-    surface.remove(0);
-    surface.add(0, points.get(0));
-    surface.remove(surface.size() - 1);
-    surface.add(points.get(points.size() - 1));
+
+    Pt pA = points.get(0);
+    Pt pB = points.get(points.size() - 1);
+    Pt origA = surface.remove(0);
+//    Pt origB = surface.remove(surface.size() - 1);
+
+    if (pA.distance(origA) < pB.distance(origA)) {
+      surface.add(0, pA);
+      surface.add(pB);
+    } else {
+      surface.add(0, pB);
+      surface.add(pA);
+    }
+
     return surface;
   }
 

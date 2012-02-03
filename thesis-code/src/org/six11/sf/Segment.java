@@ -235,5 +235,24 @@ public class Segment implements HasFuzzyArea {
   public Circle getCircle() {
     return d.getCircle();
   }
+
+  public boolean isPointOnPath(Pt loc, double slop) {
+    return d.isPointOnPath(loc, slop);
+  }
+  
+  public String typeIdStr() {
+    return getType() + "-" + getId();
+  }
+  
+  public String typeIdPtStr() {
+    StringBuilder buf = new StringBuilder();
+    buf.append(typeIdStr());
+    buf.append(" (" + SketchBook.n(getP1()));
+    if (!isClosed()) {
+      buf.append(", " + SketchBook.n(getP2()));
+    }
+    buf.append(")");
+    return buf.toString();
+  }
   
 }

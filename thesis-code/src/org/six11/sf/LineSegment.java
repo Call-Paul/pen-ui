@@ -10,8 +10,12 @@ import static org.six11.util.Debug.num;
 public class LineSegment extends SegmentDelegate {
 
   public LineSegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
-    super(ink, points, termA, termB);
-    this.type = Segment.Type.Line;
+    List<Pt> simplePoints = new ArrayList<Pt>();
+    simplePoints.add(points.get(0));
+    simplePoints.add(points.get(points.size() - 1));
+    init(ink, simplePoints, termA, termB, Segment.Type.Line);
+//    super(ink, simplePoints, termA, termB);
+//    this.type = Segment.Type.Line;
   }
 
   public LineSegment(Pt p1, Pt p2) {

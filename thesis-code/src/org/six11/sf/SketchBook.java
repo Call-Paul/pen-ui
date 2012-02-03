@@ -7,12 +7,16 @@ import static org.six11.util.Debug.num;
 import java.awt.Color;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+
+import javax.swing.Timer;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
@@ -77,6 +81,7 @@ public class SketchBook {
   private ActionFactory actionFactory;
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
+  private Timer inactivityTimer;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -108,6 +113,14 @@ public class SketchBook {
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
 
+    inactivityTimer = new Timer(1300, new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+        if (!getUnanalyzedInk().isEmpty()) {
+          SketchBook.this.editor.go();
+        }
+      }
+    });
+    inactivityTimer.setRepeats(false);
   }
 
   public SkruiFabEditor getEditor() {
@@ -188,6 +201,7 @@ public class SketchBook {
    * The 'scribble' is ink that is currently being drawn, or is the most recently completed stroke.
    */
   public Sequence startScribble(Pt pt) {
+    inactivityTimer.stop();
     Sequence scrib = new Sequence();
     scrib.add(pt);
     scribbles.add(scrib);
@@ -195,6 +209,7 @@ public class SketchBook {
   }
 
   public Sequence addScribble(Pt pt) {
+    inactivityTimer.stop();
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
     if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
       // scribble
@@ -204,6 +219,7 @@ public class SketchBook {
   }
 
   public Sequence endScribble(Pt pt) {
+    inactivityTimer.start();
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
     //    cornerFinder.findCorners(scrib);
     return scrib;
@@ -218,6 +234,7 @@ public class SketchBook {
   }
 
   public List<Ink> getUnanalyzedInk() {
+    inactivityTimer.stop();
     List<Ink> ret = new ArrayList<Ink>();
     for (Ink stroke : ink) {
       if (!stroke.isAnalyzed()) {
@@ -286,7 +303,9 @@ public class SketchBook {
     Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
     for (Stencil stencil : stencils) {
       stencil.removeGeometry(seg);
-      if (!stencil.isValid()) {
+      boolean v = stencil.isValid();
+      bug("Stencil " + stencil.getId() + " valid? " + v);
+      if (!v) {
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
       }
@@ -474,7 +493,8 @@ public class SketchBook {
     String constrFormat = "%-20s%s\n";
     StringBuilder ptBuf = new StringBuilder();
     int indent = 0;
-    addBug(indent, buf, "All debug info\n\n");
+    String rightNow = Debug.now();
+    addBug(indent, buf, "All debug info\t\t\t" + rightNow + "\n\n");
     addBug(indent, buf, "Constraint Engine Points: " + getConstraints().getPoints().size() + "\n");
     indent++;
     for (Pt pt : getConstraints().getPoints()) {
@@ -506,7 +526,8 @@ public class SketchBook {
     addBug(indent, buf, stencils.size() + " stencils\n");
     indent++;
     for (Stencil s : stencils) {
-      addBug(indent, buf, s.toString() + "\n");
+      addBug(indent, buf, "Stencil " + s.getId() + " " + (s.isValid() ? "(ok)" : "(** INVAID **)")
+          + "\n");
       indent++;
       addBug(indent, buf, s.getPath().size() + " points: " + SketchBook.n(s.getPath()) + "\n");
       addBug(indent, buf, s.getSegs().size() + " segments: " + SketchBook.ns(s.getSegs()) + "\n");
@@ -827,8 +848,12 @@ public class SketchBook {
       case 3:
         if (!Functions.arePointsColinear(pts)) {
           Pt center = Functions.getCircleCenter(pts[0], pts[1], pts[2]);
-          derivedGuides.add(new GuidePoint(center));
-          derivedGuides.add(makeDerivedCircle(center, pts[1], false));
+          if (center.distance(pts[0]) < 800) {
+            derivedGuides.add(new GuidePoint(center));
+            derivedGuides.add(makeDerivedCircle(center, pts[1], false));
+          } else {
+            bug("Guide circle would be huge. Not including it.");
+          }
         }
         break;
       default:
@@ -1011,8 +1036,10 @@ public class SketchBook {
   }
 
   public Set<Segment> splitSegment(Segment seg, Pt nearPt) {
+    bug("Split!");
     Set<Segment> ret = new HashSet<Segment>();
     List<Pt> points = seg.asPolyline();//seg.getPointList();
+    //    bug("there are " + points.size() + " points in the polyline for " + seg.typeIdStr());
     Pt spot = Functions.getNearestPointOnSequence(nearPt, points);
     int splitIdx = -1;
     for (int i = 0; i < points.size() - 1; i++) {
@@ -1020,7 +1047,7 @@ public class SketchBook {
       Pt b = points.get(i + 1);
       boolean inside = Functions.arePointsColinear(new Pt[] {
           spot, a, b
-      }) && Functions.isPointInLineSegment(spot, a, b);
+      }) && Functions.isPointInLineSegment(spot, a, b, Functions.EQ_TOL);
       if (inside) {
         splitIdx = i;
         break;
@@ -1028,15 +1055,21 @@ public class SketchBook {
     }
     if (splitIdx >= 0) {
       List<Pt> sideA = new ArrayList<Pt>();
-      for (int i=0; i <= splitIdx; i++) {
+      for (int i = 0; i <= splitIdx; i++) {
         sideA.add(points.get(i));
       }
       sideA.add(nearPt);
       List<Pt> sideB = new ArrayList<Pt>();
       sideB.add(nearPt);
-      for (int i=splitIdx+1; i < points.size(); i++) {
+      for (int i = splitIdx + 1; i < points.size(); i++) {
         sideB.add(points.get(i));
       }
+      sideA.remove(0);
+      sideA.add(0, seg.getP1());
+      sideB.remove(sideB.size() - 1);
+      sideB.add(seg.getP2());
+      //      bug("sideA[0] should be same as seg.p1: " + n(sideA.get(0)) + " == " + n(seg.getP1()));
+      //      bug("sideB[n-1] should be same as seg.p2: " + n(sideB.get(sideB.size() - 1)) + " == " + n(seg.getP2()));
       Segment segA = null;
       Segment segB = null;
       switch (seg.getType()) {
@@ -1058,7 +1091,7 @@ public class SketchBook {
           ret.add(segA);
           ret.add(segB);
           break;
-        case CircularArc:      
+        case CircularArc:
         case Blob:
         case Circle:
         case Dot:
@@ -1066,17 +1099,17 @@ public class SketchBook {
         case Unknown:
           bug("Don't know how to split segment type " + seg.getType());
           ret.add(seg);
-          break;        
+          break;
       }
       if (ret.size() == 2) {
-//        bug("Made new segments:");
-//        bug("  1) " + segA.bugStr());
-//        bug("  2) " + segB.bugStr());
-//        bug("OK, I can split it into two. Keep constraints, if possible.");
+        //        bug("Made new segments:");
+        //        bug("  1) " + segA.bugStr());
+        //        bug("  2) " + segB.bugStr());
+        //        bug("OK, I can split it into two. Keep constraints, if possible.");
         Set<UserConstraint> ucs = new HashSet<UserConstraint>();
         for (UserConstraint c : userConstraints) {
           if (c.involves(seg.getP1()) && c.involves(seg.getP2())) {
-//            bug(c + " is related to the segment I am splitting.");
+            //            bug(c + " is related to the segment I am splitting.");
             ucs.add(c);
           }
         }
@@ -1085,12 +1118,41 @@ public class SketchBook {
         editor.findStencils(ret);
       }
     }
-    
-    
+
     return ret;
   }
 
   public static boolean hasName(Pt p) {
     return p.hasAttribute(SketchBook.POINT_NAME);
+  }
+
+  /*
+   * User has performed an original action that will cause the given segment to be split into parts.
+   * This will create an action that works with undo/redo.
+   */
+  public Set<Segment> injectPoint(final Segment seg, final Pt nearPt, SketchBook model) {
+    Set<Segment> babySegments = model.splitSegment(seg, nearPt);
+    //    bug("Split Point: " + num(nearPt));
+    //    bug("Old: " + seg.bugStr());
+    //    StringBuilder buf = new StringBuilder();
+    //    for (Segment b : babySegments) {
+    //      buf.append(b.bugStr() + " ");
+    //    }
+    //    bug("New: " + buf.toString());
+    Segment baby = Lists.getOne(babySegments);
+    if (baby != null) {
+      Line line = baby.asLine();
+      Vec lineVec = new Vec(baby.getP1(), baby.getP2());
+      final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
+      GuidePoint gp = new GuidePoint(baby, param);
+      //    bug("Point parameter: " + num(param));
+      //    bug("New Guide Point: " + Segment.bugStr(gp.getLocation()));
+      model.addGuidePoint(gp);
+    } else {
+      bug("sweet baby segment is null while segmenting " + seg.typeIdPtStr() + " near " + n(nearPt)
+          + ". model.splitSegment gave me " + babySegments.size() + " segments.");
+    }
+    return babySegments;
+    //    bug("Added guide point attached to " + baby.bugStr());
   }
 }

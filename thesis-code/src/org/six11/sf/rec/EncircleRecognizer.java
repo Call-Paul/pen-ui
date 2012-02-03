@@ -6,12 +6,15 @@ import static org.six11.util.Debug.bug;
 import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Set;
+
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.Stencil;
+import org.six11.util.data.Lists;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
@@ -158,7 +161,16 @@ public class EncircleRecognizer extends SketchRecognizer {
       }
       if (!eraseGuide && points.size() == 1) {
         // ------------------------------------------------------------------ T-junction
-        bug("T-junction function *************************************** damn");
+        Collection<Segment> segs = model.findSegments(area, 4);
+        Pt pt = Lists.getOne(points);
+        int before = segs.size();
+        Collection<Segment> tabu = model.findRelatedSegments(pt);
+        segs.removeAll(tabu);
+        int after = segs.size();
+        bug("Found " + segs.size() + " segments in that region (avoided " + (before - after) + " tabu segments)");
+        if (!segs.isEmpty()) {
+          ret = makeTJunction(Lists.getOne(segs), Lists.getOne(points));
+        }
       }
       if (!eraseGuide && points.size() > 1) {
         // ------------------------------------------------------------------ Merge points
@@ -206,6 +218,19 @@ public class EncircleRecognizer extends SketchRecognizer {
     }
 
     return ret;
+  }
+
+  private RecognizedRawItem makeTJunction(final Segment seg, final Pt pt) {
+    return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_TO_T_MERGE) {
+      @Override
+      public void activate(SketchBook model) {
+        Set<Segment> babies = model.splitSegment(seg, pt);// model.injectPoint(seg, pt, model);
+        bug("* Old:" + seg.typeIdStr());
+        for (Segment babe : babies) {
+          bug("* New: " + babe.typeIdStr());
+        }
+      }
+    };
   }
 
   private RecognizedRawItem makeRemoveGuidePoint(final GuidePoint... guides) {

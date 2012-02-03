@@ -58,9 +58,11 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
         } else if (loc.distance(seg.getP2()) < NEARNESS_THRESHOLD) {
           ret = makeEndpointItem(seg, false);
           ok = true;
-        } else if (seg.isNear(loc, NEARNESS_THRESHOLD)) {
-          ret = makeNearItem(seg, loc);
-          ok = true;
+        } else {
+          if (seg.isPointOnPath(loc, NEARNESS_THRESHOLD)) {
+            ret = makeNearItem(seg, loc);
+            ok = true;
+          }
         }
         if (ok) {
           break;
@@ -82,24 +84,9 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
       public void activate(SketchBook model) {
-        Set<Segment> babySegments = model.splitSegment(seg, nearPt);
-//        bug("Split Point: " + num(nearPt));
-//        bug("Old: " + seg.bugStr());
-//        StringBuilder buf = new StringBuilder();
-//        for (Segment b : babySegments) {
-//          buf.append(b.bugStr() + " ");
-//        }
-//        bug("New: " + buf.toString());
-        Segment baby = Lists.getOne(babySegments);        
-        Line line = baby.asLine();
-        Vec lineVec = new Vec(baby.getP1(), baby.getP2());
-        final Vec param = Segment.calculateParameterForPoint(lineVec.mag(), line, nearPt);
-        GuidePoint gp = new GuidePoint(baby, param);
-//        bug("Point parameter: " + num(param));
-//        bug("New Guide Point: " + Segment.bugStr(gp.getLocation()));
-        model.addGuidePoint(gp);
-//        bug("Added guide point attached to " + baby.bugStr());
+        model.injectPoint(seg, nearPt, model);
       }
+
     };
     return ret;
   }

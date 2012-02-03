@@ -17,6 +17,7 @@ public abstract class RecognizedRawItem {
   public static final String FAT_DOT_SELECT = "Fat Dot Selection";
   public static final String OVERTRACE_TO_SELECT_SEGMENT = "Overtrace to Select Segment";
   public static final String ENCIRCLE_GUIDE_POINT_TO_DELETE = "Encircle Guide Points to Delete";
+  public static final String ENCIRCLE_TO_T_MERGE = "Encircle Enpoints to T-Junction";
   
   private boolean ok;
   private String name;

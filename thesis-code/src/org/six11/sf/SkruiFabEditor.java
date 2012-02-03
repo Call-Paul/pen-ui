@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -37,6 +38,7 @@ import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
+import org.six11.util.io.FileUtil;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
@@ -58,6 +60,7 @@ public class SkruiFabEditor {
   private static final Color ELLIPSE_COLOR = Color.MAGENTA.darker();
   private static final Color CIRCLE_COLOR = Color.BLUE.darker();
   private static final Color BLOB_COLOR = Color.CYAN.darker();
+  private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -67,6 +70,8 @@ public class SkruiFabEditor {
   private Color derivedGuideColor = new Color(220, 220, 220, 0);
 
   //  private Main main;
+  private boolean useDebuggingColor = false;
+  private boolean useDebuggingPoints = false;
   private DrawingBufferLayers layers;
   private SketchBook model;
   private GraphicDebug guibug;
@@ -189,6 +194,13 @@ public class SkruiFabEditor {
           }
         });
 
+    actions.put(ACTION_DEBUG_COLOR,
+        new NamedAction("DebugColor", KeyStroke.getKeyStroke(KeyEvent.VK_C, 0)) {
+          public void activate() {
+            debugColorToggle();
+          }
+        });
+
     // 3. For those actions with keyboard accelerators, register them to the
     // root pane.
     for (Action action : actions.values()) {
@@ -211,10 +223,18 @@ public class SkruiFabEditor {
         bugFileOut.write(model.getMondoDebugString());
         bugFileOut.flush();
         bugFileOut.close();
+        File latest = new File("skrui-debug-latest.txt");
+        FileUtil.copy(bugFile, latest);
       }
     } catch (IOException ex) {
       ex.printStackTrace();
     }
+  }
+
+  protected void debugColorToggle() {
+    this.useDebuggingColor = !useDebuggingColor;
+    this.useDebuggingPoints = !useDebuggingPoints;
+    drawStuff();
   }
 
   public File getPdfOutputFile() throws IOException {
@@ -282,12 +302,12 @@ public class SkruiFabEditor {
       segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
       stroke.setAnalyzed(true);
     }
-//    for (Segment seg : segs) {
-//      if (!seg.isSingular()) {
-//        model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
-//        model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
-//      }
-//    }
+    //    for (Segment seg : segs) {
+    //      if (!seg.isSingular()) {
+    //        model.getConstraints().addPoint(model.nextPointName(), seg.getP1());
+    //        model.getConstraints().addPoint(model.nextPointName(), seg.getP2());
+    //      }
+    //    }
     SafeAction a = model.getActionFactory().addSegments(segs);
     model.addAction(a);
     model.getConstraintAnalyzer().analyze(segs);
@@ -309,7 +329,7 @@ public class SkruiFabEditor {
 
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);
-    Set<Stencil> newStencils = sf.findStencils(segs);    
+    Set<Stencil> newStencils = sf.findStencils(segs);
     model.mergeStencils(newStencils);
   }
 
@@ -474,39 +494,87 @@ public class SkruiFabEditor {
       }
       switch (seg.getType()) {
         case Curve:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.CYAN, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case EllipticalArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), Color.MAGENTA, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case Line:
-          DrawingBufferRoutines.line(buf, seg.asLine(), Color.GREEN, 1.8);
+          DrawingBufferRoutines.line(buf, seg.asLine(), getColor(seg.getType()), 1.8);
           break;
         case CircularArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asArc(), Color.BLUE, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asArc(), getColor(seg.getType()), 1.8);
           break;
         case Ellipse:
-          DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), ELLIPSE_COLOR, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), getColor(seg.getType()), 1.8);
           break;
         case Blob:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), BLOB_COLOR, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case Circle:
-          DrawingBufferRoutines.drawShape(buf, seg.asCircle(), CIRCLE_COLOR, 1.8);
+          DrawingBufferRoutines.drawShape(buf, seg.asCircle(), getColor(seg.getType()), 1.8);
           break;
         case Unknown:
         default:
           bug("Don't know how to draw segment: " + seg);
           break;
       }
+      if (useDebuggingPoints) {
+        Pt mid = seg.getVisualMidpoint();
+        DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
+      }
     }
 
     // debugging: label points
-    //    for (Pt pt : model.getConstraints().getPoints()) {
-    //      DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
-    //    }
+    if (useDebuggingPoints) {
+      Color joined = Color.LIGHT_GRAY;
+      Color separate = Color.RED;
+      Color c;
+      for (Pt pt : model.getConstraints().getPoints()) {
+        DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
+        if (model.findRelatedSegments(pt).size() > 1) {
+          c = joined;
+        } else {
+          c = separate;
+        }
+        DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
+      }
+    }
     layers.repaint();
+  }
 
+  public Color getColor(Segment.Type t) {
+    Color ret = Color.BLACK;
+    if (useDebuggingColor) {
+      switch (t) {
+        case Blob:
+          ret = BLOB_COLOR;
+          break;
+        case Circle:
+          ret = CIRCLE_COLOR;
+          break;
+        case CircularArc:
+          ret = Color.BLUE;
+          break;
+        case Curve:
+          ret = Color.CYAN;
+          break;
+        case Dot:
+          break;
+        case Ellipse:
+          ret = ELLIPSE_COLOR;
+          break;
+        case EllipticalArc:
+          ret = Color.MAGENTA;
+          break;
+        case Line:
+          ret = Color.GREEN;
+          break;
+        case Unknown:
+          break;
+      }
+    }
+    return ret;
   }
 
   public GlassPane getGlass() {
@@ -536,5 +604,4 @@ public class SkruiFabEditor {
     }
     layers.repaint();
   }
-
 }

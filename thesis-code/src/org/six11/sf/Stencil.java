@@ -33,6 +33,7 @@ public class Stencil {
     }
     this.segs = new ArrayList<Segment>(segs);
     this.children = new HashSet<Stencil>();
+    bug("Made multi-segment stencil: " + this + ", valid=" + isValid());
   }
 
   public Stencil(SketchBook model, Segment s) {
@@ -98,11 +99,11 @@ public class Stencil {
       Vec b = new Vec(c, turns.get(i + 1));
       crossProd = crossProd + a.cross(b);
     }
-    if (Math.abs(crossProd) < 0.01) {
-      bug("cross product too close to zero to be meaningful.");
-      bug("There are " + turns.size() + " points on the turn path.");
-      bug("Segments are: " + num(segs, " "));
-    }
+    //    if (Math.abs(crossProd) < 0.01) {
+    //      bug("cross product too close to zero to be meaningful.");
+    //      bug("There are " + turns.size() + " points on the turn path.");
+    //      bug("Segments are: " + num(segs, " "));
+    //    }
     boolean ret = crossProd > 0;
     return ret;
   }
@@ -186,17 +187,25 @@ public class Stencil {
   public boolean isValid() {
     boolean ret = true;
     if (!isSingular()) { // single-segment stencils are always valid.
-      for (int i = 0; i < path.size() - 1; i++) {
+      for (int i = 0; i < path.size(); i++) {
         Pt a = path.get(i);
-        Pt b = path.get(i + 1);
+        Pt b = path.get((i + 1) % path.size());
         Segment s = model.getSegment(a, b);
         if (s == null || !segs.contains(s)) {
+          if (s == null) {
+            bug("Stencil " + getId() + " is invalid because the segment from " + SketchBook.n(a)
+                + " to " + SketchBook.n(b) + " is null.");
+          } else {
+            bug("Stencil " + getId() + " is invalid because segment " + s.typeIdStr() + " is not in this stencil's path.");
+          }
           ret = false;
           break;
         }
       }
       for (Segment s : segs) {
         if (!model.hasSegment(s)) {
+          bug("Stencil " + getId() + " is invalid because segment " + s.typeIdStr()
+              + " is not in the model");
           ret = false;
           break;
         }
@@ -204,7 +213,6 @@ public class Stencil {
     } else {
       bug("Stencil " + this + " is singular so it is always valid.");
     }
-    bug("Stencil " + this + " valid? " + ret);
     return ret;
   }
 
@@ -285,6 +293,10 @@ public class Stencil {
       buf.append(s.getType() + "-" + s.getId() + " ");
     }
     return buf.toString().trim();
+  }
+
+  public int getId() {
+    return id;
   }
 
 }

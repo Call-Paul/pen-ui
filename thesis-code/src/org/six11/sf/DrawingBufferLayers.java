@@ -403,7 +403,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           buffer.drawToGraphics(g);
         }
       } catch (Exception ex) {
-        bug("Got exception while drawing, probably due to buffer size.");
+//        bug("Got exception while drawing, probably due to buffer size.");
       }
     }
     if (currentScribble != null) {
