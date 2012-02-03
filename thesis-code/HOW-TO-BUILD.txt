@@ -30,8 +30,9 @@ svn checkout http://pen-ui.googlecode.com/svn/trunk/thesis-code simi
   a) Easiest (OS X only): build the app with "ant jarBundle", then
   execute the resulting file: build/Sketch It, Make It.app
 
-  b) Use some fancy IDE like Eclipse. This is what I usually do. It is
-  helpful to add the argument "--no-debug-color".
+  b) Use some fancy IDE like Eclipse. Run org.six11.sf.Main. This is
+  what I usually do. It is helpful to add the argument
+  "--no-debug-color".
 
   c) Run it from the command line. In simi's top directory invoke the
   'run' script, like this:
