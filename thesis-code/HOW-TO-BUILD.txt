@@ -1,0 +1,45 @@
+
+Here's how to get, build, and run SIMI. 
+
+(Sorry that I don't have a proper build system... hang in there)
+
+
+
+This requires you to have a subversion client and the Ant build system
+installed on your machine. Once built, you will basically need a
+tablet (of the Wacom variety, not the iPad variety).
+
+1) Check out the entire six11utils project from Google code:
+
+svn checkout http://six11utils.googlecode.com/svn/trunk/ six11utils
+
+2) Build six11utils with "ant jar". This generates the file
+   build/six11utils.jar.
+
+3) Check out SIMI from Google code:
+
+svn checkout http://pen-ui.googlecode.com/svn/trunk/thesis-code simi
+
+4) Copy six11utils.jar (the one you just built) into SIMI's lib
+   directory. There is already one in there, but it is not up to date.
+
+5) Build simi with "ant compile"
+
+6) You may run it in various ways.
+
+  a) Easiest (OS X only): build the app with "ant jarBundle", then
+  execute the resulting file: build/Sketch It, Make It.app
+
+  b) Use some fancy IDE like Eclipse. This is what I usually do. It is
+  helpful to add the argument "--no-debug-color".
+
+  c) Run it from the command line. In simi's top directory invoke the
+  'run' script, like this:
+
+  ~/tmp/simi $ ./run
+
+
+Bug reports/feature-requests/etc to Gabe Johnson <johnsogg@cmu.edu>.
+
+
+  
