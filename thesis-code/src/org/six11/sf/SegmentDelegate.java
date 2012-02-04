@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
@@ -387,6 +388,15 @@ public class SegmentDelegate implements HasFuzzyArea {
 
     return ret;
   }
+  
+  public Set<Pt> getPoints() {
+    Set<Pt> ret = new HashSet<Pt>();
+    ret.add(getP1());
+    if (!isSingular()) {
+      ret.add(getP2());
+    }
+    return ret;
+  }
 
   public Segment copy() {
     List<Pt> copiedPoints = new ArrayList<Pt>();
@@ -498,6 +508,10 @@ public class SegmentDelegate implements HasFuzzyArea {
       ret = Functions.isPointOnPolyline(loc, asPolyline(), slop);
     }
     return ret;
+  }
+
+  public Collection<Pt> getLatchPoints(Segment other) {
+    return Lists.intersect(getPoints(), other.getPoints());
   }
 
 }

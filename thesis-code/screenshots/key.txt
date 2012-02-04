@@ -97,3 +97,5 @@
 037: can have closed splines ("blobs") and perfect circles.
 
 038: split segments at injected points
+
+039: improved right-angle recognizer lets me make notches. (jessica kit triangle)

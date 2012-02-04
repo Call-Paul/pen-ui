@@ -90,27 +90,40 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     Pt hotspot = item.getFeaturePoint(CORNER_D);
     segs = SegmentFilter.makeCohortFilter(in).filter(segs);
     segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(segs);
-    Interval adjacentSegAngleRange = new Interval(toRadians(70), toRadians(110));
+    Interval adjacentSegAngleRange = new Interval(toRadians(50), toRadians(130));
     Set<Segment> avoid = new HashSet<Segment>();
     Segment good1 = null;
     Segment good2 = null;
-    double bestAngle = 0;
+    double bestDist = Double.MAX_VALUE;
     for (Segment seg : segs) {
+      bug("Examining seg " + seg.typeIdStr());
       Set<Segment> adjacentSegs = SegmentFilter.makeCoterminalFilter(seg).filter(segs);
       for (Segment adjacentSeg : adjacentSegs) {
+        bug("Segment pair: " + seg.typeIdStr() + " -- " + adjacentSeg.typeIdPtStr());
         if (!avoid.contains(adjacentSeg)) {
-          double ang = adjacentSeg.getMinAngle(seg);
-          if (toRadians(90) - ang < toRadians(90) - bestAngle
-              && adjacentSegAngleRange.contains(ang)) {
-            avoid.add(seg);
-            good1 = seg;
-            good2 = adjacentSeg;
-            bestAngle = ang;
+          //          double ang = adjacentSeg.getMinAngle(seg);
+          //          if (toRadians(90) - ang < toRadians(90) - bestAngle
+          //              && adjacentSegAngleRange.contains(ang)) {
+          //            avoid.add(seg);
+          //            good1 = seg;
+          //            good2 = adjacentSeg;
+          //            bestAngle = ang;
+          if (adjacentSegAngleRange.contains(adjacentSeg.getMinAngle(seg))) {
+            Collection<Pt> latches = seg.getLatchPoints(adjacentSeg);
+            for (Pt latch : latches) {
+              double thisDist = latch.distance(hotspot);
+              if (thisDist < bestDist) {
+                bestDist = thisDist;
+                good1 = seg;
+                good2 = adjacentSeg;
+              }
+            }
           }
         }
       }
     }
     if (good1 != null && good2 != null) {
+      bug("Chose pair: " + good1.typeIdStr() + " -- " + good2.typeIdPtStr());
       item.addTarget(RightAngleBrace.TARGET_A, good1);
       item.addTarget(RightAngleBrace.TARGET_B, good2);
       ret = Certainty.Yes;

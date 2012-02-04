@@ -255,4 +255,12 @@ public class Segment implements HasFuzzyArea {
     return buf.toString();
   }
   
+  public Collection<Pt> getLatchPoints(Segment other) {
+    return d.getLatchPoints(other);
+  }
+
+  public Collection<Pt> getPoints() {
+    return d.getPoints();
+  }
+  
 }
