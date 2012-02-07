@@ -29,7 +29,6 @@ public class EqualLength extends RecognizerConstraint {
     } else if (ratio > 0.7 || diff < 30) {
       ret = Certainty.Maybe;
     }
-    bug("EqualLength ratio: " + num(ratio) + ", diff: " + num(diff) + " --> " + ret);
     say(p, new String[] { "length0", "length1", "diff", "ratio", "logRatio"}, new double[] { a, b, diff, ratio, logRatio }, ret);
     return ret;
   }

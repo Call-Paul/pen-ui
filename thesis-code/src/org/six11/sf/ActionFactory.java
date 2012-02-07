@@ -87,12 +87,12 @@ public class ActionFactory {
   public SafeAction split(final Segment oldSeg, final Set<Segment> newSegs) {
     SafeAction ret = new SafeAction("Split Segment") {
       public void forward() {
-        bug("split action!");
-        bug("remove old seg: " + oldSeg.typeIdPtStr());
-        bug("new segs:");
-        for (Segment ns : newSegs) {
-          bug("-- " + ns.typeIdPtStr());
-        }
+//        bug("split action!");
+//        bug("remove old seg: " + oldSeg.typeIdPtStr());
+//        bug("new segs:");
+//        for (Segment ns : newSegs) {
+//          bug("-- " + ns.typeIdPtStr());
+//        }
         axe(Collections.singleton(oldSeg));
         add(newSegs);
       }

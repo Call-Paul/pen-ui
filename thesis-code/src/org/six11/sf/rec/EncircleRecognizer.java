@@ -163,11 +163,11 @@ public class EncircleRecognizer extends SketchRecognizer {
         // ------------------------------------------------------------------ T-junction
         Collection<Segment> segs = model.findSegments(area, 4);
         Pt pt = Lists.getOne(points);
-        int before = segs.size();
+//        int before = segs.size();
         Collection<Segment> tabu = model.findRelatedSegments(pt);
         segs.removeAll(tabu);
         int after = segs.size();
-        bug("Found " + segs.size() + " segments in that region (avoided " + (before - after) + " tabu segments)");
+//        bug("Found " + segs.size() + " segments in that region (avoided " + (before - after) + " tabu segments)");
         if (!segs.isEmpty()) {
           ret = makeTJunction(Lists.getOne(segs), Lists.getOne(points));
         }
@@ -224,11 +224,11 @@ public class EncircleRecognizer extends SketchRecognizer {
     return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_TO_T_MERGE) {
       @Override
       public void activate(SketchBook model) {
-        Set<Segment> babies = model.splitSegment(seg, pt);// model.injectPoint(seg, pt, model);
-        bug("* Old:" + seg.typeIdStr());
-        for (Segment babe : babies) {
-          bug("* New: " + babe.typeIdStr());
-        }
+        /*Set<Segment> babies = */model.splitSegment(seg, pt);
+//        bug("* Old:" + seg.typeIdStr());
+//        for (Segment babe : babies) {
+//          bug("* New: " + babe.typeIdStr());
+//        }
       }
     };
   }

@@ -33,7 +33,7 @@ public class Stencil {
     }
     this.segs = new ArrayList<Segment>(segs);
     this.children = new HashSet<Stencil>();
-    bug("Made multi-segment stencil: " + this + ", valid=" + isValid());
+//    bug("Made multi-segment stencil: " + this + ", valid=" + isValid());
   }
 
   public Stencil(SketchBook model, Segment s) {
@@ -43,7 +43,7 @@ public class Stencil {
       segs.add(s);
       this.path = new ArrayList<Pt>();
       this.children = new HashSet<Stencil>();
-      bug("Made single-segment stencil for " + s);
+//      bug("Made single-segment stencil for " + s);
     } else {
       bug("Error: created single-segment stencil with non-closed segment: " + s);
     }
@@ -257,7 +257,7 @@ public class Stencil {
     Area myArea = new Area(getOuterShape());
     myArea.intersect(childArea);
     ret = myArea.equals(childArea);
-    bug("Does " + this + " surround + " + c + "? " + ret);
+//    bug("Does " + this + " surround + " + c + "? " + ret);
     return ret;
   }
 

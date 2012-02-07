@@ -221,7 +221,6 @@ public class SketchBook {
   public Sequence endScribble(Pt pt) {
     inactivityTimer.start();
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
-    //    cornerFinder.findCorners(scrib);
     return scrib;
   }
 
@@ -304,7 +303,7 @@ public class SketchBook {
     for (Stencil stencil : stencils) {
       stencil.removeGeometry(seg);
       boolean v = stencil.isValid();
-      bug("Stencil " + stencil.getId() + " valid? " + v);
+//      bug("Stencil " + stencil.getId() + " valid? " + v);
       if (!v) {
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
@@ -1036,7 +1035,7 @@ public class SketchBook {
   }
 
   public Set<Segment> splitSegment(Segment seg, Pt nearPt) {
-    bug("Split!");
+//    bug("Split!");
     Set<Segment> ret = new HashSet<Segment>();
     List<Pt> points = seg.asPolyline();//seg.getPointList();
     //    bug("there are " + points.size() + " points in the polyline for " + seg.typeIdStr());
