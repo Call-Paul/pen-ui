@@ -9,6 +9,9 @@ import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -103,6 +106,12 @@ public class SketchBook {
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
+    solver.setDebugOut(true);
+    try {
+      solver.setDebugOutWriter(new BufferedWriter(new FileWriter("solver.txt")));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     solver.runInBackground();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));

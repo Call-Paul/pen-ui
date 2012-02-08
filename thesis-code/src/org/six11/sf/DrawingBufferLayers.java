@@ -39,6 +39,7 @@ import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Functions;
@@ -47,6 +48,7 @@ import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
+import org.six11.util.solve.ConstraintSolver.State;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -392,6 +394,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Components.antialias(g);
+    if (model.getConstraints().getSolutionState() == State.Working) {
+      g.setColor(Color.RED);
+      g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
+    }
     model.getEditor().drawConstraints();
     model.getEditor().drawDerivedGuides();
 
