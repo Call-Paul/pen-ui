@@ -312,7 +312,7 @@ public class SketchBook {
     for (Stencil stencil : stencils) {
       stencil.removeGeometry(seg);
       boolean v = stencil.isValid();
-//      bug("Stencil " + stencil.getId() + " valid? " + v);
+      //      bug("Stencil " + stencil.getId() + " valid? " + v);
       if (!v) {
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
@@ -623,6 +623,29 @@ public class SketchBook {
   }
 
   public Collection<Stencil> findStencil(Area area, double d) {
+    Collection<Stencil> ret = new HashSet<Stencil>();
+    for (Stencil s : stencils) {
+      double ratio = 0;
+      Area ix = s.intersect(area);
+      if (!ix.isEmpty()) {
+        try {
+          ConvexHull stencilHull = new ConvexHull(s.getAllPoints());//s.getPath());
+          double stencilArea = stencilHull.getConvexArea();
+          ConvexHull ixHull = new ConvexHull(ShapeFactory.makePointList(ix.getPathIterator(null)));
+          double ixArea = ixHull.getConvexArea();
+          ratio = ixArea / stencilArea;
+        } catch (Exception ex) {
+          bug("got " + ex.getClass() + " for stencil " + s);
+        }
+      }
+      if (ratio >= d) {
+        ret.add(s);
+      }
+    }
+    return ret;
+  }
+
+  public Collection<Stencil> findStencilOld(Area area, double d) { // TODO: erase this when findStencil works
     Collection<Stencil> ret = new HashSet<Stencil>();
     for (Stencil s : stencils) {
       double ratio = 0;
@@ -1044,7 +1067,7 @@ public class SketchBook {
   }
 
   public Set<Segment> splitSegment(Segment seg, Pt nearPt) {
-//    bug("Split!");
+    //    bug("Split!");
     Set<Segment> ret = new HashSet<Segment>();
     List<Pt> points = seg.asPolyline();//seg.getPointList();
     //    bug("there are " + points.size() + " points in the polyline for " + seg.typeIdStr());
@@ -1062,6 +1085,11 @@ public class SketchBook {
       }
     }
     if (splitIdx >= 0) {
+      Pt boundaryA = points.get(splitIdx);
+      Pt boundaryB = points.get(splitIdx+1);
+      Line tinySegment = new Line(boundaryA, boundaryB);
+      Pt splitPoint = Functions.getNearestPointOnLine(nearPt, tinySegment);
+      nearPt.setLocation(splitPoint.x, splitPoint.y);
       List<Pt> sideA = new ArrayList<Pt>();
       for (int i = 0; i <= splitIdx; i++) {
         sideA.add(points.get(i));
