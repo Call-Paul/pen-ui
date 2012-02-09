@@ -152,7 +152,15 @@ public class CornerFinder {
       segments.add(new Segment(dot));
     } else {
       for (int i = 0; i < juncts.size() - 1; i++) {
-        segments.add(identifySegment(ink, juncts.get(i), juncts.get(i + 1)));
+        Segment seg = identifySegment(ink, juncts.get(i), juncts.get(i + 1));
+        // when we find a circle/ellipse/spline disallow other segments 
+        // for this ink stroke. they are probably hooks.
+        if (seg.isClosed()) {
+          segments.clear();
+          segments.add(seg);
+          break;
+        }
+        segments.add(seg);
       }
     }
     ink.seq.setAttribute(SEGMENTS, segments);
