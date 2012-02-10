@@ -96,18 +96,9 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     Segment good2 = null;
     double bestDist = Double.MAX_VALUE;
     for (Segment seg : segs) {
-      bug("Examining seg " + seg.typeIdStr());
       Set<Segment> adjacentSegs = SegmentFilter.makeCoterminalFilter(seg).filter(segs);
       for (Segment adjacentSeg : adjacentSegs) {
-        bug("Segment pair: " + seg.typeIdStr() + " -- " + adjacentSeg.typeIdPtStr());
         if (!avoid.contains(adjacentSeg)) {
-          //          double ang = adjacentSeg.getMinAngle(seg);
-          //          if (toRadians(90) - ang < toRadians(90) - bestAngle
-          //              && adjacentSegAngleRange.contains(ang)) {
-          //            avoid.add(seg);
-          //            good1 = seg;
-          //            good2 = adjacentSeg;
-          //            bestAngle = ang;
           if (adjacentSegAngleRange.contains(adjacentSeg.getMinAngle(seg))) {
             Collection<Pt> latches = seg.getLatchPoints(adjacentSeg);
             for (Pt latch : latches) {
@@ -123,7 +114,6 @@ public class RightAngleBrace extends RecognizedItemTemplate {
       }
     }
     if (good1 != null && good2 != null) {
-      bug("Chose pair: " + good1.typeIdStr() + " -- " + good2.typeIdPtStr());
       item.addTarget(RightAngleBrace.TARGET_A, good1);
       item.addTarget(RightAngleBrace.TARGET_B, good2);
       ret = Certainty.Yes;
@@ -198,20 +188,26 @@ public class RightAngleBrace extends RecognizedItemTemplate {
   public static Collection<RecognizedItem> resolveConflictSameLengthGesture(RecognizedItem itemA,
       RecognizedItem itemB) {
     Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
-    Collection<Ink> inkA = itemA.getInk();
-    Collection<Ink> inkB = itemB.getInk();
+//    Collection<Ink> inkA = itemA.getInk();
+//    Collection<Ink> inkB = itemB.getInk();
     String nameA = itemA.getTemplate().getName();
     String nameB = itemB.getTemplate().getName();
-    // same-length gesture with 2 strokes == win
+    Collection<Ink> strokesA = itemA.getStrokes();
+    Collection<Ink> strokesB = itemB.getStrokes();
+//    bug("------------------------");
+//    bug("Item " + nameA + " took " + strokesA.size() + ": " + num(strokesA, " "));
+//    bug("Item " + nameB + " took " + strokesB.size() + ": " + num(strokesB, " "));
     // right-angle gesture with 1 stroke == win
-    // otherwise just pick the right-angle brace.
-    if (nameA.equals(SameLengthGesture.NAME) && inkA.size() == 2) {
+    // ... otherwise ....
+    // same-length gesture with 2 strokes == win
+    // otherwise just pick the right-angle brace because I don't know wtf is going on
+    if (nameA.equals(RightAngleBrace.NAME) && strokesA.size() == 1) {
       doomed.add(itemB);
-    } else if (nameB.equals(SameLengthGesture.NAME) && inkB.size() == 2) {
+    } else if (nameB.equals(RightAngleBrace.NAME) && strokesB.size() == 1) {
       doomed.add(itemA);
-    } else if (nameA.equals(RightAngleBrace.NAME) && inkA.size() == 1) {
+    } else if (nameA.equals(SameLengthGesture.NAME) && strokesA.size() == 2) {
       doomed.add(itemB);
-    } else if (nameB.equals(RightAngleBrace.NAME) && inkB.size() == 1) {
+    } else if (nameB.equals(SameLengthGesture.NAME) && strokesB.size() == 2) {
       doomed.add(itemA);
     } else if (nameA.equals(RightAngleBrace.NAME)) {
       doomed.add(itemB);
