@@ -22,6 +22,7 @@ import javax.swing.SwingUtilities;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
+import org.six11.util.solve.ConstraintSolver.State;
 
 /**
  * 
@@ -236,6 +237,9 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mousePressed(MouseEvent ev) {
+//    if (editor.getModel().getConstraints().getSolutionState() == State.Working) {
+      editor.getModel().getConstraints().setPaused(true);
+//    }
     MouseEventInfo mei = new MouseEventInfo(ev);
     switch (activity) {
       case None:
@@ -257,6 +261,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseReleased(MouseEvent ev) {
+    editor.getModel().getConstraints().setPaused(false);
     MouseEventInfo mei = new MouseEventInfo(ev);
     dragPoint = null;
     switch (activity) {
