@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import org.six11.sf.Ink;
@@ -72,7 +73,7 @@ public class RecognizedItem {
     }
     debugString = template.getName() + " " + buf.toString();
   }
-
+  
   public String toString() {
     return debugString;
   }
@@ -138,5 +139,13 @@ public class RecognizedItem {
       ret.add(p.getInk());
     }
     return ret;
+  }
+
+  public Collection<Ink> getStrokes() {
+    Set <Ink> inkStrokes = new HashSet<Ink>();
+    for (RecognizerPrimitive subshape : subshapes.values()) {
+      inkStrokes.add(subshape.getInk());
+    }
+    return inkStrokes;
   }  
 }
