@@ -87,7 +87,7 @@ public class SkruiFabEditor {
   private CutfilePane cutfile;
   private Stopwatch drawingStopwatch;
   private Stopwatch goStopwatch;
-  private long lastDrawLater;
+//  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
 
@@ -148,7 +148,7 @@ public class SkruiFabEditor {
         long now = System.currentTimeMillis();
 //        long elapsed = now - lastDrawLater;
 //        bug("redrawLaterRunnable is going after waiting " + elapsed + " ms");
-        lastDrawLater = now;
+//        lastDrawLater = now;
         if (model.getConstraints().getSolutionState() == State.Solved) {
           model.fixDerivedGuides();
         }
@@ -411,7 +411,7 @@ public class SkruiFabEditor {
   public void drawStuff() {
     drawingStopwatch.start("drawStuff");
     drawingStopwatch.start("drawStencils");
-    long[] times = new long[5];
+    long[] times = new long[6];
     drawStencils();
     times[0] = drawingStopwatch.stop("drawStencils");
     drawingStopwatch.start("drawStructured");
@@ -423,7 +423,10 @@ public class SkruiFabEditor {
     drawingStopwatch.start("drawFS");
     drawFS();
     times[3] = drawingStopwatch.stop("drawFS");
-    times[4] = drawingStopwatch.stop("drawStuff");
+    drawingStopwatch.start("drawErase");
+    drawErase();
+    times[4] = drawingStopwatch.stop("drawErase");
+    times[5] = drawingStopwatch.stop("drawStuff");
     drawingStopwatch.log(times);
   }
 
@@ -655,6 +658,18 @@ public class SkruiFabEditor {
           Color color = new Color(1f, 0f, 0f, (float) str);
           DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
         }
+      }
+    }
+    layers.repaint();
+  }
+  
+  public void drawErase() {
+    DrawingBuffer eraseBuf = layers.getLayer(GraphicDebug.DB_ERASE);
+    eraseBuf.clear();
+    if (model.isErasing()) {
+      Pt killSpot = model.getEraseSpot();
+      if (killSpot != null) {
+        DrawingBufferRoutines.cross(eraseBuf, killSpot, 30, Color.BLUE);
       }
     }
     layers.repaint();

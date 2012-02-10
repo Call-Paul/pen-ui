@@ -403,14 +403,14 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         double pauseW = 10.0;
         double pauseH = 30.0;
         Rectangle2D pauseRect = new Rectangle2D.Double(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
-        g.fill(pauseRect);    
+        g.fill(pauseRect);
         pauseSpot.move(15, 0);
         pauseRect.setRect(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
       } else {
         g.setColor(Color.RED);
         g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
       }
-      
+
     }
     model.getEditor().drawConstraints();
     model.getEditor().drawDerivedGuides();
@@ -611,8 +611,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         } else {
           if (wasDrawing) {
             Sequence seq = model.endScribble(ev.getPt());
-            SafeAction a = model.getActionFactory().addInk(new Ink(seq));
-            model.addAction(a);
+            if (seq != null) {
+              SafeAction a = model.getActionFactory().addInk(new Ink(seq));
+              model.addAction(a);
+            }
           }
           clearScribble();
         }

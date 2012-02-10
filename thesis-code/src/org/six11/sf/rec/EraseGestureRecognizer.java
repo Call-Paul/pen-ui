@@ -50,8 +50,8 @@ public class EraseGestureRecognizer extends SketchRecognizer {
         if (area > 100 && density > 2.0) {
           ConvexHull hull = ink.getHull();
           final Area hullArea = new Area(hull.getHullShape());
-          final Collection<Segment> doomed = pickDoomedSegments(hullArea);
-          final Collection<Ink> doomedInk = pickDoomedInk(hullArea, ink);
+          final Collection<Segment> doomed = model.pickDoomedSegments(hullArea);
+          final Collection<Ink> doomedInk = model.pickDoomedInk(hullArea, ink);
           ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
             public void activate(SketchBook model) {
               if (doomedInk.size() > 0) {
@@ -74,49 +74,6 @@ public class EraseGestureRecognizer extends SketchRecognizer {
     return ret;
   }
 
-  public Collection<Segment> pickDoomedSegments(Area area) {
-    Collection<Segment> maybeDoomed = new HashSet<Segment>();
-    RankedList<Segment> ranked = new RankedList<Segment>();
-    for (Segment seg : model.getGeometry()) {
-      Area segmentArea = seg.getFuzzyArea(5.0);
-      Area ix = (Area) area.clone();
-      ix.intersect(segmentArea);
-      if (!ix.isEmpty()) {
-        double surfaceArea = Areas.approxArea(ix, 1.0);
-        double segSurfaceArea = Areas.approxArea(segmentArea, 1.0);
-        double ratio = surfaceArea / segSurfaceArea;
-        ranked.add(ratio, seg);
-      }
-    }
-    if (ranked.size() > 0) {
-      double thresh = ranked.getHighestScore() * 0.7;
-      maybeDoomed.addAll(ranked.getHigherThan(thresh));
-    }
-    return maybeDoomed;
-  }
-
-  private Collection<Ink> pickDoomedInk(Area area, Ink gestureInk) {
-    Collection<Ink> doomed = new HashSet<Ink>();
-    RankedList<Ink> ranked = new RankedList<Ink>();
-    for (Ink ink : model.getUnanalyzedInk()) {
-      if (ink == gestureInk) {
-        continue;
-      }
-      Area inkArea = ink.getFuzzyArea(5.0);
-      Area ix = (Area) area.clone();
-      ix.intersect(inkArea);
-      if (!ix.isEmpty()) {
-        double surfaceArea = Areas.approxArea(ix, 1.0);
-        double segSurfaceArea = Areas.approxArea(inkArea, 1.0);
-        double ratio = surfaceArea / segSurfaceArea;
-        ranked.add(ratio, ink);
-      }
-    }
-    if (ranked.size() > 0) {
-      double thresh = ranked.getHighestScore() * 0.7;
-      doomed.addAll(ranked.getHigherThan(thresh));
-    }
-    return doomed;
-  }
+  
 
 }

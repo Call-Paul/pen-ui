@@ -3,6 +3,7 @@ package org.six11.sf;
 // J|mmyJ0hn$
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
+import static java.lang.Math.abs;
 
 import java.awt.Color;
 import java.awt.geom.Area;
@@ -36,6 +37,8 @@ import org.six11.sf.rec.SameLengthGesture;
 import org.six11.sf.rec.SelectGestureRecognizer;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
+import org.six11.util.data.RankedList;
+import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.DrawingBuffer;
@@ -55,6 +58,11 @@ import org.six11.util.solve.VariableBank.ConstraintFilter;
 public class SketchBook {
 
   private static final String POINT_NAME = "name";
+  private static final double ERASE_SAMPLE_DIST_THRESHOLD = 20;
+  private static final long ERASE_SAMPLE_TIME_LIMIT = 100;
+  private static final double ERASE_ANGLE_CHANGE_THRESH = Math.PI / 2;
+  private static final double ERASE_ELIGIBILITY_DIST = 15;
+  private static final int ERASE_PSEUDOCORNER_THRESH = 4;
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
@@ -85,6 +93,7 @@ public class SketchBook {
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
   private Timer inactivityTimer;
+  boolean erasing;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -117,7 +126,7 @@ public class SketchBook {
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
     addRecognizer(new SelectGestureRecognizer(this));
-    addRecognizer(new EraseGestureRecognizer(this));
+    //    addRecognizer(new EraseGestureRecognizer(this));
     addRecognizer(new DotReferenceGestureRecognizer(this));
     addRecognizer(new DotSelectGestureRecognizer(this));
     addRecognizer(new RightAngleBrace(this));
@@ -220,18 +229,198 @@ public class SketchBook {
 
   public Sequence addScribble(Pt pt) {
     inactivityTimer.stop();
-    Sequence scrib = (Sequence) Lists.getLast(scribbles);
+    Sequence scrib = Lists.getLast(scribbles);
     if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
       // scribble
       scrib.add(pt);
+      if (!erasing) {
+        analyzeForErase(scrib);
+      }
     }
     return scrib;
   }
 
+  private void analyzeForErase(Sequence scrib) {
+    if (!scrib.hasAttribute("erase")) {
+      int i = scrib.size() - 2; // second-to-last-point. this is the 'cursor'.
+      int iNext = i + 1; // next point
+      int iPrev = i - 1; // previous point
+      if (i == 0) { // only one point. set curvilinear dist to zero and call it a day
+        scrib.getFirst().setDouble("erase_curvidist", 0.0);
+        List<Pt> samples = new ArrayList<Pt>();
+        samples.add(scrib.getFirst());
+        scrib.setAttribute("samples", samples);
+        scrib.setAttribute("erase_pseudocorners", 0);
+      } else if (i > 0) {
+
+        // 1. set curvilinear distance along the scribble. uses i and iPrev
+        Pt prev = scrib.get(iPrev);
+        Pt here = scrib.get(i);
+        double prevDist = prev.getDouble("erase_curvidist");
+        double segDist = prev.distance(here);
+        double newDist = prevDist + segDist;
+        here.setDouble("erase_curvidist", newDist);
+        if (i > 0) { // three or more points so we can calculate and store heading at i 
+          Pt next = scrib.get(iNext);
+          Vec heading = new Vec(prev, next).getUnitVector();
+          here.setVec("erase_heading", heading);
+          if (i == 1) {
+            // when we have two points, we can give the first one
+            // its heading by copying the current one.
+            prev.setVec("erase_heading", heading);
+          }
+        }
+
+        // 1.5: don't bother adding for psuedocorners if the pen 
+        // has not moved very far from the original point. this avoids 
+        // erasing when doing things like making fat dots.
+        //
+        // First establish if we are just now becoming eligible or not.
+        boolean eligible = scrib.hasAttribute("erase_eligible");
+        if (!eligible) {
+          Pt first = scrib.getFirst();
+          eligible = first.distance(here) > ERASE_ELIGIBILITY_DIST;
+          if (eligible) {
+            scrib.setAttribute("erase_eligible", true);
+          }
+        }
+
+        // 2. see if the new point should be a sample. If it is, try to detect
+        // a pseudo-corner.
+        List<Pt> samples = (List<Pt>) scrib.getAttribute("samples");
+        Pt recentSample = Lists.getLast(samples);
+        double sampleDist = recentSample.getDouble("erase_curvidist");
+        if (newDist - sampleDist > ERASE_SAMPLE_DIST_THRESHOLD) {
+          samples.add(here);
+          // 2b: Pseudo-corner detection. Get recent samples and compare their 
+          // headings with the current one. Big deviations indicate a corner
+          // somewhere between 'here' and the other sample.
+          Vec heading = here.getVec("erase_heading");
+          long sampleStopTime = here.getTime() - ERASE_SAMPLE_TIME_LIMIT;
+          for (int sampleIdx = samples.size() - 2; sampleIdx >= 0; sampleIdx--) {
+            Pt r = samples.get(sampleIdx);
+            if (r.hasAttribute("erase_pseudocorner")) {
+              break;
+            }
+            if (r.getTime() < sampleStopTime) {
+              break;
+            }
+            Vec rHeading = r.getVec("erase_heading");
+            double angle = Functions.getSignedAngleBetween(heading, rHeading);
+            if (abs(angle) > ERASE_ANGLE_CHANGE_THRESH) {
+              r.setBoolean("erase_pseudocorner", true);
+              int numCorners = (Integer) scrib.getAttribute("erase_pseudocorners");
+              numCorners = numCorners + 1;
+              eligible = scrib.hasAttribute("erase_eligible");
+              bug("Num corners: " + numCorners + ", eligible: " + eligible);
+              scrib.setAttribute("erase_pseudocorners", numCorners);
+              if (numCorners > ERASE_PSEUDOCORNER_THRESH && eligible) {
+                bug(" ** I will erase! **");
+                scrib.setAttribute("erase", true);
+                Pt killSpot = Functions.getMean(samples);
+                scrib.setAttribute("erase_spot", killSpot);
+                editor.drawErase();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  public boolean isErasing() {
+    boolean ret = false;
+    Sequence scrib = Lists.getLast(scribbles);
+    if (scrib != null && scrib.hasAttribute("erase")) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  public Pt getEraseSpot() {
+    Pt ret = null;
+    Sequence scrib = Lists.getLast(scribbles);
+    if (scrib != null && scrib.hasAttribute("erase_spot")) {
+      ret = (Pt) scrib.getAttribute("erase_spot");
+    }
+    return ret;
+  }
+
+  public void eraseUnderPoints(List<Pt> killZone) {
+    ConvexHull hull = new ConvexHull(killZone);
+    final Area hullArea = new Area(hull.getHullShape());
+    final Collection<Segment> doomed = pickDoomedSegments(hullArea);
+    final Collection<Ink> doomedInk = pickDoomedInk(hullArea, null);
+
+    if (doomedInk.size() > 0) {
+      for (Ink ink : doomedInk) {
+        removeInk(ink);
+      }
+    } else {
+      for (Segment seg : doomed) {
+        removeGeometry(seg);
+      }
+    }
+    getEditor().drawStuff();
+
+  }
+
+  public Collection<Segment> pickDoomedSegments(Area area) {
+    Collection<Segment> maybeDoomed = new HashSet<Segment>();
+    RankedList<Segment> ranked = new RankedList<Segment>();
+    for (Segment seg : getGeometry()) {
+      Area segmentArea = seg.getFuzzyArea(5.0);
+      Area ix = (Area) area.clone();
+      ix.intersect(segmentArea);
+      if (!ix.isEmpty()) {
+        double surfaceArea = Areas.approxArea(ix, 1.0);
+        double segSurfaceArea = Areas.approxArea(segmentArea, 1.0);
+        double ratio = surfaceArea / segSurfaceArea;
+        ranked.add(ratio, seg);
+      }
+    }
+    if (ranked.size() > 0) {
+      double thresh = ranked.getHighestScore() * 0.7;
+      maybeDoomed.addAll(ranked.getHigherThan(thresh));
+    }
+    return maybeDoomed;
+  }
+
+  public Collection<Ink> pickDoomedInk(Area area, Ink gestureInk) {
+    Collection<Ink> doomed = new HashSet<Ink>();
+    RankedList<Ink> ranked = new RankedList<Ink>();
+    for (Ink ink : getUnanalyzedInk()) {
+      if (ink == gestureInk) {
+        continue;
+      }
+      Area inkArea = ink.getFuzzyArea(5.0);
+      Area ix = (Area) area.clone();
+      ix.intersect(inkArea);
+      if (!ix.isEmpty()) {
+        double surfaceArea = Areas.approxArea(ix, 1.0);
+        double segSurfaceArea = Areas.approxArea(inkArea, 1.0);
+        double ratio = surfaceArea / segSurfaceArea;
+        ranked.add(ratio, ink);
+      }
+    }
+    if (ranked.size() > 0) {
+      double thresh = ranked.getHighestScore() * 0.7;
+      doomed.addAll(ranked.getHigherThan(thresh));
+    }
+    return doomed;
+  }
+
   public Sequence endScribble(Pt pt) {
+    Sequence ret = null;
     inactivityTimer.start();
     Sequence scrib = (Sequence) Lists.getLast(scribbles);
-    return scrib;
+    if (scrib.hasAttribute("erase")) {
+      scrib.setAttribute("erase_spot", null);
+      eraseUnderPoints((List<Pt>) scrib.getAttribute("samples"));
+    } else {
+      ret = scrib;
+    }
+    return ret;
   }
 
   public void setLayers(DrawingBufferLayers layers) {
@@ -1087,7 +1276,7 @@ public class SketchBook {
     }
     if (splitIdx >= 0) {
       Pt boundaryA = points.get(splitIdx);
-      Pt boundaryB = points.get(splitIdx+1);
+      Pt boundaryB = points.get(splitIdx + 1);
       Line tinySegment = new Line(boundaryA, boundaryB);
       Pt splitPoint = Functions.getNearestPointOnLine(nearPt, tinySegment);
       nearPt.setLocation(splitPoint.x, splitPoint.y);
@@ -1192,4 +1381,5 @@ public class SketchBook {
     return babySegments;
     //    bug("Added guide point attached to " + baby.bugStr());
   }
+
 }
