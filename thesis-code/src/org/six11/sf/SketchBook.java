@@ -106,6 +106,7 @@ public class SketchBook {
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
+    this.solver.setFrameRate(30);
     solver.setDebugOut(true);
     try {
       solver.setDebugOutWriter(new BufferedWriter(new FileWriter("solver.txt")));

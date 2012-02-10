@@ -9,6 +9,8 @@ import static org.six11.util.layout.FrontEnd.W;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -27,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.Arrow;
@@ -84,6 +87,9 @@ public class SkruiFabEditor {
   private CutfilePane cutfile;
   private Stopwatch drawingStopwatch;
   private Stopwatch goStopwatch;
+  private long lastDrawLater;
+  private ActionListener drawLaterRunnable;
+  private Timer drawLaterTimer;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -105,18 +111,13 @@ public class SkruiFabEditor {
     glass.setVisible(true);
     model = new SketchBook(glass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
-      public void constraintStepDone(final ConstraintSolver.State state) {
-        Runnable r = new Runnable() {
-          public void run() {
-            if (state == State.Solved) {
-              model.fixDerivedGuides();
-            }
-            if (layers != null) {
-              drawStuff();
-            }
-          }
-        };
-        SwingUtilities.invokeLater(r);
+      public void constraintStepDone(final ConstraintSolver.State state, int numIterations, double err, int numPoints, int numConstraints) {
+        if (numIterations > 30 || err < (numPoints * 2)) {
+          model.getConstraints().setFrameRate(0);
+        } else {
+          model.getConstraints().setFrameRate(30);
+        }
+        drawStuffLater();
       }
     });
     layers = new DrawingBufferLayers(model);
@@ -142,6 +143,29 @@ public class SkruiFabEditor {
     af.add(fe);
     af.center();
     af.setVisible(true);
+    drawLaterRunnable = new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+        long now = System.currentTimeMillis();
+//        long elapsed = now - lastDrawLater;
+//        bug("redrawLaterRunnable is going after waiting " + elapsed + " ms");
+        lastDrawLater = now;
+        if (model.getConstraints().getSolutionState() == State.Solved) {
+          model.fixDerivedGuides();
+        }
+        if (layers != null) {
+          drawStuff();
+          layers.repaint();
+        }
+      }
+    };
+    drawLaterTimer = new Timer(20, drawLaterRunnable);
+    drawLaterTimer.setRepeats(false);
+  }
+
+  protected void drawStuffLater() {
+    if (!drawLaterTimer.isRunning()) {
+      drawLaterTimer.start();
+    }
   }
 
   public ScrapGrid getGrid() {
