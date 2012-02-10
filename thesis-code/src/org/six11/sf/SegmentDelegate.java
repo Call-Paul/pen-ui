@@ -231,10 +231,10 @@ public class SegmentDelegate implements HasFuzzyArea {
         spot = spot.getTranslated(vNorm, altComponent);
         paraPoints.add(i, spot);
       }
-      
+
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
-      
+
     } else if (isSingular()) {
       bug("doPara() called for singular segment. this is bad. stacktrace follows.");
       Debug.stacktrace("you should not get here.", 8);
@@ -250,7 +250,20 @@ public class SegmentDelegate implements HasFuzzyArea {
       case EllipticalArc:
       case Curve:
         Sequence spline = asSpline(); // spline should reliably give the direction at the ends
-        ret = new Vec(spline.get(0), spline.get(1)).getUnitVector();
+        Pt a = spline.get(0);
+        Pt b = null;
+        for (int i = 1; i < spline.size(); i++) {
+          double dist = spline.get(i).distance(a);
+          if (dist > 0.1) {
+            b = spline.get(i);
+            break;
+          }
+        }
+        if (a != null && b != null) {
+          ret = new Vec(a, b).getUnitVector();
+        } else {
+          bug("huge error with getting end direction.");
+        }
         break;
       default:
         bug("Unknown segment type!");
@@ -267,7 +280,20 @@ public class SegmentDelegate implements HasFuzzyArea {
       case EllipticalArc:
       case Curve:
         Sequence spline = asSpline(); // spline should reliably give the direction at the ends
-        ret = new Vec(spline.get(spline.size() - 1), spline.get(spline.size() - 2)).getUnitVector();
+        Pt a = spline.get(spline.size() - 1);
+        Pt b = null;
+        for (int i = spline.size() - 2; i >= 0; i--) {
+          double dist = spline.get(i).distance(a);
+          if (dist > 0.1) {
+            b = spline.get(i);
+            break;
+          }
+        }
+        if (a != null && b != null) {
+          ret = new Vec(a, b).getUnitVector();
+        } else {
+          bug("huge error with getting end direction.");
+        }
         break;
     }
     return ret;
@@ -296,6 +322,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     Sequence spline = Functions.makeNaturalSpline(numSteps, paraPointList);
     spline.replace(0, getP1());
     spline.replace(spline.size() - 1, getP2());
+    //    bug("returning spline of " + spline.size() + " points for " + getType() + ": " + num(spline.getPoints(), " "));
     return spline;
   }
 
@@ -352,6 +379,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     Pt where = null;
     if (type == Segment.Type.Line) {
       where = Functions.getNearestPointOnLine(pt, asLine(), true);
+      //      where = Functions.getNearestPointWithinSegment(pt, asLine(), true);
     } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
       doPara();
       where = Functions.getNearestPointOnPolyline(pt, paraPoints);
@@ -388,7 +416,7 @@ public class SegmentDelegate implements HasFuzzyArea {
 
     return ret;
   }
-  
+
   public Set<Pt> getPoints() {
     Set<Pt> ret = new HashSet<Pt>();
     ret.add(getP1());

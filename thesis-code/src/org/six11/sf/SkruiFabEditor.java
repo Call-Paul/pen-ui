@@ -593,6 +593,8 @@ public class SkruiFabEditor {
           drawUnlatched(buf, seg.getP2(), seg.getEndDir(), Color.red, 10, 6);
         }
       }
+
+      // draw points for this segment
       if (useDebuggingPoints) {
         Pt mid = seg.getVisualMidpoint();
         DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
