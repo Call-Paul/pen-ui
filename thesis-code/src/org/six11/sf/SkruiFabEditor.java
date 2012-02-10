@@ -621,7 +621,6 @@ public class SkruiFabEditor {
       double thick) {
     // show something different to indicate it is not attached to anything.
     Pt away = pt.getTranslated(dir, length);
-    bug("drawing line from " + num(pt) + " to " + num(away));
     DrawingBufferRoutines.line(buf, new Line(pt, away), color, thick);
   }
 
