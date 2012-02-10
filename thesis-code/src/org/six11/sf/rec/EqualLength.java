@@ -26,7 +26,7 @@ public class EqualLength extends RecognizerConstraint {
     double logRatio = (logNumer / logDenom);
     if (ratio > 0.85 || diff < 20) {
       ret = Certainty.Yes;
-    } else if (ratio > 0.7 || diff < 30) {
+    } else if (ratio > 0.6 || diff < 40) {
       ret = Certainty.Maybe;
     }
     say(p, new String[] { "length0", "length1", "diff", "ratio", "logRatio"}, new double[] { a, b, diff, ratio, logRatio }, ret);
