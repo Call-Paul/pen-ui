@@ -15,6 +15,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
+import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -80,6 +81,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public final static Color DEFAULT_WET_COLOR = Color.BLACK;
   public final static float DEFAULT_WET_THICKNESS = 1.8f;
   protected static final int UNDO_REDO_THRESHOLD = 40;
+  private static final Color PAUSE_COLOR = Color.YELLOW.darker();
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
@@ -240,12 +242,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
 
-//    f.addChangeListener(new ChangeListener() {
-//      @Override
-//      public void stateChanged(ChangeEvent ev) {
-//        bug("new state: " + fsFSM.getState());
-//      }
-//    });
+    //    f.addChangeListener(new ChangeListener() {
+    //      @Override
+    //      public void stateChanged(ChangeEvent ev) {
+    //        bug("new state: " + fsFSM.getState());
+    //      }
+    //    });
 
     this.fsFSM = f;
   }
@@ -395,8 +397,20 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Components.antialias(g);
     if (model.getConstraints().getSolutionState() == State.Working) {
-      g.setColor(Color.RED);
-      g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
+      if (model.getConstraints().isPaused()) {
+        g.setColor(PAUSE_COLOR);
+        Pt pauseSpot = new Pt(getWidth() - 30, 10);
+        double pauseW = 10.0;
+        double pauseH = 30.0;
+        Rectangle2D pauseRect = new Rectangle2D.Double(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
+        g.fill(pauseRect);    
+        pauseSpot.move(15, 0);
+        pauseRect.setRect(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
+      } else {
+        g.setColor(Color.RED);
+        g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
+      }
+      
     }
     model.getEditor().drawConstraints();
     model.getEditor().drawDerivedGuides();
@@ -409,7 +423,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           buffer.drawToGraphics(g);
         }
       } catch (Exception ex) {
-//        bug("Got exception while drawing, probably due to buffer size.");
+        //        bug("Got exception while drawing, probably due to buffer size.");
       }
     }
     if (currentScribble != null) {
