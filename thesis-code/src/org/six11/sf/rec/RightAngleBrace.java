@@ -198,11 +198,22 @@ public class RightAngleBrace extends RecognizedItemTemplate {
   public static Collection<RecognizedItem> resolveConflictSameLengthGesture(RecognizedItem itemA,
       RecognizedItem itemB) {
     Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
-    bug("Resolving conflict between...");
-    bug(itemA.getTemplate().getName() + ": " + num(itemA.getCertainties()));
-    bug(" ... and ...");
-    bug(itemB.getTemplate().getName() + ": " + num(itemB.getCertainties()));
-    if (itemA.getTemplate().getName().equals(RightAngleBrace.NAME)) {
+    Collection<Ink> inkA = itemA.getInk();
+    Collection<Ink> inkB = itemB.getInk();
+    String nameA = itemA.getTemplate().getName();
+    String nameB = itemB.getTemplate().getName();
+    // same-length gesture with 2 strokes == win
+    // right-angle gesture with 1 stroke == win
+    // otherwise just pick the right-angle brace.
+    if (nameA.equals(SameLengthGesture.NAME) && inkA.size() == 2) {
+      doomed.add(itemB);
+    } else if (nameB.equals(SameLengthGesture.NAME) && inkB.size() == 2) {
+      doomed.add(itemA);
+    } else if (nameA.equals(RightAngleBrace.NAME) && inkA.size() == 1) {
+      doomed.add(itemB);
+    } else if (nameB.equals(RightAngleBrace.NAME) && inkB.size() == 1) {
+      doomed.add(itemA);
+    } else if (nameA.equals(RightAngleBrace.NAME)) {
       doomed.add(itemB);
     } else {
       doomed.add(itemA);

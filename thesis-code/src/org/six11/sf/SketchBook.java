@@ -312,10 +312,8 @@ public class SketchBook {
               int numCorners = (Integer) scrib.getAttribute("erase_pseudocorners");
               numCorners = numCorners + 1;
               eligible = scrib.hasAttribute("erase_eligible");
-              bug("Num corners: " + numCorners + ", eligible: " + eligible);
               scrib.setAttribute("erase_pseudocorners", numCorners);
               if (numCorners > ERASE_PSEUDOCORNER_THRESH && eligible) {
-                bug(" ** I will erase! **");
                 scrib.setAttribute("erase", true);
                 Pt killSpot = Functions.getMean(samples);
                 scrib.setAttribute("erase_spot", killSpot);

@@ -47,12 +47,14 @@ import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.ConstraintSolver.State;
-// import static org.six11.util.Debug.bug;
-// import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -87,7 +89,7 @@ public class SkruiFabEditor {
   private CutfilePane cutfile;
   private Stopwatch drawingStopwatch;
   private Stopwatch goStopwatch;
-//  private long lastDrawLater;
+  //  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
 
@@ -98,10 +100,14 @@ public class SkruiFabEditor {
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
     drawingStopwatch = new Stopwatch();
     drawingStopwatch.setLogFile("drawingStopwatch.txt");
-    drawingStopwatch.logHeaders(new String[] { "drawStencils", "drawStructured", "drawGuides", "drawFS", "drawStuff"});
+    drawingStopwatch.logHeaders(new String[] {
+        "drawStencils", "drawStructured", "drawGuides", "drawFS", "drawStuff"
+    });
     goStopwatch = new Stopwatch();
     goStopwatch.setLogFile("goStopwatch.txt");
-    goStopwatch.logHeaders(new String[] { "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go" });
+    goStopwatch.logHeaders(new String[] {
+        "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go"
+    });
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(802, 399);
@@ -111,7 +117,8 @@ public class SkruiFabEditor {
     glass.setVisible(true);
     model = new SketchBook(glass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
-      public void constraintStepDone(final ConstraintSolver.State state, int numIterations, double err, int numPoints, int numConstraints) {
+      public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
+          double err, int numPoints, int numConstraints) {
         if (numIterations > 30 || err < (numPoints * 2)) {
           model.getConstraints().setFrameRate(0);
         } else {
@@ -146,9 +153,9 @@ public class SkruiFabEditor {
     drawLaterRunnable = new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
         long now = System.currentTimeMillis();
-//        long elapsed = now - lastDrawLater;
-//        bug("redrawLaterRunnable is going after waiting " + elapsed + " ms");
-//        lastDrawLater = now;
+        //        long elapsed = now - lastDrawLater;
+        //        bug("redrawLaterRunnable is going after waiting " + elapsed + " ms");
+        //        lastDrawLater = now;
         if (model.getConstraints().getSolutionState() == State.Solved) {
           model.fixDerivedGuides();
         }
@@ -294,7 +301,7 @@ public class SkruiFabEditor {
 
   @SuppressWarnings("unchecked")
   public void go() {
-    long[] goTimes = new long[7]; 
+    long[] goTimes = new long[7];
     goStopwatch.start("go");
     bug("+---------------------------------------------------------------------------------------+");
     bug("|                                                                                       |");
@@ -330,10 +337,10 @@ public class SkruiFabEditor {
           segs.add(guidedSeg);
         }
       }
-      
+
       unstruc.removeAll(passedInk);
     }
-    goTimes[0] = goStopwatch.stop("guide"); 
+    goTimes[0] = goStopwatch.stop("guide");
     goStopwatch.start("makeSegs");
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
@@ -577,6 +584,15 @@ public class SkruiFabEditor {
           bug("Don't know how to draw segment: " + seg);
           break;
       }
+      // draw latchedness
+      if (!seg.isSingular()) {
+        if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
+          drawUnlatched(buf, seg.getP1(), seg.getStartDir(), Color.red, 10, 6);
+        }
+        if (!(model.findRelatedSegments(seg.getP2()).size() > 1)) {
+          drawUnlatched(buf, seg.getP2(), seg.getEndDir(), Color.red, 10, 6);
+        }
+      }
       if (useDebuggingPoints) {
         Pt mid = seg.getVisualMidpoint();
         DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
@@ -599,6 +615,14 @@ public class SkruiFabEditor {
       }
     }
     layers.repaint();
+  }
+
+  private void drawUnlatched(DrawingBuffer buf, Pt pt, Vec dir, Color color, double length,
+      double thick) {
+    // show something different to indicate it is not attached to anything.
+    Pt away = pt.getTranslated(dir, length);
+    bug("drawing line from " + num(pt) + " to " + num(away));
+    DrawingBufferRoutines.line(buf, new Line(pt, away), color, thick);
   }
 
   public Color getColor(Segment.Type t) {
@@ -662,7 +686,7 @@ public class SkruiFabEditor {
     }
     layers.repaint();
   }
-  
+
   public void drawErase() {
     DrawingBuffer eraseBuf = layers.getLayer(GraphicDebug.DB_ERASE);
     eraseBuf.clear();
