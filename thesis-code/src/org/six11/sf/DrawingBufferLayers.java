@@ -323,11 +323,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   private void fsSaveChanges() {
     if (fsNearestSeg != null) {
-      List<Pt> def = fsNearestSeg.getDeformedPoints();
-      fsNearestSeg.calculateParameters(def);
+      List<Pt> choppySpline = fsNearestSeg.asSpline().getDownsample(10);
+      fsNearestSeg.calculateParameters(choppySpline);
       fsNearestSeg.clearDeformation();
       model.getConstraints().wakeUp();
-      bug("Just saved changes, I think.");
     }
   }
 

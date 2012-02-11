@@ -71,6 +71,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public final void calculateParameters(List<Pt> points) {
     this.pri = new double[points.size()];
     this.alt = new double[points.size()];
+    paraPoints = null;
     Pt start = points.get(0);
     Pt end = points.get(points.size() - 1);
     this.p1.setLocation(start.getX(), start.getY());
@@ -218,6 +219,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected void doPara() {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
+      bug("doing para for " + getType());
       paraP1Loc = p1.copyXYT();
       paraP2Loc = p2.copyXYT();
       paraPoints = new ArrayList<Pt>();
@@ -231,10 +233,8 @@ public class SegmentDelegate implements HasFuzzyArea {
         spot = spot.getTranslated(vNorm, altComponent);
         paraPoints.add(i, spot);
       }
-
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
-
     } else if (isSingular()) {
       bug("doPara() called for singular segment. this is bad. stacktrace follows.");
       Debug.stacktrace("you should not get here.", 8);
