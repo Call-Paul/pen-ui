@@ -68,7 +68,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     this.type = t;
   }
 
-  public final void calculateParameters(List<Pt> points) {
+  public void calculateParameters(List<Pt> points) {
     this.pri = new double[points.size()];
     this.alt = new double[points.size()];
     paraPoints = null;
@@ -219,7 +219,9 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected void doPara() {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
-      bug("doing para for " + getType());
+      if (isClosed()) {
+        bug("doing para for " + getType() + ". this is a bug");
+      }
       paraP1Loc = p1.copyXYT();
       paraP2Loc = p2.copyXYT();
       paraPoints = new ArrayList<Pt>();
@@ -334,12 +336,6 @@ public class SegmentDelegate implements HasFuzzyArea {
   public boolean isNear(Pt point, double dist) {
     boolean ret = false;
     Pt where = getNearestPoint(point);
-    //    if (type == Segment.Type.Line) {
-    //      where = Functions.getNearestPointOnLine(point, asLine());
-    //    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
-    //      doPara();
-    //      where = Functions.getNearestPointOnPolyline(point, paraPoints);
-    //    }
     if (where != null && where.distance(point) <= dist) {
       ret = true;
     }
@@ -386,6 +382,9 @@ public class SegmentDelegate implements HasFuzzyArea {
     } else if (type == Segment.Type.Dot) {
       where = getP1().copyXYT();
       where.setDouble("r", 0);
+    } else if (type == Segment.Type.Circle || type == Segment.Type.Ellipse
+        || type == Segment.Type.Blob) {
+      where = Functions.getNearestPointOnPolyline(pt, getPointList());
     } else {
       bug("getNearestPoint not implementd for type " + type);
     }

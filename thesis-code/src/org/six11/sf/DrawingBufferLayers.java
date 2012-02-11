@@ -34,6 +34,7 @@ import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.six11.sf.Segment.Type;
 import org.six11.util.Debug;
 import org.six11.util.data.FSM;
 import org.six11.util.data.FSM.Transition;
@@ -315,6 +316,20 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           pt.move(amt);
         }
       }
+      if (fsNearestSeg.isClosed()) {
+        switch (fsNearestSeg.getType()) {
+          case Circle:
+          case Ellipse:
+            Blob asBlob = new Blob(fsNearestSeg.getDelegate());
+            fsNearestSeg.setDelegate(asBlob);
+            break;
+          case Blob:
+            // no action needed.
+            break;
+          default:
+            bug("deforming closed thing that isn't yet supported. add a clause here to make it work.");
+        }
+      }
       fsNearestSeg.calculateParameters(def);
     }
     fsLastDeformPt = recent;
@@ -341,7 +356,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   private void fsInitSelection() {
-    bug("init selection");
     fsStartTime = System.currentTimeMillis();
     if (fsDown != null) {
       Segment nearestSeg = null;
@@ -357,14 +371,17 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
       }
       if (nearestSeg != null) {
-        bug("Nearest seg/point set.");
         fsLastDeformPt = null;
         fsNearestSeg = nearestSeg;
         fsNearestPt = nearestPoint;
         fsNearestSeg.storeParaPointsForDeformation();
         List<Pt> def = fsNearestSeg.getDeformedPoints();
-        double[] distance = Functions.calculateCurvilinearDistance(def, fsNearestPt);
-        bug("Found " + distance.length + " distances. they are " + num(distance));
+        double[] distance;
+        if (fsNearestSeg.isClosed()) {
+          distance = Functions.calculateCurvilinearDistanceClosedCircuit(def, nearestPoint);
+        } else {
+          distance = Functions.calculateCurvilinearDistance(def, fsNearestPt);
+        }
         for (int i = 0; i < distance.length; i++) {
           def.get(i).setDouble("fsEffort", distance[i]);
           def.get(i).setDouble("fsStrength", 0.0); // in case it has stale data from a previous go.

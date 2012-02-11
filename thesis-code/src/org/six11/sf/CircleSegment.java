@@ -4,7 +4,10 @@ import java.awt.Shape;
 import java.awt.geom.PathIterator;
 import java.util.ArrayList;
 import java.util.List;
+
+import static java.lang.Math.ceil;
 import static java.lang.Math.cos;
+import static java.lang.Math.min;
 import static java.lang.Math.sin;
 
 import org.six11.util.Debug;
@@ -13,6 +16,7 @@ import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
+import org.six11.util.pen.Sequence;
 
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
@@ -51,7 +55,7 @@ public class CircleSegment extends SegmentDelegate {
   public List<Pt> getPointList() {
     List<Pt> ret = null;
     if (cachedR == circ.getRadius() && cachedX == circ.x && cachedY == circ.y && cachedPL != null) {
-      bug("Using cached circle pointlist");
+//      bug("Using cached circle pointlist");
       ret = cachedPL;
     } else {
       ret = new ArrayList<Pt>();
@@ -77,5 +81,25 @@ public class CircleSegment extends SegmentDelegate {
   public List<Pt> asPolyline() {
     return getPointList();
   }
+  
+  public Sequence asSpline() {
+    Sequence plSpline = new Sequence(getPointList());
+    List<Pt> downsampled = plSpline.getDownsample(10);
+    double roughLength = Functions.getCurvilinearLength(downsampled);
+    int numSteps = (int) ceil(min(roughLength / 100, 10));
+    Sequence spline = Functions.makeNaturalSpline(numSteps, downsampled);
+    spline.add(spline.getFirst());
+    return spline;
+  }
 
+  public List<Pt> storeParaPointsForDeformation() {
+    deformedPoints = new ArrayList<Pt>();
+    Sequence plSeq = asSpline();
+    deformedPoints.addAll(plSeq.getDownsample(5.0));
+    return deformedPoints;
+  }
+
+  public void calculateParameters(List<Pt> points) {
+    bug("eeeeeeee circle does not need to do this!");
+  }
 }

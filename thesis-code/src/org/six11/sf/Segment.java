@@ -263,4 +263,12 @@ public class Segment implements HasFuzzyArea {
     return d.getPoints();
   }
   
+  public void setDelegate(SegmentDelegate newDelegate) {
+    this.d = newDelegate;
+  }
+
+  public SegmentDelegate getDelegate() {
+    return d;
+  }
+  
 }

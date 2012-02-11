@@ -19,6 +19,18 @@ public class Blob extends SegmentDelegate {
   private List<Pt> ctrl;
 
   public Blob(Ink ink, List<Pt> points) {
+    init(ink, points);
+  }
+
+  public Blob(SegmentDelegate parent) {
+    List<Pt> points = parent.getPointList();
+    Sequence seq = new Sequence(points);
+    List<Pt> downsampled = seq.getDownsample(5);
+    init(parent.ink, downsampled);
+    this.deformedPoints = parent.deformedPoints;
+  }
+
+  private void init(Ink ink, List<Pt> points) {
     this.ink = ink;
     this.ctrl = new ArrayList<Pt>();
     ctrl.addAll(points);
@@ -92,5 +104,20 @@ public class Blob extends SegmentDelegate {
 
   public List<Pt> asPolyline() {
     return getPointList();
+  }
+
+  public void calculateParameters(List<Pt> points) {
+    this.ctrl = points;
+  }
+  
+  public List<Pt> storeParaPointsForDeformation() {
+    deformedPoints = new ArrayList<Pt>();
+    Sequence plSeq = asSpline();
+    deformedPoints.addAll(plSeq.getDownsample(5.0));
+    return deformedPoints;
+  }
+  
+  protected void doPara() {
+    
   }
 }
