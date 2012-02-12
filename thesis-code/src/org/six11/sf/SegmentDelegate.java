@@ -374,8 +374,8 @@ public class SegmentDelegate implements HasFuzzyArea {
   public Pt getNearestPoint(Pt pt) {
     Pt where = null;
     if (type == Segment.Type.Line) {
-      where = Functions.getNearestPointOnLine(pt, asLine(), true);
-      //      where = Functions.getNearestPointWithinSegment(pt, asLine(), true);
+      //      where = Functions.getNearestPointOnLine(pt, asLine(), true);
+      where = Functions.getNearestPointWithinSegment(pt, asLine(), true);
     } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
       doPara();
       where = Functions.getNearestPointOnPolyline(pt, paraPoints);
