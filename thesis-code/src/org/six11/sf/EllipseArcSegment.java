@@ -35,12 +35,16 @@ public class EllipseArcSegment extends SegmentDelegate {
     Pt pA = points.get(0);
     Pt pB = points.get(points.size() - 1);
     Pt origA = surface.remove(0);
-//    Pt origB = surface.remove(surface.size() - 1);
+    Pt origB = surface.remove(surface.size() - 1);
 
     if (pA.distance(origA) < pB.distance(origA)) {
+      pA.setLocation(origA);
+      pB.setLocation(origB);
       surface.add(0, pA);
       surface.add(pB);
     } else {
+      pA.setLocation(origB);
+      pB.setLocation(origA);
       surface.add(0, pB);
       surface.add(pA);
     }

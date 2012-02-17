@@ -91,6 +91,7 @@ public class EndCap {
   private Rectangle2D bounds;
   private Line line;
   private WhichEnd end;
+  private double halfLength;
 
   public EndCap(SegmentDelegate seg, WhichEnd end) {
     this.seg = seg;
@@ -102,12 +103,17 @@ public class EndCap {
     this.area = new Area();
     area.add(new Area(new Circle(pt, rad)));
     area.add(makeTriangle(pt, dir, rad, rad * 6));
+    halfLength = rad * 6;
     this.shape = new Path2D.Double();
     shape.append(area.getPathIterator(null), false);
     this.bounds = area.getBounds2D();
     this.line = new Line(pt, dir);
   }
 
+  public double getHalfLength() {
+    return halfLength;
+  }
+  
   private Area makeTriangle(Pt end, Vec dir, double halfHeight, double width) {
     Vec norm1 = dir.getNormal().getVectorOfMagnitude(halfHeight);
     Vec norm2 = norm1.getFlip();

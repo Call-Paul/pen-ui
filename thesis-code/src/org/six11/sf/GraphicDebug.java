@@ -29,6 +29,7 @@ public class GraphicDebug {
   public static final String DB_FS = "flow selection";
   public static final String DB_DEBUG = "debug";
   public static final String DB_ERASE = "erase";
+  public static final Color COLOR_CLEAR_BLUE = new Color(0, 0, 255, 64);
 
   public GraphicDebug(DrawingBufferLayers layers) {
     this.layers = layers;

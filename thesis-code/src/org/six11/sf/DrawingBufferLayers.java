@@ -243,13 +243,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
 
-    //    f.addChangeListener(new ChangeListener() {
-    //      @Override
-    //      public void stateChanged(ChangeEvent ev) {
-    //        bug("new state: " + fsFSM.getState());
-    //      }
-    //    });
-
     this.fsFSM = f;
   }
 
@@ -542,19 +535,25 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     BoundingBox bb = getBoundingBox();
     int w = bb.getWidthInt();
     int h = bb.getHeightInt();
-    Rectangle size = new Rectangle(w, h);
+    int pad = 32;
+    int wPad = w + pad;
+    int hPad = h + pad;
+    Rectangle size = new Rectangle(wPad, hPad);
     Document document = new Document(size, 0, 0, 0, 0);
+    
     try {
       FileOutputStream out = new FileOutputStream(file);
       PdfWriter writer = PdfWriter.getInstance(document, out);
       document.open();
       DefaultFontMapper mapper = new DefaultFontMapper();
       PdfContentByte cb = writer.getDirectContent();
-      PdfTemplate tp = cb.createTemplate(w, h);
-      Graphics2D g2 = tp.createGraphics(w, h, mapper);
-      tp.setWidth(w);
-      tp.setHeight(h);
-      g2.translate(-bb.getX(), -bb.getY());
+      PdfTemplate tp = cb.createTemplate(wPad, hPad);
+      Graphics2D g2 = tp.createGraphics(wPad, hPad, mapper);
+      tp.setWidth(wPad);
+      tp.setHeight(hPad);
+      double transX = -(bb.getX() - (pad/2));
+      double transY = -(bb.getY() - (pad/2));
+      g2.translate(transX, transY);
       paintContent(g2, false);
       g2.dispose();
       cb.addTemplate(tp, 0, 0);

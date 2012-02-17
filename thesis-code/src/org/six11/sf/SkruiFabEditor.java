@@ -87,8 +87,8 @@ public class SkruiFabEditor {
   private Colors colors;
   private ScrapGrid grid;
   private CutfilePane cutfile;
-  private Stopwatch drawingStopwatch;
-  private Stopwatch goStopwatch;
+  //  private Stopwatch drawingStopwatch;
+  //  private Stopwatch goStopwatch;
   //  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
@@ -98,16 +98,16 @@ public class SkruiFabEditor {
     this.colors = new Colors();
     colors.set("stencil", new Color(0.8f, 0.8f, 0.8f, 0.5f));
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
-    drawingStopwatch = new Stopwatch();
-    drawingStopwatch.setLogFile("drawingStopwatch.txt");
-    drawingStopwatch.logHeaders(new String[] {
-        "drawStencils", "drawStructured", "drawGuides", "drawFS", "drawStuff"
-    });
-    goStopwatch = new Stopwatch();
-    goStopwatch.setLogFile("goStopwatch.txt");
-    goStopwatch.logHeaders(new String[] {
-        "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go"
-    });
+    //    drawingStopwatch = new Stopwatch();
+    //    drawingStopwatch.setLogFile("drawingStopwatch.txt");
+    //    drawingStopwatch.logHeaders(new String[] {
+    //        "drawStencils", "drawStructured", "drawGuides", "drawFS", "drawStuff"
+    //    });
+    //    goStopwatch = new Stopwatch();
+    //    goStopwatch.setLogFile("goStopwatch.txt");
+    //    goStopwatch.logHeaders(new String[] {
+    //        "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go"
+    //    });
     af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(802, 399);
@@ -302,7 +302,7 @@ public class SkruiFabEditor {
   @SuppressWarnings("unchecked")
   public void go() {
     long[] goTimes = new long[7];
-    goStopwatch.start("go");
+    //    goStopwatch.start("go");
     bug("+---------------------------------------------------------------------------------------+");
     bug("|                                                                                       |");
     bug("|                                       ~ go ~                                          |");
@@ -310,7 +310,7 @@ public class SkruiFabEditor {
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
     Collection<Segment> segs = new HashSet<Segment>();
-    goStopwatch.start("guide");
+    //    goStopwatch.start("guide");
     if (unstruc.isEmpty()) {
       bug("No ink to work with...");
     } else {
@@ -340,41 +340,41 @@ public class SkruiFabEditor {
 
       unstruc.removeAll(passedInk);
     }
-    goTimes[0] = goStopwatch.stop("guide");
-    goStopwatch.start("makeSegs");
+    //    goTimes[0] = goStopwatch.stop("guide");
+    //    goStopwatch.start("makeSegs");
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
       segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
       stroke.setAnalyzed(true);
     }
-    goTimes[1] = goStopwatch.stop("makeSegs");
+    //    goTimes[1] = goStopwatch.stop("makeSegs");
 
-    goStopwatch.start("addSegs");
+    //    goStopwatch.start("addSegs");
     SafeAction a = model.getActionFactory().addSegments(segs);
     model.addAction(a);
-    goTimes[2] = goStopwatch.stop("addSegs");
-    goStopwatch.start("recognize");
-    model.getConstraintAnalyzer().analyze(segs);
+    //    goTimes[2] = goStopwatch.stop("addSegs");
+    //    goStopwatch.start("recognize");
+    model.getConstraintAnalyzer().analyze(segs, true);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
-    goTimes[3] = goStopwatch.stop("recognize");
-    goStopwatch.start("stencils");
+    //    goTimes[3] = goStopwatch.stop("recognize");
+    //    goStopwatch.start("stencils");
     findStencils(segs);
-    goTimes[4] = goStopwatch.stop("stencils");
+    //    goTimes[4] = goStopwatch.stop("stencils");
     model.getConstraints().wakeUp();
     model.clearInk();
     layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
-    goStopwatch.start("draw buffers");
+    //    goStopwatch.start("draw buffers");
     drawStencils();
     drawStructured();
     drawRecognized(items);
-    goTimes[5] = goStopwatch.stop("draw buffers");
+    //    goTimes[5] = goStopwatch.stop("draw buffers");
     layers.repaint();
-    goTimes[6] = goStopwatch.stop("go");
-    goStopwatch.log(goTimes);
+    //    goTimes[6] = goStopwatch.stop("go");
+    //    goStopwatch.log(goTimes);
   }
 
   public void findStencils(Collection<Segment> segs) {
@@ -415,26 +415,33 @@ public class SkruiFabEditor {
     return ret;
   }
 
+  /**
+   * A debugging function for drawing segment endcaps.
+   */
+  void drawEndCaps() {
+    DrawingBuffer buf = layers.getLayer("end caps");
+    buf.clear();
+    for (Segment seg : model.getGeometry()) {
+      if (seg.hasEndCaps()) {
+        for (EndCap ec : seg.getEndCaps()) {
+          Pt ecPt = ec.getPt();
+          Vec ecDir = ec.getDir();
+          double halfLen = ec.getHalfLength();
+          Pt a = ecPt.getTranslated(ecDir, halfLen);
+          Pt b = ecPt.getTranslated(ecDir.getFlip(), halfLen);
+          DrawingBufferRoutines.line(buf, a, b, GraphicDebug.COLOR_CLEAR_BLUE, 4.0);
+        }
+      }
+    }
+  }
+
   public void drawStuff() {
-    drawingStopwatch.start("drawStuff");
-    drawingStopwatch.start("drawStencils");
-    long[] times = new long[6];
+    //    drawEndCaps();
     drawStencils();
-    times[0] = drawingStopwatch.stop("drawStencils");
-    drawingStopwatch.start("drawStructured");
     drawStructured();
-    times[1] = drawingStopwatch.stop("drawStructured");
-    drawingStopwatch.start("drawGuides");
     drawGuides();
-    times[2] = drawingStopwatch.stop("drawGuides");
-    drawingStopwatch.start("drawFS");
     drawFS();
-    times[3] = drawingStopwatch.stop("drawFS");
-    drawingStopwatch.start("drawErase");
     drawErase();
-    times[4] = drawingStopwatch.stop("drawErase");
-    times[5] = drawingStopwatch.stop("drawStuff");
-    drawingStopwatch.log(times);
   }
 
   private void drawRecognized(Collection<RecognizedItem> items) {
@@ -616,6 +623,7 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
       }
     }
+
     layers.repaint();
   }
 

@@ -13,8 +13,8 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+// import static org.six11.util.Debug.bug;
+// import static org.six11.util.Debug.num;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.abs;
 
@@ -26,9 +26,7 @@ public class ConstraintAnalyzer {
     this.model = model;
   }
 
-  public void analyze(Collection<Segment> segs) {
-    //    DrawingBuffer bugBuf = model.getLayers().getLayer(GraphicDebug.DB_LATCH_LAYER);
-    //    bugBuf.clear();
+  public void analyze(Collection<Segment> segs, boolean autolatch) {
     Set<EndCap> caps = getCurrentEndCaps(model.getGeometry()); // set of all endcaps
     Set<EndCap> newCaps = getCurrentEndCaps(segs); // set of recently added endcaps (based on struc)
     Set<EndCap.Intersection> examined = new HashSet<EndCap.Intersection>();
@@ -52,13 +50,15 @@ public class ConstraintAnalyzer {
     for (Intersection ix : success) {
       groups.add(new EndCap.Group(ix));
     }
-    while (!merged(groups))
-      ;
-    for (EndCap.Group group : groups) {
-      Pt spot = group.adjustMembers(); // note: spot does not have time data
-      // latch points in this group together at the spot
-      for (Pt capPt : group.getPoints()) {
-        model.replace(capPt, spot);
+    if (autolatch) {
+      while (!merged(groups))
+        ;
+      for (EndCap.Group group : groups) {
+        Pt spot = group.adjustMembers(); // note: spot does not have time data
+        // latch points in this group together at the spot
+        for (Pt capPt : group.getPoints()) {
+          model.replace(capPt, spot);
+        }
       }
     }
     model.getConstraints().wakeUp();

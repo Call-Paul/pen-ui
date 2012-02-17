@@ -244,59 +244,40 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public Vec getStartDir() {
-    Vec ret = null;
-    switch (type) {
-      case Line:
-        ret = new Vec(getP1(), getP2()).getUnitVector();
-        break;
-      case EllipticalArc:
-      case Curve:
-        Sequence spline = asSpline(); // spline should reliably give the direction at the ends
-        Pt a = spline.get(0);
-        Pt b = null;
-        for (int i = 1; i < spline.size(); i++) {
-          double dist = spline.get(i).distance(a);
-          if (dist > 0.1) {
-            b = spline.get(i);
-            break;
-          }
-        }
-        if (a != null && b != null) {
-          ret = new Vec(a, b).getUnitVector();
-        } else {
-          bug("huge error with getting end direction.");
-        }
-        break;
-      default:
-        bug("Unknown segment type!");
-    }
-    return ret;
+    return getTangent(getP1());    
   }
 
   public Vec getEndDir() {
+    return getTangent(getP2()).getFlip();
+  }
+
+  /**
+   * Return a tangent vector at the given point. The target point should be equal (using ==) to one
+   * of the points returned by getPointList(). The vector is always defined by points
+   * P[i] to P[j] where i < j. In other words, the return value always points towards p2.
+   * 
+   * @param target
+   * @return
+   */
+  public Vec getTangent(Pt target) {
     Vec ret = null;
-    switch (type) {
-      case Line:
-        ret = new Vec(getP2(), getP1()).getUnitVector();
-        break;
-      case EllipticalArc:
-      case Curve:
-        Sequence spline = asSpline(); // spline should reliably give the direction at the ends
-        Pt a = spline.get(spline.size() - 1);
-        Pt b = null;
-        for (int i = spline.size() - 2; i >= 0; i--) {
-          double dist = spline.get(i).distance(a);
-          if (dist > 0.1) {
-            b = spline.get(i);
-            break;
-          }
-        }
-        if (a != null && b != null) {
-          ret = new Vec(a, b).getUnitVector();
-        } else {
-          bug("huge error with getting end direction.");
-        }
-        break;
+    List<Pt> pts = getPointList();
+    int idx = pts.indexOf(target);
+    if (idx < 0) {
+      bug("Error: point " + num(target) + " does not appear in " + num(pts, " "));
+    } else {
+      int prevIdx = idx - 1;
+      int nextIdx = idx + 1;
+      if (prevIdx < 0) {
+        nextIdx = 1;
+        prevIdx = 0;
+      }
+      if (nextIdx >= pts.size()) {
+        nextIdx = pts.size() - 1;
+        prevIdx = nextIdx - 1;
+      }
+      bug("Using prev/next index: " + prevIdx + "/" + nextIdx);
+      ret = new Vec(pts.get(prevIdx), pts.get(nextIdx)).getUnitVector();
     }
     return ret;
   }
