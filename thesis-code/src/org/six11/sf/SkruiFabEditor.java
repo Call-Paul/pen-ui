@@ -623,7 +623,7 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
       }
     }
-
+    
     layers.repaint();
   }
 
@@ -683,13 +683,29 @@ public class SkruiFabEditor {
     if (fsSeg != null) {
       DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
       List<Pt> def = fsSeg.getDeformedPoints();
+      boolean drawNodes = true;
+      String state = layers.getFlowSelectionState(); 
+      if (state.equals(DrawingBufferLayers.OP) || state.equals(DrawingBufferLayers.SMOOTH)) {
+        drawNodes = true;
+      }
       if (def != null) {
         for (int i = 0; i < def.size() - 1; i++) {
           Pt a = def.get(i);
           Pt b = def.get(i + 1);
-          double str = Math.max(a.getDouble("fsStrength"), b.getDouble("fsStrength"));
+          double aStr = a.getDouble("fsStrength");
+          double bStr = b.getDouble("fsStrength");
+          double str = Math.max(aStr, bStr);
           Color color = new Color(1f, 0f, 0f, (float) str);
           DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
+        }
+        if (drawNodes) {
+          for (int i=0; i < def.size(); i++) {
+            Pt pt = def.get(i);
+            double str = pt.getDouble("fsStrength");
+            if (str > 0) {
+              DrawingBufferRoutines.dot(fsBuf, pt, 2.5, 0.25, Color.BLACK, Color.WHITE);
+            }
+          }
         }
       }
     }

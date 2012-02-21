@@ -69,10 +69,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private static final String UP = "up";
   private static final String DOWN = "down";
   private static final String TICK = "tick";
-  private static final String OP = "op";
-  private static final String FLOW = "flow";
-  private static final String DRAW = "draw";
-  private static final String IDLE = "idle";
+  
+  public static final String OP = "op";
+  public static final String SMOOTH = "smooth";
+  public static final String FLOW = "flow";
+  public static final String DRAW = "draw";
+  public static final String IDLE = "idle";
+  
   private static final String BUTTON_DOWN = "magic_button_down";
   private static final String BUTTON_UP = "magic_button_up";
   private static final String ARMED = "armed";
@@ -84,6 +87,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public final static float DEFAULT_WET_THICKNESS = 1.8f;
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final Color PAUSE_COLOR = Color.YELLOW.darker();
+  private static final double FS_SMOOTH_DAMPING = 0.025;
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
@@ -98,6 +102,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private Pt dragPt;
   private Segment fsNearestSeg; // segment currently flow-selected
   private Pt fsNearestPt; // point on segment currently selected
+  private int fsSmoothIndex; // epicenter index. valid after fsInitSelection(), invalid after pen-up.
   private double fsBubble = 10;
   private int fsPauseTimeout = 900;
   private Timer fsTickTimer;
@@ -158,10 +163,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addState(DRAW);
     f.addState(FLOW);
     f.addState(OP);
+    f.addState(SMOOTH);
     f.addState(ARMED);
     f.addState(SEARCH_DIR);
     f.setStateEntryCode(DRAW, new Runnable() {
-      @Override
       public void run() {
         fsInitTimer();
       }
@@ -183,11 +188,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         fsTickTimer.restart();
       }
     });
-    f.setStateExitCode(OP, new Runnable() {
-      public void run() {
-        fsSaveChanges();
-      }
-    });
+    //    f.setStateExitCode(OP, new Runnable() {
+    //      public void run() {
+    ////        fsSaveChanges();
+    //      }
+    //    });
+
     f.setStateEntryCode(SEARCH_DIR, new Runnable() {
       public void run() {
         searchStart = fsDown.copyXYT();
@@ -207,7 +213,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
-//        fsTransitionPt = fsRecentPt;
+        //        fsTransitionPt = fsRecentPt;
         fsRecent.clear();
         fsInitSelection();
       }
@@ -220,13 +226,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(UP, FLOW, IDLE));
     f.addTransition(new Transition(MOVE, FLOW, OP) {
       public void doBeforeTransition() {
-        bug("Flowing, but you moved the pen so I'll stash that point away...");
         addFsRecent(fsRecentPt);
       }
-      
+
       public boolean veto() {
         boolean ret = false;
-        bug("veto check...");
+        //        bug("veto check (selecting) ...");
         if (fsCheck()) {
           ret = true;
         }
@@ -234,13 +239,76 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
 
       public void doAfterTransition() {
-        bug("Clearing recent list and transition point (flow->op)");
+        //        bug("Clearing recent list and transition point (flow->op)");
         fsRecent.clear();
         fsTransitionPt = fsRecentPt;
       }
 
     });
-    f.addTransition(new Transition(UP, OP, IDLE));
+    f.addTransition(new Transition(MOVE, OP, OP) {
+      public void doBeforeTransition() {
+        addFsRecent(fsRecentPt);
+        //        bug("moving... looking through " + fsRecent.size() + " items");
+        long now = System.currentTimeMillis();
+        long target = now - fsPauseTimeout;
+        int transitionIdx = -1;
+        for (int i = fsRecent.size() - 1; i >= 0; i--) {
+          Pt pt = fsRecent.get(i);
+          if (pt.getTime() < target) {
+            transitionIdx = i;
+            fsTransitionPt = pt;
+            break;
+          }
+        }
+        if (transitionIdx >= 0) {
+          //          bug("Found new transition point at index " + transitionIdx);
+          //          bug("Removing " + transitionIdx + " points from list of " + fsRecent.size() + " points");
+          for (int i = 0; i < transitionIdx; i++) {
+            fsRecent.remove(0);
+          }
+        }
+        fsDeform(fsRecentPt);
+      }
+    });
+    f.addTransition(new Transition(TICK, OP, OP) {
+      @Override
+      public void doAfterTransition() {
+        fsCheck();
+      }
+    });
+    f.addTransition(new Transition(UP, OP, IDLE) {
+      public void doBeforeTransition() {
+        fsSaveChanges();
+      }
+    });
+    f.addTransition(new Transition(PAUSE, OP, SMOOTH) {
+      public void doAfterTransition() {
+        fsRecent.clear();
+      }
+    });
+    f.addTransition(new Transition(MOVE, SMOOTH, OP) {
+      public void doBeforeTransition() {
+        addFsRecent(fsRecentPt);
+      }
+
+      public boolean veto() {
+        boolean ret = false;
+        if (fsCheck()) {
+          ret = true;
+        }
+        return ret;
+      }
+    });
+    f.addTransition(new Transition(TICK, SMOOTH, SMOOTH) {
+      public void doAfterTransition() {
+        fsSmooth();
+      }
+    });
+    f.addTransition(new Transition(UP, SMOOTH, IDLE) {
+      public void doBeforeTransition() {
+        fsSaveChanges();
+      }
+    });
     f.addTransition(new Transition(BUTTON_DOWN, IDLE, ARMED));
     f.addTransition(new Transition(BUTTON_UP, ARMED, IDLE) {
       public void doAfterTransition() {
@@ -276,13 +344,49 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
-    f.addChangeListener(new ChangeListener() {
-      
-      public void stateChanged(ChangeEvent arg0) {
-        bug("state: " + fsFSM.getState());
-      }
-    });
+    //    f.addChangeListener(new ChangeListener() {
+    //
+    //      public void stateChanged(ChangeEvent arg0) {
+    //        bug("state: " + fsFSM.getState());
+    //      }
+    //    });
+    //    f.setDebugMode(true);
     this.fsFSM = f;
+  }
+
+  private void fsSmoothPair(int nearIdx, int farIdx, List<Pt> def) {
+    Pt a = def.get(nearIdx); // near
+    Pt b = def.get(farIdx); // far
+    Vec toNext = new Vec(a, b);
+    double aStr = a.getDouble("fsStrength");
+    double bStr = b.getDouble("fsStrength");
+    double attenuation = bStr - aStr;
+    double dampedScale = bStr * FS_SMOOTH_DAMPING;
+    Vec dampedVec = toNext.getScaled(dampedScale);
+    a.move(dampedVec);
+    double dampedAttenuation = attenuation * FS_SMOOTH_DAMPING;
+    bug("attenuation: " + dampedAttenuation);
+    a.setDouble("fsStrength", aStr + dampedAttenuation);
+  }
+  
+  protected void fsSmooth() {
+    
+    List<Pt> def = fsNearestSeg.getDeformedPoints();
+    bug("Smooth starting at " + fsSmoothIndex + " of " + def.size() + " points");
+    
+    for (int i=fsSmoothIndex - 2; i >= 0; i--) {
+      int nearIdx = i+1;
+      int farIdx = i;
+      fsSmoothPair(nearIdx, farIdx, def);
+    }
+    for (int i=fsSmoothIndex + 2; i < def.size(); i++) {
+      int nearIdx = i-1;
+      int farIdx = i;
+      fsSmoothPair(nearIdx, farIdx, def);
+    }
+    fsNearestSeg.calculateParameters(def);
+    model.getEditor().drawStuff();
+
   }
 
   protected void addFsRecent(Pt pt) {
@@ -295,24 +399,21 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   /**
    * Checks to see if the pen has remained relatively still since the last 'special transition
-   * change'.
+   * change' it triggers a PAUSE event. At least 'fsPauseTimeout' milliseconds must have passed for
+   * this to trigger. If a PAUSE event is sent, this returns true.
    * 
    * @return
    */
   private boolean fsCheck() {
-
     boolean paused = false;
     long now = System.currentTimeMillis();
     long then = fsTransitionPt.getTime();
-    long diff = now - then;
-    bug("fsCheck in state: " + fsFSM.getState() +". Time diff: " + diff);
     if (now > then + fsPauseTimeout) {
       // pause is possible. take the approach of assuming there 
       // is a pause but using fsRecent to disprove it.
       paused = true;
       double maxD = 0;
-      bug("  Pause is possible. Iterating at most " + fsRecent.size() + " points");
-      for (int i=fsRecent.size() - 1; i >= 0; i--) {
+      for (int i = fsRecent.size() - 1; i >= 0; i--) {
         Pt pt = fsRecent.get(i);
         maxD = Math.max(maxD, pt.distance(fsTransitionPt));
         if (maxD > fsBubble) {
@@ -321,11 +422,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         }
       }
       if (paused) {
-        bug("  **adding pause event**");
         fsFSM.addEvent(PAUSE);
       }
     }
-    bug("  Pause? " + paused);
     return paused;
   }
 
@@ -383,30 +482,34 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       Vec dir = new Vec(fsLastDeformPt, recent);
       double m = dir.mag();
       List<Pt> def = fsNearestSeg.getDeformedPoints();
-      for (Pt pt : def) {
-        double s = pt.getDouble("fsStrength");
-        Vec amt = dir.getVectorOfMagnitude(s * m);
-        if (Double.isNaN(amt.getX()) || Double.isNaN(amt.getY())) {
-          // avoid scary NaNs.
-        } else {
-          pt.move(amt);
+      if (def != null) {
+        for (Pt pt : def) {
+          double s = pt.getDouble("fsStrength");
+          Vec amt = dir.getVectorOfMagnitude(s * m);
+          if (Double.isNaN(amt.getX()) || Double.isNaN(amt.getY())) {
+            // avoid scary NaNs.
+          } else {
+            pt.move(amt);
+          }
         }
-      }
-      if (fsNearestSeg.isClosed()) {
-        switch (fsNearestSeg.getType()) {
-          case Circle:
-          case Ellipse:
-            Blob asBlob = new Blob(fsNearestSeg.getDelegate());
-            fsNearestSeg.setDelegate(asBlob);
-            break;
-          case Blob:
-            // no action needed.
-            break;
-          default:
-            bug("deforming closed thing that isn't yet supported. add a clause here to make it work.");
+        if (fsNearestSeg.isClosed()) {
+          switch (fsNearestSeg.getType()) {
+            case Circle:
+            case Ellipse:
+              Blob asBlob = new Blob(fsNearestSeg.getDelegate());
+              fsNearestSeg.setDelegate(asBlob);
+              break;
+            case Blob:
+              // no action needed.
+              break;
+            default:
+              bug("deforming closed thing that isn't yet supported. add a clause here to make it work.");
+          }
         }
+        fsNearestSeg.calculateParameters(def);
+      } else {
+        bug("Def was null");
       }
-      fsNearestSeg.calculateParameters(def);
     }
     fsLastDeformPt = recent;
     model.getEditor().drawStuff();
@@ -458,10 +561,18 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         } else {
           distance = Functions.calculateCurvilinearDistance(def, fsNearestPt);
         }
+        int idxTarget = 0;
+        double minVal = Double.MAX_VALUE;
         for (int i = 0; i < distance.length; i++) {
+          if (distance[i] < minVal) {
+            minVal = distance[i];
+            idxTarget = i;
+          }
           def.get(i).setDouble("fsEffort", distance[i]);
           def.get(i).setDouble("fsStrength", 0.0); // in case it has stale data from a previous go.
         }
+        fsSmoothIndex = idxTarget;
+        bug("Set smooth target to " + fsSmoothIndex);
       }
     }
   }
@@ -693,7 +804,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         } else if (model.isDraggingGuide()) {
           model.dragGuidePoint(here);
         } else if (fsFSM.getState().equals(OP)) {
-          fsDeform(here);
+
         } else if (fsFSM.getState().equals(DRAW) || fsFSM.getState().equals(FLOW)) {
           if (currentScribble != null) {
             currentScribble.lineTo(here.getX(), here.getY());
@@ -762,6 +873,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       ret = 0;
     }
     return Math.max(ret, minRetVal);
+  }
+
+  public String getFlowSelectionState() {
+    return fsFSM.getState();
   }
 
 }
