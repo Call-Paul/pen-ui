@@ -37,6 +37,7 @@ import javax.swing.event.ChangeListener;
 import org.six11.sf.Segment.Type;
 import org.six11.util.Debug;
 import org.six11.util.data.FSM;
+import org.six11.util.data.Lists;
 import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
@@ -103,6 +104,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private int fsTickTimeout = 45;
   private long fsStartTime;
   private Pt fsLastDeformPt;
+  private List<Pt> fsRecent;
+  private Pt fsTransitionPt;
+  private Pt fsRecentPt;
   Pt prev;
   GeneralPath currentScribble;
   private Pt hoverPt;
@@ -135,8 +139,10 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   private final void fsInit() {
+    fsRecent = new ArrayList<Pt>();
     fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
+        bug("tick 1");
         fsCheck();
       }
     });
@@ -167,6 +173,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         fsNearestPt = null; // point on segment currently selected
         fsTimer.stop();
         model.getEditor().drawStuff();
+        bug("Clearing transition point and recent list");
+        fsTransitionPt = null;
+        fsRecent.clear();
       }
     });
     f.setStateEntryCode(FLOW, new Runnable() {
@@ -184,10 +193,22 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         searchStart = fsDown.copyXYT();
       }
     });
-    f.addTransition(new Transition(DOWN, IDLE, DRAW));
+    f.addTransition(new Transition(DOWN, IDLE, DRAW) {
+      public void doBeforeTransition() {
+        bug("Setting transition point (idle->draw)");
+        fsTransitionPt = fsRecentPt;
+      }
+    });
+    f.addTransition(new Transition(MOVE, DRAW, DRAW) {
+      public void doBeforeTransition() {
+        addFsRecent(fsRecentPt);
+      }
+    });
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
+//        fsTransitionPt = fsRecentPt;
+        fsRecent.clear();
         fsInitSelection();
       }
     });
@@ -198,13 +219,26 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     }); // causes flow selection to grow
     f.addTransition(new Transition(UP, FLOW, IDLE));
     f.addTransition(new Transition(MOVE, FLOW, OP) {
+      public void doBeforeTransition() {
+        bug("Flowing, but you moved the pen so I'll stash that point away...");
+        addFsRecent(fsRecentPt);
+      }
+      
       public boolean veto() {
         boolean ret = false;
+        bug("veto check...");
         if (fsCheck()) {
           ret = true;
         }
         return ret;
       }
+
+      public void doAfterTransition() {
+        bug("Clearing recent list and transition point (flow->op)");
+        fsRecent.clear();
+        fsTransitionPt = fsRecentPt;
+      }
+
     });
     f.addTransition(new Transition(UP, OP, IDLE));
     f.addTransition(new Transition(BUTTON_DOWN, IDLE, ARMED));
@@ -242,8 +276,57 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
-
+    f.addChangeListener(new ChangeListener() {
+      
+      public void stateChanged(ChangeEvent arg0) {
+        bug("state: " + fsFSM.getState());
+      }
+    });
     this.fsFSM = f;
+  }
+
+  protected void addFsRecent(Pt pt) {
+    if (fsRecent.isEmpty()) {
+      fsRecent.add(pt);
+    } else if (!Lists.getLast(fsRecent).isSameLocation(pt)) {
+      fsRecent.add(pt);
+    }
+  }
+
+  /**
+   * Checks to see if the pen has remained relatively still since the last 'special transition
+   * change'.
+   * 
+   * @return
+   */
+  private boolean fsCheck() {
+
+    boolean paused = false;
+    long now = System.currentTimeMillis();
+    long then = fsTransitionPt.getTime();
+    long diff = now - then;
+    bug("fsCheck in state: " + fsFSM.getState() +". Time diff: " + diff);
+    if (now > then + fsPauseTimeout) {
+      // pause is possible. take the approach of assuming there 
+      // is a pause but using fsRecent to disprove it.
+      paused = true;
+      double maxD = 0;
+      bug("  Pause is possible. Iterating at most " + fsRecent.size() + " points");
+      for (int i=fsRecent.size() - 1; i >= 0; i--) {
+        Pt pt = fsRecent.get(i);
+        maxD = Math.max(maxD, pt.distance(fsTransitionPt));
+        if (maxD > fsBubble) {
+          paused = false;
+          break;
+        }
+      }
+      if (paused) {
+        bug("  **adding pause event**");
+        fsFSM.addEvent(PAUSE);
+      }
+    }
+    bug("  Pause? " + paused);
+    return paused;
   }
 
   /**
@@ -252,7 +335,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
    * 
    * @return true if the pen has always remained relatively near the pen down point.
    */
-  private boolean fsCheck() {
+  private boolean fsCheckOld() {
     boolean shouldFlow = false;
     if (currentScribble != null && fsDown != null) {
       List<Pt> points = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
@@ -540,7 +623,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     int hPad = h + pad;
     Rectangle size = new Rectangle(wPad, hPad);
     Document document = new Document(size, 0, 0, 0, 0);
-    
+
     try {
       FileOutputStream out = new FileOutputStream(file);
       PdfWriter writer = PdfWriter.getInstance(document, out);
@@ -551,8 +634,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       Graphics2D g2 = tp.createGraphics(wPad, hPad, mapper);
       tp.setWidth(wPad);
       tp.setHeight(hPad);
-      double transX = -(bb.getX() - (pad/2));
-      double transY = -(bb.getY() - (pad/2));
+      double transX = -(bb.getX() - (pad / 2));
+      double transY = -(bb.getY() - (pad / 2));
       g2.translate(transX, transY);
       paintContent(g2, false);
       g2.dispose();
@@ -567,7 +650,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   }
 
   public void handlePenEvent(PenEvent ev) {
-
+    fsRecentPt = ev.getPt();
     switch (ev.getType()) {
       case Down:
         fsFSM.addEvent(DOWN);

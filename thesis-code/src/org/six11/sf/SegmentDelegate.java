@@ -276,7 +276,6 @@ public class SegmentDelegate implements HasFuzzyArea {
         nextIdx = pts.size() - 1;
         prevIdx = nextIdx - 1;
       }
-      bug("Using prev/next index: " + prevIdx + "/" + nextIdx);
       ret = new Vec(pts.get(prevIdx), pts.get(nextIdx)).getUnitVector();
     }
     return ret;
