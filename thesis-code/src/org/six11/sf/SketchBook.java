@@ -33,6 +33,7 @@ import org.six11.sf.rec.EncircleRecognizer;
 import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RightAngleBrace;
+import org.six11.sf.rec.SameAngleGesture;
 import org.six11.sf.rec.SameLengthGesture;
 import org.six11.sf.rec.SelectGestureRecognizer;
 import org.six11.util.Debug;
@@ -131,6 +132,7 @@ public class SketchBook {
     addRecognizer(new DotSelectGestureRecognizer(this));
     addRecognizer(new RightAngleBrace(this));
     addRecognizer(new SameLengthGesture(this));
+    addRecognizer(new SameAngleGesture(this));
 
     inactivityTimer = new Timer(1300, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {

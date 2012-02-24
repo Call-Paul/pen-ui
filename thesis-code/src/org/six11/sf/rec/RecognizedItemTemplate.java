@@ -90,6 +90,15 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
 
   public abstract Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in);
 
+  /**
+   * Subclasses should implement this if they want the constraint to be actualized. At the end it
+   * should call model.addUserConstraint(uc) with a user constraint that works well with any others
+   * that might already exist. For example if you are adding a same-length constraint that is one
+   * among many, make sure you don't make two same-length constraints compete.
+   * 
+   * @param item
+   * @param model
+   */
   public void create(RecognizedItem item, SketchBook model) {
   }
 
@@ -372,7 +381,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
    * Attempts to resolve a conflict between two recognized items by returning a collection of the
    * items that should be ignored.
    * 
-   * @return
+   * @return a collection of recognized items that should be removed from further consideration
    */
   public static Collection<RecognizedItem> resolveConflict(RecognizedItem itemA,
       RecognizedItem itemB) {
@@ -382,13 +391,16 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
     };
     if (typesAre(types, RightAngleBrace.NAME, SameLengthGesture.NAME)) {
       ret.addAll(RightAngleBrace.resolveConflictSameLengthGesture(itemA, itemB));
+      //    } else if (typesAre(types, SameAngleGesture.NAME, SameAngleGesture.NAME)) {
+      //      ret.addAll(SameAngleGesture.resolveConflictSameAngleGesture(itemA, itemB));
     } else {
       bug("Don't know how to resolve conflict between " + num(types, " and "));
     }
     return ret;
   }
-  
+
   private static boolean typesAre(String[] in, String nameA, String nameB) {
-    return (in[0].equals(nameA) && in[1].equals(nameB)) || (in[0].equals(nameB) && in[1].equals(nameA)); 
+    return (in[0].equals(nameA) && in[1].equals(nameB))
+        || (in[0].equals(nameB) && in[1].equals(nameA));
   }
 }

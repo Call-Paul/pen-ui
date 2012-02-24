@@ -1,6 +1,7 @@
 package org.six11.sf.rec;
 
 import org.six11.sf.Ink;
+import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 
@@ -144,6 +145,10 @@ public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
   public Pt getP2() {
     int idx = subshapeBindingFlipped ? getStart() : getEnd();
     return ink.getSequence().get(idx);
+  }
+  
+  public Pt getMid() {
+    return Functions.getMean(getP1(), getP2());
   }
 
   public Pt getSubshape(String which) {

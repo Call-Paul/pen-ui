@@ -390,6 +390,12 @@ public class SkruiFabEditor {
    * the ones that the user was more likely to have meant.
    */
   private Collection<RecognizedItem> filterRecognizedItems(Collection<RecognizedItem> items) {
+    if (items.size() > 0) {
+      bug("Filtering recognized items from the following set: ");
+      for (RecognizedItem item : items) {
+        bug("  " + item.toString());
+      }
+    }
     Collection<RecognizedItem> ret = new HashSet<RecognizedItem>();
     RecognizedItem[] cull = items.toArray(new RecognizedItem[items.size()]);
     Set<RecognizedItem> doomed = new HashSet<RecognizedItem>();
@@ -623,7 +629,7 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
       }
     }
-    
+
     layers.repaint();
   }
 
@@ -684,7 +690,7 @@ public class SkruiFabEditor {
       DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
       List<Pt> def = fsSeg.getDeformedPoints();
       boolean drawNodes = true;
-      String state = layers.getFlowSelectionState(); 
+      String state = layers.getFlowSelectionState();
       if (state.equals(DrawingBufferLayers.OP) || state.equals(DrawingBufferLayers.SMOOTH)) {
         drawNodes = true;
       }
@@ -699,7 +705,7 @@ public class SkruiFabEditor {
           DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
         }
         if (drawNodes) {
-          for (int i=0; i < def.size(); i++) {
+          for (int i = 0; i < def.size(); i++) {
             Pt pt = def.get(i);
             double str = pt.getDouble("fsStrength");
             if (str > 0) {
