@@ -51,6 +51,13 @@ public abstract class UserConstraint {
     constraints.remove(c); // remove from my local list
     model.getConstraints().removeConstraint(c); // and remove from constraint engine's list.
   }
+  
+  public void removeAllConstraints() {
+    for (Constraint c : constraints) {
+      model.getConstraints().removeConstraint(c);
+    }
+    constraints.clear();
+  }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
     // by default there is no drawing behavior. subclass this and override draw

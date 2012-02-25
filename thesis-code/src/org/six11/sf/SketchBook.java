@@ -993,6 +993,7 @@ public class SketchBook {
   public void addUserConstraint(UserConstraint uc) {
     if (uc != null) {
       userConstraints.add(uc);
+      bug("Adding user constraint: " + uc + " with " + uc.getConstraints().size() + " basic constraints");
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
@@ -1328,17 +1329,11 @@ public class SketchBook {
           break;
       }
       if (ret.size() == 2) {
-        //        bug("Made new segments:");
-        //        bug("  1) " + segA.bugStr());
-        //        bug("  2) " + segB.bugStr());
-        //        bug("OK, I can split it into two. Keep constraints, if possible.");
-        Set<UserConstraint> ucs = new HashSet<UserConstraint>();
-        for (UserConstraint c : userConstraints) {
-          if (c.involves(seg.getP1()) && c.involves(seg.getP2())) {
-            //            bug(c + " is related to the segment I am splitting.");
-            ucs.add(c);
-          }
-        }
+        bug("Made new segments:");
+        bug("  1) " + segA.bugStr());
+        bug("  2) " + segB.bugStr());
+        bug("OK, I can split it into two. Keep constraints, if possible.");
+
         SafeAction action = getActionFactory().split(seg, ret);
         addAction(action);
         editor.findStencils(ret);
@@ -1380,6 +1375,35 @@ public class SketchBook {
     }
     return babySegments;
     //    bug("Added guide point attached to " + baby.bugStr());
+  }
+
+  /**
+   * Find the set of user constraints related to the given segment. If you need both endpoints of
+   * the segment to be in the user constraint, set both=true. Otherwise, only one endpoint has to be
+   * involved.
+   * 
+   * @param seg
+   * @param both
+   * @return
+   */
+  public Set<UserConstraint> findUserConstraints(Segment seg, boolean both) {
+    Set<UserConstraint> ucs = new HashSet<UserConstraint>();
+    for (UserConstraint c : getUserConstraints()) {
+      if (both) {
+        if (c.involves(seg.getP1()) && c.involves(seg.getP2())) {
+          bug(c
+              + " is related to the split segment (both ends). I don't do anything with this yet! FIXME");
+          ucs.add(c);
+        }
+      } else {
+        if (c.involves(seg.getP1()) || c.involves(seg.getP2())) {
+          bug(c
+              + " is related to the split segment (one or both ends). I don't do anything with this yet! FIXME");
+          ucs.add(c);
+        }
+      }
+    }
+    return ucs;
   }
 
 }
