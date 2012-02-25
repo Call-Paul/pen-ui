@@ -80,6 +80,11 @@ public abstract class SegmentFilter {
     return filter;
   }
 
+  /**
+   * This will filters out everything in the input collection.
+   * @param in
+   * @return
+   */
   public static SegmentFilter makeCohortFilter(final Collection<RecognizerPrimitive> in) {
     SegmentFilter filter = new SegmentFilter() {
       public Set<Segment> filter(Set<Segment> segments) {

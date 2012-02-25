@@ -17,6 +17,7 @@ import org.six11.sf.SketchBook;
 import org.six11.sf.constr.SameAngleUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
+import org.six11.util.data.Lists;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -60,19 +61,28 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     return item;
   }
 
-  @Override
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
     bug("entered checkContext");
     Certainty ret = Certainty.No;
+
+    RecognizerPrimitive line1 = item.getSubshape("line1");
+    RecognizerPrimitive line2 = item.getSubshape("line2");
+    Set<RecognizerPrimitive> hashes = Lists.makeSet(line1, line2);
+
     Set<Segment> allSegs = model.getGeometry();
-    Set<Segment> nearSegs = SegmentFilter.makeCohortFilter(in).filter(allSegs);
+    allSegs = SegmentFilter.makeCohortFilter(in).filter(allSegs); // remove current input from consideration
+
     Segment[] pair1 = new Segment[0];
     Segment[] pair2 = new Segment[0];
-    for (RecognizerPrimitive line : in) {
+    // loop through all the hashes and try to identify two corners whose angle we will constrain.
+    for (RecognizerPrimitive line : hashes) {
       if (line.getType() == RecognizerPrimitive.Type.Line) {
         Pt hotspot = line.getMid();
-        Set<Segment> segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(nearSegs);
-        // TODO: next see if segs has two (and only two) that share an endpoint ('corner') 
+        bug("Found a line. looking for segments whose endpoints are near the hotspot "
+            + num(hotspot));
+        Set<Segment> segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(allSegs);
+        bug("Found " + segs.size() + " such segments");
+        // next see if segs has two (and only two) that share an endpoint ('corner') 
         // near the hotspot if we find two distinct corners, we are in business.
         if (segs.size() == 2) {
           if (pair1.length == 0) {
@@ -89,15 +99,9 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     if (pair1.length == 2 && pair2.length == 2) {
       // make sure there are more than two segments involved, 
       // in case the user double-hashed the same angle
-      Set<Segment> numberCheck = new HashSet<Segment>();
-      numberCheck.add(pair1[0]);
-      numberCheck.add(pair1[1]);
-      numberCheck.add(pair2[0]);
-      numberCheck.add(pair2[1]);
+      Set<Segment> numberCheck = Lists.makeSet(pair1[0], pair1[1], pair2[0], pair2[1]);
       if (numberCheck.size() > 2) {
         // we're good to go.
-        bug("Good to go! constrain angles formed by " + pair1[0].getId() + "/" + pair1[1].getId()
-            + " and " + pair2[0].getId() + "/" + pair2[1].getId() + ".");
         item.addTarget(SameAngleGesture.TARGET_A1, pair1[0]);
         item.addTarget(SameAngleGesture.TARGET_A2, pair1[1]);
         item.addTarget(SameAngleGesture.TARGET_B1, pair2[0]);
@@ -105,29 +109,6 @@ public class SameAngleGesture extends RecognizedItemTemplate {
         ret = Certainty.Yes;
       }
     }
-    //    RecognizerPrimitive line1 = item.getSubshape("line1");
-    //    RecognizerPrimitive line2 = item.getSubshape("line2");
-
-    //    // 1) use a filter that only selects lines that are the sole intersecter of line1/line2.
-    //    // (so if line1 intersects more than one thing, nothing passes. it must intersect exactly one thing.)
-    //    Set<Segment> segs1 = SegmentFilter.makeIntersectFilter(line1).filter(allSegs);
-    //    Set<Segment> segs2 = SegmentFilter.makeIntersectFilter(line2).filter(allSegs);
-    //    if (segs1.size() == 1 && segs2.size() == 1) {
-    //      // 2) use a filter that only selects lines whose midpoint is near line1 or line2's midpoint
-    //      segs1 = SegmentFilter.makeMidpointFilter(line1, 0.3).filter(segs1);
-    //      segs2 = SegmentFilter.makeMidpointFilter(line2, 0.3).filter(segs2);
-    //    }
-    //    if (segs1.size() == 1 && segs2.size() == 1) {
-    //      Segment[] seg1 = segs1.toArray(new Segment[1]);
-    //      Segment[] seg2 = segs2.toArray(new Segment[1]);
-    //      if (seg1[0] != seg2[0]) {
-    //        item.addTarget(SameAngleGesture.TARGET_A, seg1[0]);
-    //        item.addTarget(SameAngleGesture.TARGET_B, seg2[0]);
-    //        ret = Certainty.Yes;
-    //      } else {
-    //        bug("Not going to make a line same length as itself, dawg");
-    //      }
-    //    }
     bug("exited checkContext");
     return ret;
   }
@@ -229,8 +210,8 @@ public class SameAngleGesture extends RecognizedItemTemplate {
       }
     } else if (results.size() > 1) {
       bug("************** Results.size: " + results.size());
-      //      Set<UserConstraint> ucs = model.getUserConstraints(results);
-      //      merge(ucs); // 'uc' is left null, should have no ill effects. famous last words
+      Set<UserConstraint> ucs = model.getUserConstraints(results);
+      merge(ucs); // 'uc' is left null, should have no ill effects. famous last words
     }
     for (Ink eenk : item.getInk()) {
       model.removeRelated(eenk);
@@ -240,80 +221,66 @@ public class SameAngleGesture extends RecognizedItemTemplate {
   }
 
   private void merge(Set<UserConstraint> ucs) {
-    //    // found a few user constraints. merge them into one.
-    //    boolean ok = true;
-    //    for (UserConstraint uc : ucs) {
-    //      if (!(uc instanceof SameLengthUserConstraint)) {
-    //        ok = false;
-    //        bug("Error. Expected user constraint of type SameLengthUserConstraint but found "
-    //            + uc.getClass());
-    //        break;
-    //      }
-    //    }
-    //    if (ok) {
-    //      Set<SameLengthUserConstraint> slucs = new HashSet<SameLengthUserConstraint>();
-    //      SameLengthUserConstraint fixedSrc = null;
-    //      for (UserConstraint uc : ucs) {
-    //        SameLengthUserConstraint sluc = (SameLengthUserConstraint) uc;
-    //        slucs.add(sluc);
-    //        if (!sluc.isMultiSource()) {
-    //          if (fixedSrc == null) {
-    //            fixedSrc = sluc;
-    //          } else {
-    //            bug("When merging, I found two different fixed length user constraints. Don't know what to do, so I don't do anything.");
-    //            ok = false;
-    //            break;
-    //          }
-    //        }
-    //      }
-    //      if (ok) {
-    //        // two possibilities: all are multisource, or exactly one is fixed.
-    //        if (fixedSrc == null) {
-    //          // handle the 'all are multisource' first
-    //          bug("All merged user constraints are multisource.");
-    //          SameLengthUserConstraint main = slucs.toArray(new SameLengthUserConstraint[1])[0];
-    //          slucs.remove(main);
-    //          for (SameLengthUserConstraint sluc : slucs) {
-    //            Set<Constraint> replace = new HashSet<Constraint>();
-    //            replace.addAll(sluc.getConstraints());
-    //            model.removeUserConstraint(sluc);
-    //            for (Constraint c : replace) {
-    //              DistanceConstraint dc = (DistanceConstraint) c;
-    //              main.addDist(dc.a, dc.b, dc.getValue());
-    //            }
-    //          }
-    //        } else {
-    //          // exactly one is fixed.
-    //          slucs.remove(fixedSrc);
-    //          for (SameLengthUserConstraint sluc : slucs) {
-    //            Set<Constraint> replace = new HashSet<Constraint>();
-    //            replace.addAll(sluc.getConstraints());
-    //            model.removeUserConstraint(sluc);
-    //            for (Constraint c : replace) {
-    //              DistanceConstraint dc = (DistanceConstraint) c;
-    //              fixedSrc.addDist(dc.a, dc.b, fixedSrc.getValue());
-    //            }            
-    //          }
-    //        }
-    //      }
-    //    }
-    //    //    UserConstraint mainVague = ucs.toArray(new UserConstraint[1])[0];
-    //    //    if (mainVague instanceof SameLengthUserConstraint) {
-    //    //      SameLengthUserConstraint main = (SameLengthUserConstraint) mainVague;
-    //    //      ucs.remove(main);
-    //    //      for (UserConstraint other : ucs) {
-    //    //        Set<Constraint> replace = new HashSet<Constraint>();
-    //    //        replace.addAll(other.getConstraints());
-    //    //        model.removeUserConstraint(other);
-    //    //        for (Constraint c : replace) {
-    //    //          DistanceConstraint dc = (DistanceConstraint) c;
-    //    //          main.addDist(dc.a, dc.b, dc.getValue());
-    //    //        }
-    //    //      }
-    //    //    } else {
-    //    //      bug("this user constraint is the wrong type! expected SameLengthUserConstraint but got "
-    //    //          + mainVague.getClass());
-    //    //    }
+    // found a few user constraints. merge them into one.
+    boolean ok = true;
+    for (UserConstraint uc : ucs) {
+      if (!(uc instanceof SameAngleUserConstraint)) {
+        ok = false;
+        bug("Error. Expected user constraint of type SameAngleUserConstraint but found "
+            + uc.getClass());
+        break;
+      }
+    }
+    if (ok) {
+      // determine if there is a fixed value angle here, and set it if there is one.
+      Set<SameAngleUserConstraint> saucs = new HashSet<SameAngleUserConstraint>();
+      SameAngleUserConstraint fixedSrc = null;
+      for (UserConstraint uc : ucs) {
+        SameAngleUserConstraint sluc = (SameAngleUserConstraint) uc;
+        saucs.add(sluc);
+        if (!sluc.isMultiSource()) {
+          if (fixedSrc == null) {
+            fixedSrc = sluc;
+          } else {
+            bug("When merging, I found two different fixed length user constraints. Don't know what to do, so I don't do anything.");
+            ok = false;
+            break;
+          }
+        }
+      }
+
+      if (ok) {
+        // two possibilities: all are multisource, or exactly one is fixed.
+        if (fixedSrc == null) {
+          // handle the 'all are multisource' first
+          bug("All merged user constraints are multisource.");
+          SameAngleUserConstraint main = saucs.toArray(new SameAngleUserConstraint[1])[0];
+          saucs.remove(main);
+          for (SameAngleUserConstraint sluc : saucs) {
+            Set<Constraint> replace = new HashSet<Constraint>();
+            replace.addAll(sluc.getConstraints());
+            model.removeUserConstraint(sluc);
+            for (Constraint c : replace) {
+              AngleConstraint ac = (AngleConstraint) c;
+              main.addAngle(new Angle(ac.getPtA(), ac.getPtFulcrum(), ac.getPtB()), ac.getValue());
+            }
+          }
+        } else {
+          // exactly one is fixed.
+          saucs.remove(fixedSrc);
+          for (SameAngleUserConstraint sauc : saucs) {
+            Set<Constraint> replace = new HashSet<Constraint>();
+            replace.addAll(sauc.getConstraints());
+            model.removeUserConstraint(sauc);
+            for (Constraint c : replace) {
+              AngleConstraint ac = (AngleConstraint) c;
+              fixedSrc.addAngle(new Angle(ac.getPtA(), ac.getPtFulcrum(), ac.getPtB()),
+                  fixedSrc.getValue());
+            }
+          }
+        }
+      }
+    }
   }
 
   public static UserConstraint makeUserConstraint(final SketchBook model, RecognizedItem item,
@@ -332,11 +299,15 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     };
   }
 
-  //  public static Collection<RecognizedItem> resolveConflictSameAngleGesture(
-  //      RecognizedItem itemA, RecognizedItem itemB) {
-  //    bug("OK, I have these two same-angle things to resolve:");
-  //    bug("  1: " + itemA);
-  //    bug("  2: " + itemB);
-  //    return new HashSet<RecognizedItem>();
-  //  }
+  public static Collection<RecognizedItem> resolveConflictRightAngleGesture(RecognizedItem itemA,
+      RecognizedItem itemB) {
+    Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
+    if (itemA.getTemplate().getName().equals(RightAngleBrace.NAME)) {
+      doomed.add(itemB);
+    } else {
+      doomed.add(itemA);
+    }
+    return doomed;
+  }
+
 }

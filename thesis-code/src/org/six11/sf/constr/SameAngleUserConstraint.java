@@ -2,6 +2,8 @@ package org.six11.sf.constr;
 
 import java.awt.Color;
 import java.awt.geom.Arc2D;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.six11.sf.Angle;
 import org.six11.sf.DrawingBufferLayers;
@@ -34,16 +36,37 @@ public class SameAngleUserConstraint extends UserConstraint {
 
   @Override
   public void removeInvalid() {
-    // TODO Auto-generated method stub
-    bug("boo");
-
+    Set<Constraint> doomed = new HashSet<Constraint>();
+    for (Constraint c : getConstraints()) {
+      AngleConstraint ac = (AngleConstraint) c;
+      if (!model.hasSegment(ac.getPtFulcrum(), ac.getPtA())) {
+        doomed.add(c);
+      }
+      if (!model.hasSegment(ac.getPtFulcrum(), ac.getPtB())) {
+        doomed.add(c);
+      }
+    }
+    for (Constraint c : doomed) {
+      removeConstraint(c);
+    }
   }
 
   @Override
   public boolean isValid() {
-    // TODO Auto-generated method stub
-    bug("booo");
-    return false;
+    boolean ret = true;
+    if (getConstraints().size() == 0) {
+      bug("SAUC invalid due to having zero constraints.");
+      ret = false;
+    } else if (getConstraints().size() == 1) {
+      AngleConstraint ac = getConstraints().toArray(new AngleConstraint[1])[0];
+      ret = ac.getValue() instanceof NumericValue
+          && !(ac.getValue() instanceof MultisourceNumericValue);
+      bug("SAUC has one constraint. But is it valid? " + ret);
+    } else {
+      ret = true;
+      bug("SAUC valid because it has " + getConstraints().size() + " constraints.");
+    }
+    return ret;
   }
 
   public void addAngle(Angle anglePoints, NumericValue angleValue) {
@@ -118,21 +141,19 @@ public class SameAngleUserConstraint extends UserConstraint {
         double d = hoverPoint.distance(f);
         nearest = Math.min(d, nearest);
       }
-      if (nearest < 50) {
-        double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
-        Color color = new Color(1, 0, 0, (float) alpha);
-        for (Constraint c : getConstraints()) {
-          AngleConstraint ac = (AngleConstraint) c;
-          Pt f = ac.getPtFulcrum();
-          Vec vecA = new Vec(f, ac.getPtA());
-          Vec vecB = new Vec(f, ac.getPtB());
-          Pt a = f.getTranslated(vecA, DRAW_RADIUS);
-          Pt b = f.getTranslated(vecB, DRAW_RADIUS);
-          Vec vecMid = Vec.sum(vecA, vecB);
-          Pt m = f.getTranslated(vecMid, DRAW_RADIUS);
-          Arc2D arc = ShapeFactory.makeArc(a, m, b);
-          DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
-        }
+      double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
+      Color color = new Color(1, 0, 0, (float) alpha);
+      for (Constraint c : getConstraints()) {
+        AngleConstraint ac = (AngleConstraint) c;
+        Pt f = ac.getPtFulcrum();
+        Vec vecA = new Vec(f, ac.getPtA());
+        Vec vecB = new Vec(f, ac.getPtB());
+        Pt a = f.getTranslated(vecA, DRAW_RADIUS);
+        Pt b = f.getTranslated(vecB, DRAW_RADIUS);
+        Vec vecMid = Vec.sum(vecA, vecB);
+        Pt m = f.getTranslated(vecMid, DRAW_RADIUS);
+        Arc2D arc = ShapeFactory.makeArc(a, m, b);
+        DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
       }
     }
   }

@@ -42,7 +42,7 @@ public class SameLengthUserConstraint extends UserConstraint {
         double d = Functions.getDistanceBetweenPointAndSegment(hoverPoint, line);
         nearest = Math.min(d, nearest);
       }
-      if (nearest < 50) {
+//      if (nearest < 50) {
         double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
         Color color = new Color(1, 0, 0, (float) alpha);
         for (Constraint c : getConstraints()) {
@@ -62,7 +62,7 @@ public class SameLengthUserConstraint extends UserConstraint {
             DrawingBufferRoutines.text(buf, textLoc, num(asUnits), color);
           }
         }
-      }
+//      }
     }
   }
 
