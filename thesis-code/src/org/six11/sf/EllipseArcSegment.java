@@ -18,12 +18,12 @@ public class EllipseArcSegment extends SegmentDelegate {
     // and last points in the list. So get the elliptical region, and transform it two times so it
     // does begin and end at those points.
     List<Pt> surface = init(points);
-    init(ink, surface, termA, termB, Segment.Type.EllipticalArc);
+    init(ink, surface, Segment.Type.EllipticalArc);
   }
 
   public EllipseArcSegment(List<Pt> points) {
     List<Pt> surface = init(points);
-    init(null, surface, false, false, Segment.Type.EllipticalArc);
+    init(null, surface, Segment.Type.EllipticalArc);
   }
 
   private final List<Pt> init(List<Pt> points) {

@@ -301,6 +301,7 @@ public class SkruiFabEditor {
 
   @SuppressWarnings("unchecked")
   public void go() {
+    model.getSnapshotMachine().save();
     long[] goTimes = new long[7];
     //    goStopwatch.start("go");
     bug("+---------------------------------------------------------------------------------------+");

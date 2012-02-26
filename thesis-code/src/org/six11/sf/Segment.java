@@ -7,6 +7,8 @@ import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -33,6 +35,10 @@ public class Segment implements HasFuzzyArea {
 
   public int getId() {
     return id;
+  }
+  
+  public JSONObject toJson() throws JSONException {
+    return d.toJson();
   }
   
   public final void calculateParameters(List<Pt> points) {

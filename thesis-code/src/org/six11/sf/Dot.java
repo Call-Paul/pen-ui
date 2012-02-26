@@ -10,7 +10,7 @@ public class Dot extends SegmentDelegate {
   private Certainty cert;
 
   public Dot(Pt mid, Certainty cert) {
-    init(ink, Collections.singletonList(mid), true, true, Segment.Type.Dot);
+    init(ink, Collections.singletonList(mid), Segment.Type.Dot);
     this.cert = cert;
   }
 

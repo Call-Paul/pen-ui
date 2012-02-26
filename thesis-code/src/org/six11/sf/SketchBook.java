@@ -94,11 +94,13 @@ public class SketchBook {
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
   private Timer inactivityTimer;
+  private SnapshotMachine snapshotMachine;
   boolean erasing;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
+    this.snapshotMachine = new SnapshotMachine(this);
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
     this.selectedSegments = new HashSet<Segment>();
@@ -993,7 +995,8 @@ public class SketchBook {
   public void addUserConstraint(UserConstraint uc) {
     if (uc != null) {
       userConstraints.add(uc);
-      bug("Adding user constraint: " + uc + " with " + uc.getConstraints().size() + " basic constraints");
+      bug("Adding user constraint: " + uc + " with " + uc.getConstraints().size()
+          + " basic constraints");
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
@@ -1181,25 +1184,37 @@ public class SketchBook {
   }
 
   public void undo() {
-    if (!actions.isEmpty()) {
-      SafeAction a = actions.pop();
-      bug("Undo " + a.getName());
-      redoActions.push(a);
-      a.backward();
-      getConstraints().wakeUp();
-      editor.drawStuff();
+    bug("undo under construction");
+    if (snapshotMachine.getUndoLength() > 0) {
+      Snapshot prev = snapshotMachine.undo();
+      bug("going to set state to " + prev);
+      snapshotMachine.load(prev);
     }
+    //    if (!actions.isEmpty()) {
+    //      SafeAction a = actions.pop();
+    //      bug("Undo " + a.getName());
+    //      redoActions.push(a);
+    //      a.backward();
+    //      getConstraints().wakeUp();
+    //      editor.drawStuff();
+    //    }
   }
 
   public void redo() {
-    if (!redoActions.isEmpty()) {
-      SafeAction a = redoActions.pop();
-      bug("Redo " + a.getName());
-      actions.push(a);
-      a.forward();
-      getConstraints().wakeUp();
-      editor.drawStuff();
+    bug("redo broken");
+    if (snapshotMachine.getRedoLength() > 0) {
+      Snapshot next = snapshotMachine.redo();
+      bug("going to set state to " + next);
+      snapshotMachine.load(next);
     }
+    //    if (!redoActions.isEmpty()) {
+    //      SafeAction a = redoActions.pop();
+    //      bug("Redo " + a.getName());
+    //      actions.push(a);
+    //      a.forward();
+    //      getConstraints().wakeUp();
+    //      editor.drawStuff();
+    //    }
   }
 
   public ActionFactory getActionFactory() {
@@ -1404,6 +1419,10 @@ public class SketchBook {
       }
     }
     return ucs;
+  }
+
+  public SnapshotMachine getSnapshotMachine() {
+    return snapshotMachine;
   }
 
 }

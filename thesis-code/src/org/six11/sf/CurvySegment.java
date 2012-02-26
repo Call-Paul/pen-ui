@@ -11,12 +11,12 @@ import org.six11.util.pen.Pt;
 public class CurvySegment extends SegmentDelegate {
 
   public CurvySegment(Ink ink, List<Pt> points, boolean termA, boolean termB) {
-    super(ink, points, termA, termB);
+    super(ink, points);
     this.type = Segment.Type.Curve;
   }
   
   public CurvySegment(List<Pt> points) {
-    init(null, points, false, false, Segment.Type.Curve);
+    init(null, points, Segment.Type.Curve);
   }
 
 }

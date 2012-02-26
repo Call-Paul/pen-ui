@@ -9,11 +9,15 @@ import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.BoundingBox;
@@ -34,37 +38,35 @@ public class SegmentDelegate implements HasFuzzyArea {
   // might have to adjust them if p1 or p2 change.
   protected double[] pri; // parametric points primary coordinate, along vector from p1 to p2
   protected double[] alt; // parametric points secondary coordinate, orthogonal to the above
-
+  
+  // what kind of segment do we represent? Line? Arc? Blob? etc.
+  protected Segment.Type type;
+  
   // transient variables that describe the parametric point sequence for the current values
   // of p1 and p2.
   protected transient Pt paraP1Loc = null;
   protected transient Pt paraP2Loc = null;
   protected transient List<Pt> paraPoints = null;
   protected transient List<Pt> deformedPoints = null;
-
-  Segment.Type type;
-  Ink ink;
-  boolean termA, termB;
-
+  protected transient Ink ink;
+  
   protected SegmentDelegate() {
     // ensure subclass calls init();
   }
 
-  public SegmentDelegate(Ink ink, List<Pt> points, boolean termA, boolean termB) {
-    this(ink, points, termA, termB, Segment.Type.Unknown);
+  public SegmentDelegate(Ink ink, List<Pt> points) {
+    this(ink, points, Segment.Type.Unknown);
   }
 
-  public SegmentDelegate(Ink ink, List<Pt> points, boolean termA, boolean termB, Segment.Type t) {
-    init(ink, points, termA, termB, t);
+  public SegmentDelegate(Ink ink, List<Pt> points, Segment.Type t) {
+    init(ink, points, t);
   }
 
-  protected final void init(Ink ink, List<Pt> points, boolean termA, boolean termB, Segment.Type t) {
+  protected final void init(Ink ink, List<Pt> points, Segment.Type t) {
     this.ink = ink;
     this.p1 = points.get(0);
     this.p2 = points.get(points.size() - 1);
     calculateParameters(points);
-    this.termA = termA;
-    this.termB = termB;
     this.type = t;
   }
 
@@ -411,7 +413,8 @@ public class SegmentDelegate implements HasFuzzyArea {
     for (Pt pt : paraPoints) {
       copiedPoints.add(pt.copyXYT());
     }
-    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
+    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, type);
+//    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
     return new Segment(sd);
   }
 
@@ -519,6 +522,18 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public Collection<Pt> getLatchPoints(Segment other) {
     return Lists.intersect(getPoints(), other.getPoints());
+  }
+
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = new JSONObject();
+    ret.put("p1", SketchBook.n(p1));
+    ret.put("p2", SketchBook.n(p2));    
+    JSONArray priArr = new JSONArray(Arrays.asList(pri));
+    ret.put("pri", priArr);
+    JSONArray altArr = new JSONArray(Arrays.asList(alt));
+    ret.put("alt", altArr);
+    ret.put("type", type);
+    return ret;
   }
 
 }
