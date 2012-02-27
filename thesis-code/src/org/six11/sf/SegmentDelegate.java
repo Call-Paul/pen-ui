@@ -38,10 +38,10 @@ public class SegmentDelegate implements HasFuzzyArea {
   // might have to adjust them if p1 or p2 change.
   protected double[] pri; // parametric points primary coordinate, along vector from p1 to p2
   protected double[] alt; // parametric points secondary coordinate, orthogonal to the above
-  
+
   // what kind of segment do we represent? Line? Arc? Blob? etc.
   protected Segment.Type type;
-  
+
   // transient variables that describe the parametric point sequence for the current values
   // of p1 and p2.
   protected transient Pt paraP1Loc = null;
@@ -49,7 +49,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected transient List<Pt> paraPoints = null;
   protected transient List<Pt> deformedPoints = null;
   protected transient Ink ink;
-  
+
   protected SegmentDelegate() {
     // ensure subclass calls init();
   }
@@ -70,12 +70,38 @@ public class SegmentDelegate implements HasFuzzyArea {
     this.type = t;
   }
 
+  protected final void init(Ink ink, Pt p1, Pt p2, double[] primaryParaCoordinates,
+      double[] secondaryParaCoordinates, Segment.Type t) {
+    this.ink = ink;
+    this.p1 = p1;
+    this.p2 = p2;
+    this.pri = primaryParaCoordinates;
+    this.alt = secondaryParaCoordinates;
+    doPara();
+    this.type = t;
+    if (p1 == null || p2 == null) {
+      Debug.stacktrace("p1 or p2 is null for " + t + ": " + p1 + ", " + p2, 8);
+    }
+  }
+
   public void calculateParameters(List<Pt> points) {
+    if (points == null) {
+      bug("Warning: points input is null for " + bugStr());
+    }
+    if (points.isEmpty()) {
+      bug("Warning: empty point list provided for " + bugStr());
+    }
     this.pri = new double[points.size()];
     this.alt = new double[points.size()];
     paraPoints = null;
     Pt start = points.get(0);
     Pt end = points.get(points.size() - 1);
+    if (p1 == null) {
+      bug("Warning: p1 is null for " + bugStr());
+    }
+    if (p2 == null) {
+      bug("Warning: p2 is null for " + bugStr());
+    }
     this.p1.setLocation(start.getX(), start.getY());
     this.p2.setLocation(end.getX(), end.getY());
     Vec v = new Vec(p1, p2);
@@ -246,7 +272,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public Vec getStartDir() {
-    return getTangent(getP1());    
+    return getTangent(getP1());
   }
 
   public Vec getEndDir() {
@@ -255,8 +281,8 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   /**
    * Return a tangent vector at the given point. The target point should be equal (using ==) to one
-   * of the points returned by getPointList(). The vector is always defined by points
-   * P[i] to P[j] where i < j. In other words, the return value always points towards p2.
+   * of the points returned by getPointList(). The vector is always defined by points P[i] to P[j]
+   * where i < j. In other words, the return value always points towards p2.
    * 
    * @param target
    * @return
@@ -414,7 +440,7 @@ public class SegmentDelegate implements HasFuzzyArea {
       copiedPoints.add(pt.copyXYT());
     }
     SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, type);
-//    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
+    //    SegmentDelegate sd = new SegmentDelegate(this.ink, copiedPoints, termA, termB, type);
     return new Segment(sd);
   }
 
@@ -527,11 +553,12 @@ public class SegmentDelegate implements HasFuzzyArea {
   public JSONObject toJson() throws JSONException {
     JSONObject ret = new JSONObject();
     ret.put("p1", SketchBook.n(p1));
-    ret.put("p2", SketchBook.n(p2));    
-    JSONArray priArr = new JSONArray(Arrays.asList(pri));
-    ret.put("pri", priArr);
-    JSONArray altArr = new JSONArray(Arrays.asList(alt));
-    ret.put("alt", altArr);
+    ret.put("p2", SketchBook.n(p2));
+    
+//    JSONArray priArr = new JSONArray(Arrays.asList(pri));
+    ret.put("pri", new JSONArray(pri));
+//    JSONArray altArr = new JSONArray(Arrays.asList(alt));
+    ret.put("alt", new JSONArray(alt));
     ret.put("type", type);
     return ret;
   }

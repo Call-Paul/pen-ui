@@ -96,6 +96,7 @@ public class SketchBook {
   private Timer inactivityTimer;
   private SnapshotMachine snapshotMachine;
   boolean erasing;
+  private boolean loadingSnapshot;
 
   public SketchBook(GlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -1183,39 +1184,33 @@ public class SketchBook {
     return masterUnits;
   }
 
-  public void undo() {
-    bug("undo under construction");
-    if (snapshotMachine.getUndoLength() > 0) {
-      Snapshot prev = snapshotMachine.undo();
-      bug("going to set state to " + prev);
-      snapshotMachine.load(prev);
+  public void undoPreview() {
+    bug("undo preview");
+    Snapshot s = snapshotMachine.undo();
+    if (s != null) {
+      bug("Valid undo");
+      layers.setPreview(s.getPreview());
     }
-    //    if (!actions.isEmpty()) {
-    //      SafeAction a = actions.pop();
-    //      bug("Undo " + a.getName());
-    //      redoActions.push(a);
-    //      a.backward();
-    //      getConstraints().wakeUp();
-    //      editor.drawStuff();
-    //    }
   }
 
-  public void redo() {
-    bug("redo broken");
-    if (snapshotMachine.getRedoLength() > 0) {
-      Snapshot next = snapshotMachine.redo();
-      bug("going to set state to " + next);
-      snapshotMachine.load(next);
+  public void redoPreview() {
+    bug("redo preview");
+    Snapshot s = snapshotMachine.redo();
+    if (s != null) {
+      bug("Valid redo.");
+      layers.setPreview(s.getPreview());
     }
-    //    if (!redoActions.isEmpty()) {
-    //      SafeAction a = redoActions.pop();
-    //      bug("Redo " + a.getName());
-    //      actions.push(a);
-    //      a.forward();
-    //      getConstraints().wakeUp();
-    //      editor.drawStuff();
-    //    }
   }
+  
+  public void undoRedoComplete() {
+    bug("finalizing redo/undo");
+    layers.clearPreview();
+    Snapshot s = snapshotMachine.getCurrent();
+    loadingSnapshot = true;
+    snapshotMachine.load(s);
+    loadingSnapshot = false;
+  }
+
 
   public ActionFactory getActionFactory() {
     return actionFactory;
@@ -1423,6 +1418,10 @@ public class SketchBook {
 
   public SnapshotMachine getSnapshotMachine() {
     return snapshotMachine;
+  }
+
+  public boolean isLoadingSnapshot() {
+    return loadingSnapshot;
   }
 
 }

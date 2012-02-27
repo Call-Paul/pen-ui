@@ -2,6 +2,8 @@ package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.Set;
 
@@ -19,15 +21,17 @@ public class Snapshot {
 
   private SketchBook model;
   private JSONObject top;
+  private Image img;
   
   public String toString() {
     return "Snapshot " + id;
   }
 
   public Snapshot(SketchBook model) {
-    bug("Saving model!");
+//    bug("Saving model!");
     this.model = model;
-
+    img = model.getLayers().getScreenShot();
+//    bug("got image. it is : " + img);
     // the model's clearAll function does the following. use it as a plan to save things.
 
     //  (save)    constraint solver : points
@@ -79,16 +83,15 @@ public class Snapshot {
         geomArr.put(seg.toJson());
       }
       top.put("geometry", geomArr);
-
-      System.out.println(top.toString(4));
-      System.out.println(top.toString().length() + " characters");
+//      System.out.println(top.toString(3));
     } catch (JSONException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
 
-  public void load() {
+  public boolean load() {
+    boolean ok = true;
     JsonIO io = new JsonIO();
     model.clearAll();
     try {
@@ -125,6 +128,18 @@ public class Snapshot {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    return ok;
+  }
 
+  public Image getPreview() {
+    return img;
+  }
+
+  public int getID() {
+    return id;
+  }
+
+  public JSONObject getJSONRoot() {
+    return top;
   }
 }

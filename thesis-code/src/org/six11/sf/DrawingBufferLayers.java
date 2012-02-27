@@ -7,6 +7,7 @@ import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
@@ -17,6 +18,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -69,13 +71,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private static final String UP = "up";
   private static final String DOWN = "down";
   private static final String TICK = "tick";
-  
+
   public static final String OP = "op";
   public static final String SMOOTH = "smooth";
   public static final String FLOW = "flow";
   public static final String DRAW = "draw";
   public static final String IDLE = "idle";
-  
+
   private static final String BUTTON_DOWN = "magic_button_down";
   private static final String BUTTON_UP = "magic_button_up";
   private static final String ARMED = "armed";
@@ -117,6 +119,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private Pt hoverPt;
   private GuidePoint draggingGP;
   private boolean magicDown = false;
+  private Image preview;
 
   public DrawingBufferLayers(SketchBook model) {
     this.model = model;
@@ -322,16 +325,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           double dx = dragPt.getX() - searchStart.getX();
           if (dx < -UNDO_REDO_THRESHOLD) {
             searchStart = dragPt.copyXYT();
-            model.undo();
+            model.undoPreview();
           } else if (dx > UNDO_REDO_THRESHOLD) {
             searchStart = dragPt.copyXYT();
-            model.redo();
+            model.redoPreview();
           }
         }
       }
     });
     f.addTransition(new Transition(UP, SEARCH_DIR, SEARCH_DIR) {
-      @Override
       public void doBeforeTransition() {
         searchStart = null;
         dragPt = null;
@@ -343,7 +345,13 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         dragPt = searchStart.copyXYT();
       }
     });
-    f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE));
+    f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE) {
+      public void doBeforeTransition() {
+        bug("undo/redo complete.");
+        model.undoRedoComplete();
+      }
+    });
+
     //    f.addChangeListener(new ChangeListener() {
     //
     //      public void stateChanged(ChangeEvent arg0) {
@@ -368,19 +376,19 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     bug("attenuation: " + dampedAttenuation);
     a.setDouble("fsStrength", aStr + dampedAttenuation);
   }
-  
+
   protected void fsSmooth() {
-    
+
     List<Pt> def = fsNearestSeg.getDeformedPoints();
     bug("Smooth starting at " + fsSmoothIndex + " of " + def.size() + " points");
-    
-    for (int i=fsSmoothIndex - 2; i >= 0; i--) {
-      int nearIdx = i+1;
+
+    for (int i = fsSmoothIndex - 2; i >= 0; i--) {
+      int nearIdx = i + 1;
       int farIdx = i;
       fsSmoothPair(nearIdx, farIdx, def);
     }
-    for (int i=fsSmoothIndex + 2; i < def.size(); i++) {
-      int nearIdx = i-1;
+    for (int i = fsSmoothIndex + 2; i < def.size(); i++) {
+      int nearIdx = i - 1;
       int farIdx = i;
       fsSmoothPair(nearIdx, farIdx, def);
     }
@@ -588,13 +596,23 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     }
   }
 
+  public Image getScreenShot() {
+    BufferedImage ret = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
+    paintComponent(ret.getGraphics());
+    return ret;
+  }
+
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
-    AffineTransform before = new AffineTransform(g.getTransform());
-    drawBorderAndBackground(g);
-    g.setTransform(before);
-    paintContent(g, true);
-    g.setTransform(before);
+    if (preview != null) {
+      g.drawImage(preview, 0, 0, null);
+    } else {
+      AffineTransform before = new AffineTransform(g.getTransform());
+      drawBorderAndBackground(g);
+      g.setTransform(before);
+      paintContent(g, true);
+      g.setTransform(before);
+    }
   }
 
   public void paintContent(Graphics2D g, boolean useCachedImages) {
@@ -877,6 +895,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
   public String getFlowSelectionState() {
     return fsFSM.getState();
+  }
+
+  public void setPreview(Image preview) {
+    this.preview = preview;
+    repaint();
+  }
+
+  public void clearPreview() {
+    setPreview(null);
   }
 
 }

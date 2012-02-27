@@ -21,7 +21,7 @@ public class Segment implements HasFuzzyArea {
 
   int id;
   private static int ID_COUNTER = 1;
-  
+
   public static enum Type {
     Line, Curve, Unknown, EllipticalArc, Dot, CircularArc, Ellipse, Blob, Circle
   }
@@ -32,15 +32,22 @@ public class Segment implements HasFuzzyArea {
     this.d = delegate;
     id = ID_COUNTER++;
   }
+  
+  public Segment(SegmentDelegate delegate, int id) {
+    this.d = delegate;
+    this.id = id;
+  }
 
   public int getId() {
     return id;
   }
-  
+
   public JSONObject toJson() throws JSONException {
-    return d.toJson();
+    JSONObject j = d.toJson();
+    j.put("segID", id);
+    return j;
   }
-  
+
   public final void calculateParameters(List<Pt> points) {
     d.calculateParameters(points);
   }
@@ -52,7 +59,7 @@ public class Segment implements HasFuzzyArea {
   public boolean isSingular() {
     return d.isSingular();
   }
-  
+
   public boolean isClosed() {
     return d.isClosed();
   }
@@ -72,7 +79,7 @@ public class Segment implements HasFuzzyArea {
   public String toString() {
     return d.toString();
   }
-  
+
   public String bugStr() {
     return d.bugStr();
   }
@@ -183,7 +190,6 @@ public class Segment implements HasFuzzyArea {
     return d.asArc();
   }
 
-
   public Pt getPointOpposite(Pt input) {
     return d.getPointOpposite(input);
   }
@@ -215,21 +221,25 @@ public class Segment implements HasFuzzyArea {
     Vec toTarget = new Vec(ix.getDouble("r"), dist / vMag);
     return toTarget;
   }
-  
+
   public static String bugStr(Pt pt) {
     StringBuilder buf = new StringBuilder();
-    String name = SketchBook.n(pt);
-    if (name != null) {
-      buf.append(name + " ");
+    if (pt == null) {
+      buf.append("null point");
+    } else {
+      String name = SketchBook.n(pt);
+      if (name != null) {
+        buf.append(name + " ");
+      }
+      buf.append("(" + num(pt) + ") ");
     }
-    buf.append("(" + num(pt) + ") ");
     return buf.toString();
   }
 
   public Shape asEllipse() {
     return d.asEllipse();
   }
-  
+
   public RotatedEllipse getEllipse() {
     return d.getEllipse();
   }
@@ -237,7 +247,7 @@ public class Segment implements HasFuzzyArea {
   public Shape asCircle() {
     return d.asCircle();
   }
-  
+
   public Circle getCircle() {
     return d.getCircle();
   }
@@ -245,11 +255,11 @@ public class Segment implements HasFuzzyArea {
   public boolean isPointOnPath(Pt loc, double slop) {
     return d.isPointOnPath(loc, slop);
   }
-  
+
   public String typeIdStr() {
     return getType() + "-" + getId();
   }
-  
+
   public String typeIdPtStr() {
     StringBuilder buf = new StringBuilder();
     buf.append(typeIdStr());
@@ -260,7 +270,7 @@ public class Segment implements HasFuzzyArea {
     buf.append(")");
     return buf.toString();
   }
-  
+
   public Collection<Pt> getLatchPoints(Segment other) {
     return d.getLatchPoints(other);
   }
@@ -268,7 +278,7 @@ public class Segment implements HasFuzzyArea {
   public Collection<Pt> getPoints() {
     return d.getPoints();
   }
-  
+
   public void setDelegate(SegmentDelegate newDelegate) {
     this.d = newDelegate;
   }
@@ -276,5 +286,5 @@ public class Segment implements HasFuzzyArea {
   public SegmentDelegate getDelegate() {
     return d;
   }
-  
+
 }

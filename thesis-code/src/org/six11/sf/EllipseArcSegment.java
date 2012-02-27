@@ -26,6 +26,10 @@ public class EllipseArcSegment extends SegmentDelegate {
     init(null, surface, Segment.Type.EllipticalArc);
   }
 
+  public EllipseArcSegment(Pt p1, Pt p2, double[] pri, double[] alt) {
+    init(null, p1, p2, pri, alt, Segment.Type.EllipticalArc);
+  }
+
   private final List<Pt> init(List<Pt> points) {
     ellie = Functions.createEllipse(points, true);
     int n = points.size();

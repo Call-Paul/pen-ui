@@ -18,5 +18,9 @@ public class CurvySegment extends SegmentDelegate {
   public CurvySegment(List<Pt> points) {
     init(null, points, Segment.Type.Curve);
   }
+  
+  public CurvySegment(Pt p1, Pt p2, double[] primaryCoordinates, double[] secondaryCoordinates) {
+    init(null, p1, p2, primaryCoordinates, secondaryCoordinates, Segment.Type.Curve);
+  }
 
 }

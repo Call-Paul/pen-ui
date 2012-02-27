@@ -4,6 +4,9 @@ import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.CircleArc;
 import org.six11.util.pen.Functions;
@@ -21,7 +24,6 @@ public class CircularArcSegment extends SegmentDelegate {
 
   private Vec centerParameterization;
   private Vec arcMidParameterization;
-//  private int arcSide;
 
   public CircularArcSegment(Ink ink, List<Pt> points, Pt initialCenter, double initialRadius,
       boolean termA, boolean termB) {
@@ -37,14 +39,34 @@ public class CircularArcSegment extends SegmentDelegate {
     Vec v = new Vec(arc1, arc3);
     double vMag = v.mag();
     Line line = new Line(surface.get(0), surface.get(surface.size() - 1));
-////    Pt roughlyArcMid = points.get(points.size() / 2);
-//    Pt circleIntersectionPt = Functions.getIntersectionPoint(arc, new Line(roughlyArcMid,
-//        initialCenter));
-//    arcSide = Functions.getPartition(circleIntersectionPt, arc1, arc3);
     centerParameterization = Segment.calculateParameterForPoint(vMag, line, initialCenter);
     arcMidParameterization = Segment.calculateParameterForPoint(vMag, line, arc2);
     bug("center param: " + num(centerParameterization) + ", arcMid param: " + num(arcMidParameterization));
     init(ink, surface, Segment.Type.CircularArc);
+  }
+  
+  public CircularArcSegment(Pt p1, Pt p2, Vec centerParam, Vec arcMidParam) {
+    this.p1 = p1;
+    this.p2 = p2;
+    this.centerParameterization = centerParam;
+    this.arcMidParameterization = arcMidParam;
+    // need to initialize the surface for drawing.
+    Pt center = getCenter();
+    Pt arcMid = getArcMid();
+    List<Pt> surface = initArc(p1, arcMid, p2, center);
+    init(null, surface, Segment.Type.CircularArc);
+  }
+  
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = new JSONObject();
+    ret.put("p1", SketchBook.n(p1));
+    ret.put("p2", SketchBook.n(p2));
+    ret.put("cpx", centerParameterization.getX());
+    ret.put("cpy", centerParameterization.getY());
+    ret.put("mpx", arcMidParameterization.getX());
+    ret.put("mpy", arcMidParameterization.getY());
+    ret.put("type", type);
+    return ret;
   }
 
   private double getParam(Pt target, Pt center) {
