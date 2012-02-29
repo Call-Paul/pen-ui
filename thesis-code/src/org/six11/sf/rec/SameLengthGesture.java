@@ -92,7 +92,8 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     Set<Constraint> addUs = new HashSet<Constraint>();
     UserConstraint uc = null;
     if (results.size() == 0) {
-      MultisourceNumericValue dist = new MultisourceNumericValue(mkSource(s1), mkSource(s2));
+      MultisourceNumericValue dist = new MultisourceNumericValue(
+          SameLengthUserConstraint.mkSource(s1), SameLengthUserConstraint.mkSource(s2));
       SameLengthUserConstraint sluc = new SameLengthUserConstraint(model);
       sluc.addDist(s1.getP1(), s1.getP2(), dist);
       sluc.addDist(s2.getP1(), s2.getP2(), dist);
@@ -109,11 +110,11 @@ public class SameLengthGesture extends RecognizedItemTemplate {
         MultisourceNumericValue val = (MultisourceNumericValue) numeric;
         if (distConst.involves(s1.getP1()) && distConst.involves(s1.getP2())) {
           // s1 already constrained. incorporate s2's length and give it constraint
-          val.addValue(mkSource(s2));//s2.length());
+          val.addValue(SameLengthUserConstraint.mkSource(s2));
           addUs.add(new DistanceConstraint(s2.getP1(), s2.getP2(), distConst.getValue()));
         } else {
           // same as above but reverse the segments.
-          val.addValue(mkSource(s1));
+          val.addValue(SameLengthUserConstraint.mkSource(s1));
           addUs.add(new DistanceConstraint(s1.getP1(), s1.getP2(), distConst.getValue()));
         }
       } else {
@@ -190,7 +191,7 @@ public class SameLengthGesture extends RecognizedItemTemplate {
             for (Constraint c : replace) {
               DistanceConstraint dc = (DistanceConstraint) c;
               fixedSrc.addDist(dc.a, dc.b, fixedSrc.getValue());
-            }            
+            }
           }
         }
       }
@@ -218,14 +219,6 @@ public class SameLengthGesture extends RecognizedItemTemplate {
       Set<Constraint> addUs) {
     UserConstraint ret = new SameLengthUserConstraint(model, addUs.toArray(new Constraint[0]));
     return ret;
-  }
-
-  private MultisourceNumericValue.Source mkSource(final Segment seg) {
-    return new MultisourceNumericValue.Source() {
-      public double getValue() {
-        return seg.length();
-      }
-    };
   }
 
   public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {

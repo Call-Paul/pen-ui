@@ -10,8 +10,10 @@ import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.six11.sf.Angle;
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
+import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.Material;
 import org.six11.util.pen.DrawingBuffer;
@@ -35,6 +37,16 @@ public class SameLengthUserConstraint extends UserConstraint {
 
   public SameLengthUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
     super(model, NAME, ucObj);
+    if (ucObj.getBoolean("multi")) {
+      MultisourceNumericValue mnv = new MultisourceNumericValue();
+      for (Constraint c : getConstraints()) {
+        DistanceConstraint dc = (DistanceConstraint) c;
+        Segment seg = model.getSegment(dc.getP1(), dc.getP2());
+        Source s = mkSource(seg);
+        mnv.addValue(s);
+        dc.setValue(mnv);
+      }
+    }
   }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
@@ -70,6 +82,14 @@ public class SameLengthUserConstraint extends UserConstraint {
     }
   }
 
+  public static MultisourceNumericValue.Source mkSource(final Segment seg) {
+    return new MultisourceNumericValue.Source() {
+      public double getValue() {
+        return seg.length();
+      }
+    };
+  }
+  
   /**
    * Same-length constraints can either be multi-source (where the length is determined by a bunch
    * of source values) or single-source (where the length is fixed to a number).
@@ -150,6 +170,16 @@ public class SameLengthUserConstraint extends UserConstraint {
       DistanceConstraint dc = (DistanceConstraint) c;
       dc.setValue(nv);
     }
+  }
+  
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = super.toJson();
+    if (isMultiSource()) {
+      ret.put("multi", true);
+    } else {
+      ret.put("multi", false);
+    }
+    return ret;
   }
 
 }

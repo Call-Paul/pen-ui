@@ -169,8 +169,8 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     bug("Number of current constraints involving those angles: " + results.size());
     if (results.size() == 0) {
       // No existing angle constraints. so make one of your own and assign it to uc.
-      MultisourceNumericValue angle = new MultisourceNumericValue(mkSource(angleA),
-          mkSource(angleB));
+      MultisourceNumericValue angle = new MultisourceNumericValue(SameAngleUserConstraint.mkSource(angleA),
+          SameAngleUserConstraint.mkSource(angleB));
       SameAngleUserConstraint sauc = new SameAngleUserConstraint(model);
       sauc.addAngle(angleA, angle);
       sauc.addAngle(angleB, angle);
@@ -189,14 +189,14 @@ public class SameAngleGesture extends RecognizedItemTemplate {
             pairA[1].getP2())) {
           // pairA already constrained. incorporate pairB's angle and give it constraint
           Angle angle = getFulcrum(pairB);
-          val.addValue(mkSource(angle));
+          val.addValue(SameAngleUserConstraint.mkSource(angle));
           AngleConstraint ac = new AngleConstraint(angle.getPtA(), angle.getFulcrum(),
               angle.getPtB(), val);
           addUs.add(ac);
         } else {
           // pairB already constrained. incorporate pairA's angle and give it constraint
           Angle angle = getFulcrum(pairA);
-          val.addValue(mkSource(angle));
+          val.addValue(SameAngleUserConstraint.mkSource(angle));
           AngleConstraint ac = new AngleConstraint(angle.getPtA(), angle.getFulcrum(),
               angle.getPtB(), val);
           addUs.add(ac);
@@ -297,15 +297,6 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     //    UserConstraint ret = new SameLengthUserConstraint(model, addUs.toArray(new Constraint[0]));
     //    return ret;
     return null;
-  }
-
-  private MultisourceNumericValue.Source mkSource(final Angle angle) {
-    return new MultisourceNumericValue.Source() {
-      public double getValue() {
-        return Math.abs(AngleConstraint.measureAngle(angle.getPtA(), angle.getFulcrum(),
-            angle.getPtB()));
-      }
-    };
   }
 
   public static Collection<RecognizedItem> resolveConflictRightAngleGesture(RecognizedItem itemA,

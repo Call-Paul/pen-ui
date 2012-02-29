@@ -5,6 +5,7 @@ import java.awt.geom.Arc2D;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Angle;
@@ -39,6 +40,15 @@ public class SameAngleUserConstraint extends UserConstraint {
 
   public SameAngleUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
     super(model, NAME, ucObj);
+    if (ucObj.getBoolean("multi")) {
+      MultisourceNumericValue mnv = new MultisourceNumericValue();
+      for (Constraint c : getConstraints()) {
+        AngleConstraint ac = (AngleConstraint) c;
+        Source s = mkSource(new Angle(ac.getPtA(), ac.getPtFulcrum(), ac.getPtB()));
+        mnv.addValue(s);
+        ac.setValue(mnv);
+      }
+    }
   }
 
   @Override
@@ -138,6 +148,16 @@ public class SameAngleUserConstraint extends UserConstraint {
       //      oc.setValue(nv);
     }
   }
+  
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = super.toJson();
+    if (isMultiSource()) {
+      ret.put("multi", true);
+    } else {
+      ret.put("multi", false);
+    }
+    return ret;
+  }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
     if (hoverPoint != null) {
@@ -163,6 +183,15 @@ public class SameAngleUserConstraint extends UserConstraint {
         DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
       }
     }
+  }
+
+  public static MultisourceNumericValue.Source mkSource(final Angle angle) {
+    return new MultisourceNumericValue.Source() {
+      public double getValue() {
+        return Math.abs(AngleConstraint.measureAngle(angle.getPtA(), angle.getFulcrum(),
+            angle.getPtB()));
+      }
+    };
   }
 
 }
