@@ -39,6 +39,7 @@ import org.six11.sf.rec.SelectGestureRecognizer;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.data.RankedList;
+import org.six11.util.data.Statistics;
 import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
@@ -325,16 +326,44 @@ public class SketchBook {
               eligible = scrib.hasAttribute("erase_eligible");
               scrib.setAttribute("erase_pseudocorners", numCorners);
               if (numCorners > ERASE_PSEUDOCORNER_THRESH && eligible) {
-                scrib.setAttribute("erase", true);
-                Pt killSpot = Functions.getMean(samples);
-                scrib.setAttribute("erase_spot", killSpot);
-                editor.drawErase();
+                // this could be an erase. But we don't want to erase if the gesture is 
+                // possibly just a quickly drawn circe (e.g. latching something).
+                if (!detectCircle(samples)) {
+                  scrib.setAttribute("erase", true);
+                  Pt killSpot = Functions.getMean(samples);
+                  scrib.setAttribute("erase_spot", killSpot);
+                  editor.drawErase();
+                } else {
+                  bug("Detected circle. Not erasing.");
+                }
               }
             }
           }
         }
       }
     }
+  }
+
+  public boolean detectCircle(List<Pt> points) {
+    boolean ret = false;
+    Pt centroid = Functions.getMean(points);
+    Statistics crosses = new Statistics();
+    Vec prevV = null;
+    for (Pt pt : points) {
+      if (prevV == null) {
+        prevV = new Vec(centroid, pt);
+      } else {
+        Vec here = new Vec(centroid, pt);
+        double cross = here.cross(prevV);
+        crosses.addData(cross);
+        prevV = here;
+      }
+    }
+    bug("detectCircle: crosses mean: " + crosses.getMean());
+    if (Math.abs(crosses.getMean()) > 230) {
+      ret = true;
+    }
+    return ret;
   }
 
   public boolean isErasing() {

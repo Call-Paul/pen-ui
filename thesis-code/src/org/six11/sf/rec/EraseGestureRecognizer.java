@@ -27,6 +27,16 @@ import org.six11.util.pen.Vec;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
+
+// ---------------------------------------------------------------------------------------------------
+//
+//
+//          N o t e
+//
+//                   This class isn't used any longer. See SketchBook#analyzeForErase().
+//
+//
+// ---------------------------------------------------------------------------------------------------
 public class EraseGestureRecognizer extends SketchRecognizer {
 
   public EraseGestureRecognizer(SketchBook model) {

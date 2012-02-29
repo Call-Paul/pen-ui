@@ -131,7 +131,6 @@ public class SkruiFabEditor {
             model.getConstraints().setFrameRate(FRAME_RATE);
           }
           if (state == State.Solved) {
-            bug("Came to a stop! Snapping.");
             model.getSnapshotMachine().requestSnapshot("Solver simmered down");
           }
         }

@@ -101,7 +101,6 @@ public class SnapshotMachine {
   }
 
   public void requestSnapshot(String reason) {
-    bug("Somebody is requesting a snapshot. Reason: " + reason);
     this.snapshotRequested = true;
     model.getLayers().repaint();
   }
