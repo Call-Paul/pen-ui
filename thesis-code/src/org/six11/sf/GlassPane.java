@@ -273,6 +273,7 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
         }
         editor.getModel().setDraggingSelection(false);
         activity = ActivityMode.None;
+        givePenEvent(editor.getModel().getLayers(), PenEvent.buildIdleEvent(this, ev));
         break;
       case DragScrap:
         if (mei.component instanceof Drag.Listener) {

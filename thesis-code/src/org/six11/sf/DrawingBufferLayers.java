@@ -69,23 +69,27 @@ import com.lowagie.text.pdf.PdfWriter;
 @SuppressWarnings("serial")
 public class DrawingBufferLayers extends JComponent implements PenListener {
 
-  private static final String MOVE = "move";
-  private static final String PAUSE = "pause";
-  private static final String UP = "up";
-  private static final String DOWN = "down";
-  private static final String TICK = "tick";
 
+  // states
   public static final String OP = "op";
   public static final String SMOOTH = "smooth";
   public static final String FLOW = "flow";
   public static final String DRAW = "draw";
   public static final String IDLE = "idle";
+  public static final String DRAGGING = "dragging";
 
+  // events
+  private static final String MOVE = "move";
+  private static final String PAUSE = "pause";
+  private static final String UP = "up";
+  private static final String DOWN = "down";
+  private static final String TICK = "tick";
   private static final String BUTTON_DOWN = "magic_button_down";
   private static final String BUTTON_UP = "magic_button_up";
   private static final String ARMED = "armed";
   private static final String SEARCH_DIR = "search_direction";
-
+  private static final String DRAG_BEGIN = "drag_begin";
+  
   public final static Color DEFAULT_DRY_COLOR = Color.GRAY.darker();
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
   public final static Color DEFAULT_WET_COLOR = Color.BLACK;
@@ -93,6 +97,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final Color PAUSE_COLOR = Color.YELLOW.darker();
   private static final double FS_SMOOTH_DAMPING = 0.025;
+  
   List<PenListener> penListeners;
   private Color bgColor = Color.WHITE;
   private Color penEnabledBorderColor = Color.GREEN;
@@ -166,6 +171,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     FSM f = new FSM("Flow Selection FSM");
     f.addState(IDLE);
     f.addState(DRAW);
+    f.addState(DRAGGING);
     f.addState(FLOW);
     f.addState(OP);
     f.addState(SMOOTH);
@@ -215,6 +221,9 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         addFsRecent(fsRecentPt);
       }
     });
+    f.addTransition(new Transition(DRAG_BEGIN, DRAW, DRAGGING));
+    f.addTransition(new Transition(UP, DRAGGING, IDLE));
+    
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
@@ -355,7 +364,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
 
     //    f.addChangeListener(new ChangeListener() {
-    //
     //      public void stateChanged(ChangeEvent arg0) {
     //        bug("state: " + fsFSM.getState());
     //      }
@@ -808,6 +816,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           model.retainVisibleGuides();
           hoverPt = null;
           if (model.isPointOverSelection(ev.getPt())) {
+            fsFSM.addEvent(DRAG_BEGIN);
             model.setDraggingSelection(true);
           } else {
             Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
