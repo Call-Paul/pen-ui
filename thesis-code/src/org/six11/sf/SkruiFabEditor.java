@@ -68,7 +68,8 @@ public class SkruiFabEditor {
   private static final Color BLOB_COLOR = Color.CYAN.darker();
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static final String ACTION_LOAD_FILE = "Load File";
-  protected static final int FRAME_RATE = 2;
+  protected static final int FRAME_RATE = 30;
+  private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -95,6 +96,7 @@ public class SkruiFabEditor {
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
   private boolean debugSolver = true;
+  protected boolean fixedFrameRate = false;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -122,18 +124,18 @@ public class SkruiFabEditor {
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
-        //        if (numIterations > 30 || err < (numPoints * 2)) {
-        //          model.getConstraints().setFrameRate(0);
-        //        } else {
-        //          model.getConstraints().setFrameRate(FRAME_RATE);
-        //        }
-        //        if (state == State.Solved) {
-        //          bug("Came to a stop! Snapping.");
-        //          model.getSnapshotMachine().requestSnapshot("Solver simmered down");
-        //        }
-        bug("got solver step: " + state + ", error: " + num(err));
+        if (!fixedFrameRate ) {
+          if (numIterations > 30 || err < (numPoints * 2)) {
+            model.getConstraints().setFrameRate(0);
+          } else {
+            model.getConstraints().setFrameRate(FRAME_RATE);
+          }
+          if (state == State.Solved) {
+            bug("Came to a stop! Snapping.");
+            model.getSnapshotMachine().requestSnapshot("Solver simmered down");
+          }
+        }
         drawStuffLater();
-        bug("requesting repaint in thread: " + Thread.currentThread().getName());
         layers.repaint();
       }
     });
@@ -253,6 +255,13 @@ public class SkruiFabEditor {
             loadSnapshot();
           }
         });
+    
+    actions.put(ACTION_TOGGLE_VECTORS,
+        new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
+          public void activate() {
+            toggleVectors();
+          }
+        });
 
     // 3. For those actions with keyboard accelerators, register them to the
     // root pane.
@@ -264,6 +273,11 @@ public class SkruiFabEditor {
     }
   }
 
+  protected void toggleVectors() {
+    debugSolver = !debugSolver;
+    layers.repaint();
+  }
+  
   protected void loadSnapshot() {
 
   }

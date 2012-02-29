@@ -26,8 +26,8 @@ public class ColinearUserConstraint extends UserConstraint {
 
   public static final String NAME = "Colinear";
 
-  public ColinearUserConstraint(SketchBook model, Pt a, Pt b, Pt mid) {
-    super(model, NAME, new PointOnLineConstraint(a, b, mid));
+  public ColinearUserConstraint(SketchBook model, Set<Pt> points) {
+    super(model, NAME, new PointOnLineConstraint(points));
   }
 
   public ColinearUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
@@ -69,27 +69,14 @@ public class ColinearUserConstraint extends UserConstraint {
     }
     return ret;
   }
+  
+  private PointOnLineConstraint getPOLConstraint() {
+    return (PointOnLineConstraint) Lists.getOne(getConstraints());
+  }
 
   public void addPoint(Pt pt) {
-    Set<Pt> currentPts = getConstrainedPoints(); //new HashSet<Pt>();
-    currentPts.add(pt); // add our new point into the mix
-    // now collect a list of all points we have
-    //    for (Constraint c : getConstraints()) {
-    //      PointOnLineConstraint pol = (PointOnLineConstraint) c;
-    //      currentPts.addAll(Lists.makeSet(pol.getRelatedPoints()));
-    //    }
-    // find the points that are farthest away from each other (the antipodes)
-    Pt[] anti = getAntipodes(currentPts);
-    bug("Antipodes: " + SketchBook.n(anti[0]) + ", " + SketchBook.n(anti[1]));
-
-    // now start fresh. remove all constraints and create new ones using bestA and bestB as the antipodes.
-    removeAllConstraints();
-    currentPts.remove(anti[0]);
-    currentPts.remove(anti[1]);
-    for (Pt current : currentPts) {
-      PointOnLineConstraint pol = new PointOnLineConstraint(anti[0], current, anti[1]);
-      addConstraint(pol);
-    }
+    PointOnLineConstraint pol = getPOLConstraint();
+    pol.addPoints(pt);
   }
 
   public Pt[] getAntipodes(Set<Pt> sourcePoints) {

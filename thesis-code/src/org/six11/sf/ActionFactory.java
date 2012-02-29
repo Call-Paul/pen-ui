@@ -140,7 +140,7 @@ public class ActionFactory {
         } else {
           // did not find an existing colinear constraint. so make one.
           bug("Didn't find a colinear constraint, so I'm going to make one.");
-          colinear = new ColinearUserConstraint(model, oldSeg.getP1(), oldSeg.getP2(), splitPt);
+          colinear = new ColinearUserConstraint(model, Lists.makeSet(oldSeg.getP1(), oldSeg.getP2(), splitPt));
           
         }
         axe(Collections.singleton(oldSeg)); // will remove all user constraints related to it.
