@@ -18,6 +18,7 @@ import org.six11.sf.constr.SameAngleUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.data.Lists;
+import org.six11.util.data.RankedList;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.DrawingBufferRoutines;
@@ -62,7 +63,6 @@ public class SameAngleGesture extends RecognizedItemTemplate {
   }
 
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
-    bug("entered checkContext");
     Certainty ret = Certainty.No;
 
     RecognizerPrimitive line1 = item.getSubshape("line1");
@@ -78,13 +78,11 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     for (RecognizerPrimitive line : hashes) {
       if (line.getType() == RecognizerPrimitive.Type.Line) {
         Pt hotspot = line.getMid();
-        bug("Found a line. looking for segments whose endpoints are near the hotspot "
-            + num(hotspot));
         Set<Segment> segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(allSegs);
-        bug("Found " + segs.size() + " such segments");
         // next see if segs has two (and only two) that share an endpoint ('corner') 
         // near the hotspot if we find two distinct corners, we are in business.
-        if (segs.size() == 2) {
+        if (segs.size() >= 2) {
+          segs = getBest(segs, hotspot);
           if (pair1.length == 0) {
             pair1 = segs.toArray(pair1);
           } else if (pair2.length == 0) {
@@ -109,7 +107,18 @@ public class SameAngleGesture extends RecognizedItemTemplate {
         ret = Certainty.Yes;
       }
     }
-    bug("exited checkContext");
+    return ret;
+  }
+  
+  Set<Segment> getBest(Set<Segment> segs, Pt hotspot) {
+    RankedList<Segment> rl = new RankedList<Segment>();
+    for (Segment s : segs) {
+      double d1 = s.getP1().distance(hotspot);
+      double d2 = s.getP2().distance(hotspot);
+      double smaller = Math.min(d1, d2);
+      rl.add(smaller, s);
+    }
+    Set<Segment> ret = Lists.makeSet(rl.getData().get(0), rl.getData().get(1));
     return ret;
   }
 

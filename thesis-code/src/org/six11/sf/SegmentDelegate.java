@@ -551,16 +551,23 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public JSONObject toJson() throws JSONException {
+    Debug.errorOnNull(SketchBook.n(p1), "p1.name");
+    Debug.errorOnNull(SketchBook.n(p2), "p2.name");
+    Debug.errorOnNull(pri, "pri");
+    Debug.errorOnNull(alt, "alt");
+    Debug.errorOnNull(type, "type");
     JSONObject ret = new JSONObject();
     ret.put("p1", SketchBook.n(p1));
     ret.put("p2", SketchBook.n(p2));
-    
-//    JSONArray priArr = new JSONArray(Arrays.asList(pri));
     ret.put("pri", new JSONArray(pri));
-//    JSONArray altArr = new JSONArray(Arrays.asList(alt));
     ret.put("alt", new JSONArray(alt));
     ret.put("type", type);
     return ret;
+  }
+
+  public void validate(SketchBook model) {
+    Segment seg = model.getSegment(p1, p2);
+    Debug.errorOnNull(seg, "seg");
   }
 
 }

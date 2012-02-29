@@ -67,6 +67,8 @@ public class SkruiFabEditor {
   private static final Color CIRCLE_COLOR = Color.BLUE.darker();
   private static final Color BLOB_COLOR = Color.CYAN.darker();
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
+  private static final String ACTION_LOAD_FILE = "Load File";
+  protected static final int FRAME_RATE = 30;
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -92,7 +94,6 @@ public class SkruiFabEditor {
   //  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
-  private boolean snapshotPlease;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -123,13 +124,12 @@ public class SkruiFabEditor {
         if (numIterations > 30 || err < (numPoints * 2)) {
           model.getConstraints().setFrameRate(0);
         } else {
-          model.getConstraints().setFrameRate(30);
+          model.getConstraints().setFrameRate(FRAME_RATE);
         }
-        if (state == State.Solved && snapshotPlease) {
-          bug("Came to a stop! Snapping.");
-          snapshotPlease = false;
-          model.getSnapshotMachine().save();
-        }
+        //        if (state == State.Solved) {
+        //          bug("Came to a stop! Snapping.");
+        //          model.getSnapshotMachine().requestSnapshot("Solver simmered down");
+        //        }
         drawStuffLater();
       }
     });
@@ -169,7 +169,7 @@ public class SkruiFabEditor {
     };
     drawLaterTimer = new Timer(20, drawLaterRunnable);
     drawLaterTimer.setRepeats(false);
-    model.getSnapshotMachine().save(); // initial blank state
+    model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
   }
 
   protected void drawStuffLater() {
@@ -243,6 +243,13 @@ public class SkruiFabEditor {
           }
         });
 
+    actions.put(ACTION_LOAD_FILE,
+        new NamedAction("Load Snapshot", KeyStroke.getKeyStroke(KeyEvent.VK_L, 0)) {
+          public void activate() {
+            loadSnapshot();
+          }
+        });
+
     // 3. For those actions with keyboard accelerators, register them to the
     // root pane.
     for (Action action : actions.values()) {
@@ -251,6 +258,9 @@ public class SkruiFabEditor {
         rp.registerKeyboardAction(action, s, JComponent.WHEN_IN_FOCUSED_WINDOW);
       }
     }
+  }
+
+  protected void loadSnapshot() {
 
   }
 
@@ -304,66 +314,65 @@ public class SkruiFabEditor {
 
   @SuppressWarnings("unchecked")
   public void go() {
-    synchronized (model.getSnapshotMachine()) {
-      bug("+---------------------------------------------------------------------------------------+");
-      bug("|                                                                                       |");
-      bug("|                                       ~ go ~                                          |");
-      bug("|                                                                                       |");
-      bug("+---------------------------------------------------------------------------------------+");
-      List<Ink> unstruc = model.getUnanalyzedInk();
-      Collection<Segment> segs = new HashSet<Segment>();
-      //    goStopwatch.start("guide");
-      if (unstruc.isEmpty()) {
-        bug("No ink to work with...");
-      } else {
-        Set<Guide> passed = new HashSet<Guide>();
-        Set<Ink> passedInk = new HashSet<Ink>();
-        for (Ink stroke : unstruc) {
-          passed.clear();
-          Segment guidedSeg = null;
-          for (Guide g : stroke.guides) {
-            if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
-              if (g instanceof GuidePoint) {
-                g.adjust(stroke, 0, stroke.seq.size() - 1);
-              } else {
-                bug("** Guide " + g + " claims this entire stroke.");
-                passed.add(g);
-                passedInk.add(stroke);
-              }
+
+    bug("+---------------------------------------------------------------------------------------+");
+    bug("|                                                                                       |");
+    bug("|                                       ~ go ~                                          |");
+    bug("|                                                                                       |");
+    bug("+---------------------------------------------------------------------------------------+");
+    List<Ink> unstruc = model.getUnanalyzedInk();
+    Collection<Segment> segs = new HashSet<Segment>();
+    //    goStopwatch.start("guide");
+    if (unstruc.isEmpty()) {
+      bug("No ink to work with...");
+    } else {
+      Set<Guide> passed = new HashSet<Guide>();
+      Set<Ink> passedInk = new HashSet<Ink>();
+      for (Ink stroke : unstruc) {
+        passed.clear();
+        Segment guidedSeg = null;
+        for (Guide g : stroke.guides) {
+          if (g.claims(stroke.seq, 0, stroke.seq.size() - 1)) {
+            if (g instanceof GuidePoint) {
+              g.adjust(stroke, 0, stroke.seq.size() - 1);
+            } else {
+              bug("** Guide " + g + " claims this entire stroke.");
+              passed.add(g);
+              passedInk.add(stroke);
             }
           }
-          if (passed.size() == 1) {
-            guidedSeg = passed.toArray(new Guide[1])[0].adjust(stroke, 0, stroke.seq.size() - 1);
-            bug("adding guided segment: " + guidedSeg);
-            segs.add(guidedSeg);
-          }
         }
-        unstruc.removeAll(passedInk);
+        if (passed.size() == 1) {
+          guidedSeg = passed.toArray(new Guide[1])[0].adjust(stroke, 0, stroke.seq.size() - 1);
+          bug("adding guided segment: " + guidedSeg);
+          segs.add(guidedSeg);
+        }
       }
-      for (Ink stroke : unstruc) {
-        Sequence seq = stroke.getSequence();
-        segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
-        stroke.setAnalyzed(true);
-      }
-      SafeAction a = model.getActionFactory().addSegments(segs);
-      model.addAction(a);
-      model.getConstraintAnalyzer().analyze(segs, true);
-      Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
-      items = filterRecognizedItems(items);
-      for (RecognizedItem item : items) {
-        item.getTemplate().create(item, model);
-      }
-      findStencils(segs);
-      model.getConstraints().wakeUp();
-      model.clearInk();
-      layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
-      drawStencils();
-      drawStructured();
-      drawRecognized(items);
-      layers.repaint();
-      snapshotPlease = true;
+      unstruc.removeAll(passedInk);
     }
+    for (Ink stroke : unstruc) {
+      Sequence seq = stroke.getSequence();
+      segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
+      stroke.setAnalyzed(true);
+    }
+    SafeAction a = model.getActionFactory().addSegments(segs);
+    model.addAction(a);
+    model.getConstraintAnalyzer().analyze(segs, true);
+    Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
+    items = filterRecognizedItems(items);
+    for (RecognizedItem item : items) {
+      item.getTemplate().create(item, model);
+    }
+    findStencils(segs);
     model.getConstraints().wakeUp();
+    model.clearInk();
+    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+    drawStencils();
+    drawStructured();
+    drawRecognized(items);
+    layers.repaint();
+    model.getConstraints().wakeUp();
+    model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
 
   public void findStencils(Collection<Segment> segs) {
@@ -720,4 +729,5 @@ public class SkruiFabEditor {
     }
     layers.repaint();
   }
+
 }

@@ -1,17 +1,27 @@
 package org.six11.sf;
 
 import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 import java.util.prefs.Preferences;
+
+import javax.imageio.ImageIO;
+import javax.swing.SwingUtilities;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.six11.util.Debug;
+import org.six11.util.data.Lists;
 import org.six11.util.io.FileUtil;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
+import org.six11.util.solve.ConstraintSolver.State;
 import org.six11.util.solve.VariableBank;
 import static org.six11.util.Debug.bug;
 
@@ -34,6 +44,8 @@ public class SnapshotMachine {
    */
   private int stateCursor = 0;
 
+  private boolean snapshotRequested;
+    
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.state = new ArrayList<Snapshot>();
@@ -44,6 +56,8 @@ public class SnapshotMachine {
         rootDir = debugOutput;
         bug("Using snapshot root directory: " + rootDir.getAbsolutePath());
       }
+    } else {
+      rootDir = debugOutput;
     }
     if (rootDir != null) {
       File[] oldFiles = rootDir.listFiles();
@@ -54,22 +68,41 @@ public class SnapshotMachine {
     }
   }
 
-  public synchronized Snapshot save() {
-    Snapshot ret = new Snapshot(model);
-    state.add(stateCursor, ret); // add snapshot at cursor
-    stateCursor = stateCursor + 1; // increment cursor
-    for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
-      state.remove(i);
+  public Snapshot save() {
+    if (!SwingUtilities.isEventDispatchThread()) {
+      Debug.error("Saving in thread: " + Thread.currentThread().getName() + " but should save in the swing thread.");
     }
-    if (rootDir != null) {
-      File snapFile = new File(rootDir, "snapshot-" + ret.getID());
-      try {
-        FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
-      } catch (JSONException e) {
-        FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
+    Snapshot ret = null;
+    if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
+      snapshotRequested = false;
+      ret = new Snapshot(model);
+      bug("* * * Made Snapshot " + ret.getID() + " at " + Debug.now());
+      state.add(stateCursor, ret); // add snapshot at cursor
+      stateCursor = stateCursor + 1; // increment cursor
+      for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
+        state.remove(i);
+      }
+      if (rootDir != null) {
+        File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
+        File imgFile = new File(rootDir, "snapshot-" + ret.getID() + ".png");
+        try {
+          FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
+          ImageIO.write(ret.getPreview(), "png", imgFile);
+        } catch (JSONException e) {
+          FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
+        } catch (IOException e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
+        }
       }
     }
     return ret;
+  }
+
+  public void requestSnapshot(String reason) {
+    bug("Somebody is requesting a snapshot. Reason: " + reason);
+    this.snapshotRequested = true;
+    model.getLayers().repaint();
   }
 
   public Snapshot get(int idx) {
@@ -90,11 +123,11 @@ public class SnapshotMachine {
       if (typeStr == null) {
         bug("typeStr is null while loading segment " + segID);
       }
-      String pt1Name = segObj.getString("p1");
+      String pt1Name = segObj.optString("p1");
       if (pt1Name == null) {
         bug("pt1Name is null while loading segment " + segID + " of type " + typeStr);
       }
-      String pt2Name = segObj.getString("p2");
+      String pt2Name = segObj.optString("p2");
       if (pt2Name == null) {
         bug("pt2Name is null while loading segment type " + segID + " of type " + typeStr);
       }
@@ -124,9 +157,12 @@ public class SnapshotMachine {
         Vec centerVec = new Vec(cpx, cpy);
         Vec arcMidVec = new Vec(mpx, mpy);
         d = new CircularArcSegment(p1, p2, centerVec, arcMidVec);
+      } else if (typeStr.equals(Segment.Type.Circle.toString())) {
+        d = new CircleSegment(model, segObj);
       } else {
         bug("***");
-        bug("*** Can't load type " + typeStr + " from JSONObject yet");
+        bug("*** Can't load type " + typeStr
+            + " from JSONObject yet. I will now System.exit(0) in your face.");
         bug("***");
         System.exit(0);
       }
@@ -134,6 +170,7 @@ public class SnapshotMachine {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    d.validate(model);
     Segment ret = new Segment(d, segID);
     return ret;
   }
@@ -186,6 +223,14 @@ public class SnapshotMachine {
 
   public Snapshot getCurrent() {
     return state.get(stateCursor - 1);
+  }
+
+  public boolean canRedo() {
+    return stateCursor < state.size();
+  }
+  
+  public boolean canUndo() {
+    return stateCursor > 1;
   }
 
 }

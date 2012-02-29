@@ -32,7 +32,7 @@ public class Segment implements HasFuzzyArea {
     this.d = delegate;
     id = ID_COUNTER++;
   }
-  
+
   public Segment(SegmentDelegate delegate, int id) {
     this.d = delegate;
     this.id = id;

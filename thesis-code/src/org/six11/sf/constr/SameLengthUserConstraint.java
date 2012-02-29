@@ -8,6 +8,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
@@ -26,11 +28,13 @@ import org.six11.util.solve.NumericValue;
 
 public class SameLengthUserConstraint extends UserConstraint {
 
-  SketchBook model;
-
+  public static final String NAME = "Same Length";
   public SameLengthUserConstraint(SketchBook model, Constraint... cs) {
-    super(model, "Same Length", cs);
-    this.model = model;
+    super(model, NAME, cs);
+  }
+
+  public SameLengthUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
+    super(model, NAME, ucObj);
   }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {

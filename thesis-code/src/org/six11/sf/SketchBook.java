@@ -119,7 +119,7 @@ public class SketchBook {
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
-    this.solver.setFrameRate(30);
+    this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
     solver.setDebugOut(true);
     try {
       solver.setDebugOutWriter(new BufferedWriter(new FileWriter("solver.txt")));
@@ -161,6 +161,10 @@ public class SketchBook {
 
   public Set<Stencil> getStencils() {
     return stencils;
+  }
+
+  public void addStencil(Stencil s) {
+    stencils.add(s);
   }
 
   public DrawingBufferLayers getLayers() {
@@ -206,6 +210,8 @@ public class SketchBook {
       DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
           DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
       lastInkWasSelection = false;
+    } else {
+      getSnapshotMachine().requestSnapshot("raw ink caused a change");
     }
     layers.repaint();
   }
@@ -459,11 +465,11 @@ public class SketchBook {
   //  }
 
   public void clearSelectedStencils() {
-    setSelectedStencils(null);
+    setSelectedStencils(new HashSet<Stencil>());
   }
 
   public void clearSelectedSegments() {
-    setSelectedSegments(null);
+    setSelectedSegments(new HashSet<Segment>());
   }
 
   public void addGeometry(Segment seg) {
@@ -505,7 +511,6 @@ public class SketchBook {
     for (Stencil stencil : stencils) {
       stencil.removeGeometry(seg);
       boolean v = stencil.isValid();
-      //      bug("Stencil " + stencil.getId() + " valid? " + v);
       if (!v) {
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
@@ -539,6 +544,17 @@ public class SketchBook {
     Segment ret = null;
     for (Segment s : geometry) {
       if (s.involves(blue) && s.involves(green)) {
+        ret = s;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public Segment getSegment(int id) {
+    Segment ret = null;
+    for (Segment s : geometry) {
+      if (s.getId() == id) {
         ret = s;
         break;
       }
@@ -632,22 +648,27 @@ public class SketchBook {
   }
 
   public void clearAll() {
-    clearInk();
-    clearSelectedStencils();
-    clearSelectedSegments();
-    clearStructured();
-    getConstraints().clearConstraints();
-    userConstraints.clear();
-    guidePoints.clear();
-    activeGuidePoints.clear();
-    derivedGuides.clear();
-    layers.clearScribble();
-    layers.clearAllBuffers();
-    layers.repaint();
-    editor.getGrid().clear();
-    editor.getCutfilePane().clear();
-    actions.clear();
-    redoActions.clear();
+    try {
+      clearInk();
+      clearSelectedStencils();
+      clearSelectedSegments();
+      clearStructured();
+      getConstraints().clearConstraints();
+      userConstraints.clear();
+      guidePoints.clear();
+      activeGuidePoints.clear();
+      derivedGuides.clear();
+      layers.clearScribble();
+      layers.clearAllBuffers();
+      layers.repaint();
+      editor.getGrid().clear();
+      editor.getCutfilePane().clear();
+      actions.clear();
+      redoActions.clear();
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+
   }
 
   private void clearStructured() {
@@ -858,14 +879,19 @@ public class SketchBook {
   }
 
   public void setSelectedStencils(Collection<Stencil> selectUs) {
+    boolean same = Lists.areSetsEqual(selectUs, selectedStencils);
     selectedStencils.clear();
     if (selectUs != null) {
       selectedStencils.addAll(selectUs);
     }
     editor.drawStencils();
+    if (!same) {
+      getSnapshotMachine().requestSnapshot("Stencil selection changed");
+    }
   }
 
   public void setSelectedSegments(Collection<Segment> selectUs) {
+    boolean same = Lists.areSetsEqual(selectUs, selectedSegments);
     if (!lastInkWasSelection || selectUs == null) {
       selectedSegments.clear();
     }
@@ -875,6 +901,9 @@ public class SketchBook {
     }
     editor.getGlass().setGatherText(selectedSegments.size() == 1);
     editor.drawStuff();
+    if (!same) {
+      getSnapshotMachine().requestSnapshot("Segment selection changed");
+    }
   }
 
   public boolean isPointOverSelection(Pt where) {
@@ -1161,6 +1190,9 @@ public class SketchBook {
     if (dragMe != null) {
     } else {
       getConstraints().wakeUp();
+      if (draggingGuidePoint != null) {
+        getSnapshotMachine().requestSnapshot("Done dragging a guide point");
+      }
     }
     draggingGuidePoint = dragMe;
     editor.drawStuff();
@@ -1201,7 +1233,7 @@ public class SketchBook {
       layers.setPreview(s.getPreview());
     }
   }
-  
+
   public void undoRedoComplete() {
     bug("finalizing redo/undo");
     layers.clearPreview();
@@ -1210,7 +1242,6 @@ public class SketchBook {
     snapshotMachine.load(s);
     loadingSnapshot = false;
   }
-
 
   public ActionFactory getActionFactory() {
     return actionFactory;
@@ -1422,6 +1453,17 @@ public class SketchBook {
 
   public boolean isLoadingSnapshot() {
     return loadingSnapshot;
+  }
+
+  public Stencil getStencil(int stencilID) {
+    Stencil ret = null;
+    for (Stencil s : stencils) {
+      if (s.getId() == stencilID) {
+        ret = s;
+        break;
+      }
+    }
+    return ret;
   }
 
 }

@@ -5,6 +5,8 @@ import java.awt.geom.Arc2D;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.sf.Angle;
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Material;
@@ -29,9 +31,14 @@ import static org.six11.util.Debug.num;
 public class SameAngleUserConstraint extends UserConstraint {
 
   private static final double DRAW_RADIUS = 12.0;
+  public static final String NAME = "Same Angle";
 
   public SameAngleUserConstraint(SketchBook model, Constraint... cs) {
-    super(model, "Same Angle", cs);
+    super(model, NAME, cs);
+  }
+
+  public SameAngleUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
+    super(model, NAME, ucObj);
   }
 
   @Override

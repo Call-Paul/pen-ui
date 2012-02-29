@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
@@ -18,14 +20,20 @@ import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.OrientationConstraint;
 
 public class RightAngleUserConstraint extends UserConstraint {
-
+  
+  public static final String NAME = "RightAngle";
+  
 //  public RightAngleUserConstraint(SketchBook model, OrientationConstraint rightAngleConstraint) {
 //    super(model, "RightAngle", rightAngleConstraint);
 //  }
 
   public RightAngleUserConstraint(SketchBook model, Pt a1, Pt a2, Pt b1, Pt b2) {
-    super(model, "RightAngle", new OrientationConstraint(a1, a2, b1, b2, new NumericValue(
+    super(model, NAME, new OrientationConstraint(a1, a2, b1, b2, new NumericValue(
         Math.toRadians(90))));
+  }
+  
+  public RightAngleUserConstraint(SketchBook model, JSONObject json) throws JSONException {
+    super(model, NAME, json);
   }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {

@@ -10,6 +10,9 @@ import static java.lang.Math.cos;
 import static java.lang.Math.min;
 import static java.lang.Math.sin;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
@@ -40,6 +43,42 @@ public class CircleSegment extends SegmentDelegate {
     this.type = Segment.Type.Circle;
   }
 
+  public CircleSegment(SketchBook model, JSONObject json) throws JSONException {
+    this.type = Segment.Type.Circle;
+    double cx = json.getDouble("cx");
+    double cy = json.getDouble("cy");
+    double p1x = json.getDouble("p1x");
+    double p1y = json.getDouble("p1y");
+    Pt c = new Pt(cx, cy);
+    this.p1 = new Pt(p1x, p1y);
+    this.p2 = p1;
+    double r = c.distance(p1);
+    this.circ = new Circle(c, r);
+  }
+
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = new JSONObject();
+    ret.put("type", type);
+    ret.put("cx", circ.getCenterX());
+    ret.put("cy", circ.getCenterY());
+    ret.put("p1x", p1.x);
+    ret.put("p1y", p1.y);
+//    ret.put("p2x", p2.x);
+//    ret.put("p2y", p2.y);
+//    Debug.errorOnNull(SketchBook.n(p1), "p1.name");
+//    Debug.errorOnNull(SketchBook.n(p2), "p2.name");
+//    Debug.errorOnNull(pri, "pri");
+//    Debug.errorOnNull(alt, "alt");
+//    Debug.errorOnNull(type, "type");
+//    JSONObject ret = new JSONObject();
+//    ret.put("p1", SketchBook.n(p1));
+//    ret.put("p2", SketchBook.n(p2));
+//    ret.put("pri", new JSONArray(pri));
+//    ret.put("alt", new JSONArray(alt));
+//    ret.put("type", type);
+    return ret;
+  }
+  
   public boolean hasEndCaps() {
     return false;
   }

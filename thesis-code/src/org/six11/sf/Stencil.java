@@ -10,10 +10,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.sf.Segment.Type;
+import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
+import org.six11.util.solve.VariableBank;
+
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
@@ -23,9 +29,10 @@ public class Stencil {
   private SketchBook model;
   private Set<Stencil> children;
   private static int ID_COUNT = 0;
-  private int id = ID_COUNT++;
+  private final int id;
 
   public Stencil(SketchBook model, List<Pt> path, List<Segment> segs) {
+    this.id = ID_COUNT++;
     this.model = model;
     this.path = new ArrayList<Pt>(path);
     if (path.get(0) != path.get(path.size() - 1)) {
@@ -37,16 +44,52 @@ public class Stencil {
   }
 
   public Stencil(SketchBook model, Segment s) {
+    this.id = ID_COUNT++;
     if (s.isClosed()) {
       this.model = model;
       this.segs = new ArrayList<Segment>();
       segs.add(s);
       this.path = new ArrayList<Pt>();
       this.children = new HashSet<Stencil>();
-//      bug("Made single-segment stencil for " + s);
     } else {
       bug("Error: created single-segment stencil with non-closed segment: " + s);
     }
+  }
+  
+  public Stencil(SketchBook model, JSONObject json) throws JSONException {
+    // "id"       : int, my ID
+    // "path"     : JSONArray of point names
+    // "segs"     : JSONArray of segment IDs
+    // "children" : JSONArray of JSONObjecs, each of which is a stencil produced from this toJson() method
+    this.model = model;
+    
+    this.id= json.getInt("id");
+    JSONArray pathArr = json.getJSONArray("path");
+    JSONArray segsArr = json.getJSONArray("segs");
+    JSONArray childrenArr = json.getJSONArray("children");
+    
+    this.path = new ArrayList<Pt>();
+    VariableBank vars = model.getConstraints().getVars();
+    for (int i=0; i < pathArr.length(); i++) {
+      String ptName = pathArr.getString(i);
+      Pt pt = vars.getPointWithName(ptName);
+      path.add(pt);
+    }
+    
+    this.segs = new ArrayList<Segment>();
+    for (int i=0; i < segsArr.length(); i++) {
+      int segID = segsArr.getInt(i);
+      Segment seg = model.getSegment(segID);
+      segs.add(seg);
+    }
+    
+    this.children = new HashSet<Stencil>();
+    for (int i=0; i < childrenArr.length(); i++) {
+      JSONObject childObj = childrenArr.getJSONObject(i);
+      Stencil childStencil = new Stencil(model, childObj);
+      children.add(childStencil);
+    }
+    
   }
 
   public boolean hasPath(List<Segment> otherSegPath) {
@@ -190,22 +233,15 @@ public class Stencil {
       for (int i = 0; i < path.size(); i++) {
         Pt a = path.get(i);
         Pt b = path.get((i + 1) % path.size());
+        Debug.errorOnNull(model, "model");
         Segment s = model.getSegment(a, b);
         if (s == null || !segs.contains(s)) {
-          if (s == null) {
-            bug("Stencil " + getId() + " is invalid because the segment from " + SketchBook.n(a)
-                + " to " + SketchBook.n(b) + " is null.");
-          } else {
-            bug("Stencil " + getId() + " is invalid because segment " + s.typeIdStr() + " is not in this stencil's path.");
-          }
           ret = false;
           break;
         }
       }
       for (Segment s : segs) {
         if (!model.hasSegment(s)) {
-          bug("Stencil " + getId() + " is invalid because segment " + s.typeIdStr()
-              + " is not in the model");
           ret = false;
           break;
         }
@@ -297,6 +333,38 @@ public class Stencil {
 
   public int getId() {
     return id;
+  }
+
+  public JSONObject toJson() throws JSONException {
+    // "id"       : int, my ID
+    // "path"     : JSONArray of point names
+    // "segs"     : JSONArray of segment IDs
+    // "children" : JSONArray of JSONObjecs, each of which is a stencil produced from this toJson() method
+
+    JSONObject ret = new JSONObject();
+    ret.put("id", getId());
+    
+    JSONArray pathArr = new JSONArray();
+    for (Pt pt : path) {
+      pathArr.put(SketchBook.n(pt));
+    }
+    ret.put("path", pathArr);
+    
+    JSONArray segsArr = new JSONArray();
+    for (Segment seg : segs) {
+      segsArr.put(seg.getId());
+    }
+    ret.put("segs", segsArr);
+    
+    JSONArray childrenArr = new JSONArray();
+    bug("There are " + children.size() + " children");
+    for (Stencil c : children) {
+      childrenArr.put(c.toJson());
+    }
+    ret.put("children", childrenArr);
+    
+    return ret;
+    
   }
 
 }

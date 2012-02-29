@@ -4,6 +4,7 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.AWTEvent;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -16,6 +17,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
+import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -47,6 +49,7 @@ import org.six11.util.gui.Strokes;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.DrawingBuffer;
+import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
@@ -117,7 +120,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   Pt prev;
   GeneralPath currentScribble;
   private Pt hoverPt;
-  private GuidePoint draggingGP;
   private boolean magicDown = false;
   private Image preview;
 
@@ -436,32 +438,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     return paused;
   }
 
-  /**
-   * Checks to see if the pen has remained relatively still since the beginning of the current
-   * scribble. The 'still' region is determined by the fsBubble variable.
-   * 
-   * @return true if the pen has always remained relatively near the pen down point.
-   */
-  private boolean fsCheckOld() {
-    boolean shouldFlow = false;
-    if (currentScribble != null && fsDown != null) {
-      List<Pt> points = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
-      double maxD = 0;
-      shouldFlow = true;
-      for (Pt pt : points) {
-        maxD = Math.max(maxD, pt.distance(fsDown));
-        if (maxD > fsBubble) {
-          shouldFlow = false;
-          break;
-        }
-      }
-    }
-    if (shouldFlow) {
-      fsFSM.addEvent(PAUSE);
-    }
-    return shouldFlow;
-  }
-
   private void fsInitTimer() {
     fsTimer.stop();
     fsTimer.setInitialDelay(fsPauseTimeout);
@@ -529,6 +505,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       fsNearestSeg.calculateParameters(choppySpline);
       fsNearestSeg.clearDeformation();
       model.getConstraints().wakeUp();
+      model.getSnapshotMachine().requestSnapshot("flow selection finished");
     }
   }
 
@@ -596,7 +573,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     }
   }
 
-  public Image getScreenShot() {
+  public BufferedImage getScreenShot() {
     BufferedImage ret = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
     paintComponent(ret.getGraphics());
     return ret;
@@ -605,16 +582,60 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
     if (preview != null) {
-      g.drawImage(preview, 0, 0, null);
+      g.drawImage(preview, 0, 0, null); 
     } else {
+      model.getSnapshotMachine().save();
       AffineTransform before = new AffineTransform(g.getTransform());
       drawBorderAndBackground(g);
       g.setTransform(before);
       paintContent(g, true);
       g.setTransform(before);
     }
+    if (fsFSM.getState().equals(SEARCH_DIR)) {
+      Components.antialias(g);
+      double w = getWidth();
+      double wOffset = 50;
+      double startOffset = 4;
+      double arrowLen = 32;
+      double y = 20;
+      Color undoColor = Color.LIGHT_GRAY;
+      Color redoColor = Color.LIGHT_GRAY;
+      if (model.getSnapshotMachine().canUndo()) {
+        undoColor = Color.BLACK;
+      }
+      if (model.getSnapshotMachine().canRedo()) {
+        redoColor = Color.BLACK;
+      }
+      Pt c = new Pt(w - wOffset, y);
+      Pt rs = c.getTranslated(startOffset, 0);
+      Pt rTip = rs.getTranslated(arrowLen, 0);
+      Pt us = c.getTranslated(-startOffset, 0);
+      Pt uTip = us.getTranslated(-arrowLen, 0);
+      arrow(g, us, uTip, 3.4f, undoColor);
+      arrow(g, rs, rTip, 3.4f, redoColor);
+      Pt ct = c.getTranslated(0, y);
+      Pt uText = ct.getTranslated(-arrowLen, 0);
+      Pt rText = ct.getTranslated(startOffset, 0);
+      g.setColor(undoColor);
+      g.drawString("undo", (float) uText.getX(), (float) uText.getY());
+      g.setColor(redoColor);
+      g.drawString("redo", (float) rText.getX(), (float) rText.getY());
+    }
   }
 
+  private void arrow(Graphics2D g, Pt start, Pt tip, float thickness, Color color) {
+    g.setColor(color);
+    g.setStroke(new BasicStroke(thickness));
+    Vec toTip = new Vec(start, tip);
+    Pt almostTip = start.getTranslated(toTip.getScaled(0.8));
+    Vec toCorner = toTip.getNormal().getScaled(0.25);
+    Pt headLeft = almostTip.getTranslated(toCorner);
+    Pt headRight = almostTip.getTranslated(toCorner.getFlip());
+    g.draw(new Line2D.Float(start, tip));
+    g.draw(new Line2D.Float(tip, headLeft));
+    g.draw(new Line2D.Float(tip, headRight));
+  }
+  
   public void paintContent(Graphics2D g, boolean useCachedImages) {
     Components.antialias(g);
     if (model.getConstraints().getSolutionState() == State.Working) {
@@ -631,7 +652,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         g.setColor(Color.RED);
         g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
       }
-
     }
     model.getEditor().drawConstraints();
     model.getEditor().drawDerivedGuides();

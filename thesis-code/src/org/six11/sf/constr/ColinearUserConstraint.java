@@ -3,9 +3,12 @@ package org.six11.sf.constr;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.sf.SketchBook;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.Pt;
+import org.six11.util.solve.AngleConstraint;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.PointOnLineConstraint;
 
@@ -13,8 +16,14 @@ import static org.six11.util.Debug.bug;
 
 public class ColinearUserConstraint extends UserConstraint {
 
+  public static final String NAME = "Colinear";
+  
   public ColinearUserConstraint(SketchBook model, Pt a, Pt b, Pt mid) {
-    super(model, "Colinear", new PointOnLineConstraint(a, b, mid));
+    super(model, NAME, new PointOnLineConstraint(a, b, mid));
+  }
+
+  public ColinearUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
+    super(model, NAME, ucObj);
   }
 
   @Override
