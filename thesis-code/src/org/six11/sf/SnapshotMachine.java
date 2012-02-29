@@ -45,7 +45,7 @@ public class SnapshotMachine {
   private int stateCursor = 0;
 
   private boolean snapshotRequested;
-    
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.state = new ArrayList<Snapshot>();
@@ -70,7 +70,8 @@ public class SnapshotMachine {
 
   public Snapshot save() {
     if (!SwingUtilities.isEventDispatchThread()) {
-      Debug.error("Saving in thread: " + Thread.currentThread().getName() + " but should save in the swing thread.");
+      Debug.error("Saving in thread: " + Thread.currentThread().getName()
+          + " but should save in the swing thread.");
     }
     Snapshot ret = null;
     if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
@@ -159,6 +160,10 @@ public class SnapshotMachine {
         d = new CircularArcSegment(p1, p2, centerVec, arcMidVec);
       } else if (typeStr.equals(Segment.Type.Circle.toString())) {
         d = new CircleSegment(model, segObj);
+      } else if (typeStr.equals(Segment.Type.Ellipse.toString())) {
+        d = new EllipseSegment(model, segObj);
+      } else if (typeStr.equals(Segment.Type.Blob.toString())) {
+        d = new Blob(model, segObj);
       } else {
         bug("***");
         bug("*** Can't load type " + typeStr
@@ -228,7 +233,7 @@ public class SnapshotMachine {
   public boolean canRedo() {
     return stateCursor < state.size();
   }
-  
+
   public boolean canUndo() {
     return stateCursor > 1;
   }

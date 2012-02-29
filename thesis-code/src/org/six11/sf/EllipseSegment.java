@@ -8,6 +8,9 @@ import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
@@ -31,6 +34,21 @@ public class EllipseSegment extends SegmentDelegate {
     this.p1 = points.get(0);
     this.p2 = p1;
     this.type = Segment.Type.Ellipse;
+  }
+  
+  public EllipseSegment(SketchBook model, JSONObject json) throws JSONException {
+    this.type = Segment.Type.Ellipse;
+    double ex = json.getDouble("ex");
+    double ey = json.getDouble("ey");
+    double a = json.getDouble("a");
+    double b = json.getDouble("b");
+    Pt c = new Pt(ex, ey);
+    double rot = json.getDouble("rot");
+    double p1x = json.getDouble("p1x");
+    double p1y = json.getDouble("p1y");
+    this.ellie = new RotatedEllipse(c, a, b, rot);
+    this.p1 = new Pt(p1x, p1y);
+    this.p2 = p1;
   }
 
   public boolean hasEndCaps() {
@@ -89,5 +107,18 @@ public class EllipseSegment extends SegmentDelegate {
 
   public void calculateParameters(List<Pt> points) {
     bug("eeeeeeee elipse does not need to do this!");
+  }
+  
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = new JSONObject();    
+    ret.put("type", type);
+    ret.put("ex", ellie.getCentroid().x);
+    ret.put("ey", ellie.getCentroid().y);
+    ret.put("a", ellie.getParamA());
+    ret.put("b", ellie.getParamB());
+    ret.put("rot", ellie.getRotation());
+    ret.put("p1x", p1.x);
+    ret.put("p1y", p1.y);
+    return ret;
   }
 }

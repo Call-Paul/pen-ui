@@ -68,7 +68,7 @@ public class SkruiFabEditor {
   private static final Color BLOB_COLOR = Color.CYAN.darker();
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static final String ACTION_LOAD_FILE = "Load File";
-  protected static final int FRAME_RATE = 30;
+  protected static final int FRAME_RATE = 2;
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -94,6 +94,7 @@ public class SkruiFabEditor {
   //  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
+  private boolean debugSolver = true;
 
   public SkruiFabEditor(Main m) {
     //    this.main = m;
@@ -121,16 +122,19 @@ public class SkruiFabEditor {
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
-        if (numIterations > 30 || err < (numPoints * 2)) {
-          model.getConstraints().setFrameRate(0);
-        } else {
-          model.getConstraints().setFrameRate(FRAME_RATE);
-        }
+        //        if (numIterations > 30 || err < (numPoints * 2)) {
+        //          model.getConstraints().setFrameRate(0);
+        //        } else {
+        //          model.getConstraints().setFrameRate(FRAME_RATE);
+        //        }
         //        if (state == State.Solved) {
         //          bug("Came to a stop! Snapping.");
         //          model.getSnapshotMachine().requestSnapshot("Solver simmered down");
         //        }
+        bug("got solver step: " + state + ", error: " + num(err));
         drawStuffLater();
+        bug("requesting repaint in thread: " + Thread.currentThread().getName());
+        layers.repaint();
       }
     });
     layers = new DrawingBufferLayers(model);
@@ -447,6 +451,22 @@ public class SkruiFabEditor {
       drawGuides();
       drawFS();
       drawErase();
+      if (debugSolver) {
+        DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DEBUG);
+        buf.clear();
+        if (model.getConstraints().getSolutionState() != ConstraintSolver.State.Solved) {
+          for (Pt pt : model.getConstraints().getPoints()) {
+            Vec v = pt.getVec(ConstraintSolver.LAST_SOLVER_ADJUSTMENT_VEC);
+            if (v != null && !v.isZero()) {
+              v = v.getScaled(10);
+              if (v.mag() < 6.0) {
+                v = v.getVectorOfMagnitude(6.0);
+              }
+              DrawingBufferRoutines.arrow(buf, pt, pt.getTranslated(v), 1, Color.MAGENTA);
+            }
+          }
+        }
+      }
     }
   }
 

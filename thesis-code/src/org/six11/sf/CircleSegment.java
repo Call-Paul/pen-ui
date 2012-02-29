@@ -63,19 +63,6 @@ public class CircleSegment extends SegmentDelegate {
     ret.put("cy", circ.getCenterY());
     ret.put("p1x", p1.x);
     ret.put("p1y", p1.y);
-//    ret.put("p2x", p2.x);
-//    ret.put("p2y", p2.y);
-//    Debug.errorOnNull(SketchBook.n(p1), "p1.name");
-//    Debug.errorOnNull(SketchBook.n(p2), "p2.name");
-//    Debug.errorOnNull(pri, "pri");
-//    Debug.errorOnNull(alt, "alt");
-//    Debug.errorOnNull(type, "type");
-//    JSONObject ret = new JSONObject();
-//    ret.put("p1", SketchBook.n(p1));
-//    ret.put("p2", SketchBook.n(p2));
-//    ret.put("pri", new JSONArray(pri));
-//    ret.put("alt", new JSONArray(alt));
-//    ret.put("type", type);
     return ret;
   }
   

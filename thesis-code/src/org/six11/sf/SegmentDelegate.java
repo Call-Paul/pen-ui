@@ -551,22 +551,41 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public JSONObject toJson() throws JSONException {
-    Debug.errorOnNull(SketchBook.n(p1), "p1.name");
-    Debug.errorOnNull(SketchBook.n(p2), "p2.name");
-    Debug.errorOnNull(pri, "pri");
-    Debug.errorOnNull(alt, "alt");
-    Debug.errorOnNull(type, "type");
     JSONObject ret = new JSONObject();
-    ret.put("p1", SketchBook.n(p1));
-    ret.put("p2", SketchBook.n(p2));
-    ret.put("pri", new JSONArray(pri));
-    ret.put("alt", new JSONArray(alt));
-    ret.put("type", type);
+    try {
+      Debug.errorOnNull(SketchBook.n(p1), "p1.name");
+      Debug.errorOnNull(SketchBook.n(p2), "p2.name");
+      Debug.errorOnNull(pri, "pri");
+      Debug.errorOnNull(alt, "alt");
+      Debug.errorOnNull(type, "type");
+      ret.put("p1", SketchBook.n(p1));
+      ret.put("p2", SketchBook.n(p2));
+      ret.put("pri", new JSONArray(pri));
+      ret.put("alt", new JSONArray(alt));
+      ret.put("type", type);
+    } catch (JSONException ex) {
+      bug("Caught JSON exception while serializing " + getClass().getName());
+      ex.printStackTrace();
+      throw ex;
+    }
     return ret;
   }
 
   public void validate(SketchBook model) {
     Segment seg = model.getSegment(p1, p2);
+    if (p1 == null) {
+      bug("p1 is null");
+    }
+    if (p2 == null) {
+      bug("p2 is null");
+    }
+    if (model.getConstraints().hasPoints(p1)) {
+      bug("constraint solver does not have p1");
+    }
+    if (model.getConstraints().hasPoints(p2)) {
+      bug("constraint solver does not have p2");
+    }
+    
     Debug.errorOnNull(seg, "seg");
   }
 
