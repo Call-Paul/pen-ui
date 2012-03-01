@@ -109,7 +109,7 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     }
     return ret;
   }
-  
+
   Set<Segment> getBest(Set<Segment> segs, Pt hotspot) {
     RankedList<Segment> rl = new RankedList<Segment>();
     for (Segment s : segs) {
@@ -169,8 +169,8 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     bug("Number of current constraints involving those angles: " + results.size());
     if (results.size() == 0) {
       // No existing angle constraints. so make one of your own and assign it to uc.
-      MultisourceNumericValue angle = new MultisourceNumericValue(SameAngleUserConstraint.mkSource(angleA),
-          SameAngleUserConstraint.mkSource(angleB));
+      MultisourceNumericValue angle = new MultisourceNumericValue(
+          SameAngleUserConstraint.mkSource(angleA), SameAngleUserConstraint.mkSource(angleB));
       SameAngleUserConstraint sauc = new SameAngleUserConstraint(model);
       sauc.addAngle(angleA, angle);
       sauc.addAngle(angleB, angle);
@@ -303,6 +303,17 @@ public class SameAngleGesture extends RecognizedItemTemplate {
       RecognizedItem itemB) {
     Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
     if (itemA.getTemplate().getName().equals(RightAngleBrace.NAME)) {
+      doomed.add(itemB);
+    } else {
+      doomed.add(itemA);
+    }
+    return doomed;
+  }
+
+  public static Collection<RecognizedItem> resolveConflictSameLength(RecognizedItem itemA,
+      RecognizedItem itemB) {
+    Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
+    if (itemA.getTemplate().getName().equals(SameLengthGesture.NAME)) {
       doomed.add(itemB);
     } else {
       doomed.add(itemA);
