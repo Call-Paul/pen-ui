@@ -69,7 +69,6 @@ import com.lowagie.text.pdf.PdfWriter;
 @SuppressWarnings("serial")
 public class DrawingBufferLayers extends JComponent implements PenListener {
 
-
   // states
   public static final String OP = "op";
   public static final String SMOOTH = "smooth";
@@ -212,7 +211,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(DOWN, IDLE, DRAW) {
       public void doBeforeTransition() {
-        bug("Setting transition point (idle->draw)");
         fsTransitionPt = fsRecentPt;
       }
     });
@@ -227,7 +225,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
-        //        fsTransitionPt = fsRecentPt;
         fsRecent.clear();
         fsInitSelection();
       }
@@ -245,7 +242,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
       public boolean veto() {
         boolean ret = false;
-        //        bug("veto check (selecting) ...");
         if (fsCheck()) {
           ret = true;
         }
@@ -253,7 +249,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
       }
 
       public void doAfterTransition() {
-        //        bug("Clearing recent list and transition point (flow->op)");
         fsRecent.clear();
         fsTransitionPt = fsRecentPt;
       }
@@ -262,7 +257,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     f.addTransition(new Transition(MOVE, OP, OP) {
       public void doBeforeTransition() {
         addFsRecent(fsRecentPt);
-        //        bug("moving... looking through " + fsRecent.size() + " items");
         long now = System.currentTimeMillis();
         long target = now - fsPauseTimeout;
         int transitionIdx = -1;
@@ -275,8 +269,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           }
         }
         if (transitionIdx >= 0) {
-          //          bug("Found new transition point at index " + transitionIdx);
-          //          bug("Removing " + transitionIdx + " points from list of " + fsRecent.size() + " points");
           for (int i = 0; i < transitionIdx; i++) {
             fsRecent.remove(0);
           }
@@ -358,7 +350,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(BUTTON_UP, SEARCH_DIR, IDLE) {
       public void doBeforeTransition() {
-        bug("undo/redo complete.");
         model.undoRedoComplete();
       }
     });
@@ -383,15 +374,12 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     Vec dampedVec = toNext.getScaled(dampedScale);
     a.move(dampedVec);
     double dampedAttenuation = attenuation * FS_SMOOTH_DAMPING;
-    bug("attenuation: " + dampedAttenuation);
     a.setDouble("fsStrength", aStr + dampedAttenuation);
   }
 
   protected void fsSmooth() {
 
     List<Pt> def = fsNearestSeg.getDeformedPoints();
-    bug("Smooth starting at " + fsSmoothIndex + " of " + def.size() + " points");
-
     for (int i = fsSmoothIndex - 2; i >= 0; i--) {
       int nearIdx = i + 1;
       int farIdx = i;
@@ -565,7 +553,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
           def.get(i).setDouble("fsStrength", 0.0); // in case it has stale data from a previous go.
         }
         fsSmoothIndex = idxTarget;
-        bug("Set smooth target to " + fsSmoothIndex);
       }
     }
   }
