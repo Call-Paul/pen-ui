@@ -1494,4 +1494,21 @@ public class SketchBook {
     return ret;
   }
 
+  /**
+   * Returns a singular segment (circle, ellipse, blob) that uses the given point. It returns null
+   * if none are found.
+   * 
+   * @return
+   */
+  public Segment getSegment(Pt p) {
+    Segment ret = null;
+    for (Segment s : getGeometry()) {
+      if (s.isSingular() && s.getP1() == p) {
+        ret = s;
+        break;
+      }
+    }
+    return ret;
+  }
+
 }
