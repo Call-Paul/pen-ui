@@ -89,6 +89,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     Set<Segment> segs = model.getGeometry();
     Pt hotspot = item.getFeaturePoint(CORNER_D);
     segs = SegmentFilter.makeCohortFilter(in).filter(segs);
+    segs = SegmentFilter.makeSegmentTypeFilter(Segment.Type.Line).filter(segs);
     segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(segs);
     Interval adjacentSegAngleRange = new Interval(toRadians(50), toRadians(130));
     Set<Segment> avoid = new HashSet<Segment>();

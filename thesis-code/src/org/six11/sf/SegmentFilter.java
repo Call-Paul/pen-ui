@@ -23,18 +23,32 @@ public abstract class SegmentFilter {
     return seg.getP1() == target || seg.getP2() == target;
   }
 
+  public static SegmentFilter makeSegmentTypeFilter(final Segment.Type... types) {
+    SegmentFilter filter = new SegmentFilter() {
+      public Set<Segment> filter(Set<Segment> segments) {
+        Set<Segment> ret = new HashSet<Segment>();
+        for (Segment seg : segments) {
+          for (Segment.Type t : types) {
+            if (seg.getType() == t) {
+              ret.add(seg);
+            }
+          }
+        }
+        return ret;
+      }
+    };
+    return filter;
+  }
+
   public static SegmentFilter makeEndpointRadiusFilter(final Pt pt, final double radius) {
     SegmentFilter filter = new SegmentFilter() {
       public Set<Segment> filter(Set<Segment> segments) {
         Set<Segment> ret = new HashSet<Segment>();
         for (Segment s : segments) {
-          boolean answer = false;
           if (s.getP1().distance(pt) <= radius) {
             ret.add(s);
-            answer = true;
           } else if (s.getP2().distance(pt) <= radius) {
             ret.add(s);
-            answer = true;
           }
         }
         return ret;
@@ -82,6 +96,7 @@ public abstract class SegmentFilter {
 
   /**
    * This will filters out everything in the input collection.
+   * 
    * @param in
    * @return
    */
