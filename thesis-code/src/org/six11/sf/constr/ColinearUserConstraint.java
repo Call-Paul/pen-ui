@@ -1,6 +1,7 @@
 package org.six11.sf.constr;
 
 import java.awt.Color;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.AngleConstraint;
 import org.six11.util.solve.Constraint;
+import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.OrientationConstraint;
 import org.six11.util.solve.PointOnLineConstraint;
 
@@ -36,13 +38,34 @@ public class ColinearUserConstraint extends UserConstraint {
 
   @Override
   public void removeInvalid() {
-    bug("implement removeInvalid");
+    Collection<Pt> pts = getConstrainedPoints();
+    ConstraintSolver cs = model.getConstraints();
+    Set<Pt> doomed = new HashSet<Pt>();
+    for (Pt pt : pts) {
+      if (!cs.hasPoints(pt)) {
+        doomed.add(pt);
+      }
+    }
+    if (!doomed.isEmpty()) {
+      bug("Removing " + doomed.size() + " points from constraint solver");
+    }
+    PointOnLineConstraint pol = getPOLConstraint();
+    for (Pt pt : doomed) {
+      cs.removePoint(pt);
+      pol.remove(pt);
+    }
+    if (!doomed.isEmpty() && getConstrainedPoints().size() < 3) {
+      bug("Colinear User Constraint no longer valid because it has "
+          + getConstrainedPoints().size() + " points.");
+      removeConstraint(pol);
+    }
   }
 
   @Override
   public boolean isValid() {
-    bug("implement isValid");
-    return true;
+    Collection<Pt> pts = getConstrainedPoints();
+    boolean ret = model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
+    return ret;
   }
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
@@ -66,11 +89,9 @@ public class ColinearUserConstraint extends UserConstraint {
   }
 
   public Set<Pt> getConstrainedPoints() {
+    PointOnLineConstraint pol = getPOLConstraint();
     Set<Pt> ret = new HashSet<Pt>();
-    for (Constraint c : getConstraints()) {
-      PointOnLineConstraint pol = (PointOnLineConstraint) c;
-      ret.addAll(Lists.makeSet(pol.getRelatedPoints()));
-    }
+    ret.addAll(Lists.makeSet(pol.getRelatedPoints()));
     return ret;
   }
 
