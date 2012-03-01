@@ -359,7 +359,6 @@ public class SketchBook {
         prevV = here;
       }
     }
-    bug("detectCircle: crosses mean: " + crosses.getMean());
     if (Math.abs(crosses.getMean()) > 230) {
       ret = true;
     }
