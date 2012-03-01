@@ -176,7 +176,6 @@ public class SnapshotMachine {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-    d.validate(model);
     Segment ret = new Segment(d, segID);
     return ret;
   }

@@ -169,6 +169,7 @@ public class Snapshot {
         JSONObject segObj = geomArray.getJSONObject(i);
         Segment seg = SnapshotMachine.load(segObj, model);
         model.addGeometry(seg);
+        seg.getDelegate().validate(model);
       }
       
       //
