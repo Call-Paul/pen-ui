@@ -393,6 +393,8 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
       ret.addAll(RightAngleBrace.resolveConflictSameLengthGesture(itemA, itemB));
     } else if (typesAre(types, SameAngleGesture.NAME, RightAngleBrace.NAME)) {
       ret.addAll(SameAngleGesture.resolveConflictRightAngleGesture(itemA, itemB));
+    } else if (typesAre(types, SameAngleGesture.NAME, SameLengthGesture.NAME)) {
+      ret.addAll(SameAngleGesture.resolveConflictSameLength(itemA, itemB));
     } else {
       bug("Don't know how to resolve conflict between " + num(types, " and "));
     }
