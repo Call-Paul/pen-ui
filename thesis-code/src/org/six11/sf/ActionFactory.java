@@ -48,12 +48,6 @@ public class ActionFactory {
 
   private void axe(Collection<Segment> segs) {
     for (Segment seg : segs) {
-      if (!seg.isSingular()) {
-        model.getConstraints().removePoint(seg.getP1());//addPoint(model.nextPointName(), seg.getP1());
-        model.getConstraints().removePoint(seg.getP2());//addPoint(model.nextPointName(), seg.getP2());
-      }
-    }
-    for (Segment seg : segs) {
       model.removeGeometry(seg);
     }
   }
@@ -141,7 +135,6 @@ public class ActionFactory {
           // did not find an existing colinear constraint. so make one.
           bug("Didn't find a colinear constraint, so I'm going to make one.");
           colinear = new ColinearUserConstraint(model, Lists.makeSet(oldSeg.getP1(), oldSeg.getP2(), splitPt));
-          
         }
         axe(Collections.singleton(oldSeg)); // will remove all user constraints related to it.
         model.addUserConstraint(colinear); // create (or reinstate) the colinear constraint
