@@ -86,9 +86,11 @@ public class SnapshotMachine {
       if (rootDir != null) {
         File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
         File imgFile = new File(rootDir, "snapshot-" + ret.getID() + ".png");
+        File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
         try {
           FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
           ImageIO.write(ret.getPreview(), "png", imgFile);
+          FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
         } catch (JSONException e) {
           FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
         } catch (IOException e) {
