@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Shape;
@@ -167,7 +168,14 @@ public class Segment implements HasFuzzyArea {
   }
 
   public Area getFuzzyArea(double fuzzyFactor) {
-    return d.getFuzzyArea(fuzzyFactor);
+    long start = System.currentTimeMillis();
+    Area area = d.getFuzzyArea(fuzzyFactor);
+    long end = System.currentTimeMillis();
+    long duration = (end - start);
+    if (duration > 2) {
+      bug("Note: Getting fuzzy area for " + typeIdStr() + " took " + duration + " ms");
+    }
+    return area;
   }
 
   public boolean involves(Pt p) {
