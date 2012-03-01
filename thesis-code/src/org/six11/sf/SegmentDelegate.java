@@ -7,6 +7,7 @@ import static org.six11.util.Debug.bug;
 
 import java.awt.Shape;
 import java.awt.geom.Area;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -445,6 +446,41 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public Area getFuzzyArea(double fuzzyFactor) {
+    List<Pt> left = new ArrayList<Pt>();
+    List<Pt> right = new ArrayList<Pt>();
+    List<Pt> pl = getPointList();
+    for (int i = 0; i < pl.size(); i++) {
+      Vec v;
+      if (i == 0) {
+        v = new Vec(pl.get(i), pl.get(i + 1));
+      } else if (i == pl.size() - 1) {
+        v = new Vec(pl.get(i - 1), pl.get(i));
+      } else {
+        v = new Vec(pl.get(i - 1), pl.get(i + 1));
+      }
+      v = v.getNormal();
+      Vec vLeft = v.getVectorOfMagnitude(fuzzyFactor);
+      Vec vRight = vLeft.getFlip();
+      Pt here = pl.get(i);
+      Pt leftPt = here.getTranslated(vLeft);
+      Pt rightPt = here.getTranslated(vRight);
+      left.add(leftPt);
+      right.add(rightPt);
+    }
+    Path2D.Float areaPath = new Path2D.Float();
+    areaPath.moveTo(pl.get(0).getX(), pl.get(0).getY());
+    for (Pt pt : left) {
+      areaPath.lineTo(pt.getX(), pt.getY());
+    }
+    for (Pt pt : right) {
+      areaPath.lineTo(pt.getX(), pt.getY());
+    }
+    areaPath.lineTo(pl.get(0).getX(), pl.get(0).getY());
+    Area ret = new Area(areaPath);
+    return ret;
+  }
+
+  public Area getFuzzyAreaDumbMethod(double fuzzyFactor) {
     Area fuzzy = new Area();
     List<Pt> pl = getPointList();
     for (int i = 0; i < pl.size() - 1; i++) {
@@ -572,20 +608,21 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public void validate(SketchBook model) {
-    Segment seg = model.getSegment(p1, p2);
-    if (p1 == null) {
-      bug("p1 is null");
-    }
-    if (p2 == null) {
-      bug("p2 is null");
+    Segment seg = null;
+    if (isSingular()) {
+      seg = model.getSegment(p1);
+    } else {
+      seg = model.getSegment(p1, p2);
     }
     if (model.getConstraints().hasPoints(p1)) {
       bug("constraint solver does not have p1");
     }
-    if (model.getConstraints().hasPoints(p2)) {
+    if (!isSingular() && model.getConstraints().hasPoints(p2)) {
       bug("constraint solver does not have p2");
     }
-    
+    if (seg == null) {
+      bug("ok am I singular? " + isSingular() + ". type: " + getType());
+    }
     Debug.errorOnNull(seg, "seg");
   }
 
