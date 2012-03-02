@@ -108,7 +108,7 @@
 	        name="Sketch It, Make It"
 	        mainclass="org.six11.sf.Main"
 	        jar="${jar.output}"
-	        icon="icons/skrui-draw.icns"
+	        icon="icons/simi.icns"
 	        version="0.1"
 	    	arguments=""
 	    	bundleid="org.six11.sf" 
