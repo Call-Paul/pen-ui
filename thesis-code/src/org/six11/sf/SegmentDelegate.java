@@ -449,6 +449,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     List<Pt> left = new ArrayList<Pt>();
     List<Pt> right = new ArrayList<Pt>();
     List<Pt> pl = getPointList();
+
     for (int i = 0; i < pl.size(); i++) {
       Vec v;
       if (i == 0) {
@@ -467,13 +468,25 @@ public class SegmentDelegate implements HasFuzzyArea {
       left.add(leftPt);
       right.add(rightPt);
     }
+    // The following business with prevFuzzy is to avoid an internal Java bug that freaks out on occasion,
+    // giving a java.lang.InternalError saying "Odd number of new curves!". I don't know what this means
+    // and the internet is useless here. My only guess is that the shape has overly complicated geometry,
+    // with lines intersecting, or having zero-length patches. My 'solution' is to dumb down the Path2D
+    // geometry to reduce the odds of this error happening. It is MacOS-specific.
     Path2D.Float areaPath = new Path2D.Float();
     areaPath.moveTo(pl.get(0).getX(), pl.get(0).getY());
+    Pt prevFuzzy = pl.get(0);
     for (Pt pt : left) {
-      areaPath.lineTo(pt.getX(), pt.getY());
+      if (pt.distance(prevFuzzy) > fuzzyFactor) {
+        areaPath.lineTo(pt.getX(), pt.getY());
+        prevFuzzy = pt;
+      }
     }
     for (Pt pt : right) {
-      areaPath.lineTo(pt.getX(), pt.getY());
+      if (pt.distance(prevFuzzy) > fuzzyFactor) {
+        areaPath.lineTo(pt.getX(), pt.getY());
+        prevFuzzy = pt;
+      }
     }
     areaPath.lineTo(pl.get(0).getX(), pl.get(0).getY());
     Area ret = new Area(areaPath);

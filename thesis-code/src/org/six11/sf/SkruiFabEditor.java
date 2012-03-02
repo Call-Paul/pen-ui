@@ -70,6 +70,7 @@ public class SkruiFabEditor {
   private static final String ACTION_LOAD_FILE = "Load File";
   protected static final int FRAME_RATE = 30;
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
+  private static final Color LATCH_SPOT_COLOR = new Color(112, 164, 225);
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -504,17 +505,7 @@ public class SkruiFabEditor {
     selBuf.clear();
     Set<Stencil> stencils = model.getStencils();
     Set<Stencil> later = new HashSet<Stencil>();
-    bug("Drawing stencils (" + stencils.size() + ")");
     for (Stencil s : stencils) {
-      //      bug("Stencil: " + s);
-      //      for (Segment seg : s.getSegs()) {
-      //        bug("  " + seg.typeIdPtStr());
-      //        if (!model.hasSegment(seg)) {
-      //          bug(" * * * Model does not have " + seg.typeIdPtStr());
-      //        } else {
-      //          bug(seg.typeIdPtStr() + " is in the model.");
-      //        }
-      //      }
       if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {
@@ -603,6 +594,7 @@ public class SkruiFabEditor {
     // ------------------------------------------------------------ DRAW ALL SEGMENTS
     //
     //
+    Set<Pt> notLatched = new HashSet<Pt>();
     for (Segment seg : model.getGeometry()) {
       if (seg == fsSeg) {
         continue;
@@ -642,13 +634,16 @@ public class SkruiFabEditor {
           bug("Don't know how to draw segment: " + seg);
           break;
       }
+      
       // draw latchedness
       if (!seg.isSingular()) {
         if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
+          notLatched.add(seg.getP1());
           drawUnlatched(buf, seg.getP1(), seg.getStartDir(), Color.red, 10, 6);
-        }
+        } 
         if (!(model.findRelatedSegments(seg.getP2()).size() > 1)) {
           drawUnlatched(buf, seg.getP2(), seg.getEndDir(), Color.red, 10, 6);
+          notLatched.add(seg.getP2());
         }
       }
 
@@ -656,6 +651,13 @@ public class SkruiFabEditor {
       if (useDebuggingPoints) {
         Pt mid = seg.getVisualMidpoint();
         DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
+      }
+    }
+    
+    // draw little dots on the latched points to make them visible
+    for (Pt pt : model.getConstraints().getPoints()) {
+      if (!notLatched.contains(pt)) {
+        drawLatch(buf, pt, LATCH_SPOT_COLOR, 5d);          
       }
     }
 
@@ -674,8 +676,11 @@ public class SkruiFabEditor {
         DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
       }
     }
-
     layers.repaint();
+  }
+
+  private void drawLatch(DrawingBuffer buf, Pt pt, Color fillColor, double d) {
+    DrawingBufferRoutines.dot(buf, pt, d / 2.0, d / 10.0, Color.WHITE, fillColor);
   }
 
   private void drawUnlatched(DrawingBuffer buf, Pt pt, Vec dir, Color color, double length,

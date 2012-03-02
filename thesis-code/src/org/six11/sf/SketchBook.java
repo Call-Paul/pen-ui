@@ -388,7 +388,7 @@ public class SketchBook {
     final Area hullArea = new Area(hull.getHullShape());
     final Collection<Segment> doomed = pickDoomedSegments(hullArea);
     final Collection<Ink> doomedInk = pickDoomedInk(hullArea, null);
-    
+
     if (doomedInk.size() > 0) {
       for (Ink ink : doomedInk) {
         removeInk(ink);
@@ -404,6 +404,7 @@ public class SketchBook {
       if (!stencil.isValid()) {
         invaid.add(stencil);
       }
+      stencil.removeInvalidChildren(new HashSet<Stencil>());
     }
     stencils.removeAll(invaid);
     getEditor().drawStuff();
@@ -554,6 +555,15 @@ public class SketchBook {
         childrenOfDoomed.addAll(stencil.getChildren());
       }
     }
+    // at this point, the doomed stencils should be given another chance. use the 
+    // segment list for each as input to the stencil finder.
+    Set<Segment> segsFromDoomed = new HashSet<Segment>();
+    for (Stencil sd : doomed) {
+      segsFromDoomed.addAll(sd.getSegs());
+    }
+    editor.findStencils(segsFromDoomed);
+    
+    
     if (doomed.size() > 0) {
       for (Stencil ds : doomed) {
         bug("Removing stencil from list: " + ds);
@@ -858,6 +868,10 @@ public class SketchBook {
     }
     Set<Stencil> done = new HashSet<Stencil>();
     StencilFinder.merge(stencils, done);
+    HashSet<Stencil> parents = new HashSet<Stencil>();
+    for (Stencil sten : done) {
+      sten.removeInvalidChildren(parents);
+    }
     stencils = done;
   }
 
@@ -1411,11 +1425,6 @@ public class SketchBook {
           break;
       }
       if (ret.size() == 2) {
-        bug("Made new segments:");
-        bug("  1) " + segA.bugStr());
-        bug("  2) " + segB.bugStr());
-        bug("OK, I can split it into two. Keep constraints, if possible.");
-
         SafeAction action = getActionFactory().split(seg, ret);
         addAction(action);
         editor.findStencils(ret);

@@ -188,7 +188,6 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         fsNearestPt = null; // point on segment currently selected
         fsTimer.stop();
         model.getEditor().drawStuff();
-        bug("Clearing transition point and recent list");
         fsTransitionPt = null;
         fsRecent.clear();
       }

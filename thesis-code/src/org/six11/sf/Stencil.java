@@ -15,6 +15,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Segment.Type;
 import org.six11.util.Debug;
+import org.six11.util.data.Lists;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
@@ -40,7 +41,7 @@ public class Stencil {
     }
     this.segs = new ArrayList<Segment>(segs);
     this.children = new HashSet<Stencil>();
-//    bug("Made multi-segment stencil: " + this + ", valid=" + isValid());
+    //    bug("Made multi-segment stencil: " + this + ", valid=" + isValid());
   }
 
   public Stencil(SketchBook model, Segment s) {
@@ -55,41 +56,41 @@ public class Stencil {
       bug("Error: created single-segment stencil with non-closed segment: " + s);
     }
   }
-  
+
   public Stencil(SketchBook model, JSONObject json) throws JSONException {
     // "id"       : int, my ID
     // "path"     : JSONArray of point names
     // "segs"     : JSONArray of segment IDs
     // "children" : JSONArray of JSONObjecs, each of which is a stencil produced from this toJson() method
     this.model = model;
-    
-    this.id= json.getInt("id");
+
+    this.id = json.getInt("id");
     JSONArray pathArr = json.getJSONArray("path");
     JSONArray segsArr = json.getJSONArray("segs");
     JSONArray childrenArr = json.getJSONArray("children");
-    
+
     this.path = new ArrayList<Pt>();
     VariableBank vars = model.getConstraints().getVars();
-    for (int i=0; i < pathArr.length(); i++) {
+    for (int i = 0; i < pathArr.length(); i++) {
       String ptName = pathArr.getString(i);
       Pt pt = vars.getPointWithName(ptName);
       path.add(pt);
     }
-    
+
     this.segs = new ArrayList<Segment>();
-    for (int i=0; i < segsArr.length(); i++) {
+    for (int i = 0; i < segsArr.length(); i++) {
       int segID = segsArr.getInt(i);
       Segment seg = model.getSegment(segID);
       segs.add(seg);
     }
-    
+
     this.children = new HashSet<Stencil>();
-    for (int i=0; i < childrenArr.length(); i++) {
+    for (int i = 0; i < childrenArr.length(); i++) {
       JSONObject childObj = childrenArr.getJSONObject(i);
       Stencil childStencil = new Stencil(model, childObj);
       children.add(childStencil);
     }
-    
+
   }
 
   public boolean hasPath(List<Segment> otherSegPath) {
@@ -112,6 +113,8 @@ public class Stencil {
   }
 
   public Shape getShape(boolean needCCW) {
+    bug("Getting shape for " + (isValid() ? "valid" : "INVALID") + " stencil with "
+        + children.size() + " kids: " + num(children, " "));
     Path2D shape = new Path2D.Double();
     shape.setWindingRule(Path2D.WIND_NON_ZERO);
     List<Pt> allPoints = getAllPoints();
@@ -142,11 +145,6 @@ public class Stencil {
       Vec b = new Vec(c, turns.get(i + 1));
       crossProd = crossProd + a.cross(b);
     }
-    //    if (Math.abs(crossProd) < 0.01) {
-    //      bug("cross product too close to zero to be meaningful.");
-    //      bug("There are " + turns.size() + " points on the turn path.");
-    //      bug("Segments are: " + num(segs, " "));
-    //    }
     boolean ret = crossProd > 0;
     return ret;
   }
@@ -293,11 +291,12 @@ public class Stencil {
     Area myArea = new Area(getOuterShape());
     myArea.intersect(childArea);
     ret = myArea.equals(childArea);
-//    bug("Does " + this + " surround + " + c + "? " + ret);
+    //    bug("Does " + this + " surround + " + c + "? " + ret);
     return ret;
   }
 
   public void add(Set<Stencil> kids) {
+    bug("Attempting to add " + kids.size() + " children to my list.");
     Set<Stencil> no = new HashSet<Stencil>();
     for (Stencil k : kids) {
       for (Stencil c : children) {
@@ -343,28 +342,47 @@ public class Stencil {
 
     JSONObject ret = new JSONObject();
     ret.put("id", getId());
-    
+
     JSONArray pathArr = new JSONArray();
     for (Pt pt : path) {
       pathArr.put(SketchBook.n(pt));
     }
     ret.put("path", pathArr);
-    
+
     JSONArray segsArr = new JSONArray();
     for (Segment seg : segs) {
       segsArr.put(seg.getId());
     }
     ret.put("segs", segsArr);
-    
+
     JSONArray childrenArr = new JSONArray();
     bug("There are " + children.size() + " children");
     for (Stencil c : children) {
       childrenArr.put(c.toJson());
     }
     ret.put("children", childrenArr);
-    
+
     return ret;
-    
+
+  }
+
+  public void removeInvalidChildren(Set<Stencil> parents) {
+    parents.add(this);
+    Set<Segment> allSegs = new HashSet<Segment>();
+    for (Stencil p : parents) {
+      allSegs.addAll(p.segs);
+    }
+    Set<Stencil> invaid = new HashSet<Stencil>();
+    for (Stencil c : children) {
+      c.removeInvalidChildren(parents);
+      if (!c.isValid()) {
+        invaid.add(c);
+      } else if (Lists.intersect(allSegs, c.segs).size() > 0) {
+        invaid.add(c);
+      }
+    }
+    children.removeAll(invaid);
+    parents.remove(this);
   }
 
 }

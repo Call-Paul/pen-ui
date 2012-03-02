@@ -48,6 +48,8 @@ public class ColinearUserConstraint extends UserConstraint {
     }
     if (!doomed.isEmpty()) {
       bug("Removing " + doomed.size() + " points from constraint solver");
+    } else {
+      bug("All my points are contained in the colinear user constraint.");
     }
     PointOnLineConstraint pol = getPOLConstraint();
     for (Pt pt : doomed) {
@@ -65,6 +67,7 @@ public class ColinearUserConstraint extends UserConstraint {
   public boolean isValid() {
     Collection<Pt> pts = getConstrainedPoints();
     boolean ret = model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
+    bug(this + " no longer valid!");
     return ret;
   }
 

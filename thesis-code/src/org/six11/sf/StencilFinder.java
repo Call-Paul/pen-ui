@@ -27,13 +27,6 @@ public class StencilFinder {
   }
 
   public Set<Stencil> findStencils(Collection<Segment> newSegs) {
-//    System.out.println("------------------------------------------------------------------------------------- start");
-//    bug("Existing geometry: ");
-//    System.out.println(model.getMondoDebugString());
-//    bug("New segments: ");
-    for (Segment s : newSegs) {
-      bug(s.typeIdStr());
-    }
     Stack<Pt> newPoints = new Stack<Pt>();
     for (Segment s : newSegs) {
       if (s.isClosed()) {
@@ -51,7 +44,17 @@ public class StencilFinder {
     while (!newPoints.isEmpty()) {
       explore(newPoints.pop(), ptPath, segPath, 0);
     }
-//    System.out.println("------------------------------------------------------------------------------------- stop");
+    for (Stencil sten : stencils) {
+      Set<Stencil> parentSegs = new HashSet<Stencil>();
+      sten.removeInvalidChildren(parentSegs);
+    }
+    Set<Stencil> invaid = new HashSet<Stencil>();
+    for (Stencil sten : stencils) {
+      if (!sten.isValid()) {
+        invaid.add(sten);
+      }
+    }
+    stencils.removeAll(invaid);
     return stencils;
   }
 
