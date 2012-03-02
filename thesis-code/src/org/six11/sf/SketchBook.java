@@ -546,11 +546,9 @@ public class SketchBook {
     Set<Stencil> doomed = new HashSet<Stencil>();
     Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
     for (Stencil stencil : stencils) {
-      bug("Does " + stencil + " involve segment " + seg.typeIdPtStr() + "?");
       stencil.removeGeometry(seg);
       boolean v = stencil.isValid();
       if (!v) {
-        bug("Determined stencil " + stencil.getId() + " involves the killed segment.");
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
       }
@@ -566,7 +564,6 @@ public class SketchBook {
     
     if (doomed.size() > 0) {
       for (Stencil ds : doomed) {
-        bug("Removing stencil from list: " + ds);
         stencils.remove(ds);
       }
     }
@@ -1318,7 +1315,6 @@ public class SketchBook {
       }
     }
     if (doomed.size() > 0) {
-      bug("\t*** Removing " + doomed.size() + " singular segments ***");
       for (Segment d : doomed) {
         removeGeometry(d);
       }
@@ -1482,14 +1478,10 @@ public class SketchBook {
     for (UserConstraint c : getUserConstraints()) {
       if (both) {
         if (c.involves(seg.getP1()) && c.involves(seg.getP2())) {
-          bug(c
-              + " is related to the split segment (both ends). I don't do anything with this yet! FIXME");
           ucs.add(c);
         }
       } else {
         if (c.involves(seg.getP1()) || c.involves(seg.getP2())) {
-          bug(c
-              + " is related to the split segment (one or both ends). I don't do anything with this yet! FIXME");
           ucs.add(c);
         }
       }

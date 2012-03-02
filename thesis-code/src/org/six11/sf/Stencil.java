@@ -113,8 +113,6 @@ public class Stencil {
   }
 
   public Shape getShape(boolean needCCW) {
-    bug("Getting shape for " + (isValid() ? "valid" : "INVALID") + " stencil with "
-        + children.size() + " kids: " + num(children, " "));
     Path2D shape = new Path2D.Double();
     shape.setWindingRule(Path2D.WIND_NON_ZERO);
     List<Pt> allPoints = getAllPoints();
@@ -356,7 +354,6 @@ public class Stencil {
     ret.put("segs", segsArr);
 
     JSONArray childrenArr = new JSONArray();
-    bug("There are " + children.size() + " children");
     for (Stencil c : children) {
       childrenArr.put(c.toJson());
     }

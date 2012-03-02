@@ -88,12 +88,6 @@ public class ActionFactory {
 
     SafeAction ret = new SafeAction("Split Segment") {
       public void forward() {
-        //        bug("split action!");
-        //        bug("remove old seg: " + oldSeg.typeIdPtStr());
-        //        bug("new segs:");
-        //        for (Segment ns : newSegs) {
-        //          bug("-- " + ns.typeIdPtStr());
-        //        }
         Set<UserConstraint> allInvolved = model.findUserConstraints(oldSeg, true);
         // for now only look for ColinearUserConstraints. This is 'wrong' because it ignores other
         // constraints like RightAngle and obliges the user to re-make them.
@@ -118,11 +112,9 @@ public class ActionFactory {
             break;
           }
         }
-
+        add(newSegs);
         if (splitPt == null) {
           bug("Warning: could not identify split point!");
-        } else {
-          bug("Found split point. Adding it to the colinear constraint.");
         }
         axe(Collections.singleton(oldSeg)); // will remove all user constraints related to it.
         if (oldSeg.getType() == Segment.Type.Line) {
@@ -130,17 +122,15 @@ public class ActionFactory {
           if (colinears.size() > 0) {
             // found a colinear constraint. get the split point and add another PointOnLine to the colinear constraint.
             colinear = (ColinearUserConstraint) Lists.getOne(colinears);
-            bug("Found a colinear constraint for " + oldSeg.typeIdStr());
             colinear.addPoint(splitPt);
           } else {
             // did not find an existing colinear constraint. so make one.
-            bug("Didn't find a colinear constraint, so I'm going to make one.");
             colinear = new ColinearUserConstraint(model, Lists.makeSet(oldSeg.getP1(),
                 oldSeg.getP2(), splitPt));
           }
           model.addUserConstraint(colinear); // create (or reinstate) the colinear constraint
         }
-        add(newSegs);
+
       }
 
       public void backward() {

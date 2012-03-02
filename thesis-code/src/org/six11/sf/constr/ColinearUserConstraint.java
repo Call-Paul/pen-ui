@@ -38,6 +38,7 @@ public class ColinearUserConstraint extends UserConstraint {
 
   @Override
   public void removeInvalid() {
+    bug("removeInvalid()");
     Collection<Pt> pts = getConstrainedPoints();
     ConstraintSolver cs = model.getConstraints();
     Set<Pt> doomed = new HashSet<Pt>();
@@ -66,8 +67,10 @@ public class ColinearUserConstraint extends UserConstraint {
   @Override
   public boolean isValid() {
     Collection<Pt> pts = getConstrainedPoints();
-    boolean ret = model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
-    bug(this + " no longer valid!");
+    boolean ret = pts.size() > 2 && model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
+    if (!ret) {
+      bug(this + " no longer valid!");
+    }
     return ret;
   }
 
@@ -98,7 +101,9 @@ public class ColinearUserConstraint extends UserConstraint {
   public Set<Pt> getConstrainedPoints() {
     PointOnLineConstraint pol = getPOLConstraint();
     Set<Pt> ret = new HashSet<Pt>();
-    ret.addAll(Lists.makeSet(pol.getRelatedPoints()));
+    if (pol != null) {
+      ret.addAll(Lists.makeSet(pol.getRelatedPoints()));
+    }
     return ret;
   }
 

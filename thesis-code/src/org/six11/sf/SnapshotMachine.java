@@ -191,7 +191,7 @@ public class SnapshotMachine {
     bug("Loading " + snap);
     snap.load();
     bug("Loaded " + snap);
-    report("load");
+//    report("load");
     model.getEditor().drawStuff();
   }
 

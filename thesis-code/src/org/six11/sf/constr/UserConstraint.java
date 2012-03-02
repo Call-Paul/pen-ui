@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
+import org.six11.util.Debug;
 import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.AngleConstraint;
