@@ -675,12 +675,15 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
    */
   private void drawBorderAndBackground(Graphics2D g) {
     Components.antialias(g);
-    RoundRectangle2D rec = new RoundRectangle2D.Double(borderPad, borderPad, getWidth() - 2.0
-        * borderPad, getHeight() - 2.0 * borderPad, 40, 40);
+//    RoundRectangle2D rec = new RoundRectangle2D.Double(borderPad, borderPad, getWidth() - 2.0
+//        * borderPad, getHeight() - 2.0 * borderPad, 40, 40);
+    Rectangle2D rec = new Rectangle2D.Float(0, 0, getWidth() - 2, getHeight() - 2f);
     g.setColor(bgColor);
     g.fill(rec);
-    g.setStroke(Strokes.DASHED_BORDER_STROKE);
-    g.setColor(penEnabledBorderColor);
+//    g.setStroke(Strokes.DASHED_BORDER_STROKE);
+    g.setColor(Color.BLACK);
+    g.setStroke(Strokes.get(2.0f));
+//    g.setColor(penEnabledBorderColor);
     g.draw(rec);
   }
 

@@ -388,16 +388,24 @@ public class SketchBook {
     final Area hullArea = new Area(hull.getHullShape());
     final Collection<Segment> doomed = pickDoomedSegments(hullArea);
     final Collection<Ink> doomedInk = pickDoomedInk(hullArea, null);
-
+    
     if (doomedInk.size() > 0) {
       for (Ink ink : doomedInk) {
         removeInk(ink);
       }
     } else {
       for (Segment seg : doomed) {
+        bug("Erase " + seg.typeIdPtStr());
         removeGeometry(seg);
       }
     }
+    Set<Stencil> invaid = new HashSet<Stencil>();
+    for (Stencil stencil : stencils) {
+      if (!stencil.isValid()) {
+        invaid.add(stencil);
+      }
+    }
+    stencils.removeAll(invaid);
     getEditor().drawStuff();
 
   }
@@ -537,15 +545,20 @@ public class SketchBook {
     Set<Stencil> doomed = new HashSet<Stencil>();
     Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
     for (Stencil stencil : stencils) {
+      bug("Does " + stencil + " involve segment " + seg.typeIdPtStr() + "?");
       stencil.removeGeometry(seg);
       boolean v = stencil.isValid();
       if (!v) {
+        bug("Determined stencil " + stencil.getId() + " involves the killed segment.");
         doomed.add(stencil);
         childrenOfDoomed.addAll(stencil.getChildren());
       }
     }
     if (doomed.size() > 0) {
-      stencils.removeAll(doomed);
+      for (Stencil ds : doomed) {
+        bug("Removing stencil from list: " + ds);
+        stencils.remove(ds);
+      }
     }
     stencils.addAll(childrenOfDoomed);
 
@@ -678,9 +691,9 @@ public class SketchBook {
   public void clearAll() {
     try {
       clearInk();
+      clearStructured();
       clearSelectedStencils();
       clearSelectedSegments();
-      clearStructured();
       getConstraints().clearConstraints();
       userConstraints.clear();
       guidePoints.clear();

@@ -77,7 +77,6 @@ public class SnapshotMachine {
     if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
       snapshotRequested = false;
       ret = new Snapshot(model);
-      bug("* * * Made Snapshot " + ret.getID() + " at " + Debug.now());
       state.add(stateCursor, ret); // add snapshot at cursor
       stateCursor = stateCursor + 1; // increment cursor
       for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor

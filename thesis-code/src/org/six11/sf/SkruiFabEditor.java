@@ -113,7 +113,7 @@ public class SkruiFabEditor {
     //    goStopwatch.logHeaders(new String[] {
     //        "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go"
     //    });
-    af = new ApplicationFrame("SkruiFab (started " + m.varStr("dateString") + " at "
+    af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     af.setSize(802, 399);
     createActions(af.getRootPane());
@@ -124,7 +124,7 @@ public class SkruiFabEditor {
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
-        if (!fixedFrameRate ) {
+        if (!fixedFrameRate) {
           if (numIterations > 30 || err < (numPoints * 2)) {
             model.getConstraints().setFrameRate(0);
           } else {
@@ -254,7 +254,7 @@ public class SkruiFabEditor {
             loadSnapshot();
           }
         });
-    
+
     actions.put(ACTION_TOGGLE_VECTORS,
         new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
           public void activate() {
@@ -276,7 +276,7 @@ public class SkruiFabEditor {
     debugSolver = !debugSolver;
     layers.repaint();
   }
-  
+
   protected void loadSnapshot() {
 
   }
@@ -284,12 +284,14 @@ public class SkruiFabEditor {
   protected void debugState() {
     String debugFileName = "skrui-debug-" + System.currentTimeMillis() + ".txt";
     bug("Debugging state of everything. Look in the file " + debugFileName);
+    String str = model.getMondoDebugString();
+    System.out.println(str);
     File bugFile = new File(debugFileName);
     try {
       boolean made = bugFile.createNewFile();
       if (made) {
         BufferedWriter bugFileOut = new BufferedWriter(new FileWriter(bugFile));
-        bugFileOut.write(model.getMondoDebugString());
+        bugFileOut.write(str);
         bugFileOut.flush();
         bugFileOut.close();
         File latest = new File("skrui-debug-latest.txt");
@@ -502,7 +504,17 @@ public class SkruiFabEditor {
     selBuf.clear();
     Set<Stencil> stencils = model.getStencils();
     Set<Stencil> later = new HashSet<Stencil>();
+    bug("Drawing stencils (" + stencils.size() + ")");
     for (Stencil s : stencils) {
+      //      bug("Stencil: " + s);
+      //      for (Segment seg : s.getSegs()) {
+      //        bug("  " + seg.typeIdPtStr());
+      //        if (!model.hasSegment(seg)) {
+      //          bug(" * * * Model does not have " + seg.typeIdPtStr());
+      //        } else {
+      //          bug(seg.typeIdPtStr() + " is in the model.");
+      //        }
+      //      }
       if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {

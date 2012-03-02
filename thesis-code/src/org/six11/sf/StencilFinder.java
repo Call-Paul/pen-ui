@@ -31,9 +31,9 @@ public class StencilFinder {
 //    bug("Existing geometry: ");
 //    System.out.println(model.getMondoDebugString());
 //    bug("New segments: ");
-//    for (Segment s : newSegs) {
-//      bug(s.typeIdStr());
-//    }
+    for (Segment s : newSegs) {
+      bug(s.typeIdStr());
+    }
     Stack<Pt> newPoints = new Stack<Pt>();
     for (Segment s : newSegs) {
       if (s.isClosed()) {

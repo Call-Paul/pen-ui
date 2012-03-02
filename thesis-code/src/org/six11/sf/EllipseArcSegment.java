@@ -32,6 +32,9 @@ public class EllipseArcSegment extends SegmentDelegate {
 
   private final List<Pt> init(List<Pt> points) {
     ellie = Functions.createEllipse(points, true);
+    if (ellie == null) {
+      bug("Warning: could not create ellipse. Functions.createEllipse returned null.");
+    }
     int n = points.size();
     ellie.setArcRegion(points.get(0), points.get(n / 2), points.get(n - 1));
     List<Pt> surface = ellie.initArc();

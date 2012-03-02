@@ -70,20 +70,24 @@ public class ColinearUserConstraint extends UserConstraint {
 
   public void draw(DrawingBuffer buf, Pt hoverPoint) {
     if (hoverPoint != null) {
-      Set<Pt> pts = getConstrainedPoints();
-      Pt[] anti = getAntipodes(pts);
-      if (anti[0] != null && anti[1] != null) {
-        Vec dir = new Vec(anti[0], anti[1]).getVectorOfMagnitude(30);
-        Vec flip = dir.getFlip();
-        Pt a = anti[0].getTranslated(flip);
-        Pt b = anti[1].getTranslated(dir);
-        Line line = new Line(a, b);
-        double dist = Functions.getDistanceBetweenPointAndLine(hoverPoint, line);
-        double alpha = DrawingBufferLayers.getAlpha(dist, 5, 40, 0.1);
-        Color color = new Color(1, 0, 0, (float) alpha);
-        DrawingBufferRoutines.line(buf, a, b, color, 1.4);
+      if (getPOLConstraint() == null) {
+        bug("Warning: POL constraint is null.");
       } else {
-        bug("Warning: antipodes not available. What did you do, Ray?");
+        Set<Pt> pts = getConstrainedPoints();
+        Pt[] anti = getAntipodes(pts);
+        if (anti[0] != null && anti[1] != null) {
+          Vec dir = new Vec(anti[0], anti[1]).getVectorOfMagnitude(30);
+          Vec flip = dir.getFlip();
+          Pt a = anti[0].getTranslated(flip);
+          Pt b = anti[1].getTranslated(dir);
+          Line line = new Line(a, b);
+          double dist = Functions.getDistanceBetweenPointAndLine(hoverPoint, line);
+          double alpha = DrawingBufferLayers.getAlpha(dist, 5, 40, 0.1);
+          Color color = new Color(1, 0, 0, (float) alpha);
+          DrawingBufferRoutines.line(buf, a, b, color, 1.4);
+        } else {
+          bug("Warning: antipodes not available. What did you do, Ray?");
+        }
       }
     }
   }
@@ -102,6 +106,7 @@ public class ColinearUserConstraint extends UserConstraint {
   public void addPoint(Pt pt) {
     PointOnLineConstraint pol = getPOLConstraint();
     pol.addPoints(pt);
+    bug("Added point " + SketchBook.n(pt) + " to list: " + SketchBook.n(getConstrainedPoints()));
   }
 
   public Pt[] getAntipodes(Set<Pt> sourcePoints) {
