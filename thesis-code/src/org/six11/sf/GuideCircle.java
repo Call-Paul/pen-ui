@@ -21,6 +21,7 @@ public class GuideCircle extends Guide {
   Circle myCircle;
 
   public GuideCircle(Pt center, Pt outside) {
+    super(Type.Circle);
     this.center = center;
     this.outside = outside;
     if (outside != null) {
@@ -45,6 +46,35 @@ public class GuideCircle extends Guide {
       Color c = new Color(in.getRed(), in.getGreen(), in.getBlue(), (int) (alpha * 255f));
       DrawingBufferRoutines.drawShape(buf, myCircle, c, 1.2);
     }
+  }
+
+  public Pt getCenter() {
+    return center;
+  }
+
+  public Pt getOutside() {
+    return outside;
+  }
+
+  public double getRadius() {
+    return rad;
+  }
+
+  public boolean isFixedRadius() {
+    return fixedRadius;
+  }
+
+  public Circle getCircle() {
+    return myCircle;
+  }
+
+  /**
+   * Provided so the opengl implementation can store a cached value, used for 'claim'.
+   * 
+   * @param circ
+   */
+  protected void setCircle(Circle circ) {
+    this.myCircle = circ;
   }
 
   public boolean claims(Sequence seq, int start, int end) {
@@ -86,8 +116,8 @@ public class GuideCircle extends Guide {
 
   public Segment adjust(Ink ink, int start, int end) {
     Pt spot = isDynamic() ? fixedHover : outside;
-    return new Segment(new CircularArcSegment(ink, ink.seq.getSubSequence(start, end + 1).getPoints(), center,
-        spot.distance(center), true, true));
+    return new Segment(new CircularArcSegment(ink, ink.seq.getSubSequence(start, end + 1)
+        .getPoints(), center, spot.distance(center), true, true));
   }
 
 }

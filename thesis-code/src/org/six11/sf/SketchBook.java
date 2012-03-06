@@ -69,6 +69,7 @@ public class SketchBook {
   List<Ink> ink;
 
   private DrawingBufferLayers layers;
+  private DrawingSurface surface;
   private Set<Stencil> selectedStencils;
   private Set<Segment> selectedSegments;
   private GraphicDebug guibug;
@@ -84,7 +85,7 @@ public class SketchBook {
   private SkruiFabEditor editor;
   private boolean draggingSelection;
   private BufferedImage draggingThumb;
-  private GlassPane glass;
+  private FastGlassPane glass;
   private boolean lastInkWasSelection;
   private List<GuidePoint> activeGuidePoints;
   private Set<Guide> derivedGuides;
@@ -99,7 +100,7 @@ public class SketchBook {
   boolean erasing;
   private boolean loadingSnapshot;
 
-  public SketchBook(GlassPane glass, SkruiFabEditor editor) {
+  public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
     this.snapshotMachine = new SnapshotMachine(this);
@@ -206,15 +207,16 @@ public class SketchBook {
     if (!didSomething) {
       newInk.setGuides(retainedVisibleGuides);
       ink.add(newInk);
-      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-      Sequence scrib = newInk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
-          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
+      //      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+      //      Sequence scrib = newInk.getSequence();
+      //      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
+      //          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
       lastInkWasSelection = false;
     } else {
       getSnapshotMachine().requestSnapshot("raw ink caused a change");
     }
-    layers.repaint();
+//    layers.repaint();
+    editor.requestRedrawGL();
   }
 
   public void removeInk(Ink oldInk) {
@@ -367,9 +369,11 @@ public class SketchBook {
 
   public boolean isErasing() {
     boolean ret = false;
-    Sequence scrib = Lists.getLast(scribbles);
-    if (scrib != null && scrib.hasAttribute("erase")) {
-      ret = true;
+    if (scribbles.size() > 0) {
+      Sequence scrib = Lists.getLast(scribbles);
+      if (scrib != null && scrib.hasAttribute("erase")) {
+        ret = true;
+      }
     }
     return ret;
   }
@@ -473,6 +477,10 @@ public class SketchBook {
     this.layers = layers;
   }
 
+  public void setSurface(DrawingSurface surface) {
+    this.surface = surface;
+  }
+
   public CornerFinder getCornerFinder() {
     return cornerFinder;
   }
@@ -560,8 +568,7 @@ public class SketchBook {
       segsFromDoomed.addAll(sd.getSegs());
     }
     editor.findStencils(segsFromDoomed);
-    
-    
+
     if (doomed.size() > 0) {
       for (Stencil ds : doomed) {
         stencils.remove(ds);
@@ -706,9 +713,11 @@ public class SketchBook {
       guidePoints.clear();
       activeGuidePoints.clear();
       derivedGuides.clear();
-      layers.clearScribble();
-      layers.clearAllBuffers();
-      layers.repaint();
+      surface.clearScribble();
+      surface.display();
+      //      layers.clearScribble();
+      //      layers.clearAllBuffers();
+      //      layers.repaint();
       editor.getGrid().clear();
       editor.getCutfilePane().clear();
       actions.clear();
@@ -1035,7 +1044,8 @@ public class SketchBook {
       DrawingBufferRoutines.text(db, mid, string, Color.BLACK);
       lastInkWasSelection = false;
     }
-    layers.repaint();
+//    layers.repaint();
+    editor.requestRedrawGL();
   }
 
   public void addTextFinished(String string) {
@@ -1203,7 +1213,8 @@ public class SketchBook {
     }
     retainedVisibleGuides.addAll(guidePoints);
     for (Guide g : retainedVisibleGuides) {
-      g.setFixedHover(layers.getHoverPoint());
+      bug("Retaining hover point for " + g + " = " + surface.getHoverPoint());
+      g.setFixedHover(surface.getHoverPoint());
     }
   }
 

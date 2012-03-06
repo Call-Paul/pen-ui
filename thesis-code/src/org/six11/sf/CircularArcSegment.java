@@ -41,10 +41,11 @@ public class CircularArcSegment extends SegmentDelegate {
     Line line = new Line(surface.get(0), surface.get(surface.size() - 1));
     centerParameterization = Segment.calculateParameterForPoint(vMag, line, initialCenter);
     arcMidParameterization = Segment.calculateParameterForPoint(vMag, line, arc2);
-    bug("center param: " + num(centerParameterization) + ", arcMid param: " + num(arcMidParameterization));
+    bug("center param: " + num(centerParameterization) + ", arcMid param: "
+        + num(arcMidParameterization));
     init(ink, surface, Segment.Type.CircularArc);
   }
-  
+
   public CircularArcSegment(Pt p1, Pt p2, Vec centerParam, Vec arcMidParam) {
     this.p1 = p1;
     this.p2 = p2;
@@ -56,7 +57,7 @@ public class CircularArcSegment extends SegmentDelegate {
     List<Pt> surface = initArc(p1, arcMid, p2, center);
     init(null, surface, Segment.Type.CircularArc);
   }
-  
+
   public JSONObject toJson() throws JSONException {
     JSONObject ret = new JSONObject();
     ret.put("p1", SketchBook.n(p1));
@@ -72,14 +73,17 @@ public class CircularArcSegment extends SegmentDelegate {
   private double getParam(Pt target, Pt center) {
     return atan2(target.y - center.y, target.x - center.x);
   }
-  
+
   public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center) {
+    return initArc(arc1, arc2, arc3, center, 60);
+  }
+
+  public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center, int numSteps) {
     double arc1T = getParam(arc1, center);
     double arc2T = getParam(arc2, center);
     double arc3T = getParam(arc3, center);
     List<Pt> surface = new ArrayList<Pt>();
     List<Double> arcParams = Functions.makeMonotonicallyIncreasingAngles(arc1T, arc2T, arc3T);
-    double numSteps = 60;
     double start = arcParams.get(0);
     double end = arcParams.get(2);
     double step = (end - start) / numSteps;
@@ -89,7 +93,7 @@ public class CircularArcSegment extends SegmentDelegate {
     }
     return surface;
   }
-  
+
   /**
    * Returns a point on the circle boundary, parameterized by the given radial angle. If you call
    * this a bunch of times for t=0..2pi you sample the entire circle.
@@ -101,7 +105,6 @@ public class CircularArcSegment extends SegmentDelegate {
     return ret;
   }
 
-  
   @Override
   protected void doPara() {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
@@ -126,10 +129,10 @@ public class CircularArcSegment extends SegmentDelegate {
     }
   }
 
-  private Pt getCenter() {
+  public Pt getCenter() {
     return getParameterizedPoint(centerParameterization);
   }
-  
+
   private Pt getParameterizedPoint(Vec parameterization) {
     Pt ret = null;
     Vec chord = new Vec(getP1(), getP2()).getUnitVector();
@@ -146,8 +149,8 @@ public class CircularArcSegment extends SegmentDelegate {
     }
     return ret;
   }
-  
-  private Pt getArcMid() {
+
+  public Pt getArcMid() {
     return getParameterizedPoint(arcMidParameterization);
   }
 
@@ -171,6 +174,15 @@ public class CircularArcSegment extends SegmentDelegate {
   public Shape asArc() {
     doPara();
     return ShapeFactory.makeArc(getP1(), getArcMid(), getP2());
+  }
+
+  public List<Pt> getPointList() {
+    double rad = getCenter().distance(getP1());
+    int circum = (int) (2 * rad * Math.PI);
+    int targetSegSize = 4;
+    int numSteps = circum / targetSegSize;
+    List<Pt> points = initArc(getP1(), getArcMid(), getP2(), getCenter(), numSteps);
+    return points;
   }
 
 }

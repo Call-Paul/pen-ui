@@ -24,6 +24,7 @@ public class GuideLine extends Guide {
   Line myLine;
 
   public GuideLine(Pt a, Pt b) {
+    super(Type.Line);
     this.a = a;
     this.b = b;
     if (b != null) {
@@ -57,6 +58,7 @@ public class GuideLine extends Guide {
     double ang1 = Math.abs(Functions.getSignedAngleBetween(myVec, seqVec));
     double ang2 = Math.abs(ang1 - Math.PI);
     double ang = Math.min(ang1, ang2);
+    bug("Angle (deg): " + num(toDegrees(ang)));
     if (toDegrees(ang) < 4.0) {
       double totalError = 0;
       for (int i = start; i <= end; i++) {
@@ -65,6 +67,7 @@ public class GuideLine extends Guide {
         totalError = totalError + (dist * dist);
       }
       double sampleError = totalError / ((end - start) + 1);
+      bug("Sample error: " + sampleError);
       if (sampleError < 20) {
         bug("guide line can claim this");
         ret = true;

@@ -32,11 +32,11 @@ public class SameLengthUserConstraint extends UserConstraint {
 
   public static final String NAME = "Same Length";
   public SameLengthUserConstraint(SketchBook model, Constraint... cs) {
-    super(model, NAME, cs);
+    super(model, Type.SameLength, cs);
   }
 
   public SameLengthUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
-    super(model, NAME, ucObj);
+    super(model, Type.SameLength, ucObj);
     if (ucObj.getBoolean("multi")) {
       MultisourceNumericValue mnv = new MultisourceNumericValue();
       for (Constraint c : getConstraints()) {

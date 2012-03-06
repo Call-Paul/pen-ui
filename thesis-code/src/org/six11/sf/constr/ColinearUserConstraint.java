@@ -29,11 +29,11 @@ public class ColinearUserConstraint extends UserConstraint {
   public static final String NAME = "Colinear";
 
   public ColinearUserConstraint(SketchBook model, Set<Pt> points) {
-    super(model, NAME, new PointOnLineConstraint(points));
+    super(model, Type.Colinear, new PointOnLineConstraint(points));
   }
 
   public ColinearUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
-    super(model, NAME, ucObj);
+    super(model, Type.Colinear, ucObj);
   }
 
   @Override

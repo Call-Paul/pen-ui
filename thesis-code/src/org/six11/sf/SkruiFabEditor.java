@@ -70,7 +70,7 @@ public class SkruiFabEditor {
   private static final String ACTION_LOAD_FILE = "Load File";
   protected static final int FRAME_RATE = 30;
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
-  private static final Color LATCH_SPOT_COLOR = new Color(112, 164, 225);
+  private static final Color LATCH_SPOT_COLOR = new Color(112, 164, 225); // 0.4375, 0.640625, 0.87890625
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
@@ -83,45 +83,33 @@ public class SkruiFabEditor {
   private boolean useDebuggingColor = false;
   private boolean useDebuggingPoints = false;
   private DrawingBufferLayers layers;
+  private DrawingSurface surface;
   private SketchBook model;
-  private GraphicDebug guibug;
   private Map<String, Action> actions;
-  private GlassPane glass;
+  //  private GlassPane glass;
+  private FastGlassPane fastGlass;
   private ApplicationFrame af;
   private Colors colors;
   private ScrapGrid grid;
   private CutfilePane cutfile;
-  //  private Stopwatch drawingStopwatch;
-  //  private Stopwatch goStopwatch;
-  //  private long lastDrawLater;
   private ActionListener drawLaterRunnable;
   private Timer drawLaterTimer;
   private boolean debugSolver = true;
   protected boolean fixedFrameRate = false;
 
   public SkruiFabEditor(Main m) {
-    //    this.main = m;
     this.colors = new Colors();
     colors.set("stencil", new Color(0.8f, 0.8f, 0.8f, 0.5f));
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
-    //    drawingStopwatch = new Stopwatch();
-    //    drawingStopwatch.setLogFile("drawingStopwatch.txt");
-    //    drawingStopwatch.logHeaders(new String[] {
-    //        "drawStencils", "drawStructured", "drawGuides", "drawFS", "drawStuff"
-    //    });
-    //    goStopwatch = new Stopwatch();
-    //    goStopwatch.setLogFile("goStopwatch.txt");
-    //    goStopwatch.logHeaders(new String[] {
-    //        "guide", "makeSegs", "addSegs", "recognize", "stencils", "draw buffers", "go"
-    //    });
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
-    af.setSize(802, 399);
+    af.setSize(1600, 1000);
     createActions(af.getRootPane());
-    glass = new GlassPane(this);
-    af.getRootPane().setGlassPane(glass);
-    glass.setVisible(true);
-    model = new SketchBook(glass, this);
+    //    glass = new GlassPane(this);
+    fastGlass = new FastGlassPane(this);
+    af.getRootPane().setGlassPane(fastGlass);
+    fastGlass.setVisible(true);
+    model = new SketchBook(fastGlass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
@@ -135,18 +123,22 @@ public class SkruiFabEditor {
             model.getSnapshotMachine().requestSnapshot("Solver simmered down");
           }
         }
-        drawStuffLater();
-        layers.repaint();
+        //        drawStuffLater();
+        //        layers.repaint();
+        //        surface.display();
+        requestRedrawGL();
       }
     });
     layers = new DrawingBufferLayers(model);
-    guibug = new GraphicDebug(layers);
-    model.setGuibug(guibug);
+    surface = new DrawingSurface(model);
+
     model.setLayers(layers);
+    model.setSurface(surface);
     grid = new ScrapGrid(this);
     cutfile = new CutfilePane(this);
     FrontEnd fe = new FrontEnd();
-    fe.add(layers, "layers");
+    //    fe.add(layers, "layers");
+    fe.add(surface, "layers");
     fe.add(grid, "grid");
     fe.add(cutfile, "cutfile");
     fe.addRule(ROOT, N, "layers", N);
@@ -176,6 +168,14 @@ public class SkruiFabEditor {
     drawLaterTimer = new Timer(20, drawLaterRunnable);
     drawLaterTimer.setRepeats(false);
     model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
+  }
+
+  protected void requestRedrawGL() {
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        surface.display();
+      }
+    });
   }
 
   protected void drawStuffLater() {
@@ -275,7 +275,8 @@ public class SkruiFabEditor {
 
   protected void toggleVectors() {
     debugSolver = !debugSolver;
-    layers.repaint();
+//    layers.repaint();
+    requestRedrawGL();
   }
 
   protected void loadSnapshot() {
@@ -390,7 +391,8 @@ public class SkruiFabEditor {
     drawStencils();
     drawStructured();
     drawRecognized(items);
-    layers.repaint();
+    //    layers.repaint();
+    surface.display();
     model.getConstraints().wakeUp();
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
@@ -443,162 +445,170 @@ public class SkruiFabEditor {
    * A debugging function for drawing segment endcaps.
    */
   void drawEndCaps() {
-    DrawingBuffer buf = layers.getLayer("end caps");
-    buf.clear();
-    for (Segment seg : model.getGeometry()) {
-      if (seg.hasEndCaps()) {
-        for (EndCap ec : seg.getEndCaps()) {
-          Pt ecPt = ec.getPt();
-          Vec ecDir = ec.getDir();
-          double halfLen = ec.getHalfLength();
-          Pt a = ecPt.getTranslated(ecDir, halfLen);
-          Pt b = ecPt.getTranslated(ecDir.getFlip(), halfLen);
-          DrawingBufferRoutines.line(buf, a, b, GraphicDebug.COLOR_CLEAR_BLUE, 4.0);
-        }
-      }
-    }
+    bug("Draw End Caps commented out.");
+    //    DrawingBuffer buf = layers.getLayer("end caps");
+    //    buf.clear();
+    //    for (Segment seg : model.getGeometry()) {
+    //      if (seg.hasEndCaps()) {
+    //        for (EndCap ec : seg.getEndCaps()) {
+    //          Pt ecPt = ec.getPt();
+    //          Vec ecDir = ec.getDir();
+    //          double halfLen = ec.getHalfLength();
+    //          Pt a = ecPt.getTranslated(ecDir, halfLen);
+    //          Pt b = ecPt.getTranslated(ecDir.getFlip(), halfLen);
+    //          DrawingBufferRoutines.line(buf, a, b, GraphicDebug.COLOR_CLEAR_BLUE, 4.0);
+    //        }
+    //      }
+    //    }
   }
 
   public void drawStuff() {
+    bug("Draw Stuff commented out.");
     //    drawEndCaps();
-    if (!model.isLoadingSnapshot()) {
-      drawStencils();
-      drawStructured();
-      drawGuides();
-      drawFS();
-      drawErase();
-      if (debugSolver) {
-        DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DEBUG);
-        buf.clear();
-        if (model.getConstraints().getSolutionState() != ConstraintSolver.State.Solved) {
-          for (Pt pt : model.getConstraints().getPoints()) {
-            Vec v = pt.getVec(ConstraintSolver.LAST_SOLVER_ADJUSTMENT_VEC);
-            if (v != null && !v.isZero()) {
-              v = v.getScaled(10);
-              if (v.mag() < 6.0) {
-                v = v.getVectorOfMagnitude(6.0);
-              }
-              DrawingBufferRoutines.arrow(buf, pt, pt.getTranslated(v), 1, Color.MAGENTA);
-            }
-          }
-        }
-      }
-    }
+    //    if (!model.isLoadingSnapshot()) {
+    //      drawStencils();
+    //      drawStructured();
+    //      drawGuides();
+    //      drawFS();
+    //      drawErase();
+    //      if (debugSolver) {
+    //        DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_DEBUG);
+    //        buf.clear();
+    //        if (model.getConstraints().getSolutionState() != ConstraintSolver.State.Solved) {
+    //          for (Pt pt : model.getConstraints().getPoints()) {
+    //            Vec v = pt.getVec(ConstraintSolver.LAST_SOLVER_ADJUSTMENT_VEC);
+    //            if (v != null && !v.isZero()) {
+    //              v = v.getScaled(10);
+    //              if (v.mag() < 6.0) {
+    //                v = v.getVectorOfMagnitude(6.0);
+    //              }
+    //              DrawingBufferRoutines.arrow(buf, pt, pt.getTranslated(v), 1, Color.MAGENTA);
+    //            }
+    //          }
+    //        }
+    //      }
+    //    }
   }
 
   private void drawRecognized(Collection<RecognizedItem> items) {
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
-    for (RecognizedItem item : items) {
-      if (item.getTemplate() instanceof Arrow) {
-        DrawingBufferRoutines.arrow(buf, item.getFeaturePoint(Arrow.START),
-            item.getFeaturePoint(Arrow.TIP), 2.0f, Color.BLUE);
-      } else if (item.getTemplate() instanceof RightAngleBrace) {
-
-      }
-    }
+    bug("Draw Recognized commented out.");
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_SEGMENT_LAYER);
+    //    for (RecognizedItem item : items) {
+    //      if (item.getTemplate() instanceof Arrow) {
+    //        DrawingBufferRoutines.arrow(buf, item.getFeaturePoint(Arrow.START),
+    //            item.getFeaturePoint(Arrow.TIP), 2.0f, Color.BLUE);
+    //      } else if (item.getTemplate() instanceof RightAngleBrace) {
+    //
+    //      }
+    //    }
   }
 
   public void drawStencils() {
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STENCIL_LAYER);
-    DrawingBuffer selBuf = layers.getLayer(GraphicDebug.DB_SELECTION);
-    buf.clear();
-    selBuf.clear();
-    Set<Stencil> stencils = model.getStencils();
-    Set<Stencil> later = new HashSet<Stencil>();
-    for (Stencil s : stencils) {
-      if (model.getSelectedStencils().contains(s)) {
-        later.add(s);
-      } else {
-        DrawingBufferRoutines.fillShape(buf, s.getShape(true), colors.get("stencil"), 0);
-      }
-    }
-    if (later.size() > 0) {
-      for (Stencil s : later) {
-        DrawingBufferRoutines
-            .fillShape(selBuf, s.getShape(true), colors.get("selected stencil"), 0);
-      }
-    }
-    layers.repaint();
+    bug("Draw Stencils commented out.");
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STENCIL_LAYER);
+    //    DrawingBuffer selBuf = layers.getLayer(GraphicDebug.DB_SELECTION);
+    //    buf.clear();
+    //    selBuf.clear();
+    //    Set<Stencil> stencils = model.getStencils();
+    //    Set<Stencil> later = new HashSet<Stencil>();
+    //    for (Stencil s : stencils) {
+    //      if (model.getSelectedStencils().contains(s)) {
+    //        later.add(s);
+    //      } else {
+    //        DrawingBufferRoutines.fillShape(buf, s.getShape(true), colors.get("stencil"), 0);
+    //      }
+    //    }
+    //    if (later.size() > 0) {
+    //      for (Stencil s : later) {
+    //        DrawingBufferRoutines
+    //            .fillShape(selBuf, s.getShape(true), colors.get("selected stencil"), 0);
+    //      }
+    //    }
+    //    layers.repaint();
   }
 
   public void drawConstraints() {
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
-    buf.clear();
-    for (UserConstraint c : model.getUserConstraints()) {
-      c.draw(buf, layers.getHoverPoint());
-    }
+    bug("Draw Constraints commented out");
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_CONSTRAINT_LAYER);
+    //    buf.clear();
+    //    for (UserConstraint c : model.getUserConstraints()) {
+    //      c.draw(buf, layers.getHoverPoint());
+    //    }
   }
 
   private void drawGuides() {
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES);
-    buf.clear();
-    Color c;
-    double r;
-    for (GuidePoint gpt : model.getGuidePoints()) {
-      if (model.getActiveGuidePoints().contains(gpt)) {
-        r = 4.0;
-        c = selectionColor;
-      } else {
-        r = 3.0;
-        c = inertColor;
-      }
-      DrawingBufferRoutines.dot(buf, gpt.getLocation(), r, r * 0.1, Color.BLACK, c);
-    }
-    if (model.isDraggingGuide()) {
-      GuidePoint gpt = model.getDraggingGuide();
-      DrawingBufferRoutines.dot(buf, gpt.getLocation(), 5, 5 * 0.1, Color.BLACK, Color.ORANGE);
-    }
-    layers.repaint();
+    bug("Draw Guides commented out.");
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES);
+    //    buf.clear();
+    //    Color c;
+    //    double r;
+    //    for (GuidePoint gpt : model.getGuidePoints()) {
+    //      if (model.getActiveGuidePoints().contains(gpt)) {
+    //        r = 4.0;
+    //        c = selectionColor;
+    //      } else {
+    //        r = 3.0;
+    //        c = inertColor;
+    //      }
+    //      DrawingBufferRoutines.dot(buf, gpt.getLocation(), r, r * 0.1, Color.BLACK, c);
+    //    }
+    //    if (model.isDraggingGuide()) {
+    //      GuidePoint gpt = model.getDraggingGuide();
+    //      DrawingBufferRoutines.dot(buf, gpt.getLocation(), 5, 5 * 0.1, Color.BLACK, Color.ORANGE);
+    //    }
+    //    layers.repaint();
   }
 
   public void drawDerivedGuides() {
-    if (layers.getHoverPoint() != null) {
-      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES_DERIVED);
-      buf.clear();
-      for (Guide g : model.getDerivedGuides()) {
-        g.draw(buf, layers.getHoverPoint(), derivedGuideColor, layers.getBounds());
-      }
-    }
+    bug("Draw Derived Guides commented out");
+    //    if (layers.getHoverPoint() != null) {
+    //      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_GUIDES_DERIVED);
+    //      buf.clear();
+    //      for (Guide g : model.getDerivedGuides()) {
+    //        g.draw(buf, layers.getHoverPoint(), derivedGuideColor, layers.getBounds());
+    //      }
+    //    }
   }
 
   private void drawStructured() {
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
-    buf.clear();
-
-    Segment fsSeg = layers.getFlowSelectionSegment();
-    // ------------------------------------------------------------ DRAW SELECTED SEGMENTS
+    bug("Draw Structured in progress... (" + model.getGeometry().size() + " structured items)");
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_STRUCTURED_INK);
+    //    buf.clear();
     //
+    //    Segment fsSeg = layers.getFlowSelectionSegment();
+    //    // ------------------------------------------------------------ DRAW SELECTED SEGMENTS
+    //    //
+    //    //
+    //    for (Segment seg : model.getSelectedSegments()) {
+    //      if (seg == fsSeg) {
+    //        continue;
+    //      }
+    //      switch (seg.getType()) {
+    //        case Curve:
+    //          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
+    //          break;
+    //        case EllipticalArc:
+    //          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
+    //          break;
+    //        case Line:
+    //          DrawingBufferRoutines.line(buf, seg.asLine(), selectionColor, 3.8);
+    //          break;
+    //        case CircularArc:
+    //          DrawingBufferRoutines.drawShape(buf, seg.asArc(), selectionColor, 3.8);
+    //          break;
+    //        case Unknown:
+    //          break;
+    //      }
+    //    }
     //
-    for (Segment seg : model.getSelectedSegments()) {
-      if (seg == fsSeg) {
-        continue;
-      }
-      switch (seg.getType()) {
-        case Curve:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
-          break;
-        case EllipticalArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), selectionColor, 3.8);
-          break;
-        case Line:
-          DrawingBufferRoutines.line(buf, seg.asLine(), selectionColor, 3.8);
-          break;
-        case CircularArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asArc(), selectionColor, 3.8);
-          break;
-        case Unknown:
-          break;
-      }
-    }
-
     // ------------------------------------------------------------ DRAW ALL SEGMENTS
     //
     //
     Set<Pt> notLatched = new HashSet<Pt>();
     for (Segment seg : model.getGeometry()) {
-      if (seg == fsSeg) {
-        continue;
-      }
+      //      if (seg == fsSeg) {
+      //        continue;
+      //      }
       if (!seg.isSingular()) {
         if (!model.getConstraints().getPoints().contains(seg.getP1())) {
           bug("seg.P1 is unknown to constraint system. seg = " + seg);
@@ -609,86 +619,86 @@ public class SkruiFabEditor {
       }
       switch (seg.getType()) {
         case Curve:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case EllipticalArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case Line:
-          DrawingBufferRoutines.line(buf, seg.asLine(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.line(buf, seg.asLine(), getColor(seg.getType()), 1.8);
           break;
         case CircularArc:
-          DrawingBufferRoutines.drawShape(buf, seg.asArc(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asArc(), getColor(seg.getType()), 1.8);
           break;
         case Ellipse:
-          DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asEllipse(), getColor(seg.getType()), 1.8);
           break;
         case Blob:
-          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asSpline(), getColor(seg.getType()), 1.8);
           break;
         case Circle:
-          DrawingBufferRoutines.drawShape(buf, seg.asCircle(), getColor(seg.getType()), 1.8);
+          //          DrawingBufferRoutines.drawShape(buf, seg.asCircle(), getColor(seg.getType()), 1.8);
           break;
         case Unknown:
         default:
           bug("Don't know how to draw segment: " + seg);
           break;
       }
-      
+
       // draw latchedness
-      if (!seg.isSingular()) {
-        if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
-          notLatched.add(seg.getP1());
-          drawUnlatched(buf, seg.getP1(), seg.getStartDir(), Color.red, 10, 6);
-        } 
-        if (!(model.findRelatedSegments(seg.getP2()).size() > 1)) {
-          drawUnlatched(buf, seg.getP2(), seg.getEndDir(), Color.red, 10, 6);
-          notLatched.add(seg.getP2());
-        }
-      }
+      //      if (!seg.isSingular()) {
+      //        if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
+      //          notLatched.add(seg.getP1());
+      //          drawUnlatched(buf, seg.getP1(), seg.getStartDir(), Color.red, 10, 6);
+      //        }
+      //        if (!(model.findRelatedSegments(seg.getP2()).size() > 1)) {
+      //          drawUnlatched(buf, seg.getP2(), seg.getEndDir(), Color.red, 10, 6);
+      //          notLatched.add(seg.getP2());
+      //        }
+      //      }
 
-      // draw points for this segment
-      if (useDebuggingPoints) {
-        Pt mid = seg.getVisualMidpoint();
-        DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
-      }
+      //      // draw points for this segment
+      //      if (useDebuggingPoints) {
+      //        Pt mid = seg.getVisualMidpoint();
+      //        DrawingBufferRoutines.text(buf, mid.getTranslated(-10, 10), seg.typeIdStr(), Color.BLACK);
+      //      }
     }
-    
-    // draw little dots on the latched points to make them visible
-    for (Pt pt : model.getConstraints().getPoints()) {
-      if (!notLatched.contains(pt)) {
-        drawLatch(buf, pt, LATCH_SPOT_COLOR, 5d);          
-      }
-    }
-
-    // debugging: label points
-    if (useDebuggingPoints) {
-      Color joined = Color.LIGHT_GRAY;
-      Color separate = Color.RED;
-      Color c;
-      for (Pt pt : model.getConstraints().getPoints()) {
-        DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
-        if (model.findRelatedSegments(pt).size() > 1) {
-          c = joined;
-        } else {
-          c = separate;
-        }
-        DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
-      }
-    }
-    layers.repaint();
+    //    
+    //    // draw little dots on the latched points to make them visible
+    //    for (Pt pt : model.getConstraints().getPoints()) {
+    //      if (!notLatched.contains(pt)) {
+    //        drawLatch(buf, pt, LATCH_SPOT_COLOR, 5d);          
+    //      }
+    //    }
+    //
+    //    // debugging: label points
+    //    if (useDebuggingPoints) {
+    //      Color joined = Color.LIGHT_GRAY;
+    //      Color separate = Color.RED;
+    //      Color c;
+    //      for (Pt pt : model.getConstraints().getPoints()) {
+    //        DrawingBufferRoutines.text(buf, pt.getTranslated(10, -10), SketchBook.n(pt), Color.BLACK);
+    //        if (model.findRelatedSegments(pt).size() > 1) {
+    //          c = joined;
+    //        } else {
+    //          c = separate;
+    //        }
+    //        DrawingBufferRoutines.dot(buf, pt, 4, 0.4, Color.BLACK, c);
+    //      }
+    //    }
+    //    layers.repaint();
   }
 
-  private void drawLatch(DrawingBuffer buf, Pt pt, Color fillColor, double d) {
-    DrawingBufferRoutines.dot(buf, pt, d / 2.0, d / 10.0, Color.WHITE, fillColor);
-  }
-
-  private void drawUnlatched(DrawingBuffer buf, Pt pt, Vec dir, Color color, double length,
-      double thick) {
-    // show something different to indicate it is not attached to anything.
-    Pt away = pt.getTranslated(dir, length);
-    DrawingBufferRoutines.line(buf, new Line(pt, away), color, thick);
-  }
+  //  private void drawLatch(DrawingBuffer buf, Pt pt, Color fillColor, double d) {
+  //    DrawingBufferRoutines.dot(buf, pt, d / 2.0, d / 10.0, Color.WHITE, fillColor);
+  //  }
+  //
+  //  private void drawUnlatched(DrawingBuffer buf, Pt pt, Vec dir, Color color, double length,
+  //      double thick) {
+  //    // show something different to indicate it is not attached to anything.
+  //    Pt away = pt.getTranslated(dir, length);
+  //    DrawingBufferRoutines.line(buf, new Line(pt, away), color, thick);
+  //  }
 
   public Color getColor(Segment.Type t) {
     Color ret = Color.BLACK;
@@ -724,8 +734,8 @@ public class SkruiFabEditor {
     return ret;
   }
 
-  public GlassPane getGlass() {
-    return glass;
+  public FastGlassPane getGlass() {
+    return fastGlass;
   }
 
   public CutfilePane getCutfilePane() {
@@ -733,51 +743,53 @@ public class SkruiFabEditor {
   }
 
   private void drawFS() {
-    DrawingBuffer fsBuf = layers.getLayer(GraphicDebug.DB_FS);
-    fsBuf.clear();
-    Segment fsSeg = layers.getFlowSelectionSegment();
-    if (fsSeg != null) {
-      DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
-      List<Pt> def = fsSeg.getDeformedPoints();
-      boolean drawNodes = true;
-      String state = layers.getFlowSelectionState();
-      if (state.equals(DrawingBufferLayers.OP) || state.equals(DrawingBufferLayers.SMOOTH)) {
-        drawNodes = true;
-      }
-      if (def != null) {
-        for (int i = 0; i < def.size() - 1; i++) {
-          Pt a = def.get(i);
-          Pt b = def.get(i + 1);
-          double aStr = a.getDouble("fsStrength");
-          double bStr = b.getDouble("fsStrength");
-          double str = Math.max(aStr, bStr);
-          Color color = new Color(1f, 0f, 0f, (float) str);
-          DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
-        }
-        if (drawNodes) {
-          for (int i = 0; i < def.size(); i++) {
-            Pt pt = def.get(i);
-            double str = pt.getDouble("fsStrength");
-            if (str > 0) {
-              DrawingBufferRoutines.dot(fsBuf, pt, 2.5, 0.25, Color.BLACK, Color.WHITE);
-            }
-          }
-        }
-      }
-    }
-    layers.repaint();
+    bug("Draw FS commented out");
+    //    DrawingBuffer fsBuf = layers.getLayer(GraphicDebug.DB_FS);
+    //    fsBuf.clear();
+    //    Segment fsSeg = layers.getFlowSelectionSegment();
+    //    if (fsSeg != null) {
+    //      DrawingBufferRoutines.drawShape(fsBuf, fsSeg.asSpline(), Color.BLACK, 1.8);
+    //      List<Pt> def = fsSeg.getDeformedPoints();
+    //      boolean drawNodes = true;
+    //      String state = layers.getFlowSelectionState();
+    //      if (state.equals(DrawingBufferLayers.OP) || state.equals(DrawingBufferLayers.SMOOTH)) {
+    //        drawNodes = true;
+    //      }
+    //      if (def != null) {
+    //        for (int i = 0; i < def.size() - 1; i++) {
+    //          Pt a = def.get(i);
+    //          Pt b = def.get(i + 1);
+    //          double aStr = a.getDouble("fsStrength");
+    //          double bStr = b.getDouble("fsStrength");
+    //          double str = Math.max(aStr, bStr);
+    //          Color color = new Color(1f, 0f, 0f, (float) str);
+    //          DrawingBufferRoutines.line(fsBuf, a, b, color, 5.0);
+    //        }
+    //        if (drawNodes) {
+    //          for (int i = 0; i < def.size(); i++) {
+    //            Pt pt = def.get(i);
+    //            double str = pt.getDouble("fsStrength");
+    //            if (str > 0) {
+    //              DrawingBufferRoutines.dot(fsBuf, pt, 2.5, 0.25, Color.BLACK, Color.WHITE);
+    //            }
+    //          }
+    //        }
+    //      }
+    //    }
+    //    layers.repaint();
   }
 
   public void drawErase() {
-    DrawingBuffer eraseBuf = layers.getLayer(GraphicDebug.DB_ERASE);
-    eraseBuf.clear();
-    if (model.isErasing()) {
-      Pt killSpot = model.getEraseSpot();
-      if (killSpot != null) {
-        DrawingBufferRoutines.cross(eraseBuf, killSpot, 30, Color.BLUE);
-      }
-    }
-    layers.repaint();
+    bug("Draw Erase commented out");
+    //    DrawingBuffer eraseBuf = layers.getLayer(GraphicDebug.DB_ERASE);
+    //    eraseBuf.clear();
+    //    if (model.isErasing()) {
+    //      Pt killSpot = model.getEraseSpot();
+    //      if (killSpot != null) {
+    //        DrawingBufferRoutines.cross(eraseBuf, killSpot, 30, Color.BLUE);
+    //      }
+    //    }
+    //    layers.repaint();
   }
 
 }

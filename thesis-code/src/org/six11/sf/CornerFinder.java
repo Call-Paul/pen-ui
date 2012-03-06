@@ -36,10 +36,12 @@ public class CornerFinder {
 
   @SuppressWarnings("unchecked")
   public Set<Segment> findCorners(Ink ink) {
-    assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
-    isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
-    //    guibug.drawJunctions(ink.seq);
-    makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
+    if (ink.seq.size() > 1) {
+      assignCurvature(ink.seq); // put a 'curvature' double attribute at every point
+      isolateCorners(ink.seq); // sets the SEGMENT_JUNCTIONS attribute (List<Integer>)
+      //    guibug.drawJunctions(ink.seq);
+      makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
+    }
     Set<Segment> ret = new HashSet<Segment>();
     ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
     return ret;

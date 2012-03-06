@@ -34,13 +34,18 @@ public abstract class UserConstraint {
   protected String name;
   protected Collection<Constraint> constraints;
   protected SketchBook model;
+  protected Type type;
+  
+  public enum Type {
+    Colinear, SameAngle, SameLength, RightAngle, Unknown
+  };
 
-  public UserConstraint(SketchBook model, String name, Constraint... cs) {
-    init(model, name, cs);
+  public UserConstraint(SketchBook model, Type type, Constraint... cs) {
+    init(model, type, cs);
   }
   
-  public UserConstraint(SketchBook model, String name, JSONObject json) throws JSONException {
-    init(model, name);
+  public UserConstraint(SketchBook model, Type type, JSONObject json) throws JSONException {
+    init(model, type);
     JSONArray constraintIDs = json.getJSONArray("constraints");
     for (int i = 0; i < constraintIDs.length(); i++) {
       int cID = constraintIDs.getInt(i);
@@ -54,9 +59,14 @@ public abstract class UserConstraint {
     }
   }
   
-  protected void init(SketchBook model, String name, Constraint... cs) {
+  public Type getType() {
+    return type;
+  }
+  
+  protected void init(SketchBook model, Type type, Constraint... cs) {
     this.model = model;
-    this.name = name;
+    this.name = type.toString();
+    this.type = type;
     this.constraints = new HashSet<Constraint>();
     for (Constraint c : cs) {
       constraints.add(c);
@@ -125,7 +135,7 @@ public abstract class UserConstraint {
   }
 
   public static UserConstraint fromJson(SketchBook model, JSONObject ucObj) throws JSONException {
-    String type = ucObj.getString("type");
+    Type type = mkType(ucObj.getString("type"));
     UserConstraint ret = null;
     if (type.equals(ColinearUserConstraint.NAME)) {
       ret = new ColinearUserConstraint(model, ucObj);
@@ -141,4 +151,22 @@ public abstract class UserConstraint {
     }
     return ret;
   }
+  
+  public static Type mkType(String n) {
+    Type ret = Type.Unknown;
+    if (n.equals(Type.Colinear.toString())) {
+      ret = Type.Colinear;
+    }
+    if (n.equals(Type.RightAngle.toString())) {
+      ret = Type.RightAngle;
+    }
+    if (n.equals(Type.SameLength.toString())) {
+      ret = Type.SameLength;
+    }
+    if (n.equals(Type.SameAngle.toString())) {
+      ret = Type.SameAngle;
+    }
+    return ret;
+  }
+  
 }

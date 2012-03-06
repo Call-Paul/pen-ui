@@ -9,7 +9,16 @@ import org.six11.util.pen.Sequence;
 
 public abstract class Guide {
 
+  public enum Type {
+    Circle, Line, Point, Unknown
+  };
+  
   protected Pt fixedHover;
+  protected Type type;
+  
+  protected Guide(Type t) {
+    this.type = t;
+  }
 
   public abstract void draw(DrawingBuffer buf, Pt hoverPoint, Color in, Rectangle bounds);
 
@@ -31,4 +40,8 @@ public abstract class Guide {
   public abstract Guide getFixedCopy();
 
   public abstract Segment adjust(Ink ink, int start, int end);
+
+  public Type getType() {
+    return type;
+  }
 }

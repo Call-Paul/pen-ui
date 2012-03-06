@@ -1,73 +1,57 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
 import java.awt.AWTEvent;
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.GeneralPath;
-import java.awt.geom.Line2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.geom.RoundRectangle2D;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.JComponent;
+import javax.media.opengl.GL;
+import javax.media.opengl.GL2;
+import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.GLCapabilities;
+import javax.media.opengl.GLContext;
+import javax.media.opengl.GLEventListener;
+import javax.media.opengl.GLProfile;
+import javax.media.opengl.Threading;
+import javax.media.opengl.awt.GLCanvas;
+import javax.media.opengl.awt.GLJPanel;
+import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
-import org.six11.sf.Segment.Type;
-import org.six11.util.Debug;
 import org.six11.util.data.FSM;
 import org.six11.util.data.Lists;
 import org.six11.util.data.FSM.Transition;
-import org.six11.util.gui.BoundingBox;
-import org.six11.util.gui.Components;
-import org.six11.util.gui.Strokes;
-import org.six11.util.gui.shape.Circle;
-import org.six11.util.gui.shape.ShapeFactory;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
+import org.six11.util.data.Statistics;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-import org.six11.util.solve.ConstraintSolver.State;
 
-import com.lowagie.text.Document;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.DefaultFontMapper;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfTemplate;
-import com.lowagie.text.pdf.PdfWriter;
+import com.jogamp.opengl.util.FPSAnimator;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
-@SuppressWarnings("serial")
-public class DrawingBufferLayers extends JComponent implements PenListener {
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
+public class DrawingSurface extends GLJPanel implements GLEventListener, PenListener {
+
+  // misc shit
+  private long lastPenTime;
+  private Statistics penLatency;
+
 
   // states
   public static final String OP = "op";
@@ -88,51 +72,69 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   private static final String ARMED = "armed";
   private static final String SEARCH_DIR = "search_direction";
   private static final String DRAG_BEGIN = "drag_begin";
-  
+
   public final static Color DEFAULT_DRY_COLOR = Color.GRAY.darker();
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
-  public final static Color DEFAULT_WET_COLOR = Color.BLACK;
-  public final static float DEFAULT_WET_THICKNESS = 1.8f;
+  
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final Color PAUSE_COLOR = Color.YELLOW.darker();
   private static final double FS_SMOOTH_DAMPING = 0.025;
-  
-  List<PenListener> penListeners;
-  private Color bgColor = Color.WHITE;
-  private Color penEnabledBorderColor = Color.GREEN;
-  private double borderPad = 2.0;
-  private List<DrawingBuffer> layers;
-  private Map<String, DrawingBuffer> layersByName;
-  SketchBook model;
+
+  private TextRenderer textRenderer18;
+
+  private GLU glu;
+
+  // pen listeners
+  private List<PenListener> penListeners;
+
+  // flow selection variables.
+  private List<Pt> fsRecent;
   private FSM fsFSM;
   private Timer fsTimer;
-  private Pt fsDown;
-  private Pt searchStart;
-  private Pt dragPt;
-  private Segment fsNearestSeg; // segment currently flow-selected
-  private Pt fsNearestPt; // point on segment currently selected
-  private int fsSmoothIndex; // epicenter index. valid after fsInitSelection(), invalid after pen-up.
-  private double fsBubble = 10;
   private int fsPauseTimeout = 900;
   private Timer fsTickTimer;
   private int fsTickTimeout = 45;
-  private long fsStartTime;
-  private Pt fsLastDeformPt;
-  private List<Pt> fsRecent;
+  private Pt fsDown;
+  private Segment fsNearestSeg; // segment currently flow-selected
+  private Pt fsNearestPt; // point on segment currently selected
   private Pt fsTransitionPt;
   private Pt fsRecentPt;
-  Pt prev;
-  GeneralPath currentScribble;
-  private Pt hoverPt;
-  private boolean magicDown = false;
-  private Image preview;
+  private int fsSmoothIndex; // epicenter index. valid after fsInitSelection(), invalid after pen-up.
+  private double fsBubble = 10;
+  private long fsStartTime;
+  private Pt fsLastDeformPt;
 
-  public DrawingBufferLayers(SketchBook model) {
+  // undo/redo search vars
+  private Pt searchStart;
+  private Pt dragPt;
+  private boolean magicDown = false;
+
+  // recent pen activity vars
+  private Pt hoverPt;
+  private Pt prev;
+  private List<Pt> currentScribble;
+
+  // the model.
+  protected SketchBook model;
+
+  // the thing that knows how to render the model
+  protected SketchRenderer renderer;
+  private Map<Integer, TextRenderer> textRenderers;
+  
+
+  public DrawingSurface(SketchBook model) {
+    super(new GLCapabilities(GLProfile.getDefault()));
     this.model = model;
-    setName("DrawingBufferLayers");
-    layers = new ArrayList<DrawingBuffer>();
-    layersByName = new HashMap<String, DrawingBuffer>();
+    this.renderer = new SketchRenderer();
+    this.penLatency = new Statistics();
+    penLatency.setMaximumN(40);
+    addGLEventListener(this);
+//    FPSAnimator animator = new FPSAnimator(this, 60);
+//    animator.add(this);
+//    animator.start();
+    setName("DrawingSurface");
     penListeners = new ArrayList<PenListener>();
+    textRenderers = new HashMap<Integer, TextRenderer>();
     Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
       public void eventDispatched(AWTEvent ev) {
         KeyEvent kev = (KeyEvent) ev;
@@ -152,6 +154,82 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     fsInit();
   }
 
+  @Override
+  public void display(GLAutoDrawable drawable) {
+    long start = System.currentTimeMillis();
+    GL2 gl = drawable.getGL().getGL2();
+    gl.glClear(GL.GL_COLOR_BUFFER_BIT); // clear screen.
+
+    // draw border.
+    Dimension size = getSize();
+    gl.glColor3fv(SketchRenderer.black, 0);
+    float thick = 1.5f;
+    float thickHalf = thick / 2f;
+    gl.glLineWidth(thick);
+    rect(gl, thickHalf, size.width - thick, thickHalf, size.height - thick);   
+    
+    // render scribble and model data
+    renderer.render(model, drawable, currentScribble, true, this);
+    
+    long end = System.currentTimeMillis();
+    long dur = end - start;
+    
+    // show framerate
+    textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
+    textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
+    textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
+    textRenderer18.draw("Pen Latency: " + (long) penLatency.getMean() + "ms", size.width - 180, 20);
+    textRenderer18.endRendering();
+//    bug("Render in " + dur + " ms");
+  }
+
+  @Override
+  public void dispose(GLAutoDrawable drawable) {
+    bug("gl dispose");
+  }
+
+  @Override
+  public void init(GLAutoDrawable drawable) {
+    bug("gl init");
+    GL2 gl = drawable.getGL().getGL2();
+    glu = new GLU();
+    gl = drawable.getGL().getGL2();
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    gl.glOrtho(-1, 1, 1, -1, 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glClearColor(1f, 1f, 1f, 1f);
+    gl.glDisable(GL2.GL_DEPTH_TEST);
+    gl.glEnable(GL2.GL_BLEND);
+    gl.glEnable(GL2.GL_LINE_SMOOTH);
+    gl.glHint(GL2.GL_LINE_SMOOTH_HINT, GL2.GL_NICEST);
+    gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
+    
+    textRenderer18 = new TextRenderer(new Font("SansSerif", Font.BOLD, 18));
+    textRenderer18.setSmoothing(true);
+    textRenderers.put(18, textRenderer18);
+    
+    TextRenderer textRenderer12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
+    textRenderer12.setSmoothing(true);
+    textRenderers.put(12, textRenderer12);
+    
+  }
+
+  @Override
+  public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    GL2 gl = drawable.getGL().getGL2();
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    gl.glOrtho(x, x + width, y + height, y, 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
+  }
+
+  protected TextRenderer getTextRenderer(int pointSize) {
+    TextRenderer tr = textRenderers.get(pointSize);
+    
+    return tr;
+  }
+  
   private final void fsInit() {
     fsRecent = new ArrayList<Pt>();
     fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
@@ -220,7 +298,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     });
     f.addTransition(new Transition(DRAG_BEGIN, DRAW, DRAGGING));
     f.addTransition(new Transition(UP, DRAGGING, IDLE));
-    
+
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
@@ -556,248 +634,69 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
     }
   }
 
-  public void clearScribble() {
-    currentScribble = null;
-    repaint();
+  ////  ////  ////  ////  ////  ////  ////  ////
+  ////
+  ////            Utility Functions.
+  ////
+  ////  ////  ////  ////  ////  ////  ////  ////
+
+  protected float[] unproject(GL2 gl, float x, float y) {
+    int viewport[] = new int[4];
+    float mvmatrix[] = new float[16];
+    float projmatrix[] = new float[16];
+    int realy = 0;// GL y coord pos
+    float wcoord[] = new float[4];// wx, wy, wz
+    //    GL2 gl = getGL().getGL2();
+    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
+    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
+    realy = viewport[3] - (int) y - 1; // have to invert y values because Java and OpenGL disagree which way is up.
+    glu.gluUnProject((float) x, (float) realy, 0.0f, //
+        mvmatrix, 0, projmatrix, 0, viewport, 0, wcoord, 0);
+    return wcoord;
   }
 
-  public void addPenListener(PenListener pl) {
-    if (!penListeners.contains(pl)) {
-      penListeners.add(pl);
-    }
-  }
-
-  public BufferedImage getScreenShot() {
-    BufferedImage ret = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
-    paintComponent(ret.getGraphics());
+  protected Pt mkPt(float[] coords, long time) {
+    Pt ret = new Pt(coords[0], coords[1], time);
     return ret;
   }
 
-  public void paintComponent(Graphics g1) {
-    bug("paint me");
-    Graphics2D g = (Graphics2D) g1;
-    if (preview != null) {
-      g.drawImage(preview, 0, 0, null); 
-    } else {
-      model.getSnapshotMachine().save();
-      AffineTransform before = new AffineTransform(g.getTransform());
-      drawBorderAndBackground(g);
-      g.setTransform(before);
-      paintContent(g, true);
-      g.setTransform(before);
+  protected void rect(GL2 gl, float minX, float width, float minY, float height) {
+    gl.glBegin(GL2.GL_LINE_LOOP);
+    {
+      gl.glVertex2f(minX, minY);
+      gl.glVertex2f(minX, minY + height);
+      gl.glVertex2f(minX + width, minY + height);
+      gl.glVertex2f(minX + width, minY);
     }
-    if (fsFSM.getState().equals(SEARCH_DIR)) {
-      Components.antialias(g);
-      double w = getWidth();
-      double wOffset = 50;
-      double startOffset = 4;
-      double arrowLen = 32;
-      double y = 20;
-      Color undoColor = Color.LIGHT_GRAY;
-      Color redoColor = Color.LIGHT_GRAY;
-      if (model.getSnapshotMachine().canUndo()) {
-        undoColor = Color.BLACK;
-      }
-      if (model.getSnapshotMachine().canRedo()) {
-        redoColor = Color.BLACK;
-      }
-      Pt c = new Pt(w - wOffset, y);
-      Pt rs = c.getTranslated(startOffset, 0);
-      Pt rTip = rs.getTranslated(arrowLen, 0);
-      Pt us = c.getTranslated(-startOffset, 0);
-      Pt uTip = us.getTranslated(-arrowLen, 0);
-      arrow(g, us, uTip, 3.4f, undoColor);
-      arrow(g, rs, rTip, 3.4f, redoColor);
-      Pt ct = c.getTranslated(0, y);
-      Pt uText = ct.getTranslated(-arrowLen, 0);
-      Pt rText = ct.getTranslated(startOffset, 0);
-      g.setColor(undoColor);
-      g.drawString("undo", (float) uText.getX(), (float) uText.getY());
-      g.setColor(redoColor);
-      g.drawString("redo", (float) rText.getX(), (float) rText.getY());
-    }
+    gl.glEnd();
+
   }
 
-  private void arrow(Graphics2D g, Pt start, Pt tip, float thickness, Color color) {
-    g.setColor(color);
-    g.setStroke(new BasicStroke(thickness));
-    Vec toTip = new Vec(start, tip);
-    Pt almostTip = start.getTranslated(toTip.getScaled(0.8));
-    Vec toCorner = toTip.getNormal().getScaled(0.25);
-    Pt headLeft = almostTip.getTranslated(toCorner);
-    Pt headRight = almostTip.getTranslated(toCorner.getFlip());
-    g.draw(new Line2D.Float(start, tip));
-    g.draw(new Line2D.Float(tip, headLeft));
-    g.draw(new Line2D.Float(tip, headRight));
-  }
-  
-  public void paintContent(Graphics2D g, boolean useCachedImages) {
-    Components.antialias(g);
-    if (model.getConstraints().getSolutionState() == State.Working) {
-      if (model.getConstraints().isPaused()) {
-        g.setColor(PAUSE_COLOR);
-        Pt pauseSpot = new Pt(getWidth() - 30, 10);
-        double pauseW = 10.0;
-        double pauseH = 30.0;
-        Rectangle2D pauseRect = new Rectangle2D.Double(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
-        g.fill(pauseRect);
-        pauseSpot.move(15, 0);
-        pauseRect.setRect(pauseSpot.x, pauseSpot.y, pauseW, pauseH);
-      } else {
-        g.setColor(Color.RED);
-        g.fill(new Circle(new Pt(getWidth() - 20, 20), 10));
-      }
-    }
-    model.getEditor().drawConstraints();
-    model.getEditor().drawDerivedGuides();
-
-    for (DrawingBuffer buffer : layers) {
-      try {
-        if (buffer.isVisible() && useCachedImages) {
-          buffer.paste(g);
-        } else if (buffer.isVisible()) {
-          buffer.drawToGraphics(g);
-        }
-      } catch (Exception ex) {
-        //        bug("Got exception while drawing, probably due to buffer size.");
-      }
-    }
-    if (currentScribble != null) {
-      g.setColor(DEFAULT_WET_COLOR);
-      float thick = DEFAULT_WET_THICKNESS;
-      g.setStroke(Strokes.get(thick));
-      g.draw(currentScribble);
-    }
-  }
-
-  /**
-   * Paints the background white and adds the characteristic dashed border.
-   */
-  private void drawBorderAndBackground(Graphics2D g) {
-    Components.antialias(g);
-//    RoundRectangle2D rec = new RoundRectangle2D.Double(borderPad, borderPad, getWidth() - 2.0
-//        * borderPad, getHeight() - 2.0 * borderPad, 40, 40);
-    Rectangle2D rec = new Rectangle2D.Float(0, 0, getWidth() - 2, getHeight() - 2f);
-    g.setColor(bgColor);
-    g.fill(rec);
-//    g.setStroke(Strokes.DASHED_BORDER_STROKE);
-    g.setColor(Color.BLACK);
-    g.setStroke(Strokes.get(2.0f));
-//    g.setColor(penEnabledBorderColor);
-    g.draw(rec);
-  }
-
-  /**
-   * Make a new layer with a specific key (e.g. "dots"), a human-readable name (e.g.
-   * "segment junctions"), a z-depth, and a default visibility setting. Layers with lower z-values
-   * are painted first. This means the 'top' layer has the largest z-value. When two layers have the
-   * same z-value, it is undefined which order they will be painted in.
-   */
-  public DrawingBuffer createLayer(String key, String humanName, int z, boolean visible) {
-    DrawingBuffer db = new DrawingBuffer();
-    db.setHumanReadableName(humanName);
-    db.setComplainWhenDrawingToInvisibleBuffer(false);
-    layersByName.put(key, db);
-    db.setLayer(z);
-    layers.add(db);
-    Collections.sort(layers, DrawingBuffer.sortByLayer);
-    db.setVisible(visible);
-    return db;
-  }
-
-  public DrawingBuffer getLayer(String name) {
-    if (!layersByName.containsKey(name)) {
-      int z = 0;
-      try {
-        z = Integer.parseInt(name);
-      } catch (NumberFormatException ex) {
-
-      }
-      createLayer(name, "Layer " + name, z, true);
-    }
-    return layersByName.get(name);
-  }
-
-  public BoundingBox getBoundingBox() {
-    BoundingBox ret = new BoundingBox();
-    for (DrawingBuffer db : layers) {
-      if (db.isVisible() && db.hasContent()) {
-        ret.add(db.getBoundingBox());
-      }
-    }
-    if (currentScribble != null) {
-      List<Pt> scribPts = ShapeFactory.makePointList(currentScribble.getPathIterator(null));
-      for (Pt pt : scribPts) {
-        ret.add(pt);
-      }
-    }
-    return ret;
-  }
-
-  /**
-   * Non-interactively make a PDF of the whole sketch canvas. The filename is based on today's date.
-   */
-  public void print() {
-    File file = null;
-    int fileCounter = 0;
-    Date now = new Date();
-    SimpleDateFormat df = new SimpleDateFormat("MMMdd");
-    String today = df.format(now);
-    File parentDir = new File("screenshots");
-    boolean made = true;
-    if (!parentDir.exists()) {
-      made = parentDir.mkdir();
-    }
-    if (made) {
-      while (file == null || file.exists()) {
-        file = new File(parentDir, today + "-" + fileCounter + ".pdf");
-        fileCounter++;
-      }
-      print(file); // defer to other print function.
-    }
-  }
-
-  /**
-   * Print the whole sketch canvas to the given file.
-   */
-  public void print(File file) {
-    // 2. Draw the layers to the pdf graphics context.
-    BoundingBox bb = getBoundingBox();
-    int w = bb.getWidthInt();
-    int h = bb.getHeightInt();
-    int pad = 32;
-    int wPad = w + pad;
-    int hPad = h + pad;
-    Rectangle size = new Rectangle(wPad, hPad);
-    Document document = new Document(size, 0, 0, 0, 0);
-
-    try {
-      FileOutputStream out = new FileOutputStream(file);
-      PdfWriter writer = PdfWriter.getInstance(document, out);
-      document.open();
-      DefaultFontMapper mapper = new DefaultFontMapper();
-      PdfContentByte cb = writer.getDirectContent();
-      PdfTemplate tp = cb.createTemplate(wPad, hPad);
-      Graphics2D g2 = tp.createGraphics(wPad, hPad, mapper);
-      tp.setWidth(wPad);
-      tp.setHeight(hPad);
-      double transX = -(bb.getX() - (pad / 2));
-      double transY = -(bb.getY() - (pad / 2));
-      g2.translate(transX, transY);
-      paintContent(g2, false);
-      g2.dispose();
-      cb.addTemplate(tp, 0, 0);
-    } catch (DocumentException ex) {
-      bug(ex.getMessage());
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
-    }
-    document.close();
-    System.out.println("Wrote " + file.getAbsolutePath());
-  }
-
+  @Override
   public void handlePenEvent(PenEvent ev) {
-    fsRecentPt = ev.getPt();
+    long dur = ev.getTimestamp() - lastPenTime;
+    lastPenTime = ev.getTimestamp();
+    if (dur < 1000) {
+      penLatency.addData(dur);
+    }
+    
+    final Pt world = ev.getPt();
+    if (world == null) {
+
+    } else {
+      GLContext context = getContext();
+      int current = context.makeCurrent();
+      if (current != GLContext.CONTEXT_NOT_CURRENT) {
+        GL2 gl = context.getGL().getGL2();
+        float[] coords = unproject(gl, world.ix(), world.iy());
+        fsRecentPt = mkPt(coords, world.getTime());
+      } else {
+        bug("Could not make open gl context current. Pen Event will be ignored.");
+      }
+      context.release();
+    }
+
     switch (ev.getType()) {
       case Down:
         fsFSM.addEvent(DOWN);
@@ -812,8 +711,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
             Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
             if (nearbyGuidePoints.isEmpty()) {
               prev = ev.getPt();
-              currentScribble = new GeneralPath();
-              currentScribble.moveTo(prev.getX(), prev.getY());
+              currentScribble = new ArrayList<Pt>();
+              currentScribble.add(prev);
             } else {
               GuidePoint nearestGP = null;
               double nearestDist = Double.MAX_VALUE;
@@ -844,7 +743,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
 
         } else if (fsFSM.getState().equals(DRAW) || fsFSM.getState().equals(FLOW)) {
           if (currentScribble != null) {
-            currentScribble.lineTo(here.getX(), here.getY());
+            currentScribble.add(here);
+            //            currentScribble.lineTo(here.getX(), here.getY());
           }
           model.addScribble(ev.getPt());
         }
@@ -874,7 +774,7 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
         hoverPt = ev.getPt().copyXYT();
         break;
     }
-    repaint();
+    display();
   }
 
   /**
@@ -884,45 +784,8 @@ public class DrawingBufferLayers extends JComponent implements PenListener {
   public Pt getHoverPoint() {
     return hoverPt;
   }
-
-  /**
-   * Tells you if the hover point is currently valid.
-   */
-  public boolean isHovering() {
-    return (hoverPt != null);
+  
+  public void clearScribble() {
+    currentScribble = null;
   }
-
-  public void clearAllBuffers() {
-    for (DrawingBuffer buf : layers) {
-      buf.clear();
-    }
-    repaint();
-  }
-
-  public static double getAlpha(double distance, double min, double max, double minRetVal) {
-    double ret = 0;
-    if (distance < min) {
-      ret = 1;
-    } else if (distance < max) {
-      ret = 1 - ((distance - min) / (max - min));
-      ret = Math.sqrt(ret);
-    } else {
-      ret = 0;
-    }
-    return Math.max(ret, minRetVal);
-  }
-
-  public String getFlowSelectionState() {
-    return fsFSM.getState();
-  }
-
-  public void setPreview(Image preview) {
-    this.preview = preview;
-    repaint();
-  }
-
-  public void clearPreview() {
-    setPreview(null);
-  }
-
 }

@@ -35,11 +35,11 @@ public class SameAngleUserConstraint extends UserConstraint {
   public static final String NAME = "Same Angle";
 
   public SameAngleUserConstraint(SketchBook model, Constraint... cs) {
-    super(model, NAME, cs);
+    super(model, Type.SameAngle, cs);
   }
 
   public SameAngleUserConstraint(SketchBook model, JSONObject ucObj) throws JSONException {
-    super(model, NAME, ucObj);
+    super(model, Type.SameAngle, ucObj);
     if (ucObj.getBoolean("multi")) {
       MultisourceNumericValue mnv = new MultisourceNumericValue();
       for (Constraint c : getConstraints()) {

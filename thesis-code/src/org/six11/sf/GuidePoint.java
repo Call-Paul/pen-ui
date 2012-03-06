@@ -20,11 +20,13 @@ public class GuidePoint extends Guide {
   private Pt pt;
 
   public GuidePoint(Segment seg, Vec param) {
+    super(Type.Point);
     this.seg = seg;
     this.param = param;
   }
 
   public GuidePoint(Pt pt) {
+    super(Type.Point);
     this.pt = pt;
   }
 
