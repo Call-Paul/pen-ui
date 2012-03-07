@@ -46,9 +46,12 @@ public class SnapshotMachine {
 
   private boolean snapshotRequested;
 
+  private Set<Integer> staleDisplayLists;
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.state = new ArrayList<Snapshot>();
+    this.staleDisplayLists = new HashSet<Integer>();
     File debugOutput = new File("snapshots");
     if (!debugOutput.exists()) {
       boolean ok = debugOutput.mkdirs();
@@ -69,41 +72,45 @@ public class SnapshotMachine {
   }
 
   public Snapshot save() {
-    if (!SwingUtilities.isEventDispatchThread()) {
-      Debug.error("Saving in thread: " + Thread.currentThread().getName()
-          + " but should save in the swing thread.");
-    }
     Snapshot ret = null;
     if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
       snapshotRequested = false;
       ret = new Snapshot(model);
+      bug("Made a snapshot!");
       state.add(stateCursor, ret); // add snapshot at cursor
       stateCursor = stateCursor + 1; // increment cursor
       for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
-        state.remove(i);
+        Snapshot old = state.remove(i);
+        staleDisplayLists.add(old.getDisplayListID());
       }
       if (rootDir != null) {
         File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
-        File imgFile = new File(rootDir, "snapshot-" + ret.getID() + ".png");
         File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
         try {
           FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
-          ImageIO.write(ret.getPreview(), "png", imgFile);
           FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
         } catch (JSONException e) {
           FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
-        } catch (IOException e) {
-          // TODO Auto-generated catch block
-          e.printStackTrace();
         }
       }
     }
     return ret;
   }
 
+  public int[] flushStaleDisplayLists() {
+    Integer[] ids = staleDisplayLists.toArray(new Integer[0]);
+    int[] ret = new int[ids.length];
+    for (int i=0; i < ids.length;i++) {
+      ret[i] = ids[i];
+    }
+    staleDisplayLists.clear();
+    return ret;
+  }
+
   public void requestSnapshot(String reason) {
+    bug("snapshot requested. reason: " + reason);
     this.snapshotRequested = true;
-    model.getLayers().repaint();
+    model.getSurface().snapshot();
   }
 
   public Snapshot get(int idx) {
@@ -191,7 +198,7 @@ public class SnapshotMachine {
     bug("Loading " + snap);
     snap.load();
     bug("Loaded " + snap);
-//    report("load");
+    //    report("load");
     model.getEditor().drawStuff();
   }
 

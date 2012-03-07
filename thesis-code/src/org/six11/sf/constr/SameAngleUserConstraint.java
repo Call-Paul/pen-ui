@@ -30,9 +30,26 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 public class SameAngleUserConstraint extends UserConstraint {
+  
+  /**
+   * Index into the getSpots() return array for the 'left' point for the angle brace.
+   */
+  public static final int SPOT_ARC_LEFT = 0;
 
-  private static final double DRAW_RADIUS = 12.0;
-  public static final String NAME = "Same Angle";
+  /**
+   * Index into the getSpots() return array for a point in the middle of the arc.
+   */
+  public static final int SPOT_ARC_MID = 1;
+
+  /**
+   * Index into the getSpots() return array for the 'right' point for the angle brace.
+   */
+  public static final int SPOT_ARC_RIGHT = 2;
+  
+  /**
+   * Index into the getSpots() return array for the center of the circle.
+   */
+  public static final int SPOT_CIRCLE_CENTER = 3;
 
   public SameAngleUserConstraint(SketchBook model, Constraint... cs) {
     super(model, Type.SameAngle, cs);
@@ -159,30 +176,50 @@ public class SameAngleUserConstraint extends UserConstraint {
     return ret;
   }
 
-  public void draw(DrawingBuffer buf, Pt hoverPoint) {
-    if (hoverPoint != null) {
-      double nearest = Double.MAX_VALUE;
-      for (Constraint c : getConstraints()) {
-        AngleConstraint ac = (AngleConstraint) c;
-        Pt f = ac.getPtFulcrum();
-        double d = hoverPoint.distance(f);
-        nearest = Math.min(d, nearest);
-      }
-      double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
-      Color color = new Color(1, 0, 0, (float) alpha);
-      for (Constraint c : getConstraints()) {
-        AngleConstraint ac = (AngleConstraint) c;
-        Pt f = ac.getPtFulcrum();
-        Vec vecA = new Vec(f, ac.getPtA());
-        Vec vecB = new Vec(f, ac.getPtB());
-        Pt a = f.getTranslated(vecA, DRAW_RADIUS);
-        Pt b = f.getTranslated(vecB, DRAW_RADIUS);
-        Vec vecMid = Vec.sum(vecA, vecB);
-        Pt m = f.getTranslated(vecMid, DRAW_RADIUS);
-        Arc2D arc = ShapeFactory.makeArc(a, m, b);
-        DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
-      }
+  public Pt[][] getSpots(double radius) {
+    Pt[][] spots = new Pt[getConstraints().size()][4];
+    Constraint[] angles = getConstraints().toArray(new Constraint[0]);
+    for (int i=0; i < angles.length; i++) {
+      AngleConstraint ac = (AngleConstraint) angles[i];
+      Pt f = ac.getPtFulcrum();
+      Vec vecA = new Vec(f, ac.getPtA());
+      Vec vecB = new Vec(f, ac.getPtB());
+      Pt a = f.getTranslated(vecA, radius);
+      Pt b = f.getTranslated(vecB, radius);
+      Vec vecMid = Vec.sum(vecA, vecB);
+      Pt m = f.getTranslated(vecMid, radius);
+      spots[i][SPOT_ARC_LEFT] = a;
+      spots[i][SPOT_ARC_MID] = m;
+      spots[i][SPOT_ARC_RIGHT] = b;
+      spots[i][SPOT_CIRCLE_CENTER] = f;
     }
+    return spots;
+  }
+  
+  public void draw(DrawingBuffer buf, Pt hoverPoint) {
+//    if (hoverPoint != null) {
+//      double nearest = Double.MAX_VALUE;
+//      for (Constraint c : getConstraints()) {
+//        AngleConstraint ac = (AngleConstraint) c;
+//        Pt f = ac.getPtFulcrum();
+//        double d = hoverPoint.distance(f);
+//        nearest = Math.min(d, nearest);
+//      }
+//      double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
+//      Color color = new Color(1, 0, 0, (float) alpha);
+//      for (Constraint c : getConstraints()) {
+//        AngleConstraint ac = (AngleConstraint) c;
+//        Pt f = ac.getPtFulcrum();
+//        Vec vecA = new Vec(f, ac.getPtA());
+//        Vec vecB = new Vec(f, ac.getPtB());
+//        Pt a = f.getTranslated(vecA, DRAW_RADIUS);
+//        Pt b = f.getTranslated(vecB, DRAW_RADIUS);
+//        Vec vecMid = Vec.sum(vecA, vecB);
+//        Pt m = f.getTranslated(vecMid, DRAW_RADIUS);
+//        Arc2D arc = ShapeFactory.makeArc(a, m, b);
+//        DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
+//      }
+//    }
   }
 
   public static MultisourceNumericValue.Source mkSource(final Angle angle) {

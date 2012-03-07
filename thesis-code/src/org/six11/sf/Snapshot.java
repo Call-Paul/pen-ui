@@ -25,7 +25,8 @@ public class Snapshot {
 
   private SketchBook model;
   private JSONObject top;
-  private BufferedImage img;
+//  private BufferedImage img;
+  private int displayListID;
   
   public String toString() {
     return "Snapshot " + id;
@@ -34,8 +35,7 @@ public class Snapshot {
   public Snapshot(SketchBook model) {
 //    Debug.stacktrace("Saving model!   --   Saving model!   --   Saving model!   --   Saving model!   --   Saving model!   --   ", 5);
     this.model = model;
-    img = model.getLayers().getScreenShot();
-//    bug("got image. it is : " + img);
+
     // the model's clearAll function does the following. use it as a plan to save things.
 
     //  (save)    constraint solver : points
@@ -89,7 +89,6 @@ public class Snapshot {
       }
       top.put("geometry", geomArr);
       
-      
       //
       // user constraints
       //
@@ -137,6 +136,10 @@ public class Snapshot {
     }
   }
 
+  public void setDisplayListID(int displayListID) {
+    this.displayListID = displayListID;
+  }
+  
   public boolean load() {
     boolean ok = true;
     JsonIO io = new JsonIO();
@@ -223,8 +226,12 @@ public class Snapshot {
     return ok;
   }
 
-  public BufferedImage getPreview() {
-    return img;
+//  public BufferedImage getPreview() {
+//    return img;
+//  }
+  
+  public int getDisplayListID() {
+    return displayListID;
   }
 
   public int getID() {

@@ -26,8 +26,6 @@ import static org.six11.util.Debug.bug;
 
 public class ColinearUserConstraint extends UserConstraint {
 
-  public static final String NAME = "Colinear";
-
   public ColinearUserConstraint(SketchBook model, Set<Pt> points) {
     super(model, Type.Colinear, new PointOnLineConstraint(points));
   }
@@ -70,6 +68,19 @@ public class ColinearUserConstraint extends UserConstraint {
     boolean ret = pts.size() > 2 && model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
     if (!ret) {
       bug(this + " no longer valid!");
+    }
+    return ret;
+  }
+  
+  public Pt[] getSpots() {
+    Set<Pt> pts = getConstrainedPoints();
+    Pt[] ret = new Pt[2];
+    Pt[] anti = getAntipodes(pts);
+    if (anti[0] != null && anti[1] != null) {
+      Vec dir = new Vec(anti[0], anti[1]).getVectorOfMagnitude(30);
+      Vec flip = dir.getFlip();
+      ret[0] = anti[0].getTranslated(flip);
+      ret[1] = anti[1].getTranslated(dir);
     }
     return ret;
   }

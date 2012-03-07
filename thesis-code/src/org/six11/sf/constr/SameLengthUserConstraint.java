@@ -30,7 +30,6 @@ import org.six11.util.solve.NumericValue;
 
 public class SameLengthUserConstraint extends UserConstraint {
 
-  public static final String NAME = "Same Length";
   public SameLengthUserConstraint(SketchBook model, Constraint... cs) {
     super(model, Type.SameLength, cs);
   }

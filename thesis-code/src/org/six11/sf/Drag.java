@@ -15,9 +15,9 @@ public class Drag {
   public static class Event {
 
     private Point pt;
-    private GlassPane.ActivityMode mode;
+    private FastGlassPane.ActivityMode mode;
     
-    public Event(Point pt, GlassPane.ActivityMode mode) {
+    public Event(Point pt, FastGlassPane.ActivityMode mode) {
       this.pt = pt;
       this.mode = mode;
     }
@@ -26,7 +26,7 @@ public class Drag {
       return pt;
     }
     
-    public GlassPane.ActivityMode getMode() {
+    public FastGlassPane.ActivityMode getMode() {
       return mode;
     }
     

@@ -202,10 +202,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
         repaint();
         break;
       case Drag:
-        if (editor.getGlass().getActivity() == GlassPane.ActivityMode.None) {
+        if (editor.getGlass().getActivity() == FastGlassPane.ActivityMode.None) {
           select(new Point(ev.getPt().ix(), ev.getPt().iy()));
           if (getSelectedCellContent() != null) {
-            editor.getGlass().setActivity(GlassPane.ActivityMode.DragScrap);
+            editor.getGlass().setActivity(FastGlassPane.ActivityMode.DragScrap);
           }
         }
         break;

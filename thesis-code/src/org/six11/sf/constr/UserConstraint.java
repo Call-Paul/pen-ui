@@ -137,17 +137,22 @@ public abstract class UserConstraint {
   public static UserConstraint fromJson(SketchBook model, JSONObject ucObj) throws JSONException {
     Type type = mkType(ucObj.getString("type"));
     UserConstraint ret = null;
-    if (type.equals(ColinearUserConstraint.NAME)) {
-      ret = new ColinearUserConstraint(model, ucObj);
-    }
-    if (type.equals(RightAngleUserConstraint.NAME)) {
-      ret = new RightAngleUserConstraint(model, ucObj);
-    }
-    if (type.equals(SameAngleUserConstraint.NAME)) {
-      ret = new SameAngleUserConstraint(model, ucObj);
-    }
-    if (type.equals(SameLengthUserConstraint.NAME)) {
-      ret = new SameLengthUserConstraint(model, ucObj);
+    switch (type) {
+      case Colinear:
+        ret = new ColinearUserConstraint(model, ucObj);
+        break;
+      case RightAngle:
+        ret = new RightAngleUserConstraint(model, ucObj);
+        break;
+      case SameAngle:
+        ret = new SameAngleUserConstraint(model, ucObj);
+        break;
+      case SameLength:
+        ret = new SameLengthUserConstraint(model, ucObj);
+        break;
+      case Unknown:
+        break;
+      
     }
     return ret;
   }

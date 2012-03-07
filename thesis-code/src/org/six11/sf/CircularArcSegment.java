@@ -70,40 +70,42 @@ public class CircularArcSegment extends SegmentDelegate {
     return ret;
   }
 
-  private double getParam(Pt target, Pt center) {
-    return atan2(target.y - center.y, target.x - center.x);
-  }
+ 
 
   public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center) {
-    return initArc(arc1, arc2, arc3, center, 60);
+    return Functions.getCircularArc(arc1, arc2, arc3, center, 60);
   }
-
-  public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center, int numSteps) {
-    double arc1T = getParam(arc1, center);
-    double arc2T = getParam(arc2, center);
-    double arc3T = getParam(arc3, center);
-    List<Pt> surface = new ArrayList<Pt>();
-    List<Double> arcParams = Functions.makeMonotonicallyIncreasingAngles(arc1T, arc2T, arc3T);
-    double start = arcParams.get(0);
-    double end = arcParams.get(2);
-    double step = (end - start) / numSteps;
-    double r = arc1.distance(center);
-    for (double t = start; t <= end; t += step) {
-      surface.add(getCircularPoint(t, r, center));
-    }
-    return surface;
-  }
-
-  /**
-   * Returns a point on the circle boundary, parameterized by the given radial angle. If you call
-   * this a bunch of times for t=0..2pi you sample the entire circle.
-   */
-  public Pt getCircularPoint(double t, double r, Pt center) {
-    double x = (r * cos(t));
-    double y = (r * sin(t));
-    Pt ret = new Pt(x + center.x, y + center.y);
-    return ret;
-  }
+  
+//  private double getParam(Pt target, Pt center) {
+//    return atan2(target.y - center.y, target.x - center.x);
+//  }
+//
+//  public final List<Pt> initArc(Pt arc1, Pt arc2, Pt arc3, Pt center, int numSteps) {
+//    double arc1T = getParam(arc1, center);
+//    double arc2T = getParam(arc2, center);
+//    double arc3T = getParam(arc3, center);
+//    List<Pt> surface = new ArrayList<Pt>();
+//    List<Double> arcParams = Functions.makeMonotonicallyIncreasingAngles(arc1T, arc2T, arc3T);
+//    double start = arcParams.get(0);
+//    double end = arcParams.get(2);
+//    double step = (end - start) / numSteps;
+//    double r = arc1.distance(center);
+//    for (double t = start; t <= end; t += step) {
+//      surface.add(getCircularPoint(t, r, center));
+//    }
+//    return surface;
+//  }
+//
+//  /**
+//   * Returns a point on the circle boundary, parameterized by the given radial angle. If you call
+//   * this a bunch of times for t=0..2pi you sample the entire circle.
+//   */
+//  public Pt getCircularPoint(double t, double r, Pt center) {
+//    double x = (r * cos(t));
+//    double y = (r * sin(t));
+//    Pt ret = new Pt(x + center.x, y + center.y);
+//    return ret;
+//  }
 
   @Override
   protected void doPara() {
@@ -181,7 +183,7 @@ public class CircularArcSegment extends SegmentDelegate {
     int circum = (int) (2 * rad * Math.PI);
     int targetSegSize = 4;
     int numSteps = circum / targetSegSize;
-    List<Pt> points = initArc(getP1(), getArcMid(), getP2(), getCenter(), numSteps);
+    List<Pt> points = Functions.getCircularArc(getP1(), getArcMid(), getP2(), getCenter(), numSteps);
     return points;
   }
 

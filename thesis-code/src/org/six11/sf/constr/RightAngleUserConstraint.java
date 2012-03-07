@@ -22,8 +22,6 @@ import org.six11.util.solve.OrientationConstraint;
 
 public class RightAngleUserConstraint extends UserConstraint {
 
-  public static final String NAME = "RightAngle";
-
   /**
    * Index into the getSpots() return array for the angle brace's visual fulcrum.
    */

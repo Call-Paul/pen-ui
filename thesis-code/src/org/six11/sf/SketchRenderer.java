@@ -4,12 +4,15 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Shape;
+import java.awt.geom.PathIterator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
+import javax.media.opengl.glu.GLU;
+import javax.media.opengl.glu.GLUtessellator;
 
 import org.six11.sf.constr.ColinearUserConstraint;
 import org.six11.sf.constr.RightAngleUserConstraint;
@@ -82,15 +85,37 @@ public class SketchRenderer {
   public final static float[] LATCH_SPOT_COLOR = skyBlue;
   public final static float[] ERASE_COLOR = bloodRed;
   public final static float[] CONSTRAINT_COLOR = bloodRed;
-  public final static float[] SELECTION_COLOR = peachy;
+  public final static float[] STENCIL_UNSELECTED_COLOR = lightGray;
+  public final static float[] STENCIL_SELECTED_COLOR = skyBlue;
+  public final static float[] SEGMENT_SELECTED_COLOR = brighter(skyBlue);
+  public final static float[] DOT_SELECTED_COLOR = peachy;
 
+  private static float[] brighter(float[] c) {
+    float[] r = new float[4];
+    r[0] = (float) Math.sqrt(c[0]);
+    r[1] = (float) Math.sqrt(c[1]);
+    r[2] = (float) Math.sqrt(c[2]);
+    r[3] = c[3]; // leave alpha alone.
+    return r;
+  }
+  
   private static final Vec EAST = new Vec(1, 0);
 
   private transient GL2 gl; // only valid during the render method
+  private transient GLU glu; // only valid when rendering
   private transient SketchBook model; // also valid only when rendering
   private transient GLAutoDrawable drawable; // same
 
   private DrawingSurface surface;
+  private TessCallback tessCallback;
+
+  public void init(GLAutoDrawable drawable) {
+    this.drawable = drawable;
+    this.gl = drawable.getGL().getGL2();
+    this.tessCallback = new TessCallback(gl);
+  }
+
+
 
   /**
    * The main render function. This is called when it is time to redraw the screen.
@@ -109,6 +134,7 @@ public class SketchRenderer {
       boolean drawDots, DrawingSurface drawingSurface) {
     this.drawable = drawable;
     this.gl = drawable.getGL().getGL2();
+    this.glu = drawingSurface.glu;
     this.model = model;
     this.surface = drawingSurface;
     renderStencils();
@@ -129,18 +155,30 @@ public class SketchRenderer {
       if (model.getSelectedStencils().contains(s)) {
         later.add(s);
       } else {
-        List<Pt> stencilPath = s.getPath();
-        gl.glColor3fv(lightGray, 0);
-        fillPoly(stencilPath);
-//        DrawingBufferRoutines.fillShape(buf, s.getShape(true), colors.get("stencil"), 0);
+        renderStencil(s, false);
       }
     }
     if (later.size() > 0) {
       for (Stencil s : later) {
-//        DrawingBufferRoutines
-//            .fillShape(selBuf, s.getShape(true), colors.get("selected stencil"), 0);
+        renderStencil(s, true);
       }
     }
+  }
+
+  /**
+   * Render a top-level stencil. This will create a tessellated object and possibly add holes to it
+   * (if the stencil has children).
+   * 
+   * @param stencil
+   */
+  private void renderStencil(Stencil stencil, boolean isSelected) {
+    gl.glLineWidth(4f);
+    if (isSelected) {
+      gl.glColor4fv(STENCIL_SELECTED_COLOR, 0);
+    } else {
+      gl.glColor4fv(STENCIL_UNSELECTED_COLOR, 0);
+    }
+    tessellateShape(stencil.getShape(false));
   }
 
   private void renderDerivedGuides() {
@@ -213,7 +251,7 @@ public class SketchRenderer {
     float r;
     for (GuidePoint gpt : model.getGuidePoints()) {
       if (model.getActiveGuidePoints().contains(gpt)) {
-        c = SELECTION_COLOR;
+        c = DOT_SELECTED_COLOR;
         r = 4f;
       } else {
         c = lightGray;
@@ -272,9 +310,26 @@ public class SketchRenderer {
   }
 
   private void renderSameAngleConstraint(SameAngleUserConstraint c) {
+    Pt[][] spots = c.getSpots(16);
+    gl.glLineWidth(1f);
+    gl.glColor4fv(bloodRed, 0);
+    for (Pt[] spot : spots) {
+      List<Pt> arc = Functions.getCircularArc(spot[0], spot[1], spot[2], spot[3], 6);
+      curve(arc);
+    }
   }
 
   private void renderColinearConstraint(ColinearUserConstraint c) {
+    Pt[] spots = c.getSpots();
+    Line line = new Line(spots[0], spots[1]);
+
+    gl.glLineWidth(1f);
+    gl.glColor4fv(bloodRed, 0);
+    gl.glLineStipple(3, (short) 0xAAAA);
+    gl.glEnable(GL2.GL_LINE_STIPPLE);
+    screenLine(line, drawable.getWidth(), drawable.getHeight());
+    gl.glDisable(GL2.GL_LINE_STIPPLE);
+
   }
 
   private void renderRightAngleConstraint(RightAngleUserConstraint c) {
@@ -345,33 +400,16 @@ public class SketchRenderer {
   private void renderGeometry() {
     Set<Pt> notLatched = new HashSet<Pt>();
     for (Segment seg : model.getGeometry()) {
-      gl.glLineWidth(3.8f); // ensure pen settings ok because render unlatched changes it
-      gl.glColor3fv(black, 0);
-      switch (seg.getType()) {
-        case Line:
-          line(seg.getP1(), seg.getP2());
-          break;
-        case EllipticalArc:
-        case Curve:
-        case Blob:
-          curve(seg.asSpline().getPoints());
-          break;
-        case Circle:
-          circle(seg.getCircle());
-          break;
-        case CircularArc:
-          curve(seg.getPointList());
-          break;
-        case Ellipse:
-          curve(seg.getPointList());
-          break;
-        case Dot:
-          bug("Can't do " + seg.getType() + " yet.");
-          break;
-        case Unknown:
-          bug("Unknown type: " + seg.getType());
-          break;
+      if (model.getSelectedSegments().contains(seg)) {
+        gl.glLineWidth(6.3f);
+        gl.glColor3fv(SEGMENT_SELECTED_COLOR, 0);
+        renderSegment(seg);
+      } else {
+        gl.glLineWidth(3.8f); // ensure pen settings ok because render unlatched changes it
+        gl.glColor3fv(black, 0);
+        renderSegment(seg);
       }
+      
 
       // draw latchedness
       if (!seg.isSingular()) {
@@ -394,6 +432,34 @@ public class SketchRenderer {
     }
   }
 
+  private void renderSegment(Segment seg) {
+    switch (seg.getType()) {
+      case Line:
+        line(seg.getP1(), seg.getP2());
+        break;
+      case EllipticalArc:
+      case Curve:
+      case Blob:
+        curve(seg.asSpline().getPoints());
+        break;
+      case Circle:
+        circle(seg.getCircle());
+        break;
+      case CircularArc:
+        curve(seg.getPointList());
+        break;
+      case Ellipse:
+        curve(seg.getPointList());
+        break;
+      case Dot:
+        bug("Can't do " + seg.getType() + " yet.");
+        break;
+      case Unknown:
+        bug("Unknown type: " + seg.getType());
+        break;
+    }
+  }
+
   private void renderLatched(Pt pt, float[] color, float side, float thick) {
     gl.glLineWidth(thick);
     gl.glColor3fv(color, 0);
@@ -405,6 +471,40 @@ public class SketchRenderer {
     gl.glLineWidth(thick);
     gl.glColor4fv(color, 0);
     line(pt, away);
+  }
+
+  private void tessellateShape(Shape shape) {
+    // the following code was adapted from Ric Wright's example on JOGL tessellation
+    // at this URL: http://www.geofx.com/html/OpenGL_Eclipse/TextRenderer3D.html
+    GLUtessellator tess = GLU.gluNewTess();
+    GLU.gluTessCallback(tess, GLU.GLU_TESS_BEGIN, tessCallback);
+    GLU.gluTessCallback(tess, GLU.GLU_TESS_END, tessCallback);
+    GLU.gluTessCallback(tess, GLU.GLU_TESS_ERROR, tessCallback);
+    GLU.gluTessCallback(tess, GLU.GLU_TESS_VERTEX, tessCallback);
+    GLU.gluTessCallback(tess, GLU.GLU_TESS_COMBINE, tessCallback);
+
+    GLU.gluTessBeginPolygon(tess, (double[]) null);
+
+    PathIterator pi = shape.getPathIterator(null);
+    while (!pi.isDone()) {
+      double[] coords = new double[3];
+      coords[2] = 0d;
+      switch (pi.currentSegment(coords)) {
+        case PathIterator.SEG_MOVETO:
+          GLU.gluTessBeginContour(tess);
+          break;
+
+        case PathIterator.SEG_LINETO:
+          GLU.gluTessVertex(tess, coords, 0, coords);
+          break;
+
+        case PathIterator.SEG_CLOSE:
+          GLU.gluTessEndContour(tess);
+          break;
+      }
+      pi.next();
+    }
+    GLU.gluTessEndPolygon(tess);
   }
 
   public double getAlpha(double distance, double min, double max, double minRetVal) {
@@ -532,16 +632,6 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-
-  private void fillPoly(List<Pt> stencilPath) { // TODO: will probably need to use a GLU tesselation thing.
-    gl.glBegin(GL2.GL_POLYGON); {
-      for (Pt pt : stencilPath) {
-        gl.glVertex2f(pt.fx(), pt.fy());
-      }
-    }
-    gl.glEnd();
-  }
-  
   private void text(String str, Pt loc) {
     // this is untested.
     TextRenderer t12 = surface.getTextRenderer(12);
@@ -550,6 +640,20 @@ public class SketchRenderer {
     t12.setColor(color[0], color[1], color[2], color[3]);
     t12.draw(str, loc.ix(), loc.iy());
     t12.endRendering();
+  }
+
+  public void arrow(Pt start, Pt tip) {
+    double length = start.distance(tip);
+    double headLength = length / 10.0;
+    Vec tipToStart = new Vec(tip, start).getVectorOfMagnitude(headLength);
+    Pt cross = tip.getTranslated(tipToStart.getX(), tipToStart.getY());
+    Vec outward = tipToStart.getNormal();
+    Pt head1 = cross.getTranslated(outward.getX(), outward.getY());
+    outward = outward.getFlip();
+    Pt head2 = cross.getTranslated(outward.getX(), outward.getY());
+    line(start, tip);
+    line(head1, tip);
+    line(head2, tip);
   }
 
 }

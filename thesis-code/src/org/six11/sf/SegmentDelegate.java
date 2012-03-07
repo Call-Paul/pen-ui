@@ -627,10 +627,10 @@ public class SegmentDelegate implements HasFuzzyArea {
     } else {
       seg = model.getSegment(p1, p2);
     }
-    if (model.getConstraints().hasPoints(p1)) {
+    if (!model.getConstraints().hasPoints(p1)) {
       bug("constraint solver does not have p1");
     }
-    if (!isSingular() && model.getConstraints().hasPoints(p2)) {
+    if (!isSingular() && !model.getConstraints().hasPoints(p2)) {
       bug("constraint solver does not have p2");
     }
     if (seg == null) {

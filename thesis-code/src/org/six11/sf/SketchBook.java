@@ -182,6 +182,7 @@ public class SketchBook {
   }
 
   public void addInk(Ink newInk) {
+    
     cornerFinder.findCorners(newInk);
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
@@ -221,13 +222,14 @@ public class SketchBook {
 
   public void removeInk(Ink oldInk) {
     ink.remove(oldInk);
-    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-    buf.clear();
-    for (Ink eenk : ink) {
-      Sequence scrib = eenk.getSequence();
-      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
-          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
-    }
+//    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+//    buf.clear();
+//    for (Ink eenk : ink) {
+//      Sequence scrib = eenk.getSequence();
+//      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
+//          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
+//    }
+    surface.display();
   }
 
   /**
@@ -703,6 +705,7 @@ public class SketchBook {
   }
 
   public void clearAll() {
+    bug("Clear everything!");
     try {
       clearInk();
       clearStructured();
@@ -715,9 +718,6 @@ public class SketchBook {
       derivedGuides.clear();
       surface.clearScribble();
       surface.display();
-      //      layers.clearScribble();
-      //      layers.clearAllBuffers();
-      //      layers.repaint();
       editor.getGrid().clear();
       editor.getCutfilePane().clear();
       actions.clear();
@@ -982,10 +982,11 @@ public class SketchBook {
   public void setDraggingSelection(boolean b) {
     draggingSelection = b;
     if (draggingSelection) {
-      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
-      BufferedImage bigImage = sel.getImage();
-      draggingThumb = Scalr.resize(bigImage, 48);
-      glass.setActivity(GlassPane.ActivityMode.DragSelection);
+//      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
+//      BufferedImage bigImage = sel.getImage();
+//      draggingThumb = Scalr.resize(bigImage, 48);
+      bug("Dragging. come back here and fix the image stuff");
+      glass.setActivity(FastGlassPane.ActivityMode.DragSelection);
     } else {
       draggingThumb = null;
     }
@@ -1284,7 +1285,8 @@ public class SketchBook {
     Snapshot s = snapshotMachine.undo();
     if (s != null) {
       bug("Valid undo");
-      layers.setPreview(s.getPreview());
+      //layers.setPreview(s.getPreview());
+      surface.setPreview(s);
     }
   }
 
@@ -1293,17 +1295,20 @@ public class SketchBook {
     Snapshot s = snapshotMachine.redo();
     if (s != null) {
       bug("Valid redo.");
-      layers.setPreview(s.getPreview());
+//      layers.setPreview(s.getPreview());
+      surface.setPreview(s);
     }
   }
 
   public void undoRedoComplete() {
     bug("finalizing redo/undo");
-    layers.clearPreview();
+//    layers.clearPreview();
+    surface.clearPreview();
     Snapshot s = snapshotMachine.getCurrent();
     loadingSnapshot = true;
     snapshotMachine.load(s);
     loadingSnapshot = false;
+    surface.display();
   }
 
   public ActionFactory getActionFactory() {
@@ -1534,6 +1539,10 @@ public class SketchBook {
       }
     }
     return ret;
+  }
+
+  public DrawingSurface getSurface() {
+    return surface;
   }
 
 }

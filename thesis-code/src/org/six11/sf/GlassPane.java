@@ -182,18 +182,18 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   private void giveSelectionDrag(MouseEventInfo mei) {
-    Drag.Event ev = new Drag.Event(mei.componentPoint, activity);
-    if (prevComponent != mei.component) {
-      if (prevComponent instanceof Drag.Listener) {
-        ((Drag.Listener) prevComponent).dragExit(ev);
-      }
-      if (mei.component instanceof Drag.Listener) {
-        ((Drag.Listener) mei.component).dragEnter(ev);
-      }
-    }
-    if (mei.component instanceof Drag.Listener) {
-      ((Drag.Listener) mei.component).dragMove(ev);
-    }
+//    Drag.Event ev = new Drag.Event(mei.componentPoint, activity);
+//    if (prevComponent != mei.component) {
+//      if (prevComponent instanceof Drag.Listener) {
+//        ((Drag.Listener) prevComponent).dragExit(ev);
+//      }
+//      if (mei.component instanceof Drag.Listener) {
+//        ((Drag.Listener) mei.component).dragEnter(ev);
+//      }
+//    }
+//    if (mei.component instanceof Drag.Listener) {
+//      ((Drag.Listener) mei.component).dragMove(ev);
+//    }
   }
 
   public void mouseMoved(MouseEvent ev) {
@@ -261,37 +261,37 @@ public class GlassPane extends JComponent implements MouseMotionListener, MouseL
   }
 
   public void mouseReleased(MouseEvent ev) {
-    editor.getModel().getConstraints().setPaused(false);
-    MouseEventInfo mei = new MouseEventInfo(ev);
-    dragPoint = null;
-    switch (activity) {
-      case DragSelection:
-        bug("Turning off selection drag.");
-        if (mei.component instanceof Drag.Listener) {
-          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
-          ((Drag.Listener) mei.component).dragDrop(dev);
-        }
-        editor.getModel().setDraggingSelection(false);
-        activity = ActivityMode.None;
-        givePenEvent(editor.getModel().getLayers(), PenEvent.buildIdleEvent(this, ev));
-        break;
-      case DragScrap:
-        if (mei.component instanceof Drag.Listener) {
-          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
-          ((Drag.Listener) mei.component).dragDrop(dev);
-        }
-        editor.getGrid().clearSelection();
-        activity = ActivityMode.None;
-        break;
-      case None:
-        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
-        dragging = false; // drag completed.
-        dragStartComponent = null;
-        break;
-      default:
-        bug("unhandled state: " + activity);
-    }
-    repaint();
+//    editor.getModel().getConstraints().setPaused(false);
+//    MouseEventInfo mei = new MouseEventInfo(ev);
+//    dragPoint = null;
+//    switch (activity) {
+//      case DragSelection:
+//        bug("Turning off selection drag.");
+//        if (mei.component instanceof Drag.Listener) {
+//          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+//          ((Drag.Listener) mei.component).dragDrop(dev);
+//        }
+//        editor.getModel().setDraggingSelection(false);
+//        activity = ActivityMode.None;
+//        givePenEvent(editor.getModel().getLayers(), PenEvent.buildIdleEvent(this, ev));
+//        break;
+//      case DragScrap:
+//        if (mei.component instanceof Drag.Listener) {
+//          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+//          ((Drag.Listener) mei.component).dragDrop(dev);
+//        }
+//        editor.getGrid().clearSelection();
+//        activity = ActivityMode.None;
+//        break;
+//      case None:
+//        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
+//        dragging = false; // drag completed.
+//        dragStartComponent = null;
+//        break;
+//      default:
+//        bug("unhandled state: " + activity);
+//    }
+//    repaint();
   }
 
   public void setActivity(ActivityMode mode) {

@@ -16,7 +16,6 @@ import java.util.TimerTask;
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 
-import org.six11.sf.GlassPane.ActivityMode;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -25,14 +24,33 @@ import static org.six11.util.Debug.bug;
 
 public class FastGlassPane extends JComponent implements MouseListener {
 
+  public enum ActivityMode {
+    /**
+     * 'None' means mouse events are passed through to the components below.
+     */
+    None,
+    /**
+     * 'DragSelection' means the user is dragging a selection from the drawing pane.
+     */
+    DragSelection,
+    /**
+     * 'DragScrap' means the user is dragging a scrap from the scrap grid.
+     */
+    DragScrap
+  };
+
   SkruiFabEditor editor;
   private boolean dragging;
   private Timer timer;
   private TimerTask tt;
   private Point prevLoc;
+  private ActivityMode activity;
+  private Component prevComponent;
+  private Component dragStartComponent;
 
   public FastGlassPane(SkruiFabEditor editor) {
     this.editor = editor;
+    this.activity = ActivityMode.None;
     timer = new Timer();
     tt = new TimerTask() {
       public void run() {
@@ -53,17 +71,22 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }
   }
 
-  public void setActivity(ActivityMode dragselection) {
+  public void setActivity(ActivityMode mode) {
+    this.activity = mode;
   }
 
   public ActivityMode getActivity() {
-    return null;
+    return activity;
   }
 
   public void setGatherText(boolean b) {
   }
 
   private void placePoint(final Point loc) {
+    if (!isVisible()) {
+      bug("Not yet visible. Bailage.");
+      return;
+    }
     final long now = System.currentTimeMillis();
     Component container = editor.getContentPane();
     SwingUtilities.convertPointFromScreen(loc, container);
@@ -102,11 +125,39 @@ public class FastGlassPane extends JComponent implements MouseListener {
   protected void secretMouseMove(Point loc, long now) {
     MouseEventInfo mei = new MouseEventInfo(loc);
     givePenEvent(mei.component, PenEvent.buildHoverEvent(this, new Pt(loc.x, loc.y, now)));
+    prevComponent = mei.component;
   }
 
   private void secretMouseDrag(Point loc, long time) {
     MouseEventInfo mei = new MouseEventInfo(loc);
-    givePenEvent(mei.component, PenEvent.buildDragEvent(this, new Pt(mei.componentPoint, time)));
+
+    switch (activity) {
+      case DragSelection:
+        giveSelectionDrag(mei);
+        break;
+      case DragScrap:
+        giveSelectionDrag(mei);
+        break;
+      case None:
+        givePenEvent(mei.component, PenEvent.buildDragEvent(this, new Pt(mei.componentPoint, time)));
+        break;
+    }
+    prevComponent = mei.component;
+  }
+
+  private void giveSelectionDrag(MouseEventInfo mei) {
+    Drag.Event ev = new Drag.Event(mei.componentPoint, activity);
+    if (prevComponent != mei.component) {
+      if (prevComponent instanceof Drag.Listener) {
+        ((Drag.Listener) prevComponent).dragExit(ev);
+      }
+      if (mei.component instanceof Drag.Listener) {
+        ((Drag.Listener) mei.component).dragEnter(ev);
+      }
+    }
+    if (mei.component instanceof Drag.Listener) {
+      ((Drag.Listener) mei.component).dragMove(ev);
+    }
   }
 
   public void mouseClicked(MouseEvent ev) {
@@ -127,6 +178,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
     MouseEventInfo mei = new MouseEventInfo(ev);
     givePenEvent(mei.component,
         PenEvent.buildDownEvent(this, new Pt(mei.componentPoint, ev.getWhen()), ev));
+    prevComponent = mei.component;
+    dragStartComponent = mei.component;
   }
 
   @Override
@@ -134,7 +187,32 @@ public class FastGlassPane extends JComponent implements MouseListener {
     dragging = false;
     editor.getModel().getConstraints().setPaused(false);
     MouseEventInfo mei = new MouseEventInfo(ev);
-    givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
+
+    switch (activity) {
+      case DragSelection:
+        if (mei.component instanceof Drag.Listener) {
+          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+          ((Drag.Listener) mei.component).dragDrop(dev);
+        }
+        editor.getModel().setDraggingSelection(false);
+        activity = ActivityMode.None;
+        givePenEvent(editor.getModel().getSurface(), PenEvent.buildIdleEvent(this, ev));
+        break;
+      case DragScrap:
+        if (mei.component instanceof Drag.Listener) {
+          Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
+          ((Drag.Listener) mei.component).dragDrop(dev);
+        }
+        editor.getGrid().clearSelection();
+        activity = ActivityMode.None;
+        break;
+      case None:
+        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
+        dragStartComponent = null;
+        break;
+
+    }
+
   }
 
   private class MouseEventInfo {

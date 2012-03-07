@@ -387,7 +387,7 @@ public class SkruiFabEditor {
     findStencils(segs);
     model.getConstraints().wakeUp();
     model.clearInk();
-    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+//    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStencils();
     drawStructured();
     drawRecognized(items);

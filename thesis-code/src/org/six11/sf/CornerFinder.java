@@ -43,7 +43,12 @@ public class CornerFinder {
       makeSegments(ink); // sets the SEGMENTS attrib (list of Segments)
     }
     Set<Segment> ret = new HashSet<Segment>();
-    ret.addAll((List<Segment>) ink.seq.getAttribute(SEGMENTS));
+    List<Segment> allSegs = (List<Segment>) ink.seq.getAttribute(SEGMENTS);
+    if (allSegs != null) {
+      ret.addAll(allSegs);
+    } else {
+      bug("Hmm.");
+    }
     return ret;
   }
 
