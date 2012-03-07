@@ -157,6 +157,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       default:
         bug("unhandled state: " + ev.getMode());
     }
+    repaint();
   }
 
   private void addStencils(Set<Stencil> selection) {

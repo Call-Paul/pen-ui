@@ -4,17 +4,21 @@ import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Shape;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.geom.GeneralPath;
+import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
@@ -31,10 +35,14 @@ import javax.swing.Timer;
 
 import jogamp.opengl.glu.nurbs.DisplayList;
 
+import org.imgscalr.Scalr;
+import org.six11.sf.Drag.Event;
 import org.six11.util.data.FSM;
 import org.six11.util.data.Lists;
 import org.six11.util.data.FSM.Transition;
 import org.six11.util.data.Statistics;
+import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
@@ -43,12 +51,13 @@ import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
 import com.jogamp.opengl.util.FPSAnimator;
+import com.jogamp.opengl.util.awt.Screenshot;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
-public class DrawingSurface extends GLJPanel implements GLEventListener, PenListener {
+public class DrawingSurface extends GLJPanel implements GLEventListener, PenListener, Drag.Listener {
 
   // misc shit
   private long lastPenTime;
@@ -79,7 +88,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final Color PAUSE_COLOR = Color.YELLOW.darker();
-  private static final double FS_SMOOTH_DAMPING = 0.025;
+  private static final double FS_SMOOTH_DAMPING = 0.25; // started out at 0.025
 
   private TextRenderer textRenderer18;
 
@@ -120,9 +129,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   // the model.
   protected SketchBook model;
 
+  // flag to create and set a thumbnail of the currently selected stencil. given to the model.
+  private boolean requestStencilThumbnail;
+
   // the thing that knows how to render the model
   protected SketchRenderer renderer;
   private Map<Integer, TextRenderer> textRenderers;
+  private String textInput;
 
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
@@ -192,8 +205,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       if (displayList > 0) {
         gl.glEndList();
       }
+
+      if (requestStencilThumbnail) {
+        setStencilThumbnail(drawable);
+        requestStencilThumbnail = false;
+      }
     }
-    
+
     if (fsFSM.getState().equals(SEARCH_DIR)) {
       float[] undoColor = SketchRenderer.lightGray;
       float[] redoColor = SketchRenderer.lightGray;
@@ -209,18 +227,18 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       textRenderer18.setColor(redoColor[0], redoColor[1], redoColor[2], redoColor[3]);
       textRenderer18.draw("Redo", size.width - 60, size.height - 20);
       textRenderer18.endRendering();
-      
+
       gl.glLineWidth(1f);
       gl.glColor3fv(undoColor, 0);
       Pt undoStart = new Pt(size.width - 80, 40);
       Pt undoEnd = undoStart.getTranslated(-40, 0);
       renderer.arrow(undoStart, undoEnd);
-      
+
       gl.glColor3fv(redoColor, 0);
       Pt redoStart = new Pt(size.width - 60, 40);
       Pt redoEnd = redoStart.getTranslated(40, 0);
       renderer.arrow(redoStart, redoEnd);
-      
+
       //TODO: put arrows in here too
     }
 
@@ -233,6 +251,27 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
     textRenderer18.draw("Pen Latency: " + (long) penLatency.getMean() + "ms", size.width - 180, 20);
     textRenderer18.endRendering();
+  }
+
+  private void setStencilThumbnail(GLAutoDrawable drawable) {
+    Set<Stencil> stencils = model.getSelectedStencils();
+    BoundingBox bb = new BoundingBox();
+    for (Stencil stencil : stencils) {
+      Shape shape = stencil.getShape(false);
+      List<Pt> points = ShapeFactory.makePointList(shape.getPathIterator(null));
+      bb.addAll(points);
+    }
+    int windowHeight = drawable.getHeight();
+    double minX = bb.getMinX();
+    double maxY = bb.getMaxY();
+    Pt corner = new Pt(minX, maxY);
+    int width = bb.getWidthInt();
+    int height = bb.getHeightInt();
+    float[] windowCorner = unproject(drawable.getGL().getGL2(), corner.fx(), corner.fy());
+    BufferedImage bigImage = Screenshot.readToBufferedImage((int) windowCorner[0], windowHeight
+        - (int) windowCorner[1], width, height, false);
+    BufferedImage draggingThumb = Scalr.resize(bigImage, 48);
+    model.setDraggingThumbImage(draggingThumb);
   }
 
   @Override
@@ -265,7 +304,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     TextRenderer textRenderer12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
     textRenderer12.setSmoothing(true);
     textRenderers.put(12, textRenderer12);
-
   }
 
   @Override
@@ -295,6 +333,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       @Override
       public void actionPerformed(ActionEvent e) {
         fsFSM.addEvent(TICK);
+        display();
       }
     });
     FSM f = new FSM("Flow Selection FSM");
@@ -506,8 +545,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     a.setDouble("fsStrength", aStr + dampedAttenuation);
   }
 
-  protected void fsSmooth() {
-
+  private void fsSmooth() {
+    bug("smooth?");
     List<Pt> def = fsNearestSeg.getDeformedPoints();
     for (int i = fsSmoothIndex - 2; i >= 0; i--) {
       int nearIdx = i + 1;
@@ -520,8 +559,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       fsSmoothPair(nearIdx, farIdx, def);
     }
     fsNearestSeg.calculateParameters(def);
-    model.getEditor().drawStuff();
-
+    display();
   }
 
   protected void addFsRecent(Pt pt) {
@@ -550,15 +588,25 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       double maxD = 0;
       for (int i = fsRecent.size() - 1; i >= 0; i--) {
         Pt pt = fsRecent.get(i);
-        maxD = Math.max(maxD, pt.distance(fsTransitionPt));
-        if (maxD > fsBubble) {
-          paused = false;
-          break;
+        long dur = now - pt.getTime();
+        if (dur < fsPauseTimeout) {
+          maxD = Math.max(maxD, pt.distance(fsTransitionPt));
+          if (maxD > fsBubble) {
+            paused = false;
+            break;
+          }
+        } else {
+          bug("checking for pause: points are too old. breaking out.");
+          break; // points are too old. stop looking.
         }
       }
       if (paused) {
         fsFSM.addEvent(PAUSE);
+      } else {
+        bug("checking for pause: moved too far (" + num(maxD) + ")");
       }
+    } else {
+      bug("checking for pause: not enough time has passed");
     }
     return paused;
   }
@@ -583,7 +631,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
       pt.setDouble("fsStrength", s);
     }
-    model.getEditor().drawStuff();
+    display();
   }
 
   private void fsDeform(Pt recent) {
@@ -621,7 +669,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     }
     fsLastDeformPt = recent;
-    model.getEditor().drawStuff();
+    display();
   }
 
   private void fsSaveChanges() {
@@ -722,7 +770,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       gl.glVertex2f(minX + width, minY);
     }
     gl.glEnd();
+  }
 
+  public String getFlowSelectionState() {
+    return fsFSM.getState();
   }
 
   @Override
@@ -858,5 +909,43 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   public void snapshot() {
     requestSnapshot = true;
+  }
+
+  public void requestStencilThumb() {
+    requestStencilThumbnail = true;
+  }
+
+  @Override
+  public void dragMove(Event ev) {
+  }
+
+  @Override
+  public void dragEnter(Event ev) {
+  }
+
+  @Override
+  public void dragExit(Event ev) {
+  }
+
+  @Override
+  public void dragDrop(Event ev) {
+  }
+
+  /**
+   * When the user types something, this is what they have typed so far. Used for setting the
+   * specific length/angle of selections.
+   */
+  public void setTextInput(String str) {
+    this.textInput = str;
+    display();
+  }
+
+  /**
+   * Gives the string the user is currently typing. Might be null. And its meaning is
+   * context-dependent (e.g. if a single segment is selected, this number is interpreted as a
+   * length.).
+   */
+  public String getTextInput() {
+    return textInput;
   }
 }

@@ -986,6 +986,7 @@ public class SketchBook {
 //      BufferedImage bigImage = sel.getImage();
 //      draggingThumb = Scalr.resize(bigImage, 48);
       bug("Dragging. come back here and fix the image stuff");
+      surface.requestStencilThumb();
       glass.setActivity(FastGlassPane.ActivityMode.DragSelection);
     } else {
       draggingThumb = null;
@@ -998,6 +999,10 @@ public class SketchBook {
 
   public BufferedImage getDraggingThumb() {
     return draggingThumb;
+  }
+  
+  public void setDraggingThumbImage(BufferedImage thumb) {
+    this.draggingThumb = thumb;
   }
 
   public Collection<Segment> findRelatedSegments(Pt pt) {
@@ -1037,21 +1042,12 @@ public class SketchBook {
   }
 
   public void addTextProgress(String string) {
-    DrawingBuffer db = layers.getLayer("text");
-    db.clear();
-    if (selectedSegments.size() == 1) {
-      Segment seg = selectedSegments.toArray(new Segment[1])[0];
-      Pt mid = seg.getVisualMidpoint();
-      DrawingBufferRoutines.text(db, mid, string, Color.BLACK);
-      lastInkWasSelection = false;
-    }
-//    layers.repaint();
-    editor.requestRedrawGL();
+    surface.setTextInput(string);
   }
 
   public void addTextFinished(String string) {
-    DrawingBuffer db = layers.getLayer("text");
-    db.clear();
+    bug("addTextFinished");
+    surface.setTextInput(null);
     if (selectedSegments.size() == 1) {
       try {
         Segment seg = selectedSegments.toArray(new Segment[1])[0];

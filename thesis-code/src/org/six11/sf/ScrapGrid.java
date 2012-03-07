@@ -280,8 +280,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       default:
         bug("unhandled state: " + editor.getGlass().getActivity());
     }
-
     clearHover();
+    repaint();
   }
 
   public void clear() {

@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
+import java.awt.geom.Rectangle2D;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,7 @@ import org.six11.sf.constr.RightAngleUserConstraint;
 import org.six11.sf.constr.SameAngleUserConstraint;
 import org.six11.sf.constr.SameLengthUserConstraint;
 import org.six11.sf.constr.UserConstraint;
+import org.six11.util.data.Lists;
 import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
@@ -28,6 +30,8 @@ import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
+
+import sun.java2d.loops.FillRect;
 
 import com.jogamp.opengl.util.awt.TextRenderer;
 
@@ -39,6 +43,10 @@ import static org.six11.util.Debug.num;
 public class SketchRenderer {
 
   // GL colors as float arrays
+  public static float[] white = new float[] {
+      1f, 1f, 1f, 1f
+  };
+
   public static float[] black = new float[] {
       0f, 0f, 0f, 1f
   };
@@ -98,7 +106,7 @@ public class SketchRenderer {
     r[3] = c[3]; // leave alpha alone.
     return r;
   }
-  
+
   private static final Vec EAST = new Vec(1, 0);
 
   private transient GL2 gl; // only valid during the render method
@@ -114,8 +122,6 @@ public class SketchRenderer {
     this.gl = drawable.getGL().getGL2();
     this.tessCallback = new TessCallback(gl);
   }
-
-
 
   /**
    * The main render function. This is called when it is time to redraw the screen.
@@ -139,12 +145,14 @@ public class SketchRenderer {
     this.surface = drawingSurface;
     renderStencils();
     renderGeometry();
+    renderFlowSelection();
     renderDerivedGuides();
     renderGuides();
     renderConstraints();
     renderUnanalyzed();
     renderScribble(scribble, drawDots);
     renderErase();
+    renderTextInput();
   }
 
   private void renderStencils() {
@@ -299,12 +307,13 @@ public class SketchRenderer {
         gl.glColor3fv(red, 0);
         acuteHash(mid, segDir, 24);
       } else {
-        bug("This part is untested.");
         Vec segDirNorm = segDir.getNormal();
-        Pt textLoc = mid.getTranslated(segDirNorm, 8);
+        Pt textLocModel = mid.getTranslated(segDirNorm, 8);
+        float[] worldLoc = surface.unproject(gl, textLocModel.fx(), textLocModel.fy());
+        Pt textLocWindow = new Pt(worldLoc[0], drawable.getHeight() - worldLoc[1]);
         Material.Units units = model.getMasterUnits();
         double asUnits = Material.fromPixels(units, dc.getValue().getValue());
-        text("" + num(asUnits), textLoc);
+        text("" + num(asUnits), textLocWindow);
       }
     }
   }
@@ -359,6 +368,37 @@ public class SketchRenderer {
     }
   }
 
+  private void renderTextInput() {
+    if (surface.getTextInput() != null && model.getSelectedSegments().size() == 1) {
+      String str = surface.getTextInput();
+      Segment selSeg = Lists.getOne(model.getSelectedSegments());
+      Vec segDir = new Vec(selSeg.getP1(), selSeg.getP2()).getUnitVector();
+      Vec segDirNorm = segDir.getNormal();
+      Pt mid = selSeg.getVisualMidpoint();
+      Pt textLocModel = mid.getTranslated(segDirNorm, 8);
+      float[] worldLoc = surface.unproject(gl, textLocModel.fx(), textLocModel.fy());
+      Pt textLocWindow = new Pt(worldLoc[0], drawable.getHeight() - worldLoc[1]);
+      Rectangle2D textBox = textBounds(str);
+      int halfPad = 4;
+      int pad = halfPad * 2;
+      int boxX = textLocWindow.ix();
+      int boxY = (int) (drawable.getHeight() - (textLocWindow.fy() + (float) textBox.getHeight()));
+      int boxW = (int) textBox.getWidth();
+      int boxH = (int) textBox.getHeight();
+      boxX = boxX - halfPad;
+      boxY = boxY - halfPad;
+      boxW = boxW + pad;
+      boxH = boxH + pad;
+      gl.glLineWidth(1f);
+      gl.glColor4fv(white, 0);
+      fillRect(boxX, boxY, boxW, boxH);
+      gl.glColor4fv(skyBlue, 0);
+      rect(boxX, boxY, boxW, boxH);
+      gl.glColor4fv(skyBlue, 0);
+      text(str, textLocWindow);
+    }
+  }
+
   private void renderUnanalyzed() {
     List<Ink> inkStrokes = model.getUnanalyzedInk();
     for (Ink ink : inkStrokes) {
@@ -409,7 +449,6 @@ public class SketchRenderer {
         gl.glColor3fv(black, 0);
         renderSegment(seg);
       }
-      
 
       // draw latchedness
       if (!seg.isSingular()) {
@@ -473,6 +512,50 @@ public class SketchRenderer {
     line(pt, away);
   }
 
+  private void renderFlowSelection() {
+    Segment fsSeg = surface.getFlowSelectionSegment();
+    if (fsSeg != null) {
+      List<Pt> def = fsSeg.getDeformedPoints();
+      boolean drawNodes = true;
+      String state = surface.getFlowSelectionState();
+      if (state.equals(DrawingSurface.OP) || state.equals(DrawingSurface.SMOOTH)) {
+        drawNodes = true;
+      }
+      float[] color = new float[] {
+          1, 0, 0, 0
+      };
+
+      if (def != null) {
+        gl.glLineWidth(5);
+        for (int i = 0; i < def.size() - 1; i++) {
+          Pt a = def.get(i);
+          Pt b = def.get(i + 1);
+          double aStr = a.getDouble("fsStrength");
+          double bStr = b.getDouble("fsStrength");
+          double str = Math.max(aStr, bStr);
+          color[3] = (float) str;
+          gl.glColor4fv(color, 0);
+          line(a, b);
+        }
+
+        if (drawNodes) {
+          gl.glLineWidth(1);
+
+          for (int i = 0; i < def.size(); i++) {
+            Pt pt = def.get(i);
+            double str = pt.getDouble("fsStrength");
+            if (str > 0) {
+              gl.glColor4fv(black, 0);
+              dot(pt, 2);
+              gl.glColor4fv(white, 0);
+              fillDot(pt, 2);
+            }
+          }
+        }
+      }
+    }
+  }
+
   private void tessellateShape(Shape shape) {
     // the following code was adapted from Ric Wright's example on JOGL tessellation
     // at this URL: http://www.geofx.com/html/OpenGL_Eclipse/TextRenderer3D.html
@@ -520,7 +603,7 @@ public class SketchRenderer {
     return Math.max(ret, minRetVal);
   }
 
-  private void acuteHash(Pt mid, Vec segDir, float length) {
+  void acuteHash(Pt mid, Vec segDir, float length) {
     gl.glPushMatrix();
     gl.glTranslatef(mid.fx(), mid.fy(), 0);
     double angleRadians = Functions.getSignedAngleBetween(segDir, EAST);
@@ -537,7 +620,7 @@ public class SketchRenderer {
     gl.glPopMatrix();
   }
 
-  private void fillDot(Pt pt, float r) {
+  void fillDot(Pt pt, float r) {
     int sides = 36; // this should depend on circumference. fewer size for small circles.
     float twoPi = 2 * (float) Math.PI;
     float step = twoPi / (float) sides;
@@ -554,7 +637,7 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void dot(Pt pt, float r) {
+  void dot(Pt pt, float r) {
     int sides = 36; // this should depend on circumference. fewer size for small circles.
     float twoPi = 2 * (float) Math.PI;
     float step = twoPi / (float) sides;
@@ -570,13 +653,13 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void circle(Circle circle) {
+  void circle(Circle circle) {
     Pt center = circle.getCenter();
     float r = (float) circle.getRadius();
     dot(center, r);
   }
 
-  private void curve(List<Pt> points) {
+  void curve(List<Pt> points) {
     gl.glBegin(GL2.GL_LINE_STRIP);
     {
       for (Pt pt : points) {
@@ -586,7 +669,7 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void line(Pt p1, Pt p2) {
+  void line(Pt p1, Pt p2) {
     gl.glBegin(GL2.GL_LINE_STRIP);
     {
       gl.glVertex2f(p1.fx(), p1.fy());
@@ -595,7 +678,7 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void screenLine(Line line, int width, int height) {
+  void screenLine(Line line, int width, int height) {
     Rectangle bounds = new Rectangle(0, 0, width, height);
     if (bounds.intersectsLine(line)) {
       // find the two intersection points and connect them.
@@ -606,7 +689,7 @@ public class SketchRenderer {
     }
   }
 
-  private void box(Pt pt, float side) {
+  void box(Pt pt, float side) { // TODO keep this private
     float cx = pt.fx(), cy = pt.fy();
     float f = side / 2f;
     gl.glBegin(GL2.GL_LINE_LOOP);
@@ -619,7 +702,29 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void cross(Pt pt, float length) {
+  void rect(float x, float y, float w, float h) {
+    gl.glBegin(GL2.GL_LINE_LOOP);
+    {
+      gl.glVertex2f(x + 0, y + 0);
+      gl.glVertex2f(x + w, y + 0);
+      gl.glVertex2f(x + w, y + h);
+      gl.glVertex2f(x + 0, y + h);
+    }
+    gl.glEnd();
+  }
+  
+  void fillRect(float x, float y, float w, float h) {
+    gl.glBegin(GL2.GL_POLYGON);
+    {
+      gl.glVertex2f(x + 0, y + 0);
+      gl.glVertex2f(x + w, y + 0);
+      gl.glVertex2f(x + w, y + h);
+      gl.glVertex2f(x + 0, y + h);
+    }
+    gl.glEnd();
+  }
+
+  void cross(Pt pt, float length) {
     float cx = pt.fx(), cy = pt.fy();
     float f = length / 2f;
     gl.glBegin(GL2.GL_LINES);
@@ -632,8 +737,7 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  private void text(String str, Pt loc) {
-    // this is untested.
+  void text(String str, Pt loc) {
     TextRenderer t12 = surface.getTextRenderer(12);
     t12.beginRendering(drawable.getWidth(), drawable.getHeight());
     float[] color = CONSTRAINT_COLOR;
@@ -642,7 +746,12 @@ public class SketchRenderer {
     t12.endRendering();
   }
 
-  public void arrow(Pt start, Pt tip) {
+  Rectangle2D textBounds(String str) {
+    TextRenderer t12 = surface.getTextRenderer(12);
+    return t12.getBounds(str);
+  }
+
+  void arrow(Pt start, Pt tip) {
     double length = start.distance(tip);
     double headLength = length / 10.0;
     Vec tipToStart = new Vec(tip, start).getVectorOfMagnitude(headLength);
