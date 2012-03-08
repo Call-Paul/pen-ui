@@ -179,7 +179,6 @@ public class SnapshotMachine {
         System.exit(0);
       }
     } catch (JSONException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     Segment ret = new Segment(d, segID);

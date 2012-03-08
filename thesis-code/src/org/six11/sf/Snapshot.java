@@ -25,6 +25,8 @@ public class Snapshot {
 
   private SketchBook model;
   private JSONObject top;
+  public long created; // available in JSON string under 'created' key. 
+  
 //  private BufferedImage img;
   private int displayListID;
   
@@ -33,38 +35,16 @@ public class Snapshot {
   }
 
   public Snapshot(SketchBook model) {
-//    Debug.stacktrace("Saving model!   --   Saving model!   --   Saving model!   --   Saving model!   --   Saving model!   --   ", 5);
     this.model = model;
-
-    // the model's clearAll function does the following. use it as a plan to save things.
-
-    //  (save)    constraint solver : points
-    //  (save)    geometry
-    //  (save)    constraint solver : primitive constraints
-    //  (save)    user constraints
-    //  (save)    stencils
-    //  (save)    clearSelectedStencils();
-    //  (save)    clearSelectedSegments();
-    
-    //  (save)    guidePoints.clear();
-    //  (save)    activeGuidePoints.clear();
-
-    //  (save**)  layers.clearAllBuffers(); // ** save image data to repaint a preview of it.
-    //  (save)    editor.getGrid().clear();
-    //  (save)    editor.getCutfilePane().clear();
-
-    //  (ignore)    derivedGuides.clear();
-    //  (ignore)  actions.clear();
-    //  (ignore)  redoActions.clear();
-    //  (ignore)  clearInk();
-    //  (ignore)  layers.repaint();
-    //  (ignore)  layers.clearScribble();
-
+    created = System.currentTimeMillis();
     try {
       //
       // make a 'top' level object that defines the snapshot 
       JsonIO io = new JsonIO();
       top = new JSONObject();
+
+      // set create time stamp
+      top.put("created", created);
 
       //
       // constraint solver : points
@@ -128,10 +108,17 @@ public class Snapshot {
         selSegArr.put(s.getId());
       }
       top.put("selectedSegments", selSegArr);
-      
-//      System.out.println(top.toString(3));
+    
     } catch (JSONException e) {
-      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
+  
+  public Snapshot(String str) {
+    try {
+      top = new JSONObject(str);
+      load();
+    } catch (JSONException e) {
       e.printStackTrace();
     }
   }
@@ -217,18 +204,12 @@ public class Snapshot {
       }
       model.setSelectedSegments(selSegs);
       
-      
-      
     } catch (JSONException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return ok;
   }
-
-//  public BufferedImage getPreview() {
-//    return img;
-//  }
   
   public int getDisplayListID() {
     return displayListID;

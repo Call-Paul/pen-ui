@@ -170,7 +170,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       print(editor.getPdfOutputFile());
       bug("Printed to '" + file.getAbsolutePath() + "'");
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
     repaint();

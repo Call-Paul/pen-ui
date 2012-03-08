@@ -99,6 +99,7 @@ public class SketchBook {
   private SnapshotMachine snapshotMachine;
   boolean erasing;
   private boolean loadingSnapshot;
+  private Notebook notebook;
 
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -132,7 +133,6 @@ public class SketchBook {
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
     addRecognizer(new SelectGestureRecognizer(this));
-    //    addRecognizer(new EraseGestureRecognizer(this));
     addRecognizer(new DotReferenceGestureRecognizer(this));
     addRecognizer(new DotSelectGestureRecognizer(this));
     addRecognizer(new RightAngleBrace(this));
@@ -147,6 +147,7 @@ public class SketchBook {
       }
     });
     inactivityTimer.setRepeats(false);
+    notebook = Notebook.loadLast(this);
   }
 
   public SkruiFabEditor getEditor() {
