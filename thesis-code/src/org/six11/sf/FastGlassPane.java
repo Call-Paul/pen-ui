@@ -283,7 +283,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
           Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
           ((Drag.Listener) mei.component).dragDrop(dev);
         }
-        editor.getGrid().clearSelection();
+//        editor.getGrid().clearSelection();
         activity = ActivityMode.None;
         break;
       case None:

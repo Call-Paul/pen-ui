@@ -144,13 +144,11 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   @Override
   public void dragDrop(Event ev) {
-    bug("Cutfile got drop");
+    bug("Cutfile got drop. re-implement this!");
     switch (ev.getMode()) {
       case DragScrap:
-        addStencils(editor.getGrid().getSelectedStencils());
         break;
       case DragSelection:
-        addStencils(editor.getModel().getSelectedStencils());
         break;
       case None:
         break;

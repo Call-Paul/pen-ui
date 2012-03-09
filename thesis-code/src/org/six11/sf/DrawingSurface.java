@@ -174,12 +174,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     long start = System.currentTimeMillis();
     GL2 gl = drawable.getGL().getGL2();
     Dimension size = getSize();
+    int displayList = 0;
 
     if (previewSnapshot != null) {
       gl.glCallList(previewSnapshot.getDisplayListID());
     } else {
       // if we have been requested to make a snapshot, save this round to a display list.
-      int displayList = 0;
+
       if (requestSnapshot) {
         Snapshot snap = model.getSnapshotMachine().save();
         if (snap != null) {
@@ -203,7 +204,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       renderer.render(model, drawable, currentScribble, true, this);
 
       if (displayList > 0) {
+        // when a display list was created, end the list and save a thumbnail for the current page
         gl.glEndList();
+        setPageThumbnail(drawable);
       }
 
       if (requestStencilThumbnail) {
@@ -238,8 +241,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       Pt redoStart = new Pt(size.width - 60, 40);
       Pt redoEnd = redoStart.getTranslated(40, 0);
       renderer.arrow(redoStart, redoEnd);
-
-      //TODO: put arrows in here too
     }
 
     long end = System.currentTimeMillis();
@@ -261,6 +262,26 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       List<Pt> points = ShapeFactory.makePointList(shape.getPathIterator(null));
       bb.addAll(points);
     }
+    BufferedImage bigImage = takeScreenShot(drawable, bb);
+    BufferedImage draggingThumb = Scalr.resize(bigImage, 48);
+    model.setDraggingThumbImage(draggingThumb);
+  }
+
+  private void setPageThumbnail(GLAutoDrawable drawable) {
+    BoundingBox bb = new BoundingBox();
+//    for (Segment seg : model.getGeometry()) {
+//      bb.addAll(seg.getPointList());
+//    }
+    bb.add(getVisibleRect());
+    if (bb.isValid()) {
+      BufferedImage bigImage = takeScreenShot(drawable, bb);
+      int currentThumbWidth = model.getEditor().getGrid().getCurrentThumbWidth();
+      BufferedImage thumb = Scalr.resize(bigImage, currentThumbWidth);
+      model.getNotebook().getCurrentPage().setTinyThumb(thumb);
+    }
+  }
+
+  public BufferedImage takeScreenShot(GLAutoDrawable drawable, BoundingBox bb) {
     int windowHeight = drawable.getHeight();
     double minX = bb.getMinX();
     double maxY = bb.getMaxY();
@@ -270,8 +291,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     float[] windowCorner = unproject(drawable.getGL().getGL2(), corner.fx(), corner.fy());
     BufferedImage bigImage = Screenshot.readToBufferedImage((int) windowCorner[0], windowHeight
         - (int) windowCorner[1], width, height, false);
-    BufferedImage draggingThumb = Scalr.resize(bigImage, 48);
-    model.setDraggingThumbImage(draggingThumb);
+    return bigImage;
   }
 
   @Override

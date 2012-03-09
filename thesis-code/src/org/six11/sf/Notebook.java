@@ -8,24 +8,35 @@ import java.util.Set;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.six11.util.Debug;
+import org.six11.util.io.FileUtil;
 
 import static org.six11.util.Debug.bug;
 
 public class Notebook {
-  
-  
+
   private SketchBook model;
   private File notebookDir;
+  private Page currentPage;
+  private Set<Page> pages;
+
+  private static FilenameFilter pagesFilter = new FilenameFilter() {
+    public boolean accept(File dir, String fileName) {
+      return fileName.startsWith("page-") && fileName.endsWith(".json");
+    }
+  };
 
   public final static String SIMI_MAIN_FILE_NAME = "simi-notebook.json";
-  
+
   public Notebook(SketchBook model, File notebookDir) {
     this.model = model;
     this.notebookDir = notebookDir;
+    this.pages = new HashSet<Page>();
     bug("Created notebook file in " + notebookDir.getAbsolutePath());
   }
-  
+
   public static Notebook loadLast(SketchBook model) {
     Notebook ret = null;
     Preferences prefs = Preferences.userNodeForPackage(Notebook.class);
@@ -34,7 +45,8 @@ public class Notebook {
       for (String k : keys) {
         bug("  pref: " + k + " = " + prefs.get(k, "no-value"));
       }
-      String dirStr = prefs.get("notebook-dir", System.getProperty("user.home") + File.separator + "SIMI");
+      String dirStr = prefs.get("notebook-dir", System.getProperty("user.home") + File.separator
+          + "SIMI");
       File rootDir = new File(dirStr);
       if (!rootDir.exists()) {
         rootDir.mkdir();
@@ -69,9 +81,10 @@ public class Notebook {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    ret.load();
     return ret;
   }
-  
+
   private static File initNewNotebook(File rootDir, String today) {
     File nbDir = new File(rootDir, today);
     nbDir.mkdir();
@@ -99,4 +112,63 @@ public class Notebook {
     }
     return ret;
   }
+
+  public Page getCurrentPage() {
+    return currentPage;
+  }
+
+  private File getMainFile() {
+    File mainFile = new File(notebookDir, SIMI_MAIN_FILE_NAME);
+    return mainFile;
+  }
+
+  private void load() {
+    File mainFile = getMainFile();
+    File[] pageFiles = notebookDir.listFiles(pagesFilter);
+    String mainStr = FileUtil.loadStringFromFile(mainFile);
+    int pageNum = 0;
+    if (mainStr.length() > 0) {
+      try {
+        JSONObject mainJson = new JSONObject(mainStr);
+        pageNum = mainJson.optInt("current-page", 0); // defaults to 0
+        bug("It seems there are " + pageFiles.length + " page files.");
+        for (int i = 0; i < pageFiles.length; i++) {
+          try {
+            String pageStr = FileUtil.loadStringFromFile(pageFiles[i]);
+            JSONObject obj = new JSONObject(pageStr);
+            Page p = new Page(model, obj);
+            pages.add(p);
+            bug("Loaded page " + p.getPageNumber());
+          } catch (JSONException ex) {
+            bug("Can't read page file: " + pageFiles[i].getAbsolutePath());
+          }
+        }
+      } catch (JSONException e) {
+        e.printStackTrace();
+      }
+    }
+    Page maybeCurrent = getPage(pageNum);
+    if (maybeCurrent == null) {
+      maybeCurrent = new Page(model, pageNum);
+      pages.add(maybeCurrent);
+    }
+    currentPage = maybeCurrent;
+  }
+
+  public Page getPage(int pageNum) {
+    // TODO: 'pages' should be a sorted set
+    Page ret = null;
+    for (Page p : pages) {
+      if (p.getPageNumber() == pageNum) {
+        ret = p;
+        break;
+      }
+    }
+    return ret;
+  }
+
+  public Set<Page> getPages() {
+    return pages;
+  }
+
 }

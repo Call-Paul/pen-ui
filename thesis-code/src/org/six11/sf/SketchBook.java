@@ -1,11 +1,9 @@
 package org.six11.sf;
 
-// J|mmyJ0hn$
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 import static java.lang.Math.abs;
 
-import java.awt.Color;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
 import java.awt.event.ActionEvent;
@@ -22,7 +20,6 @@ import java.util.Stack;
 
 import javax.swing.Timer;
 
-import org.imgscalr.Scalr;
 import org.six11.sf.Material.Units;
 import org.six11.sf.constr.SameLengthUserConstraint;
 import org.six11.sf.constr.UserConstraint;
@@ -30,7 +27,6 @@ import org.six11.sf.rec.ConstraintFilters;
 import org.six11.sf.rec.DotReferenceGestureRecognizer;
 import org.six11.sf.rec.DotSelectGestureRecognizer;
 import org.six11.sf.rec.EncircleRecognizer;
-import org.six11.sf.rec.EraseGestureRecognizer;
 import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RightAngleBrace;
 import org.six11.sf.rec.SameAngleGesture;
@@ -43,8 +39,6 @@ import org.six11.util.data.Statistics;
 import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.ConvexHull;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
@@ -96,7 +90,6 @@ public class SketchBook {
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
   private Timer inactivityTimer;
-  private SnapshotMachine snapshotMachine;
   boolean erasing;
   private boolean loadingSnapshot;
   private Notebook notebook;
@@ -104,7 +97,6 @@ public class SketchBook {
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
-    this.snapshotMachine = new SnapshotMachine(this);
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
     this.selectedSegments = new HashSet<Segment>();
@@ -257,6 +249,7 @@ public class SketchBook {
     return scrib;
   }
 
+  @SuppressWarnings("unchecked")
   private void analyzeForErase(Sequence scrib) {
     if (!scrib.hasAttribute("erase")) {
       int i = scrib.size() - 2; // second-to-last-point. this is the 'cursor'.
@@ -463,6 +456,7 @@ public class SketchBook {
     return doomed;
   }
 
+  @SuppressWarnings("unchecked")
   public Sequence endScribble(Pt pt) {
     Sequence ret = null;
     inactivityTimer.start();
@@ -921,25 +915,6 @@ public class SketchBook {
     return ret;
   }
 
-  public Collection<Stencil> findStencilOld(Area area, double d) { // TODO: erase this when findStencil works
-    Collection<Stencil> ret = new HashSet<Stencil>();
-    for (Stencil s : stencils) {
-      double ratio = 0;
-      Area ix = s.intersect(area);
-      if (!ix.isEmpty()) {
-        ConvexHull stencilHull = new ConvexHull(s.getAllPoints());//s.getPath());
-        double stencilArea = stencilHull.getConvexArea();
-        ConvexHull ixHull = new ConvexHull(ShapeFactory.makePointList(ix.getPathIterator(null)));
-        double ixArea = ixHull.getConvexArea();
-        ratio = ixArea / stencilArea;
-      }
-      if (ratio >= d) {
-        ret.add(s);
-      }
-    }
-    return ret;
-  }
-
   public void setSelectedStencils(Collection<Stencil> selectUs) {
     boolean same = Lists.areSetsEqual(selectUs, selectedStencils);
     selectedStencils.clear();
@@ -1277,9 +1252,14 @@ public class SketchBook {
     return masterUnits;
   }
 
+  public SnapshotMachine getSnapshotMachine() {
+    bug("Getting snapshot machine for page " + notebook.getCurrentPage().getPageNumber());
+    return notebook.getCurrentPage().getSnapshotMachine();
+  }
+  
   public void undoPreview() {
     bug("undo preview");
-    Snapshot s = snapshotMachine.undo();
+    Snapshot s = getSnapshotMachine().undo();
     if (s != null) {
       bug("Valid undo");
       //layers.setPreview(s.getPreview());
@@ -1289,7 +1269,7 @@ public class SketchBook {
 
   public void redoPreview() {
     bug("redo preview");
-    Snapshot s = snapshotMachine.redo();
+    Snapshot s = getSnapshotMachine().redo();
     if (s != null) {
       bug("Valid redo.");
 //      layers.setPreview(s.getPreview());
@@ -1301,9 +1281,9 @@ public class SketchBook {
     bug("finalizing redo/undo");
 //    layers.clearPreview();
     surface.clearPreview();
-    Snapshot s = snapshotMachine.getCurrent();
+    Snapshot s = getSnapshotMachine().getCurrent();
     loadingSnapshot = true;
-    snapshotMachine.load(s);
+    getSnapshotMachine().load(s);
     loadingSnapshot = false;
     surface.display();
   }
@@ -1502,10 +1482,6 @@ public class SketchBook {
     return ucs;
   }
 
-  public SnapshotMachine getSnapshotMachine() {
-    return snapshotMachine;
-  }
-
   public boolean isLoadingSnapshot() {
     return loadingSnapshot;
   }
@@ -1540,6 +1516,10 @@ public class SketchBook {
 
   public DrawingSurface getSurface() {
     return surface;
+  }
+
+  public Notebook getNotebook() {
+    return notebook;
   }
 
 }
