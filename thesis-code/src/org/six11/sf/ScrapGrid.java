@@ -183,13 +183,11 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       if (buf == null) {
         bug("Cached image was null. Creating anew.");
         buf = Scalr.resize(page.getTinyThumb(), Math.max(pageWidth, pageHeight));
-      } else {
-        if (buf.getWidth() != pageWidth || buf.getHeight() != pageHeight) {
-          bug("Cached image was the wrong size. created anew.");
-          bug("It was: " + buf.getWidth() + " x " + buf.getHeight());
-          buf = Scalr.resize(page.getTinyThumb(), Math.max(pageWidth, pageHeight));
-          bug("It is now: " + buf.getWidth() + " x " + buf.getHeight());
-        }
+      } else if (!(buf.getWidth() == pageWidth || buf.getHeight() == pageHeight)) {
+        bug("Cached image was the wrong size. created anew.");
+        bug("It was: " + buf.getWidth() + " x " + buf.getHeight());
+        buf = Scalr.resize(page.getTinyThumb(), Math.max(pageWidth, pageHeight));
+        bug("It is now: " + buf.getWidth() + " x " + buf.getHeight());
       }
       page.setCachedThumb(buf);
       int imgX = pageX;

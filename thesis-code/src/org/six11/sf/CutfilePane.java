@@ -4,6 +4,7 @@ import static org.six11.util.Debug.bug;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
@@ -49,9 +50,10 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   public CutfilePane(SkruiFabEditor editor) {
     this.editor = editor;
-    this.material = new Material(Material.Units.Inch, CUTFILE_MAX_HEIGHT_INCHES, CUTFILE_MAX_HEIGHT_INCHES);
+    this.material = new Material(Material.Units.Inch, CUTFILE_MAX_HEIGHT_INCHES,
+        CUTFILE_MAX_HEIGHT_INCHES);
     setName("CutfilePane");
-    setBackground(new Color(250, 240, 200));
+    setBackground(Color.LIGHT_GRAY);
     setPreferredSize(new Dimension(300, 200));
   }
 
@@ -71,7 +73,14 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       g.draw(recDst);
     }
     g.setColor(Color.BLACK);
-    g.drawString(material.countStencils() + " stencils", 10, 10);
+    FontMetrics fm = g.getFontMetrics();
+    String str = "(Drag Stencils Here)";
+    Rectangle2D r = fm.getStringBounds(str, g);
+    int cx = getWidth() / 2;
+    int cy = getHeight() / 2;
+    int textX = (int) (cx - (r.getWidth() / 2));
+    int textY = (int) (cy + (r.getHeight() / 2));
+    g.drawString(str, textX, textY);
     BufferedImage im = material.getSmallImage(getWidth(), getHeight());
     if (im != null) {
       g.setColor(Color.LIGHT_GRAY);
