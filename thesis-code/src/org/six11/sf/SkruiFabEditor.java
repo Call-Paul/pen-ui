@@ -9,6 +9,8 @@ import static org.six11.util.layout.FrontEnd.W;
 
 import java.awt.Color;
 import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -103,7 +105,14 @@ public class SkruiFabEditor {
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
-    af.setSize(1600, 1000);
+    Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
+    if (screenDim.width > 1600 && screenDim.height > 1000) {
+      af.setSize(1600, 1000);
+    } else if (screenDim.width > 1400 && screenDim.height > 800) {
+      af.setSize(1400, 800);
+    } else {
+      af.setSize(800, 600);
+    }
     createActions(af.getRootPane());
     //    glass = new GlassPane(this);
     fastGlass = new FastGlassPane(this);
@@ -275,7 +284,7 @@ public class SkruiFabEditor {
 
   protected void toggleVectors() {
     debugSolver = !debugSolver;
-//    layers.repaint();
+    //    layers.repaint();
     requestRedrawGL();
   }
 
@@ -373,7 +382,10 @@ public class SkruiFabEditor {
     }
     for (Ink stroke : unstruc) {
       Sequence seq = stroke.getSequence();
-      segs.addAll((List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS));
+      List<Segment> seqSegs = (List<Segment>) seq.getAttribute(CornerFinder.SEGMENTS);
+      if (seqSegs != null) {
+        segs.addAll(seqSegs);
+      }
       stroke.setAnalyzed(true);
     }
     SafeAction a = model.getActionFactory().addSegments(segs);
@@ -387,7 +399,7 @@ public class SkruiFabEditor {
     findStencils(segs);
     model.getConstraints().wakeUp();
     model.clearInk();
-//    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
+    //    layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK).clear();
     drawStencils();
     drawStructured();
     drawRecognized(items);

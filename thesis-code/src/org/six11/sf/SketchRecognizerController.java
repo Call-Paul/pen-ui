@@ -64,12 +64,14 @@ public class SketchRecognizerController {
   }
 
   private Set<RecognizerPrimitive> extractPrimitives(Ink ink) {
-    if (!allPrimitives.containsKey(ink)) {
-      Set<RecognizerPrimitive> prims = new HashSet<RecognizerPrimitive>();
-      prims.addAll(extractLinesAndArcs(ink));
-      prims.addAll(extractDot(ink));
-      prims.addAll(extractEllipse(ink));
-      allPrimitives.put(ink, prims);
+    if (ink.seq.getAttribute(CornerFinder.SEGMENT_JUNCTIONS) != null) {
+      if (!allPrimitives.containsKey(ink)) {
+        Set<RecognizerPrimitive> prims = new HashSet<RecognizerPrimitive>();
+        prims.addAll(extractLinesAndArcs(ink));
+        prims.addAll(extractDot(ink));
+        prims.addAll(extractEllipse(ink));
+        allPrimitives.put(ink, prims);
+      }
     }
     return allPrimitives.get(ink);
   }
