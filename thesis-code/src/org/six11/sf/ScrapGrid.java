@@ -1,6 +1,8 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -49,6 +51,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   int chevH = 8;
 
   private SkruiFabEditor editor;
+  private Page hoverPage;
 
   public ScrapGrid(SkruiFabEditor editor) {
     setName("ScrapGrid");
@@ -158,7 +161,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private void paintPage(Graphics2D g, int pageNum, int pageX, int pageY, int vertPad,
       int pageWidth, int pageHeight, boolean isCurrent) {
     Page page = getPage(pageNum);
-    g.setColor(Color.LIGHT_GRAY); // TODO: change this to white
+    page.setRectangle(pageX, pageY + vertPad, pageWidth, pageHeight);
+    g.setColor(Color.WHITE);
     g.fillRect(pageX, pageY + vertPad, pageWidth, pageHeight);
     if (page != null && page.getTinyThumb() != null) {
       BufferedImage buf = page.getCachedThumb();
@@ -178,10 +182,22 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       g.setClip(imgX, imgY, pageWidth, pageHeight);
       g.drawImage(buf, imgX, imgY, null);
       g.setClip(priorClip);
+    } else {
+      String empty = "(blank page)";
+      Rectangle2D strBox = g.getFontMetrics().getStringBounds(empty, g);
+      int cx = pageX + (pageWidth / 2);
+      int cy = pageY + vertPad + (pageHeight / 2);
+      int textX = (int) (cx - (strBox.getWidth() / 2));
+      int textY = (int) (cy + (strBox.getHeight() / 2));
+      g.setColor(Color.LIGHT_GRAY);
+      g.drawString(empty, textX, textY);
     }
     if (isCurrent) {
       g.setStroke(Strokes.THIN_STROKE);
       g.setColor(Color.BLUE);
+    } else if (page == hoverPage) {
+      g.setStroke(Strokes.VERY_THIN_STROKE);
+      g.setColor(Color.GREEN);
     } else {
       g.setStroke(Strokes.VERY_THIN_STROKE);
       g.setColor(Color.BLACK);
@@ -190,7 +206,11 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   }
 
   private Page getPage(int pg) {
-    return editor.getModel().getNotebook().getPage(pg);
+    Page ret = editor.getModel().getNotebook().getPage(pg);
+    if (ret == null) {
+      ret = editor.getModel().getNotebook().addPage(pg);
+    }
+    return ret; 
   }
 
   @Override
@@ -199,11 +219,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       case Enter:
         break;
       case Exit:
-        //        clearHover();
         break;
       case Hover:
-        //        hover(new Point(ev.getPt().ix(), ev.getPt().iy()));
-        repaint();
+        hover(ev.getPt());
         break;
       case Drag:
         if (editor.getGlass().getActivity() == FastGlassPane.ActivityMode.None) {
@@ -220,6 +238,26 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       default:
         bug("Unhandled pen event: " + ev.getType());
     }
+    repaint();
+  }
+
+  private void hover(Pt pt) {
+    Page targetPage = getPageAt(pt);
+    if (hoverPage != targetPage) {
+      hoverPage = targetPage;
+      repaint();
+    }    
+  }
+
+  private Page getPageAt(Pt pt) {
+    Page ret = null;
+    for (Page p : editor.getModel().getNotebook().getPages()) {
+      if (p.getRectangle().contains(pt)) {
+        ret = p;
+        break;
+      }
+    }
+    return ret;
   }
 
   @Override
@@ -233,7 +271,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   @Override
   public void dragExit(Event ev) {
-    //    clearHover();
+    hoverPage = null;
     bug("exit while dragging");
   }
 

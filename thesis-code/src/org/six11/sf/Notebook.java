@@ -171,4 +171,14 @@ public class Notebook {
     return pages;
   }
 
+  public Page addPage(int pg) {
+    Page existing = getPage(pg);
+    if (existing == null) {
+      Page p = new Page(model, pg);
+      pages.add(p);
+      existing = p;
+    }
+    return existing;
+  }
+
 }

@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import org.json.JSONObject;
@@ -12,19 +13,22 @@ public class Page {
   private SketchBook model;
   private BufferedImage tinyThumb;
   private transient BufferedImage cachedThumb;
-  
+  private transient Rectangle rect;
+
   public Page(SketchBook model, JSONObject obj) {
     this.model = model;
     this.snapshotMachine = new SnapshotMachine(model);
+    this.rect = new Rectangle();
     load(obj);
   }
-  
+
   public Page(SketchBook model, int pageNum) {
     this.model = model;
     this.snapshotMachine = new SnapshotMachine(model);
     this.pageNum = pageNum;
+    this.rect = new Rectangle();
   }
-  
+
   private void load(JSONObject obj) {
     // TODO
   }
@@ -40,7 +44,7 @@ public class Page {
   public BufferedImage getTinyThumb() {
     return tinyThumb;
   }
-  
+
   public void setTinyThumb(BufferedImage im) {
     this.tinyThumb = im;
     this.setCachedThumb(null);
@@ -55,7 +59,13 @@ public class Page {
   public void setCachedThumb(BufferedImage cachedThumb) {
     this.cachedThumb = cachedThumb;
   }
-  
-  
-  
+
+  public void setRectangle(int x, int y, int w, int h) {
+    rect.setFrame(x, y, w, h);
+  }
+
+  public Rectangle getRectangle() {
+    return rect;
+  }
+
 }
