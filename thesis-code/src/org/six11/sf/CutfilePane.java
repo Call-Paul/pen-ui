@@ -61,7 +61,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     Graphics2D g = (Graphics2D) g1;
     g.setColor(getBackground());
     Rectangle2D vizSize = getVisibleRect();
-
     g.fill(getVisibleRect());
     if (dropBorder) {
       float t = 1.5f;
@@ -82,6 +81,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     int textY = (int) (cy + (r.getHeight() / 2));
     g.drawString(str, textX, textY);
     BufferedImage im = material.getSmallImage(getWidth(), getHeight());
+    bug("Does the cutfile have image data? " + (im != null));
     if (im != null) {
       g.setColor(Color.LIGHT_GRAY);
       g.fill(new Rectangle2D.Double(0, 0, im.getWidth(), im.getHeight()));
@@ -155,7 +155,14 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   public void dragDrop(Event ev) {
     bug("Cutfile got drop. re-implement this!");
     switch (ev.getMode()) {
-      case DragScrap:
+      case DragPage:
+        Page dragPage = editor.getGrid().getDragPage();
+        if (dragPage != null) {
+          bug("OK, dragpage is fine. setting it current.");
+          editor.getModel().getNotebook().setCurrentPage(dragPage);
+          bug("Place " + editor.getModel().getStencils().size() + " stencils in the cutfile.");
+          addStencils(editor.getModel().getStencils());
+        }
         break;
       case DragSelection:
         break;
@@ -179,11 +186,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     } catch (IOException e) {
       e.printStackTrace();
     }
-    repaint();
-  }
-
-  public void clear() {
-    material.clear();
     repaint();
   }
 

@@ -11,13 +11,19 @@ import java.awt.Image;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
+import org.six11.sf.FastGlassPane.ActivityMode;
+import org.six11.util.data.FSM;
+import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
@@ -31,6 +37,15 @@ import org.six11.util.pen.Vec;
  * @author Gabe Johnson <johnsogg@cmu.edu>
  */
 public class ScrapGrid extends JComponent implements PenListener, Drag.Listener {
+
+  private static final String DRAGGING = "dragging";
+  private static final String TAPPING = "tapping";
+  private static final String IDLE = "idle";
+  private static final String DOWN = "down";
+  private static final String MOVE = "move";
+  private static final String MOVED_FAR = "moved far";
+  private static final String UP = "up";
+  protected static final double TAP_SLOP_DIST = 10;
 
   public static Color BUTTON_REGION_COLOR = new Color(0.35f, 0.35f, 0.35f, 0.7f);
 
@@ -53,10 +68,70 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private SkruiFabEditor editor;
   private Page hoverPage;
 
-  public ScrapGrid(SkruiFabEditor editor) {
+  private FSM fsm;
+  private Pt downPt;
+  private Pt lastPenPt;
+  private Page dragPage;
+
+  public ScrapGrid(final SkruiFabEditor editor) {
     setName("ScrapGrid");
     this.editor = editor;
     setBackground(Color.WHITE);
+    fsm = new FSM("Notebook View FSM");
+    fsm.addState(IDLE);
+    fsm.setStateEntryCode(IDLE, new Runnable() {
+      public void run() {
+        downPt = null;
+      }
+    });
+    fsm.addState(TAPPING);
+    fsm.addState(DRAGGING);
+    fsm.setStateEntryCode(DRAGGING, new Runnable() {
+      public void run() {
+        // are we really dragging a page? if so, tell glasspane we're dragging.
+        dragPage = getPageAt(downPt);
+        if (dragPage != null) {
+          editor.getGlass().setActivity(ActivityMode.DragPage);
+        }
+        // At any rate, go back to idle.
+        fsm.setState(IDLE);
+      }
+    });
+    fsm.addTransition(new Transition(DOWN, IDLE, TAPPING) {
+      public void doBeforeTransition() {
+        downPt = lastPenPt.copyXYT();
+      }
+    });
+    fsm.addTransition(new Transition(MOVE, TAPPING, TAPPING) {
+      public void doAfterTransition() {
+        if (lastPenPt.distance(downPt) > TAP_SLOP_DIST) {
+          fsm.addEvent(MOVED_FAR);
+        }
+      }
+    });
+    fsm.addTransition(new Transition(MOVED_FAR, TAPPING, DRAGGING));
+    fsm.addTransition(new Transition(UP, TAPPING, IDLE) {
+      public void doBeforeTransition() {
+        tap(downPt);
+      }
+    });
+    fsm.addTransition(new Transition(MOVE, DRAGGING, DRAGGING));
+    fsm.addTransition(new Transition(UP, DRAGGING, IDLE));
+
+    // debugging
+    fsm.addChangeListener(new ChangeListener() {
+      public void stateChanged(ChangeEvent ev) {
+        bug("New state: " + fsm.getState());
+      }
+    });
+  }
+
+  protected void tap(Pt pt) {
+    bug("Tapping location: " + pt);
+    Page target = getPageAt(pt);
+    if (target != null) {
+      editor.getModel().getNotebook().setCurrentPage(target);
+    }
   }
 
   private Page getCurrentPage() {
@@ -210,11 +285,12 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     if (ret == null) {
       ret = editor.getModel().getNotebook().addPage(pg);
     }
-    return ret; 
+    return ret;
   }
 
   @Override
   public void handlePenEvent(PenEvent ev) {
+    lastPenPt = ev.getPt();
     switch (ev.getType()) {
       case Enter:
         break;
@@ -230,11 +306,16 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
           //            editor.getGlass().setActivity(FastGlassPane.ActivityMode.DragScrap);
           //          }
         }
+        fsm.addEvent(MOVE);
         break;
       case Down:
+        fsm.addEvent(DOWN);
         break;
       case Idle:
+        fsm.addEvent(UP);
         break;
+      case Flow:
+      case Tap:
       default:
         bug("Unhandled pen event: " + ev.getType());
     }
@@ -246,10 +327,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     if (hoverPage != targetPage) {
       hoverPage = targetPage;
       repaint();
-    }    
+    }
   }
 
-  private Page getPageAt(Pt pt) {
+  private Page getPageAt(Point2D pt) {
     Page ret = null;
     for (Page p : editor.getModel().getNotebook().getPages()) {
       if (p.getRectangle().contains(pt)) {
@@ -281,22 +362,34 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     switch (editor.getGlass().getActivity()) {
       case DragSelection:
         break;
-      case DragScrap:
+      case DragPage:
+        Page targetPage = getPageAt(ev.getPt());
+        if (dragPage != null && targetPage != null) {
+          copy(dragPage, targetPage);
+          editor.getModel().getNotebook().setCurrentPage(targetPage);
+        }
         break;
       default:
         bug("unhandled state: " + editor.getGlass().getActivity());
     }
-    //    clearHover();
     repaint();
   }
 
+  private void copy(Page src, Page dest) {
+    Snapshot topSnap = src.getSnapshotMachine().getCurrent();
+    dest.getSnapshotMachine().push(topSnap);
+  }
+
   public void clear() {
-    //    cells.clear();
     repaint();
   }
 
   public int getCurrentThumbWidth() {
-    return getWidth();// - 2 * sidePadding;
+    return getWidth();
+  }
+
+  public Page getDragPage() {
+    return dragPage;
   }
 
 }

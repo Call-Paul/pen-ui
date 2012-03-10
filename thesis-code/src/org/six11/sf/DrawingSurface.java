@@ -561,7 +561,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   private void fsSmooth() {
-    bug("smooth?");
     List<Pt> def = fsNearestSeg.getDeformedPoints();
     for (int i = fsSmoothIndex - 2; i >= 0; i--) {
       int nearIdx = i + 1;
@@ -574,7 +573,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       fsSmoothPair(nearIdx, farIdx, def);
     }
     fsNearestSeg.calculateParameters(def);
-//    display();
     repaint();
   }
 

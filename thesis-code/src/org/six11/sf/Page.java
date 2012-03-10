@@ -67,5 +67,9 @@ public class Page {
   public Rectangle getRectangle() {
     return rect;
   }
+  
+  public String toString() {
+    return "Page " + pageNum;
+  }
 
 }

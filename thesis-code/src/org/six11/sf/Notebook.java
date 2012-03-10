@@ -181,4 +181,14 @@ public class Notebook {
     return existing;
   }
 
+  public void setCurrentPage(Page target) {
+    currentPage = target;
+    model.clearAll();
+    if (currentPage.getSnapshotMachine().length() == 0) {
+      currentPage.getSnapshotMachine().takeSnapshotImmediately();
+    }
+    model.undoRedoComplete();
+    model.getEditor().getGrid().repaint();
+  }
+
 }

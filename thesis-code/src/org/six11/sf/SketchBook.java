@@ -679,7 +679,7 @@ public class SketchBook {
   }
 
   public void clearAll() {
-    bug("Clear everything!");
+    bug("Clear (most) everything!");
     try {
       clearInk();
       clearStructured();
@@ -693,7 +693,7 @@ public class SketchBook {
       surface.clearScribble();
       surface.display();
       editor.getGrid().clear();
-      editor.getCutfilePane().clear();
+//      editor.getCutfilePane().clear();
       actions.clear();
       redoActions.clear();
     } catch (Exception ex) {

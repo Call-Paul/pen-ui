@@ -64,6 +64,7 @@ public class SkruiFabEditor {
   private SketchBook model;
   private Map<String, Action> actions;
   private FastGlassPane fastGlass;
+  private FrontEnd fe;
   private ApplicationFrame af;
   private Colors colors;
   private ScrapGrid grid;
@@ -85,7 +86,8 @@ public class SkruiFabEditor {
     } else {
       af.setSize(800, 600);
     }
-    createActions(af.getRootPane());
+    createActions();
+    registerKeyboardActions(af.getRootPane());
     fastGlass = new FastGlassPane(this);
     af.getRootPane().setGlassPane(fastGlass);
     fastGlass.setVisible(true);
@@ -114,8 +116,8 @@ public class SkruiFabEditor {
     utilPanel.setLayout(new BorderLayout());
     utilPanel.add(grid, BorderLayout.CENTER);
     utilPanel.add(cutfile, BorderLayout.SOUTH);
-    FrontEnd fe = new FrontEnd();
-
+    
+    fe = new FrontEnd();
     fe.add(surface, "layers");
     fe.add(utilPanel, "utils");
     fe.addRule(ROOT, N, "layers", N);
@@ -149,7 +151,7 @@ public class SkruiFabEditor {
     return model;
   }
 
-  private void createActions(JRootPane rp) {
+  private void createActions() {
     // 1. Make action map.
     actions = new HashMap<String, Action>();
 
@@ -196,6 +198,9 @@ public class SkruiFabEditor {
           }
         });
 
+  }
+  
+  private void registerKeyboardActions(JRootPane rp) {
     // 3. Register actions w/ key accelerators to the root pane.
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);

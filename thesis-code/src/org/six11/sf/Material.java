@@ -59,6 +59,7 @@ public class Material {
     BufferedImage ret = small;
     if (small == null && big != null) {
       small = Scalr.resize(big, w, h);
+      ret = small;
     }
     return ret;
   }

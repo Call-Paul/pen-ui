@@ -48,9 +48,9 @@ public class FastGlassPane extends JComponent implements MouseListener {
      */
     DragSelection,
     /**
-     * 'DragScrap' means the user is dragging a scrap from the scrap grid.
+     * 'DragPage' means the user is dragging a scrap from the scrap grid.
      */
-    DragScrap
+    DragPage
   };
 
   SkruiFabEditor editor;
@@ -181,7 +181,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
     Image thumb = null;
     if (activity == ActivityMode.DragSelection) {
       thumb = editor.getModel().getDraggingThumb();
-    } else if (activity == ActivityMode.DragScrap) {
+    } else if (activity == ActivityMode.DragPage) {
       thumb = editor.getGrid().getSelectedThumb();
     }
     if (thumb != null) {
@@ -234,46 +234,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }
   }
 
-  private void placePointNonSwingThread(final Point loc) {
-    if (!isVisible()) {
-      bug("Not yet visible. Bailage.");
-      return;
-    }
-    final long now = System.currentTimeMillis();
-    Component container = editor.getContentPane();
-    SwingUtilities.convertPointFromScreen(loc, container);
-    boolean sameSpot = false;
-    if (prevLoc != null) {
-      sameSpot = prevLoc.x == loc.x && prevLoc.y == loc.y;
-    }
-    prevLoc = loc;
-    if (!sameSpot) {
-      try {
-        Runnable r;
-        if (dragging) {
-          // equivalent to a mouseDragged event.
-          r = new Runnable() {
-            public void run() {
-              secretMouseDrag(loc, now);
-            }
-          };
-        } else {
-          // equivalent to a mousePressed event.
-          r = new Runnable() {
-            public void run() {
-              secretMouseMove(loc, now);
-            }
-          };
-        }
-        SwingUtilities.invokeAndWait(r);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      } catch (InvocationTargetException e) {
-        e.printStackTrace();
-      }
-    }
-  }
-
   protected void secretMouseMove(Point loc, long now) {
     MouseEventInfo mei = new MouseEventInfo(loc);
     if (mei.component != null) {
@@ -289,7 +249,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
       case DragSelection:
         giveSelectionDrag(mei);
         break;
-      case DragScrap:
+      case DragPage:
         giveSelectionDrag(mei);
         break;
       case None:
@@ -355,7 +315,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
         activity = ActivityMode.None;
         givePenEvent(editor.getModel().getSurface(), PenEvent.buildIdleEvent(this, ev));
         break;
-      case DragScrap:
+      case DragPage:
         if (mei.component instanceof Drag.Listener) {
           Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
           ((Drag.Listener) mei.component).dragDrop(dev);

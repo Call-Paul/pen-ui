@@ -75,28 +75,29 @@ public class SnapshotMachine {
     Snapshot ret = null;
     if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
       snapshotRequested = false;
-      ret = new Snapshot(model);
-      bug("Made a snapshot!");
-      state.add(stateCursor, ret); // add snapshot at cursor
-      stateCursor = stateCursor + 1; // increment cursor
-      for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
-        Snapshot old = state.remove(i);
-        staleDisplayLists.add(old.getDisplayListID());
-      }
-      if (rootDir != null) {
-        File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
-        File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
-        try {
-          FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
-          FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
-        } catch (JSONException e) {
-          FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
-        }
-      }
+      ret = takeSnapshotImmediately();
     } else {
       bug("Not saving snapshot because solution state is "
           + model.getConstraints().getSolutionState() + " and snapRequested is "
           + snapshotRequested);
+    }
+    return ret;
+  }
+
+  public Snapshot takeSnapshotImmediately() {
+    Snapshot ret = new Snapshot(model);
+    bug("Made a snapshot!");
+    push(ret);
+    
+    if (rootDir != null) {
+      File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
+      File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
+      try {
+        FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
+        FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
+      } catch (JSONException e) {
+        FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
+      }
     }
     return ret;
   }
@@ -245,4 +246,12 @@ public class SnapshotMachine {
     return stateCursor > 1;
   }
 
+  public void push(Snapshot snap) {
+    state.add(stateCursor, snap); // add snapshot at cursor
+    stateCursor = stateCursor + 1; // increment cursor
+    for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
+      Snapshot old = state.remove(i);
+      staleDisplayLists.add(old.getDisplayListID());
+    }
+  }
 }
