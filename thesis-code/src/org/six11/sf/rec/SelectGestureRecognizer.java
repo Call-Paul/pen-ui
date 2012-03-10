@@ -86,7 +86,6 @@ public class SelectGestureRecognizer extends SketchRecognizer {
         public void activate(SketchBook model) {
           model.setSelectedSegments(selectUs);
           model.deselectSegments(unselectUs);
-          model.getEditor().drawStuff();
         }
       };
     }

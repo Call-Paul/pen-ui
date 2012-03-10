@@ -12,18 +12,24 @@ import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.Toolkit;
 import java.awt.event.AWTEventListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Timer;
-import java.util.TimerTask;
+//import java.util.Timer;
+//import java.util.TimerTask;
 
 import javax.swing.JComponent;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
-import org.six11.sf.GlassPane.ActivityMode;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -49,8 +55,9 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   SkruiFabEditor editor;
   private boolean dragging;
+//  private Timer timer;
   private Timer timer;
-  private TimerTask tt;
+//  private TimerTask tt;
   private Point prevLoc;
   private ActivityMode activity;
   private Component prevComponent;
@@ -58,19 +65,54 @@ public class FastGlassPane extends JComponent implements MouseListener {
   private Point dragPoint;
   private boolean gatherText;
   private StringBuilder numberInput;
+  protected boolean onscreen;
+  protected boolean focused;
 
   public FastGlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
     this.activity = ActivityMode.None;
-    timer = new Timer();
-    tt = new TimerTask() {
-      public void run() {
-        PointerInfo info = MouseInfo.getPointerInfo();
-        Point loc = info.getLocation();
-        placePoint(loc);
+//    timer = new Timer();
+//    tt = new TimerTask() {
+//      public void run() {
+//        PointerInfo info = MouseInfo.getPointerInfo();
+//        Point loc = info.getLocation();
+//        placePoint(loc);
+//      }
+//    };
+//    timer.schedule(tt, 10, 10);
+    timer = new Timer(10, new ActionListener() {
+      public void actionPerformed(ActionEvent ev) {
+      PointerInfo info = MouseInfo.getPointerInfo();
+      Point loc = info.getLocation();
+      placePoint(loc);  
       }
-    };
-    timer.schedule(tt, 10, 10);
+    });
+    timer.setCoalesce(true);
+    timer.setRepeats(true);
+    bug("Made timer with auto repeat delay of " + timer.getDelay());
+    
+    addComponentListener(new ComponentAdapter() {
+      public void componentHidden(ComponentEvent ev) {
+        onscreen = false;
+        whackMouseTimer();
+      }
+      
+      public void componentShown(ComponentEvent ev) {
+        onscreen = true;
+        whackMouseTimer();
+      }
+    });
+    editor.getApplicationFrame().addFocusListener(new FocusAdapter() {
+      public void focusGained(FocusEvent ev) {
+        focused = true;
+        whackMouseTimer();
+      }
+      
+      public void focusLost(FocusEvent ev) {
+        focused = false;
+        whackMouseTimer();
+      }
+    });
     addMouseListener(this);
     numberInput = new StringBuilder();
     long eventMask = AWTEvent.KEY_EVENT_MASK;
@@ -124,6 +166,17 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }, eventMask);
   }
 
+  protected void whackMouseTimer() {
+    bug("Whacking mouse timer. onscreen: " + onscreen + ", focused: " + focused);
+    if (!timer.isRunning() && onscreen && focused) {
+      bug("Restarting timer.");
+      timer.restart();
+    } else if (timer.isRunning()) {
+      bug("Stopping timer.");
+      timer.stop();
+    }
+  }
+
   public void paintComponent(Graphics g) {
     Image thumb = null;
     if (activity == ActivityMode.DragSelection) {
@@ -160,6 +213,28 @@ public class FastGlassPane extends JComponent implements MouseListener {
   }
 
   private void placePoint(final Point loc) {
+    if (!isVisible()) {
+      bug("Not yet visible. Bailage.");
+      return;
+    }
+    final long now = System.currentTimeMillis();
+    Component container = editor.getContentPane();
+    SwingUtilities.convertPointFromScreen(loc, container);
+    boolean sameSpot = false;
+    if (prevLoc != null) {
+      sameSpot = prevLoc.x == loc.x && prevLoc.y == loc.y;
+    }
+    prevLoc = loc;
+    if (!sameSpot) {
+      if (dragging) {
+        secretMouseDrag(loc, now);
+      } else {
+        secretMouseMove(loc, now);
+      }
+    }
+  }
+  
+  private void placePointNonSwingThread(final Point loc) {
     if (!isVisible()) {
       bug("Not yet visible. Bailage.");
       return;

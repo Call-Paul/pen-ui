@@ -73,7 +73,6 @@ public class EraseGestureRecognizer extends SketchRecognizer {
                   model.removeGeometry(seg);
                 }
               }
-              model.getEditor().drawStuff();
             }
           };
         }

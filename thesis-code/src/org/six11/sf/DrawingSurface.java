@@ -353,7 +353,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       @Override
       public void actionPerformed(ActionEvent e) {
         fsFSM.addEvent(TICK);
-        display();
+        repaint();
+//        display();
       }
     });
     FSM f = new FSM("Flow Selection FSM");
@@ -376,7 +377,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         fsNearestSeg = null; // segment currently flow-selected
         fsNearestPt = null; // point on segment currently selected
         fsTimer.stop();
-        model.getEditor().drawStuff();
         fsTransitionPt = null;
         fsRecent.clear();
       }
@@ -386,11 +386,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         fsTickTimer.restart();
       }
     });
-    //    f.setStateExitCode(OP, new Runnable() {
-    //      public void run() {
-    ////        fsSaveChanges();
-    //      }
-    //    });
 
     f.setStateEntryCode(SEARCH_DIR, new Runnable() {
       public void run() {
@@ -579,7 +574,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       fsSmoothPair(nearIdx, farIdx, def);
     }
     fsNearestSeg.calculateParameters(def);
-    display();
+//    display();
+    repaint();
   }
 
   protected void addFsRecent(Pt pt) {
@@ -651,7 +647,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
       pt.setDouble("fsStrength", s);
     }
-    display();
+    repaint();
+//    display();
   }
 
   private void fsDeform(Pt recent) {
@@ -689,7 +686,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     }
     fsLastDeformPt = recent;
-    display();
+//    display();
+    repaint();
   }
 
   private void fsSaveChanges() {
@@ -899,7 +897,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         hoverPt = ev.getPt().copyXYT();
         break;
     }
-    display();
+//    display();
+    repaint();
   }
 
   /**
@@ -916,15 +915,17 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   public void setPreview(Snapshot snap) {
     this.previewSnapshot = snap;
-    bug("Please show snapshot " + previewSnapshot.getID() + " (display list "
-        + previewSnapshot.getDisplayListID());
-    display();
+//    bug("Please show snapshot " + previewSnapshot.getID() + " (display list "
+//        + previewSnapshot.getDisplayListID());
+//    display();
+    repaint();
   }
 
   public void clearPreview() {
     previewSnapshot = null;
     bug("Stop showing preview.");
-    display();
+//    display();
+    repaint();
   }
 
   public void snapshot() {
@@ -957,7 +958,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
    */
   public void setTextInput(String str) {
     this.textInput = str;
-    display();
+//    display();
+    repaint();
   }
 
   /**

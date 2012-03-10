@@ -210,7 +210,8 @@ public class SketchBook {
       getSnapshotMachine().requestSnapshot("raw ink caused a change");
     }
 //    layers.repaint();
-    editor.requestRedrawGL();
+//    editor.requestRedrawGL();
+    editor.getDrawingSurface().repaint();
   }
 
   public void removeInk(Ink oldInk) {
@@ -330,7 +331,6 @@ public class SketchBook {
                   scrib.setAttribute("erase", true);
                   Pt killSpot = Functions.getMean(samples);
                   scrib.setAttribute("erase_spot", killSpot);
-                  editor.drawErase();
                 } else {
                   bug("Detected circle. Not erasing.");
                 }
@@ -407,8 +407,6 @@ public class SketchBook {
       stencil.removeInvalidChildren(new HashSet<Stencil>());
     }
     stencils.removeAll(invaid);
-    getEditor().drawStuff();
-
   }
 
   public Collection<Segment> pickDoomedSegments(Area area) {
@@ -679,7 +677,6 @@ public class SketchBook {
       solver.replacePoint(oldPt, newPt);
     }
     getConstraints().wakeUp();
-    editor.drawStuff();
   }
 
   /**
@@ -921,7 +918,6 @@ public class SketchBook {
     if (selectUs != null) {
       selectedStencils.addAll(selectUs);
     }
-    editor.drawStencils();
     if (!same) {
       getSnapshotMachine().requestSnapshot("Stencil selection changed");
     }
@@ -937,7 +933,6 @@ public class SketchBook {
       selectedSegments.addAll(selectUs);
     }
     editor.getGlass().setGatherText(selectedSegments.size() == 1);
-    editor.drawStuff();
     if (!same) {
       getSnapshotMachine().requestSnapshot("Segment selection changed");
     }
@@ -1086,7 +1081,6 @@ public class SketchBook {
   public void addGuidePoint(GuidePoint p) {
     guidePoints.add(p);
     toggleGuidePoint(p);
-    editor.drawStuff();
   }
 
   public List<GuidePoint> getGuidePoints() {
@@ -1107,8 +1101,6 @@ public class SketchBook {
       activeGuidePoints.remove(0);
     }
     fixDerivedGuides();
-
-    editor.drawStuff();
   }
 
   public void fixDerivedGuides() {
@@ -1206,7 +1198,6 @@ public class SketchBook {
     if (activeGuidePoints.contains(removeMe)) {
       toggleGuidePoint(removeMe);
     }
-    editor.drawStuff();
   }
 
   public Collection<GuidePoint> findGuidePoints(Pt pt, boolean activeOnly) {
@@ -1231,7 +1222,6 @@ public class SketchBook {
       }
     }
     draggingGuidePoint = dragMe;
-    editor.drawStuff();
   }
 
   public boolean isDraggingGuide() {
@@ -1245,7 +1235,6 @@ public class SketchBook {
   public void dragGuidePoint(Pt pt) {
     draggingGuidePoint.setLocation(pt);
     fixDerivedGuides();
-    editor.drawStuff();
   }
 
   public Units getMasterUnits() {
@@ -1253,7 +1242,6 @@ public class SketchBook {
   }
 
   public SnapshotMachine getSnapshotMachine() {
-    bug("Getting snapshot machine for page " + notebook.getCurrentPage().getPageNumber());
     return notebook.getCurrentPage().getSnapshotMachine();
   }
   
@@ -1297,7 +1285,6 @@ public class SketchBook {
     redoActions.clear();
     a.forward();
     getConstraints().wakeUp();
-    editor.drawStuff();
   }
 
   public void removeSingularSegments() {

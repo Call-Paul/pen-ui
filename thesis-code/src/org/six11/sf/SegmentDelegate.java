@@ -51,6 +51,8 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected transient List<Pt> deformedPoints = null;
   protected transient Ink ink;
 
+  private transient Sequence cachedSpline;
+
   protected SegmentDelegate() {
     // ensure subclass calls init();
   }
@@ -249,8 +251,9 @@ public class SegmentDelegate implements HasFuzzyArea {
     if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
       if (isClosed()) {
-        bug("doing para for " + getType() + ". this is a bug");
+        bug("doing para for closed type: " + getType() + ". this is a bug");
       }
+      cachedSpline = null;
       paraP1Loc = p1.copyXYT();
       paraP2Loc = p2.copyXYT();
       paraPoints = new ArrayList<Pt>();
@@ -321,20 +324,22 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   public Sequence asSpline() {
     doPara();
-    double roughLength = 0;
-    for (int i = 0; i < paraPoints.size() - 1; i++) {
-      roughLength = roughLength + paraPoints.get(i).distance(paraPoints.get(i + 1));
+    if (cachedSpline == null) {
+      double roughLength = 0;
+      for (int i = 0; i < paraPoints.size() - 1; i++) {
+        roughLength = roughLength + paraPoints.get(i).distance(paraPoints.get(i + 1));
+      }
+      int numSteps = (int) ceil(min(roughLength / 100, 10));
+      List<Pt> paraPointList = new ArrayList<Pt>();
+      for (Pt pt : paraPoints) {
+        paraPointList.add(pt);
+      }
+      Sequence spline = Functions.makeNaturalSpline(numSteps, paraPointList);
+      spline.replace(0, getP1());
+      spline.replace(spline.size() - 1, getP2());
+      cachedSpline = spline;
     }
-    int numSteps = (int) ceil(min(roughLength / 100, 10));
-    List<Pt> paraPointList = new ArrayList<Pt>();
-    for (Pt pt : paraPoints) {
-      paraPointList.add(pt);
-    }
-    Sequence spline = Functions.makeNaturalSpline(numSteps, paraPointList);
-    spline.replace(0, getP1());
-    spline.replace(spline.size() - 1, getP2());
-    //    bug("returning spline of " + spline.size() + " points for " + getType() + ": " + num(spline.getPoints(), " "));
-    return spline;
+    return cachedSpline;
   }
 
   public List<Pt> asPolyline() {

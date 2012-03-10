@@ -93,6 +93,10 @@ public class SnapshotMachine {
           FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
         }
       }
+    } else {
+      bug("Not saving snapshot because solution state is "
+          + model.getConstraints().getSolutionState() + " and snapRequested is "
+          + snapshotRequested);
     }
     return ret;
   }
@@ -100,7 +104,7 @@ public class SnapshotMachine {
   public int[] flushStaleDisplayLists() {
     Integer[] ids = staleDisplayLists.toArray(new Integer[0]);
     int[] ret = new int[ids.length];
-    for (int i=0; i < ids.length;i++) {
+    for (int i = 0; i < ids.length; i++) {
       ret[i] = ids[i];
     }
     staleDisplayLists.clear();
@@ -197,8 +201,6 @@ public class SnapshotMachine {
     bug("Loading " + snap);
     snap.load();
     bug("Loaded " + snap);
-    //    report("load");
-    model.getEditor().drawStuff();
   }
 
   public Snapshot undo() {
