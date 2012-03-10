@@ -102,6 +102,11 @@ public class SketchRenderer {
     r[3] = c[3]; // leave alpha alone.
     return r;
   }
+  
+  private static float[] makeAlphaColor(float[] color, float alpha) {
+    return new float[] { color[0], color[1], color[2], alpha };
+  }
+
 
   private static final Vec EAST = new Vec(1, 0);
 
@@ -289,12 +294,14 @@ public class SketchRenderer {
           break;
         case Unknown:
           break;
-
       }
     }
   }
 
   private void renderSameLengthConstraint(SameLengthUserConstraint c) {
+    Set<Pt> spots = new HashSet<Pt>();
+    float dist = (float) c.getDistance(surface.getHoverPoint());
+    float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
     for (Constraint basicC : c.getConstraints()) {
       DistanceConstraint dc = (DistanceConstraint) basicC;
       if (dc.getValue() == null) {
@@ -302,9 +309,10 @@ public class SketchRenderer {
       }
       Vec segDir = new Vec(dc.getP1(), dc.getP2()).getUnitVector();
       Pt mid = Functions.getMean(dc.getP1(), dc.getP2());
+      spots.add(mid);
       if (dc.getValue() instanceof MultisourceNumericValue) {
-        gl.glLineWidth(3f);
-        gl.glColor3fv(red, 0);
+        gl.glLineWidth(2f);
+        gl.glColor4fv(color, 0);
         acuteHash(mid, segDir, 24);
       } else {
         Vec segDirNorm = segDir.getNormal();
@@ -313,41 +321,50 @@ public class SketchRenderer {
         Pt textLocWindow = new Pt(worldLoc[0], drawable.getHeight() - worldLoc[1]);
         Material.Units units = model.getMasterUnits();
         double asUnits = Material.fromPixels(units, dc.getValue().getValue());
-        text("" + num(asUnits), textLocWindow);
+        text("" + num(asUnits), textLocWindow, color);
       }
     }
+    c.setDistanceSpots(spots.toArray(new Pt[0]));
   }
 
   private void renderSameAngleConstraint(SameAngleUserConstraint c) {
     Pt[][] spots = c.getSpots(16);
-    gl.glLineWidth(1f);
-    gl.glColor4fv(bloodRed, 0);
+    float dist = (float) c.getDistance(surface.getHoverPoint());
+    float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
+    gl.glLineWidth(2f);
+    gl.glColor4fv(color, 0);
+    Set<Pt> corners = new HashSet<Pt>();
     for (Pt[] spot : spots) {
       List<Pt> arc = Functions.getCircularArc(spot[0], spot[1], spot[2], spot[3], 6);
       curve(arc);
+      corners.add(spot[3]);
     }
+    c.setDistanceSpots(corners.toArray(new Pt[0]));
   }
 
   private void renderColinearConstraint(ColinearUserConstraint c) {
+    float dist = (float) c.getDistance(surface.getHoverPoint());
+    float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
     Pt[] spots = c.getSpots();
     Line line = new Line(spots[0], spots[1]);
-
     gl.glLineWidth(1f);
-    gl.glColor4fv(bloodRed, 0);
+    gl.glColor4fv(color, 0);
     gl.glLineStipple(3, (short) 0xAAAA);
     gl.glEnable(GL2.GL_LINE_STIPPLE);
     screenLine(line, drawable.getWidth(), drawable.getHeight());
     gl.glDisable(GL2.GL_LINE_STIPPLE);
-
+    c.setDistanceSpots(spots[0], spots[1]);
   }
 
   private void renderRightAngleConstraint(RightAngleUserConstraint c) {
     Pt[] spots = c.getSpots();
+    float dist = (float) c.getDistance(surface.getHoverPoint());
+    float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
     Pt left = spots[RightAngleUserConstraint.SPOT_LEFT];
     Pt right = spots[RightAngleUserConstraint.SPOT_RIGHT];
     Pt ful = spots[RightAngleUserConstraint.SPOT_FULCRUM];
     gl.glLineWidth(CONSTRAINT_LINE_THICKNESS);
-    gl.glColor3fv(CONSTRAINT_COLOR, 0);
+    gl.glColor4fv(color, 0);
     gl.glBegin(GL2.GL_LINE_STRIP);
     {
       gl.glVertex2f(left.fx(), left.fy());
@@ -355,6 +372,7 @@ public class SketchRenderer {
       gl.glVertex2f(right.fx(), right.fy());
     }
     gl.glEnd();
+    c.setDistanceSpots(ful);
   }
 
   private void renderErase() {
@@ -394,8 +412,7 @@ public class SketchRenderer {
       fillRect(boxX, boxY, boxW, boxH);
       gl.glColor4fv(skyBlue, 0);
       rect(boxX, boxY, boxW, boxH);
-      gl.glColor4fv(skyBlue, 0);
-      text(str, textLocWindow);
+      text(str, textLocWindow, skyBlue);
     }
   }
 
@@ -590,17 +607,17 @@ public class SketchRenderer {
     GLU.gluTessEndPolygon(tess);
   }
 
-  public double getAlpha(double distance, double min, double max, double minRetVal) {
+  public float getAlpha(double distance, double min, double max, double minRetVal) {
     double ret = 0;
     if (distance < min) {
       ret = 1;
     } else if (distance < max) {
       ret = 1 - ((distance - min) / (max - min));
-      ret = Math.sqrt(ret);
+      ret = ret * ret;
     } else {
       ret = 0;
     }
-    return Math.max(ret, minRetVal);
+    return (float) Math.max(ret, minRetVal);
   }
 
   void acuteHash(Pt mid, Vec segDir, float length) {
@@ -737,10 +754,9 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  void text(String str, Pt loc) {
+  void text(String str, Pt loc, float[] color) {
     TextRenderer t12 = surface.getTextRenderer(12);
     t12.beginRendering(drawable.getWidth(), drawable.getHeight());
-    float[] color = CONSTRAINT_COLOR;
     t12.setColor(color[0], color[1], color[2], color[3]);
     t12.draw(str, loc.ix(), loc.iy());
     t12.endRendering();

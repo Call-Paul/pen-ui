@@ -33,6 +33,20 @@ public class ColinearUserConstraint extends UserConstraint {
     super(model, Type.Colinear, ucObj);
   }
 
+  /**
+   * Overrides parent implementation because colinear constraints measure distance to the line,
+   * rather than individual points.
+   */
+  @Override
+  public double getDistance(Pt pt) {
+    double ret = Double.MAX_VALUE;
+    if (pt != null && distanceSpots.size() == 2) {
+      Line lineSeg = new Line(distanceSpots.get(0), distanceSpots.get(1));
+      ret = Functions.getDistanceBetweenPointAndSegment(pt, lineSeg);
+    }
+    return ret;
+  }
+
   @Override
   public void removeInvalid() {
     bug("removeInvalid()");
@@ -70,7 +84,7 @@ public class ColinearUserConstraint extends UserConstraint {
     }
     return ret;
   }
-  
+
   public Pt[] getSpots() {
     Set<Pt> pts = getConstrainedPoints();
     Pt[] ret = new Pt[2];

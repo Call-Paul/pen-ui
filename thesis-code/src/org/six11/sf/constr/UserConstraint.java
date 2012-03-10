@@ -1,7 +1,12 @@
 package org.six11.sf.constr;
 
+import java.awt.Shape;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONArray;
@@ -35,7 +40,9 @@ public abstract class UserConstraint {
   protected Collection<Constraint> constraints;
   protected SketchBook model;
   protected Type type;
-  
+  protected Map<Constraint, Shape> visualRegions;
+  protected List<Pt> distanceSpots;
+
   public enum Type {
     Colinear, SameAngle, SameLength, RightAngle, Unknown
   };
@@ -43,7 +50,7 @@ public abstract class UserConstraint {
   public UserConstraint(SketchBook model, Type type, Constraint... cs) {
     init(model, type, cs);
   }
-  
+
   public UserConstraint(SketchBook model, Type type, JSONObject json) throws JSONException {
     init(model, type);
     JSONArray constraintIDs = json.getJSONArray("constraints");
@@ -52,17 +59,17 @@ public abstract class UserConstraint {
       Constraint c = model.getConstraints().getVars().getConstraintWithID(cID);
       if (c != null) {
         bug("User constraint " + name + " found primitive constraint " + cID);
-      constraints.add(c);
+        constraints.add(c);
       } else {
         bug("Warning: user constraint " + name + " can not find primitive constraint " + cID);
       }
     }
   }
-  
+
   public Type getType() {
     return type;
   }
-  
+
   protected void init(SketchBook model, Type type, Constraint... cs) {
     this.model = model;
     this.name = type.toString();
@@ -70,7 +77,29 @@ public abstract class UserConstraint {
     this.constraints = new HashSet<Constraint>();
     for (Constraint c : cs) {
       constraints.add(c);
-    }    
+    }
+    this.visualRegions = new HashMap<Constraint, Shape>();
+    this.distanceSpots = new ArrayList<Pt>();
+  }
+
+  public void setDistanceSpots(Pt... pts) {
+    distanceSpots.clear();
+    for (Pt pt : pts) {
+      distanceSpots.add(pt);
+    }
+  }
+
+  /**
+   * Returns the minimum distance between pt and any of the 'distance spots'.
+   */
+  public double getDistance(Pt pt) {
+    double min = Double.MAX_VALUE;
+    if (pt != null) {
+      for (Pt other : distanceSpots) {
+        min = Math.min(other.distance(pt), min);
+      }
+    }
+    return min;
   }
 
   public String getName() {
@@ -97,7 +126,7 @@ public abstract class UserConstraint {
     }
     constraints.clear();
   }
-  
+
   public boolean involves(Pt pt) {
     boolean ret = false;
     for (Constraint c : constraints) {
@@ -148,11 +177,11 @@ public abstract class UserConstraint {
         break;
       case Unknown:
         break;
-      
+
     }
     return ret;
   }
-  
+
   public static Type mkType(String n) {
     Type ret = Type.Unknown;
     if (n.equals(Type.Colinear.toString())) {
@@ -169,5 +198,5 @@ public abstract class UserConstraint {
     }
     return ret;
   }
-  
+
 }

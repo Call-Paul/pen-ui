@@ -22,8 +22,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.lang.reflect.InvocationTargetException;
-//import java.util.Timer;
-//import java.util.TimerTask;
+// import java.util.Timer;
+// import java.util.TimerTask;
 
 import javax.swing.JComponent;
 import javax.swing.KeyStroke;
@@ -55,9 +55,9 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   SkruiFabEditor editor;
   private boolean dragging;
-//  private Timer timer;
+  //  private Timer timer;
   private Timer timer;
-//  private TimerTask tt;
+  //  private TimerTask tt;
   private Point prevLoc;
   private ActivityMode activity;
   private Component prevComponent;
@@ -71,32 +71,32 @@ public class FastGlassPane extends JComponent implements MouseListener {
   public FastGlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
     this.activity = ActivityMode.None;
-//    timer = new Timer();
-//    tt = new TimerTask() {
-//      public void run() {
-//        PointerInfo info = MouseInfo.getPointerInfo();
-//        Point loc = info.getLocation();
-//        placePoint(loc);
-//      }
-//    };
-//    timer.schedule(tt, 10, 10);
+    //    timer = new Timer();
+    //    tt = new TimerTask() {
+    //      public void run() {
+    //        PointerInfo info = MouseInfo.getPointerInfo();
+    //        Point loc = info.getLocation();
+    //        placePoint(loc);
+    //      }
+    //    };
+    //    timer.schedule(tt, 10, 10);
     timer = new Timer(10, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
-      PointerInfo info = MouseInfo.getPointerInfo();
-      Point loc = info.getLocation();
-      placePoint(loc);  
+        PointerInfo info = MouseInfo.getPointerInfo();
+        Point loc = info.getLocation();
+        placePoint(loc);
       }
     });
     timer.setCoalesce(true);
     timer.setRepeats(true);
     bug("Made timer with auto repeat delay of " + timer.getDelay());
-    
+
     addComponentListener(new ComponentAdapter() {
       public void componentHidden(ComponentEvent ev) {
         onscreen = false;
         whackMouseTimer();
       }
-      
+
       public void componentShown(ComponentEvent ev) {
         onscreen = true;
         whackMouseTimer();
@@ -107,7 +107,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
         focused = true;
         whackMouseTimer();
       }
-      
+
       public void focusLost(FocusEvent ev) {
         focused = false;
         whackMouseTimer();
@@ -233,7 +233,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
       }
     }
   }
-  
+
   private void placePointNonSwingThread(final Point loc) {
     if (!isVisible()) {
       bug("Not yet visible. Bailage.");
@@ -276,7 +276,9 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   protected void secretMouseMove(Point loc, long now) {
     MouseEventInfo mei = new MouseEventInfo(loc);
-    givePenEvent(mei.component, PenEvent.buildHoverEvent(this, new Pt(loc.x, loc.y, now)));
+    if (mei.component != null) {
+      givePenEvent(mei.component, PenEvent.buildHoverEvent(this, new Pt(mei.componentPoint, now)));
+    }
     prevComponent = mei.component;
   }
 
@@ -358,7 +360,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
           Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
           ((Drag.Listener) mei.component).dragDrop(dev);
         }
-//        editor.getGrid().clearSelection();
+        //        editor.getGrid().clearSelection();
         activity = ActivityMode.None;
         break;
       case None:
