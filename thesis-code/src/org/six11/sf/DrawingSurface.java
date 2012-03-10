@@ -881,8 +881,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           if (wasDrawing) {
             Sequence seq = model.endScribble(ev.getPt());
             if (seq != null) {
-              SafeAction a = model.getActionFactory().addInk(new Ink(seq));
-              model.addAction(a);
+              model.addInk(new Ink(seq));
             }
           }
           clearScribble();

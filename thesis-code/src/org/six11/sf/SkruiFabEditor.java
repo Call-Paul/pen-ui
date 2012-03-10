@@ -335,8 +335,7 @@ public class SkruiFabEditor {
       }
       stroke.setAnalyzed(true);
     }
-    SafeAction a = model.getActionFactory().addSegments(segs);
-    model.addAction(a);
+    model.addSegments(segs);
     model.getConstraintAnalyzer().analyze(segs, true);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);
@@ -350,6 +349,8 @@ public class SkruiFabEditor {
     model.getConstraints().wakeUp();
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
+  
+  
 
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);

@@ -13,6 +13,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,6 +22,7 @@ import java.util.Stack;
 import javax.swing.Timer;
 
 import org.six11.sf.Material.Units;
+import org.six11.sf.constr.ColinearUserConstraint;
 import org.six11.sf.constr.SameLengthUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.ConstraintFilters;
@@ -84,7 +86,6 @@ public class SketchBook {
   private Set<Guide> retainedVisibleGuides;
   private GuidePoint draggingGuidePoint;
   private Material.Units masterUnits = Units.Centimeter;
-  private ActionFactory actionFactory;
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
   private Timer inactivityTimer;
@@ -107,7 +108,6 @@ public class SketchBook {
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
-    this.actionFactory = new ActionFactory(this);
     this.actions = new Stack<SafeAction>();
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
@@ -161,7 +161,7 @@ public class SketchBook {
   }
 
   public void addInk(Ink newInk) {
-    
+
     cornerFinder.findCorners(newInk);
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
@@ -195,20 +195,20 @@ public class SketchBook {
     } else {
       getSnapshotMachine().requestSnapshot("raw ink caused a change");
     }
-//    layers.repaint();
-//    editor.requestRedrawGL();
+    //    layers.repaint();
+    //    editor.requestRedrawGL();
     editor.getDrawingSurface().repaint();
   }
 
   public void removeInk(Ink oldInk) {
     ink.remove(oldInk);
-//    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-//    buf.clear();
-//    for (Ink eenk : ink) {
-//      Sequence scrib = eenk.getSequence();
-//      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
-//          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
-//    }
+    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
+    //    buf.clear();
+    //    for (Ink eenk : ink) {
+    //      Sequence scrib = eenk.getSequence();
+    //      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
+    //          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
+    //    }
     surface.display();
   }
 
@@ -935,9 +935,9 @@ public class SketchBook {
   public void setDraggingSelection(boolean b) {
     draggingSelection = b;
     if (draggingSelection) {
-//      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
-//      BufferedImage bigImage = sel.getImage();
-//      draggingThumb = Scalr.resize(bigImage, 48);
+      //      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
+      //      BufferedImage bigImage = sel.getImage();
+      //      draggingThumb = Scalr.resize(bigImage, 48);
       bug("Dragging. come back here and fix the image stuff");
       surface.requestStencilThumb();
       glass.setActivity(FastGlassPane.ActivityMode.DragSelection);
@@ -953,7 +953,7 @@ public class SketchBook {
   public BufferedImage getDraggingThumb() {
     return draggingThumb;
   }
-  
+
   public void setDraggingThumbImage(BufferedImage thumb) {
     this.draggingThumb = thumb;
   }
@@ -1226,7 +1226,7 @@ public class SketchBook {
   public SnapshotMachine getSnapshotMachine() {
     return notebook.getCurrentPage().getSnapshotMachine();
   }
-  
+
   public void undoPreview() {
     bug("undo preview");
     Snapshot s = getSnapshotMachine().undo();
@@ -1242,31 +1242,20 @@ public class SketchBook {
     Snapshot s = getSnapshotMachine().redo();
     if (s != null) {
       bug("Valid redo.");
-//      layers.setPreview(s.getPreview());
+      //      layers.setPreview(s.getPreview());
       surface.setPreview(s);
     }
   }
 
   public void undoRedoComplete() {
     bug("finalizing redo/undo");
-//    layers.clearPreview();
+    //    layers.clearPreview();
     surface.clearPreview();
     Snapshot s = getSnapshotMachine().getCurrent();
     loadingSnapshot = true;
     getSnapshotMachine().load(s);
     loadingSnapshot = false;
     surface.display();
-  }
-
-  public ActionFactory getActionFactory() {
-    return actionFactory;
-  }
-
-  public void addAction(SafeAction a) {
-    actions.push(a);
-    redoActions.clear();
-    a.forward();
-    getConstraints().wakeUp();
   }
 
   public void removeSingularSegments() {
@@ -1383,13 +1372,85 @@ public class SketchBook {
           break;
       }
       if (ret.size() == 2) {
-        SafeAction action = getActionFactory().split(seg, ret);
-        addAction(action);
+        //        SafeAction action = getActionFactory().split(seg, ret);
+        //        addAction(action);
+        splitOldToNew(seg, ret);
         editor.findStencils(ret);
       }
     }
 
     return ret;
+  }
+
+  private void splitOldToNew(Segment oldSeg, Set<Segment> newSegs) {
+    Set<UserConstraint> allInvolved = findUserConstraints(oldSeg, true);
+    // for now only look for ColinearUserConstraints. This is 'wrong' because it ignores other
+    // constraints like RightAngle and obliges the user to re-make them.
+    Set<UserConstraint> colinears = new HashSet<UserConstraint>();
+    for (UserConstraint uc : allInvolved) {
+      if (uc instanceof ColinearUserConstraint) {
+        colinears.add(uc);
+      }
+    }
+    if (colinears.size() > 1) {
+      bug("Warning: segment " + oldSeg.typeIdPtStr()
+          + " is involved in two different colinear user constraints. Bad.");
+    }
+    Pt splitPt = null;
+    Set<Pt> olds = Lists.makeSet(oldSeg.getP1(), oldSeg.getP2());
+    for (Segment news : newSegs) {
+      if (!olds.contains(news.getP1())) {
+        splitPt = news.getP1();
+        break;
+      } else if (!olds.contains(news.getP2())) {
+        splitPt = news.getP2();
+        break;
+      }
+    }
+    addSegments(newSegs);
+    if (splitPt == null) {
+      bug("Warning: could not identify split point!");
+    }
+    axeSegments(Collections.singleton(oldSeg)); // will remove all user constraints related to it.
+    if (oldSeg.getType() == Segment.Type.Line) {
+      ColinearUserConstraint colinear = null;
+      if (colinears.size() > 0) {
+        // found a colinear constraint. get the split point and add another PointOnLine to the colinear constraint.
+        colinear = (ColinearUserConstraint) Lists.getOne(colinears);
+        colinear.addPoint(splitPt);
+      } else {
+        // did not find an existing colinear constraint. so make one.
+        colinear = new ColinearUserConstraint(this, Lists.makeSet(oldSeg.getP1(), oldSeg.getP2(),
+            splitPt));
+      }
+      addUserConstraint(colinear); // create (or reinstate) the colinear constraint
+    }
+  }
+
+  public void addSegments(Collection<Segment> segs) {
+    for (Segment seg : segs) {
+      if (!seg.isSingular()) {
+        if (!SketchBook.hasName(seg.getP1())) {
+          getConstraints().addPoint(nextPointName(), seg.getP1());
+        } else {
+          getConstraints().addPoint(seg.getP1());
+        }
+        if (!SketchBook.hasName(seg.getP2())) {
+          getConstraints().addPoint(nextPointName(), seg.getP2());
+        } else {
+         getConstraints().addPoint(seg.getP2());
+        }
+      }
+    }
+    for (Segment seg : segs) {
+      addGeometry(seg);
+    }
+  }
+
+  public void axeSegments(Collection<Segment> segs) {
+    for (Segment seg : segs) {
+      removeGeometry(seg);
+    }
   }
 
   public static boolean hasName(Pt p) {
