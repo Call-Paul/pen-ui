@@ -1,7 +1,5 @@
 package org.six11.sf;
 
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
@@ -22,7 +20,6 @@ import org.six11.sf.constr.SameLengthUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.shape.Circle;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
@@ -30,8 +27,6 @@ import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
-
-import sun.java2d.loops.FillRect;
 
 import com.jogamp.opengl.util.awt.TextRenderer;
 
@@ -82,6 +77,7 @@ public class SketchRenderer {
   public static float[] peachy = new float[] {
       1f, 0.5f, 0.5f, 0.75f
   };
+  
   // pen settings (colors and thicknesses)
   //
   // thicknesses first
@@ -138,11 +134,15 @@ public class SketchRenderer {
    */
   public void render(SketchBook model, GLAutoDrawable drawable, List<Pt> scribble,
       boolean drawDots, DrawingSurface drawingSurface) {
+    
+    // retain variabels for this round of rendering
     this.drawable = drawable;
     this.gl = drawable.getGL().getGL2();
     this.glu = drawingSurface.glu;
     this.model = model;
     this.surface = drawingSurface;
+    
+    // render things back-to-front
     renderStencils();
     renderGeometry();
     renderFlowSelection();

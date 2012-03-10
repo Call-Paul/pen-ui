@@ -1,29 +1,16 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.warn;
-
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Area;
-import java.awt.geom.Line2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import javax.swing.JComponent;
 
@@ -67,10 +54,6 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     setName("ScrapGrid");
     this.editor = editor;
     setBackground(Color.WHITE);
-  }
-
-  private Set<Page> getPages() {
-    return editor.getModel().getNotebook().getPages();
   }
 
   private Page getCurrentPage() {
@@ -123,7 +106,6 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     int pageX = sidePadding;
     int pageY = topBottom;
     Page currentPage = getCurrentPage();
-    bug("Current page: " + currentPage.getPageNumber());
     while (pageY < h) {
       boolean isCurrent = (currentPage.getPageNumber() == pageNum);
       paintPage(g, pageNum, pageX, pageY, vertPad, innerWidth, pageHeight, isCurrent);

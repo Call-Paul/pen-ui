@@ -7,13 +7,11 @@ import static org.six11.util.layout.FrontEnd.ROOT;
 import static org.six11.util.layout.FrontEnd.S;
 import static org.six11.util.layout.FrontEnd.W;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -25,40 +23,24 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
-
 import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-
-import org.six11.sf.constr.UserConstraint;
-import org.six11.sf.rec.Arrow;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.sf.rec.RecognizerPrimitive;
-import org.six11.sf.rec.RightAngleBrace;
-import org.six11.util.Debug;
-import org.six11.util.Stopwatch;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
 import org.six11.util.io.FileUtil;
 import org.six11.util.layout.FrontEnd;
 import org.six11.util.lev.NamedAction;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Line;
-import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-import org.six11.util.pen.Vec;
 import org.six11.util.solve.ConstraintSolver;
 import org.six11.util.solve.ConstraintSolver.State;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 /**
  * A self-contained editor instance.
@@ -67,36 +49,25 @@ import static org.six11.util.Debug.num;
  */
 public class SkruiFabEditor {
 
-  private static final Color ELLIPSE_COLOR = Color.MAGENTA.darker();
-  private static final Color CIRCLE_COLOR = Color.BLUE.darker();
-  private static final Color BLOB_COLOR = Color.CYAN.darker();
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static final String ACTION_LOAD_FILE = "Load File";
   protected static final int FRAME_RATE = 30;
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
-  private static final Color LATCH_SPOT_COLOR = new Color(112, 164, 225); // 0.4375, 0.640625, 0.87890625
+
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
   private static String ACTION_CLEAR = "Clear";
 
-  private Color selectionColor = new Color(255, 128, 128, 200);
-  private Color inertColor = new Color(128, 128, 128, 100);
-  private Color derivedGuideColor = new Color(220, 220, 220, 0);
-
-  //  private Main main;
   private boolean useDebuggingColor = false;
   private boolean useDebuggingPoints = false;
   private DrawingSurface surface;
   private SketchBook model;
   private Map<String, Action> actions;
-  //  private GlassPane glass;
   private FastGlassPane fastGlass;
   private ApplicationFrame af;
   private Colors colors;
   private ScrapGrid grid;
   private CutfilePane cutfile;
-  private ActionListener drawLaterRunnable;
-  private Timer drawLaterTimer;
   private boolean debugSolver = true;
   protected boolean fixedFrameRate = false;
 
@@ -115,7 +86,6 @@ public class SkruiFabEditor {
       af.setSize(800, 600);
     }
     createActions(af.getRootPane());
-    //    glass = new GlassPane(this);
     fastGlass = new FastGlassPane(this);
     af.getRootPane().setGlassPane(fastGlass);
     fastGlass.setVisible(true);
@@ -133,10 +103,6 @@ public class SkruiFabEditor {
             model.getSnapshotMachine().requestSnapshot("Solver simmered down");
           }
         }
-        //        drawStuffLater();
-        //        layers.repaint();
-        //        surface.display();
-        //        requestRedrawGL();
         surface.repaint();
       }
     });
@@ -144,25 +110,26 @@ public class SkruiFabEditor {
     model.setSurface(surface);
     grid = new ScrapGrid(this);
     cutfile = new CutfilePane(this);
+    JPanel utilPanel = new JPanel();
+    utilPanel.setLayout(new BorderLayout());
+    utilPanel.add(grid, BorderLayout.CENTER);
+    utilPanel.add(cutfile, BorderLayout.SOUTH);
     FrontEnd fe = new FrontEnd();
-    //    fe.add(layers, "layers");
+
     fe.add(surface, "layers");
-    fe.add(grid, "grid");
-    fe.add(cutfile, "cutfile");
+    fe.add(utilPanel, "utils");
     fe.addRule(ROOT, N, "layers", N);
-    fe.addRule(ROOT, W, "layers", W);
+    fe.addRule(ROOT, E, "layers", E);
     fe.addRule(ROOT, S, "layers", S);
-    fe.addRule(ROOT, N, "grid", N);
-    fe.addRule(ROOT, E, "grid", E);
-    fe.addRule(ROOT, E, "cutfile", E);
-    fe.addRule(ROOT, S, "cutfile", S);
-    fe.addRule("cutfile", N, "grid", S);
-    fe.addRule("cutfile", W, "layers", E);
-    fe.addRule("cutfile", W, "grid", W);
+    fe.addRule(ROOT, N, "utils", N);
+    fe.addRule(ROOT, W, "utils", W);
+    fe.addRule(ROOT, S, "utils", S);
+    fe.addRule("utils", E, "layers", W);
+
     af.add(fe);
     af.center();
     af.setVisible(true);
-    
+
     model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
   }
 
@@ -229,8 +196,7 @@ public class SkruiFabEditor {
           }
         });
 
-    // 3. For those actions with keyboard accelerators, register them to the
-    // root pane.
+    // 3. Register actions w/ key accelerators to the root pane.
     for (Action action : actions.values()) {
       KeyStroke s = (KeyStroke) action.getValue(Action.ACCELERATOR_KEY);
       if (s != null) {
@@ -245,7 +211,7 @@ public class SkruiFabEditor {
   }
 
   protected void loadSnapshot() {
-
+    bug("Not loading snapshot yet.");
   }
 
   protected void debugState() {
@@ -349,8 +315,6 @@ public class SkruiFabEditor {
     model.getConstraints().wakeUp();
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
-  
-  
 
   public void findStencils(Collection<Segment> segs) {
     StencilFinder sf = new StencilFinder(model);
@@ -393,40 +357,6 @@ public class SkruiFabEditor {
     }
     items.removeAll(doomed);
     ret.addAll(items);
-    return ret;
-  }
-
-  public Color getColor(Segment.Type t) {
-    Color ret = Color.BLACK;
-    if (useDebuggingColor) {
-      switch (t) {
-        case Blob:
-          ret = BLOB_COLOR;
-          break;
-        case Circle:
-          ret = CIRCLE_COLOR;
-          break;
-        case CircularArc:
-          ret = Color.BLUE;
-          break;
-        case Curve:
-          ret = Color.CYAN;
-          break;
-        case Dot:
-          break;
-        case Ellipse:
-          ret = ELLIPSE_COLOR;
-          break;
-        case EllipticalArc:
-          ret = Color.MAGENTA;
-          break;
-        case Line:
-          ret = Color.GREEN;
-          break;
-        case Unknown:
-          break;
-      }
-    }
     return ret;
   }
 
