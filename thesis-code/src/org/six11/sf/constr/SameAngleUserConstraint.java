@@ -9,14 +9,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Angle;
-import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Material;
 import org.six11.sf.SketchBook;
-import org.six11.util.gui.shape.ShapeFactory;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
@@ -196,32 +190,6 @@ public class SameAngleUserConstraint extends UserConstraint {
     return spots;
   }
   
-  public void draw(DrawingBuffer buf, Pt hoverPoint) {
-//    if (hoverPoint != null) {
-//      double nearest = Double.MAX_VALUE;
-//      for (Constraint c : getConstraints()) {
-//        AngleConstraint ac = (AngleConstraint) c;
-//        Pt f = ac.getPtFulcrum();
-//        double d = hoverPoint.distance(f);
-//        nearest = Math.min(d, nearest);
-//      }
-//      double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
-//      Color color = new Color(1, 0, 0, (float) alpha);
-//      for (Constraint c : getConstraints()) {
-//        AngleConstraint ac = (AngleConstraint) c;
-//        Pt f = ac.getPtFulcrum();
-//        Vec vecA = new Vec(f, ac.getPtA());
-//        Vec vecB = new Vec(f, ac.getPtB());
-//        Pt a = f.getTranslated(vecA, DRAW_RADIUS);
-//        Pt b = f.getTranslated(vecB, DRAW_RADIUS);
-//        Vec vecMid = Vec.sum(vecA, vecB);
-//        Pt m = f.getTranslated(vecMid, DRAW_RADIUS);
-//        Arc2D arc = ShapeFactory.makeArc(a, m, b);
-//        DrawingBufferRoutines.drawShape(buf, arc, color, 2.0);
-//      }
-//    }
-  }
-
   public static MultisourceNumericValue.Source mkSource(final Angle angle) {
     return new MultisourceNumericValue.Source() {
       public double getValue() {

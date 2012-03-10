@@ -20,7 +20,7 @@ public abstract class Guide {
     this.type = t;
   }
 
-  public abstract void draw(DrawingBuffer buf, Pt hoverPoint, Color in, Rectangle bounds);
+//  public abstract void draw(DrawingBuffer buf, Pt hoverPoint, Color in, Rectangle bounds);
 
   /**
    * Some guides have one empty point, and calculations defer to the current pen location. Call this

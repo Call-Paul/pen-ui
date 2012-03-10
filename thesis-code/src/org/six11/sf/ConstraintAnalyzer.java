@@ -62,7 +62,6 @@ public class ConstraintAnalyzer {
       }
     }
     model.getConstraints().wakeUp();
-    model.getLayers().repaint();
   }
 
   /**

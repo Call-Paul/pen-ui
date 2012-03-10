@@ -62,11 +62,9 @@ public class SketchBook {
   List<Sequence> scribbles; // raw ink, as the user provided it.
   List<Ink> ink;
 
-  private DrawingBufferLayers layers;
   private DrawingSurface surface;
   private Set<Stencil> selectedStencils;
   private Set<Segment> selectedSegments;
-  private GraphicDebug guibug;
   private Set<Segment> geometry;
   private List<GuidePoint> guidePoints;
   private ConstraintAnalyzer constraintAnalyzer;
@@ -160,18 +158,6 @@ public class SketchBook {
 
   public void addStencil(Stencil s) {
     stencils.add(s);
-  }
-
-  public DrawingBufferLayers getLayers() {
-    return layers;
-  }
-
-  public GraphicDebug getGuiBug() {
-    return guibug;
-  }
-
-  public void setGuibug(GraphicDebug gb) {
-    this.guibug = gb;
   }
 
   public void addInk(Ink newInk) {
@@ -466,10 +452,6 @@ public class SketchBook {
       ret = scrib;
     }
     return ret;
-  }
-
-  public void setLayers(DrawingBufferLayers layers) {
-    this.layers = layers;
   }
 
   public void setSurface(DrawingSurface surface) {

@@ -75,16 +75,6 @@ public class GuidePoint extends Guide {
     return ret;
   }
 
-  @Override
-  public void draw(DrawingBuffer buf, Pt hoverPoint, Color color, Rectangle bounds) {
-    Pt spot = getLocation();
-    double distance = spot.distance(hoverPoint);
-    double alpha = DrawingBufferLayers.getAlpha(distance, 5, 30, 0.1);
-    Color c = new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) (alpha * 255.0));
-    Color alphaBlack = new Color(0f, 0f, 0f, (float) alpha);
-    DrawingBufferRoutines.dot(buf, spot, 3.0, 0.3, alphaBlack, c);
-  }
-
   /**
    * Tells you if seq[start] or seq[end] is near the guide point's location, within some short
    * tolerance like 6 pixels.

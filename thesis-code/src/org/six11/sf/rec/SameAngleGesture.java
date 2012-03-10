@@ -1,31 +1,22 @@
 package org.six11.sf.rec;
 
-import java.awt.Color;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
 import org.six11.sf.Angle;
-import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
-import org.six11.sf.Material;
 import org.six11.sf.Segment;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
-// import org.six11.sf.constr.SameAngleUserConstraint;
 import org.six11.sf.constr.SameAngleUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.data.Lists;
 import org.six11.util.data.RankedList;
 import org.six11.util.math.Interval;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.AngleConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
@@ -34,7 +25,6 @@ import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
 
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class SameAngleGesture extends RecognizedItemTemplate {
 

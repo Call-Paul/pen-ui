@@ -11,7 +11,6 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Angle;
-import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
@@ -47,40 +46,6 @@ public class SameLengthUserConstraint extends UserConstraint {
       }
     }
   }
-
-  public void draw(DrawingBuffer buf, Pt hoverPoint) {
-    if (hoverPoint != null) {
-      double nearest = Double.MAX_VALUE;
-      for (Constraint c : getConstraints()) {
-        DistanceConstraint dc = (DistanceConstraint) c;
-        Line line = dc.getCurrentSegment();
-        double d = Functions.getDistanceBetweenPointAndSegment(hoverPoint, line);
-        nearest = Math.min(d, nearest);
-      }
-//      if (nearest < 50) {
-        double alpha = DrawingBufferLayers.getAlpha(nearest, 10, 80, 0.1);
-        Color color = new Color(1, 0, 0, (float) alpha);
-        for (Constraint c : getConstraints()) {
-          DistanceConstraint dc = (DistanceConstraint) c;
-          if (dc.getValue() == null) {
-            bug("ok, so, this distance constraint has a null value.");
-          }
-          Vec segDir = new Vec(dc.getP1(), dc.getP2());
-          Pt mid = Functions.getMean(dc.getP1(), dc.getP2());
-          if (dc.getValue() instanceof MultisourceNumericValue) {
-            DrawingBufferRoutines.acuteHash(buf, mid, segDir, 12, 1.0, color);
-          } else {
-            Vec segDirNorm = segDir.getNormal();
-            Pt textLoc = mid.getTranslated(segDirNorm, 8);
-            Material.Units units = model.getMasterUnits();
-            double asUnits = Material.fromPixels(units, dc.getValue().getValue());
-            DrawingBufferRoutines.text(buf, textLoc, num(asUnits), color);
-          }
-        }
-//      }
-    }
-  }
-
   public static MultisourceNumericValue.Source mkSource(final Segment seg) {
     return new MultisourceNumericValue.Source() {
       public double getValue() {

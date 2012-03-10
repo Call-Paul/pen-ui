@@ -32,22 +32,6 @@ public class GuideLine extends Guide {
     }
   }
 
-  @Override
-  public void draw(DrawingBuffer buf, Pt hoverPoint, Color in, Rectangle bounds) {
-    if (hoverPoint != null) {
-      double residual = 0;
-      if (b != null) {
-        residual = Functions.getDistanceBetweenPointAndLine(hoverPoint, myLine);
-      }
-      float alpha = (float) DrawingBufferLayers.getAlpha(residual, 5, 30, 0.1);
-      Color c = new Color(in.getRed(), in.getGreen(), in.getBlue(), (int) (alpha * 255f));
-      if (b == null) {
-        myLine = new Line(a, hoverPoint);
-      }
-      DrawingBufferRoutines.screenLine(buf, bounds, myLine, c, 1.2);
-    }
-  }
-
   public boolean claims(Sequence seq, int start, int end) {
     boolean ret = false;
     if (b == null) {

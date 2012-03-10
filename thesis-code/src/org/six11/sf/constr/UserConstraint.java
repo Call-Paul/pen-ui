@@ -97,11 +97,7 @@ public abstract class UserConstraint {
     }
     constraints.clear();
   }
-
-  public void draw(DrawingBuffer buf, Pt hoverPoint) {
-    // by default there is no drawing behavior. subclass this and override draw
-  }
-
+  
   public boolean involves(Pt pt) {
     boolean ret = false;
     for (Constraint c : constraints) {

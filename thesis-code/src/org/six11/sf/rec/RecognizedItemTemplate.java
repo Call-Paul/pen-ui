@@ -12,17 +12,11 @@ import java.util.SortedSet;
 import java.util.Stack;
 import java.util.TreeSet;
 
-import javax.naming.OperationNotSupportedException;
-
 import org.six11.sf.Ink;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.ConvexHull;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.Pt;
-import org.six11.util.solve.Constraint;
 
 import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
@@ -371,10 +365,6 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
       hull.addPoints(prim.getP1(), prim.getP2());
     }
     return new Area(hull.getHullShape());
-  }
-
-  public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
-    bug("draw not implemented for " + name + ". override me.");
   }
 
   /**

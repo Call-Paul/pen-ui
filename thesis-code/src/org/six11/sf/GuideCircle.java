@@ -33,21 +33,6 @@ public class GuideCircle extends Guide {
     }
   }
 
-  public void draw(DrawingBuffer buf, Pt hoverPoint, Color in, Rectangle bounds) {
-    if (hoverPoint != null) {
-      double toHover = center.distance(hoverPoint);
-      double residual = 0;
-      if (fixedRadius) {
-        residual = Math.abs(toHover - rad);
-      } else {
-        myCircle = new Circle(center, center.distance(hoverPoint));
-      }
-      float alpha = (float) DrawingBufferLayers.getAlpha(residual, 5, 30, 0.1);
-      Color c = new Color(in.getRed(), in.getGreen(), in.getBlue(), (int) (alpha * 255f));
-      DrawingBufferRoutines.drawShape(buf, myCircle, c, 1.2);
-    }
-  }
-
   public Pt getCenter() {
     return center;
   }

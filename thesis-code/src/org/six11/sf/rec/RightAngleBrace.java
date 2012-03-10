@@ -1,36 +1,21 @@
 package org.six11.sf.rec;
 
-import java.awt.Color;
-import java.awt.geom.Area;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.six11.sf.DrawingBufferLayers;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
-import org.six11.sf.SegmentDelegate;
 import org.six11.sf.SegmentFilter;
 import org.six11.sf.SketchBook;
 import org.six11.sf.constr.RightAngleUserConstraint;
 import org.six11.sf.constr.UserConstraint;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-import org.six11.util.solve.Constraint;
-import org.six11.util.solve.NumericValue;
-import org.six11.util.solve.OrientationConstraint;
-
 import static java.lang.Math.toRadians;
-import static java.lang.Math.toDegrees;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class RightAngleBrace extends RecognizedItemTemplate {
 
@@ -134,70 +119,13 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     model.addUserConstraint(uc);
   }
 
-  //  private UserConstraint makeUserConstraint(OrientationConstraint rightAngleConstraint) {
-  //    UserConstraint ret = new RightAngleUserConstraint(model, s1.getP1(), s1.getP2(),
-  //        s2.getP1(), s2.getP2(), new NumericValue(Math.toRadians(90)));
-  //    return ret;
-  //  }
-
-  public void draw(Constraint c, RecognizedItem item, DrawingBuffer buf, Pt hoverPoint) {
-    if (hoverPoint != null) {
-      Pt fulcrum = null;
-      Pt left = null;
-      Pt right = null;
-      Segment s1 = item.getSegmentTarget(RightAngleBrace.TARGET_A);
-      Segment s2 = item.getSegmentTarget(RightAngleBrace.TARGET_B);
-      if (s1.getP1() == s2.getP1()) {
-        fulcrum = s1.getP1();
-        left = s1.getP2();
-        right = s2.getP2();
-      } else if (s1.getP1() == s2.getP2()) {
-        fulcrum = s1.getP1();
-        left = s1.getP2();
-        right = s2.getP1();
-      } else if (s1.getP2() == s2.getP1()) {
-        fulcrum = s1.getP2();
-        left = s1.getP1();
-        right = s2.getP2();
-      } else if (s1.getP2() == s2.getP2()) {
-        fulcrum = s1.getP2();
-        left = s1.getP1();
-        right = s2.getP1();
-      }
-      if (fulcrum == null || left == null || right == null) {
-        // do nothing
-      } else {
-        Vec leftV = new Vec(fulcrum, left).getUnitVector();
-        Vec rightV = new Vec(fulcrum, right).getUnitVector();
-        Vec diagonal = Vec.sum(leftV, rightV).getUnitVector();
-        double root2 = Math.sqrt(2);
-        double braceLen = 16;
-        Pt braceCorner = fulcrum.getTranslated(diagonal, root2 * braceLen);
-        Pt braceLeft = fulcrum.getTranslated(leftV, braceLen);
-        Pt braceRight = fulcrum.getTranslated(rightV, braceLen);
-        List<Pt> points = new ArrayList<Pt>();
-        points.add(braceLeft);
-        points.add(braceCorner);
-        points.add(braceRight);
-        double alpha = DrawingBufferLayers.getAlpha(fulcrum.distance(hoverPoint), 10, 80, 0.1);
-        Color color = new Color(1, 0, 0, (float) alpha);
-        DrawingBufferRoutines.lines(buf, points, color, 1.0);
-      }
-    }
-  }
-
   public static Collection<RecognizedItem> resolveConflictSameLengthGesture(RecognizedItem itemA,
       RecognizedItem itemB) {
     Collection<RecognizedItem> doomed = new HashSet<RecognizedItem>();
-//    Collection<Ink> inkA = itemA.getInk();
-//    Collection<Ink> inkB = itemB.getInk();
     String nameA = itemA.getTemplate().getName();
     String nameB = itemB.getTemplate().getName();
     Collection<Ink> strokesA = itemA.getStrokes();
     Collection<Ink> strokesB = itemB.getStrokes();
-//    bug("------------------------");
-//    bug("Item " + nameA + " took " + strokesA.size() + ": " + num(strokesA, " "));
-//    bug("Item " + nameB + " took " + strokesB.size() + ": " + num(strokesB, " "));
     // right-angle gesture with 1 stroke == win
     // ... otherwise ....
     // same-length gesture with 2 strokes == win

@@ -86,7 +86,6 @@ public class SkruiFabEditor {
   //  private Main main;
   private boolean useDebuggingColor = false;
   private boolean useDebuggingPoints = false;
-  private DrawingBufferLayers layers;
   private DrawingSurface surface;
   private SketchBook model;
   private Map<String, Action> actions;
@@ -141,10 +140,7 @@ public class SkruiFabEditor {
         surface.repaint();
       }
     });
-    layers = new DrawingBufferLayers(model);
     surface = new DrawingSurface(model);
-
-    model.setLayers(layers);
     model.setSurface(surface);
     grid = new ScrapGrid(this);
     cutfile = new CutfilePane(this);
@@ -290,15 +286,7 @@ public class SkruiFabEditor {
   }
 
   private void print() {
-    String now = Debug.nowFilenameFriendly();
-    File outFile;
-    int which = 0;
-    do {
-      outFile = new File(System.getProperty("user.dir"), "skruifab-" + now
-          + (which == 0 ? "" : "-" + which) + ".pdf");
-      which++;
-    } while (outFile.exists());
-    layers.print(outFile);
+    bug("Warning: print() does not work anymore. Re-implement");
   }
 
   @SuppressWarnings("unchecked")
