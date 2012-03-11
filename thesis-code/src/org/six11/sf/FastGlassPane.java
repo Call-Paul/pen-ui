@@ -3,9 +3,11 @@ package org.six11.sf;
 import static org.six11.util.Debug.warn;
 
 import java.awt.AWTEvent;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.MouseInfo;
 import java.awt.Point;
@@ -21,6 +23,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.Ellipse2D;
 import java.lang.reflect.InvocationTargetException;
 // import java.util.Timer;
 // import java.util.TimerTask;
@@ -30,6 +33,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
@@ -71,15 +75,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
   public FastGlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
     this.activity = ActivityMode.None;
-    //    timer = new Timer();
-    //    tt = new TimerTask() {
-    //      public void run() {
-    //        PointerInfo info = MouseInfo.getPointerInfo();
-    //        Point loc = info.getLocation();
-    //        placePoint(loc);
-    //      }
-    //    };
-    //    timer.schedule(tt, 10, 10);
     timer = new Timer(10, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
         PointerInfo info = MouseInfo.getPointerInfo();
@@ -236,6 +231,14 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   protected void secretMouseMove(Point loc, long now) {
     MouseEventInfo mei = new MouseEventInfo(loc);
+    if (prevComponent != mei.component) {
+      if (prevComponent != null) {
+        givePenEvent(prevComponent, PenEvent.buildExitEvent(this, (Pt) null));
+      }
+      if (mei.component != null) {
+        givePenEvent(mei.component, PenEvent.buildEnterEvent(this, new Pt(mei.componentPoint, now)));
+      }
+    }
     if (mei.component != null) {
       givePenEvent(mei.component, PenEvent.buildHoverEvent(this, new Pt(mei.componentPoint, now)));
     }
@@ -362,6 +365,28 @@ public class FastGlassPane extends JComponent implements MouseListener {
         componentPoint = SwingUtilities.convertPoint(FastGlassPane.this, glassPanePoint, component);
       }
     }
+  }
+
+  public void drawAddMeSign(Graphics2D g, float circX, float circY, float circD, Color fill, Color linework) {
+    Ellipse2D circ = new Ellipse2D.Float(circX, circY, circD, circD);
+    g.setColor(fill);
+    g.fill(circ);
+    g.setColor(linework);
+    g.setStroke(Strokes.THIN_STROKE);
+    g.draw(circ);
+    float r = circD / 2;
+    float centerX = circX + r;
+    float centerY = circY + r;
+    float lineLen = circD - 8;
+    float halfLen = lineLen / 2;
+    int midX = (int) centerX;
+    int topX = (int) (centerX - halfLen);
+    int botX = (int) (centerX + halfLen);
+    int midY = (int) centerY;
+    int topY = (int) (centerY - halfLen);
+    int botY = (int) (centerY + halfLen);
+    g.drawLine(midX, topY, midX, botY);
+    g.drawLine(topX, midY, botX, midY);
   }
 
 }

@@ -935,9 +935,6 @@ public class SketchBook {
   public void setDraggingSelection(boolean b) {
     draggingSelection = b;
     if (draggingSelection) {
-      //      DrawingBuffer sel = layers.getLayer(GraphicDebug.DB_SELECTION);
-      //      BufferedImage bigImage = sel.getImage();
-      //      draggingThumb = Scalr.resize(bigImage, 48);
       bug("Dragging. come back here and fix the image stuff");
       surface.requestStencilThumb();
       glass.setActivity(FastGlassPane.ActivityMode.DragSelection);

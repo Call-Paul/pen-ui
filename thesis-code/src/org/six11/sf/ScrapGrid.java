@@ -8,8 +8,10 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -25,6 +27,7 @@ import org.six11.sf.FastGlassPane.ActivityMode;
 import org.six11.util.data.FSM;
 import org.six11.util.data.FSM.Transition;
 import org.six11.util.gui.Components;
+import org.six11.util.gui.Images;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
@@ -46,8 +49,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private static final String MOVED_FAR = "moved far";
   private static final String UP = "up";
   protected static final double TAP_SLOP_DIST = 10;
-
+  private static final Color BUTTON_REGION_GLOW_COLOR = new Color(0.44f, 0.64f, 0.88f, 1f);
   public static Color BUTTON_REGION_COLOR = new Color(0.35f, 0.35f, 0.35f, 0.7f);
+  public static Color ADD_ME_COLOR = new Color(0.57f, 0.78f, 0.57f);
 
   public static class GridCellContent {
     int pageNum;
@@ -72,6 +76,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private Pt downPt;
   private Pt lastPenPt;
   private Page dragPage;
+  private boolean glowTop;
+  private boolean glowBottom;
+  private Page highlightPage;
 
   public ScrapGrid(final SkruiFabEditor editor) {
     setName("ScrapGrid");
@@ -140,6 +147,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   public Image getSelectedThumb() {
     Image ret = null;
+    if (dragPage != null) {
+      ret = dragPage.getCachedThumb();
+    }
     return ret;
   }
 
@@ -191,9 +201,11 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       pageY = pageY + vertPad + pageHeight;
     }
 
-    // draw the button regions at top and bottom
-    g.setColor(BUTTON_REGION_COLOR);
+    Color topColor = glowTop ? BUTTON_REGION_GLOW_COLOR : BUTTON_REGION_COLOR;
+    Color bottomColor = glowBottom ? BUTTON_REGION_GLOW_COLOR : BUTTON_REGION_COLOR;
+    g.setColor(topColor);
     g.fillRect(0, 0, w, topBottom);
+    g.setColor(bottomColor);
     g.fillRect(0, h - topBottom, w, topBottom);
     int cx = w / 2;
     int cy = topBottom / 2;
@@ -202,9 +214,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     g.setStroke(Strokes.THIN_STROKE);
     g.setColor(Color.WHITE);
     g.fillRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
-    g.setColor(Color.BLACK);
+    g.setColor(bottomColor);
     g.drawRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
     g.setStroke(Strokes.BOLD_STROKE);
+    g.setColor(topColor);
     drawChevron(g, new Pt(bx + buttonWidth / 2, by + buttonHeight / 2), new Vec(0, -1), chevW,
         chevH);
     cy = h - (topBottom / 2);
@@ -212,9 +225,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     g.setStroke(Strokes.THIN_STROKE);
     g.setColor(Color.WHITE);
     g.fillRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
-    g.setColor(Color.BLACK);
+    g.setColor(bottomColor);
     g.drawRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
     g.setStroke(Strokes.BOLD_STROKE);
+    g.setColor(bottomColor);
     drawChevron(g, new Pt(bx + buttonWidth / 2, by + buttonHeight / 2), new Vec(0, 1), chevW, chevH);
   }
 
@@ -264,20 +278,27 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       int cy = pageY + vertPad + (pageHeight / 2);
       int textX = (int) (cx - (strBox.getWidth() / 2));
       int textY = (int) (cy + (strBox.getHeight() / 2));
-      g.setColor(Color.LIGHT_GRAY);
+      if (page == hoverPage) {
+        g.setColor(BUTTON_REGION_GLOW_COLOR);
+      } else {
+        g.setColor(Color.LIGHT_GRAY);
+      }
       g.drawString(empty, textX, textY);
     }
     if (isCurrent) {
-      g.setStroke(Strokes.THIN_STROKE);
-      g.setColor(Color.BLUE);
+      g.setStroke(Strokes.MEDIUM_STROKE);
+      g.setColor(BUTTON_REGION_GLOW_COLOR);
     } else if (page == hoverPage) {
       g.setStroke(Strokes.VERY_THIN_STROKE);
-      g.setColor(Color.GREEN);
+      g.setColor(BUTTON_REGION_GLOW_COLOR);
     } else {
       g.setStroke(Strokes.VERY_THIN_STROKE);
       g.setColor(Color.BLACK);
     }
     g.drawRect(pageX, pageY + vertPad, pageWidth, pageHeight);
+    if (page == highlightPage) {
+      editor.getGlass().drawAddMeSign(g, pageX + 2, pageY + vertPad + 2, 24, ADD_ME_COLOR, Color.BLACK);
+    }
   }
 
   private Page getPage(int pg) {
@@ -291,21 +312,23 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   @Override
   public void handlePenEvent(PenEvent ev) {
     lastPenPt = ev.getPt();
+    highlightPage = null;
     switch (ev.getType()) {
       case Enter:
         break;
       case Exit:
+        hoverPage = null;
+        glowBottom = false;
+        glowTop = false;
         break;
       case Hover:
         hover(ev.getPt());
         break;
       case Drag:
-        if (editor.getGlass().getActivity() == FastGlassPane.ActivityMode.None) {
-          //          select(new Point(ev.getPt().ix(), ev.getPt().iy()));
-          //          if (getSelectedCellContent() != null) {
-          //            editor.getGlass().setActivity(FastGlassPane.ActivityMode.DragScrap);
-          //          }
-        }
+        //        hoverPage = null;
+        //        if (editor.getGlass().getActivity() == FastGlassPane.ActivityMode.DragPage) {
+        //          highlightTarget(ev.getPt());
+        //        } 
         fsm.addEvent(MOVE);
         break;
       case Down:
@@ -322,12 +345,26 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     repaint();
   }
 
+  void highlightTarget(Point pt) {
+    highlightPage = getPageAt(pt);
+    repaint();
+  }
+
   private void hover(Pt pt) {
-    Page targetPage = getPageAt(pt);
-    if (hoverPage != targetPage) {
-      hoverPage = targetPage;
-      repaint();
+    // if we are hovering over the top/bottom areas, light them up and null out the hoverPage
+    if (pt.getY() < topBottom || pt.getY() > (getHeight() - topBottom)) {
+      hoverPage = null;
+      glowTop = pt.getY() < topBottom;
+      glowBottom = pt.getY() > (getHeight() - topBottom);
+    } else {
+      glowBottom = false;
+      glowTop = false;
+      Page targetPage = getPageAt(pt);
+      if (hoverPage != targetPage) {
+        hoverPage = targetPage;
+      }
     }
+    repaint();
   }
 
   private Page getPageAt(Point2D pt) {
@@ -343,7 +380,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   @Override
   public void dragMove(Event ev) {
-    //    hover(ev.getPt());
+    hoverPage = null;
+    if (editor.getGlass().getActivity() == FastGlassPane.ActivityMode.DragPage) {
+      highlightTarget(ev.getPt());
+    }
   }
 
   @Override
@@ -353,6 +393,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   @Override
   public void dragExit(Event ev) {
     hoverPage = null;
+    glowBottom = false;
+    glowTop = false;
+    highlightPage = null;
+    repaint();
     bug("exit while dragging");
   }
 
@@ -378,6 +422,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private void copy(Page src, Page dest) {
     Snapshot topSnap = src.getSnapshotMachine().getCurrent();
     dest.getSnapshotMachine().push(topSnap);
+    //    dest.setCachedThumb(Images.deepCopy(src.getCachedThumb()));
+    dest.setTinyThumb(Images.deepCopy(src.getTinyThumb()));
   }
 
   public void clear() {

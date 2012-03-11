@@ -47,6 +47,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   private boolean dropBorder;
   private SkruiFabEditor editor;
   private Material material;
+  private boolean addMe;
 
   public CutfilePane(SkruiFabEditor editor) {
     this.editor = editor;
@@ -81,11 +82,13 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     int textY = (int) (cy + (r.getHeight() / 2));
     g.drawString(str, textX, textY);
     BufferedImage im = material.getSmallImage(getWidth(), getHeight());
-    bug("Does the cutfile have image data? " + (im != null));
     if (im != null) {
       g.setColor(Color.LIGHT_GRAY);
       g.fill(new Rectangle2D.Double(0, 0, im.getWidth(), im.getHeight()));
       g.drawImage(im, 0, 0, null);
+    }
+    if (addMe) {
+      editor.getGlass().drawAddMeSign(g, 4, 4, 24, ScrapGrid.ADD_ME_COLOR, Color.BLACK);
     }
   }
 
@@ -141,14 +144,12 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   @Override
   public void dragEnter(Event ev) {
-    // TODO Auto-generated method stub
-
+    addMe = true;
   }
 
   @Override
   public void dragExit(Event ev) {
-    // TODO Auto-generated method stub
-
+    addMe = false;
   }
 
   @Override
@@ -165,12 +166,15 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
         }
         break;
       case DragSelection:
+        bug("Dropping selected stencils: " + editor.getModel().getSelectedStencils());
+        addStencils(editor.getModel().getSelectedStencils());
         break;
       case None:
         break;
       default:
         bug("unhandled state: " + ev.getMode());
     }
+    addMe = false;
     repaint();
   }
 
