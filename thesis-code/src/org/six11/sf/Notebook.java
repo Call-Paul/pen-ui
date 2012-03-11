@@ -17,10 +17,12 @@ import static org.six11.util.Debug.bug;
 
 public class Notebook {
 
+  public final static long AUTO_SAVE_TIMEOUT = 4 * 1000; // e.g. 20 * 1000 = 20 seconds
   private SketchBook model;
   private File notebookDir;
   private Page currentPage;
   private Set<Page> pages;
+  private boolean shouldLoad;
 
   private static FilenameFilter pagesFilter = new FilenameFilter() {
     public boolean accept(File dir, String fileName) {
@@ -34,6 +36,7 @@ public class Notebook {
     this.model = model;
     this.notebookDir = notebookDir;
     this.pages = new HashSet<Page>();
+    this.shouldLoad = true;
     bug("Created notebook file in " + notebookDir.getAbsolutePath());
   }
 
@@ -81,7 +84,6 @@ public class Notebook {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
-    ret.load();
     return ret;
   }
 
@@ -122,37 +124,45 @@ public class Notebook {
     return mainFile;
   }
 
-  private void load() {
+  public void loadFromDisk() {
+    shouldLoad = false;
+    bug("Ok trying to load from " + notebookDir.getAbsolutePath());
     File mainFile = getMainFile();
     File[] pageFiles = notebookDir.listFiles(pagesFilter);
+    bug("" + pageFiles.length + " pages");
     String mainStr = FileUtil.loadStringFromFile(mainFile);
     int pageNum = 0;
     if (mainStr.length() > 0) {
       try {
         JSONObject mainJson = new JSONObject(mainStr);
         pageNum = mainJson.optInt("current-page", 0); // defaults to 0
-        bug("It seems there are " + pageFiles.length + " page files.");
-        for (int i = 0; i < pageFiles.length; i++) {
-          try {
-            String pageStr = FileUtil.loadStringFromFile(pageFiles[i]);
-            JSONObject obj = new JSONObject(pageStr);
-            Page p = new Page(model, obj);
-            pages.add(p);
-            bug("Loaded page " + p.getPageNumber());
-          } catch (JSONException ex) {
-            bug("Can't read page file: " + pageFiles[i].getAbsolutePath());
-          }
-        }
       } catch (JSONException e) {
         e.printStackTrace();
+      }
+    }
+    bug("It seems there are " + pageFiles.length + " page files.");
+    for (int i = 0; i < pageFiles.length; i++) {
+      try {
+        bug("Loading page " + i);
+        String pageStr = FileUtil.loadStringFromFile(pageFiles[i]);
+        JSONObject obj = new JSONObject(pageStr);
+        Page p = new Page(model, obj);
+        addPage(p);
+        bug("Loaded page " + p.getPageNumber());
+      } catch (JSONException ex) {
+        bug("Can't read page file: " + pageFiles[i].getAbsolutePath());
       }
     }
     Page maybeCurrent = getPage(pageNum);
     if (maybeCurrent == null) {
       maybeCurrent = new Page(model, pageNum);
-      pages.add(maybeCurrent);
+      addPage(maybeCurrent);
     }
     currentPage = maybeCurrent;
+  }
+
+  public void addPage(Page page) {
+    pages.add(page);
   }
 
   public Page getPage(int pageNum) {
@@ -175,7 +185,7 @@ public class Notebook {
     Page existing = getPage(pg);
     if (existing == null) {
       Page p = new Page(model, pg);
-      pages.add(p);
+      addPage(p);
       existing = p;
     }
     return existing;
@@ -191,4 +201,34 @@ public class Notebook {
     model.getEditor().getGrid().repaint();
   }
 
+  public boolean shouldLoad() {
+    return shouldLoad;
+  }
+
+  public void maybeSave(boolean ignoreTimeout) {
+    long now = System.currentTimeMillis();
+    for (Page page : pages) {
+      if (page.getSnapshotMachine().isDirty()) {
+        long dur = now - page.getSnapshotMachine().getLastDirtyTime();
+        if (ignoreTimeout || dur > AUTO_SAVE_TIMEOUT) {
+          long start = System.currentTimeMillis();
+          int chars = 0;
+          bug("Saving page " + page.getPageNumber() + "...");
+          try {
+            JSONObject obj = page.save();
+            File pageFile = new File(notebookDir, "page-" + page.getPageNumber() + ".json");
+            String pageStr = obj.toString();
+            chars = pageStr.length();
+            FileUtil.writeStringToFile(pageFile, obj.toString(), false);
+            page.getSnapshotMachine().clearDirty();
+          } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+          long elapsed = System.currentTimeMillis() - start;
+          bug("Wrote " + chars + " chars in " + elapsed + " ms");
+        }
+      } 
+    }
+  }
 }

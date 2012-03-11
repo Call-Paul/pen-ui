@@ -195,7 +195,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     int pageY = topBottom;
     Page currentPage = getCurrentPage();
     while (pageY < h) {
-      boolean isCurrent = (currentPage.getPageNumber() == pageNum);
+      boolean isCurrent = (currentPage != null) && (currentPage.getPageNumber() == pageNum);
       paintPage(g, pageNum, pageX, pageY, vertPad, innerWidth, pageHeight, isCurrent);
       pageNum = pageNum + 1;
       pageY = pageY + vertPad + pageHeight;

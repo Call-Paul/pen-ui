@@ -58,7 +58,6 @@ public abstract class UserConstraint {
       int cID = constraintIDs.getInt(i);
       Constraint c = model.getConstraints().getVars().getConstraintWithID(cID);
       if (c != null) {
-        bug("User constraint " + name + " found primitive constraint " + cID);
         constraints.add(c);
       } else {
         bug("Warning: user constraint " + name + " can not find primitive constraint " + cID);

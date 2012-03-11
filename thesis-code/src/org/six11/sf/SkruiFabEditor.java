@@ -23,6 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import javax.swing.Action;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -116,7 +119,7 @@ public class SkruiFabEditor {
     utilPanel.setLayout(new BorderLayout());
     utilPanel.add(grid, BorderLayout.CENTER);
     utilPanel.add(cutfile, BorderLayout.SOUTH);
-    
+
     fe = new FrontEnd();
     fe.add(surface, "layers");
     fe.add(utilPanel, "utils");
@@ -131,8 +134,20 @@ public class SkruiFabEditor {
     af.add(fe);
     af.center();
     af.setVisible(true);
-
-    model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
+    if (model.getNotebook().shouldLoad()) {
+      bug("Notebook should load.");
+      model.getNotebook().loadFromDisk();
+    } else {
+      model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
+    }
+    Timer fileSaveTimer = new Timer();
+    TimerTask fileSaveTask = new TimerTask() {
+      public void run() {
+        model.getNotebook().maybeSave(false);
+      }
+    };
+    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
+    
   }
 
   public JFrame getApplicationFrame() {
@@ -199,7 +214,7 @@ public class SkruiFabEditor {
         });
 
   }
-  
+
   private void registerKeyboardActions(JRootPane rp) {
     // 3. Register actions w/ key accelerators to the root pane.
     for (Action action : actions.values()) {

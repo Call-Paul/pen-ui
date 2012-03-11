@@ -48,6 +48,10 @@ public class SnapshotMachine {
 
   private Set<Integer> staleDisplayLists;
 
+  private long dirtyTime;
+
+  private boolean dirty;
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.state = new ArrayList<Snapshot>();
@@ -88,7 +92,6 @@ public class SnapshotMachine {
     Snapshot ret = new Snapshot(model);
     bug("Made a snapshot!");
     push(ret);
-    
     if (rootDir != null) {
       File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
       File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
@@ -199,9 +202,19 @@ public class SnapshotMachine {
   }
 
   public void load(Snapshot snap) {
+    setDirty();
     bug("Loading " + snap);
     snap.load();
     bug("Loaded " + snap);
+  }
+
+  public void setDirty() {
+    dirtyTime = System.currentTimeMillis();
+    dirty = true;
+  }
+  
+  public void clearDirty() {
+    dirty = false;
   }
 
   public Snapshot undo() {
@@ -210,7 +223,6 @@ public class SnapshotMachine {
       stateCursor = stateCursor - 1; // decrement
       ret = state.get(stateCursor - 1);
     }
-    //    report("undo");
     return ret;
   }
 
@@ -220,18 +232,7 @@ public class SnapshotMachine {
       ret = state.get(stateCursor);
       stateCursor = stateCursor + 1;
     }
-    //    report("redo");
     return ret;
-  }
-
-  private void report(String what) {
-    bug("Just performed action: " + what);
-    bug("State list (cursor is at " + stateCursor + "):");
-    for (int i = 0; i < state.size(); i++) {
-      String after = i == stateCursor ? "*" : "";
-      bug("  " + state.get(i) + " " + after);
-    }
-    bug("  <empty slot> " + (stateCursor >= state.size() ? "*" : ""));
   }
 
   public Snapshot getCurrent() {
@@ -247,11 +248,20 @@ public class SnapshotMachine {
   }
 
   public void push(Snapshot snap) {
+    setDirty();
     state.add(stateCursor, snap); // add snapshot at cursor
     stateCursor = stateCursor + 1; // increment cursor
     for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
       Snapshot old = state.remove(i);
       staleDisplayLists.add(old.getDisplayListID());
     }
+  }
+  
+  public long getLastDirtyTime() {
+    return dirtyTime;
+  }
+
+  public boolean isDirty() {
+    return dirty;
   }
 }

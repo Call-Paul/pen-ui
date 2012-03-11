@@ -26,10 +26,10 @@ public class Snapshot {
   private SketchBook model;
   private JSONObject top;
   public long created; // available in JSON string under 'created' key. 
-  
-//  private BufferedImage img;
+
+  //  private BufferedImage img;
   private int displayListID;
-  
+
   public String toString() {
     return "Snapshot " + id;
   }
@@ -68,7 +68,7 @@ public class Snapshot {
         geomArr.put(seg.toJson());
       }
       top.put("geometry", geomArr);
-      
+
       //
       // user constraints
       //
@@ -78,7 +78,7 @@ public class Snapshot {
         userConstraintsArr.put(uc.toJson());
       }
       top.put("userConstraints", userConstraintsArr);
-      
+
       //
       // stencils
       //
@@ -88,7 +88,7 @@ public class Snapshot {
         stencilArr.put(s.toJson());
       }
       top.put("stencils", stencilArr);
-      
+
       //
       // selected stencils
       //
@@ -98,7 +98,7 @@ public class Snapshot {
         selStencilArr.put(s.getId());
       }
       top.put("selectedStencils", selStencilArr);
-      
+
       //
       // selected segments
       //
@@ -108,25 +108,22 @@ public class Snapshot {
         selSegArr.put(s.getId());
       }
       top.put("selectedSegments", selSegArr);
-    
-    } catch (JSONException e) {
-      e.printStackTrace();
-    }
-  }
-  
-  public Snapshot(String str) {
-    try {
-      top = new JSONObject(str);
-      load();
+
     } catch (JSONException e) {
       e.printStackTrace();
     }
   }
 
+  public Snapshot(SketchBook model, JSONObject obj) {
+    this.model = model;
+    top = obj;
+    load();
+  }
+
   public void setDisplayListID(int displayListID) {
     this.displayListID = displayListID;
   }
-  
+
   public boolean load() {
     boolean ok = true;
     JsonIO io = new JsonIO();
@@ -155,62 +152,62 @@ public class Snapshot {
       // geometry
       //
       JSONArray geomArray = top.getJSONArray("geometry");
-      for (int i=0; i < geomArray.length(); i++) {
+      for (int i = 0; i < geomArray.length(); i++) {
         JSONObject segObj = geomArray.getJSONObject(i);
         Segment seg = SnapshotMachine.load(segObj, model);
         model.addGeometry(seg);
         seg.getDelegate().validate(model);
       }
-      
+
       //
       // user constraints
       //
       JSONArray ucArray = top.getJSONArray("userConstraints");
-      for (int i=0; i < ucArray.length(); i++) {
+      for (int i = 0; i < ucArray.length(); i++) {
         JSONObject ucObj = ucArray.getJSONObject(i);
         UserConstraint uc = UserConstraint.fromJson(model, ucObj);
         model.addUserConstraint(uc);
       }
-      
+
       //
       // stencils
       //
       JSONArray stencilArr = top.getJSONArray("stencils");
-      for (int i=0; i < stencilArr.length(); i++) {
+      for (int i = 0; i < stencilArr.length(); i++) {
         JSONObject stencilObj = stencilArr.getJSONObject(i);
         Stencil stencil = new Stencil(model, stencilObj);
         model.addStencil(stencil);
       }
-      
+
       //
       // selectedStencils
       //
       JSONArray selStencilArr = top.getJSONArray("selectedStencils");
       Set<Stencil> sel = new HashSet<Stencil>();
-      for (int i=0; i < selStencilArr.length(); i++) {
+      for (int i = 0; i < selStencilArr.length(); i++) {
         int stencilID = selStencilArr.getInt(i);
         sel.add(model.getStencil(stencilID));
       }
       model.setSelectedStencils(sel);
-      
+
       //
       // selectedSegments
       //
       JSONArray selSegArr = top.getJSONArray("selectedSegments");
       Set<Segment> selSegs = new HashSet<Segment>();
-      for (int i=0; i < selSegArr.length(); i++) {
+      for (int i = 0; i < selSegArr.length(); i++) {
         int segID = selSegArr.getInt(i);
         selSegs.add(model.getSegment(segID));
       }
       model.setSelectedSegments(selSegs);
-      
+
     } catch (JSONException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
     return ok;
   }
-  
+
   public int getDisplayListID() {
     return displayListID;
   }

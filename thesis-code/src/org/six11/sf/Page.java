@@ -3,6 +3,8 @@ package org.six11.sf;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import static org.six11.util.Debug.bug;
 
@@ -19,7 +21,12 @@ public class Page {
     this.model = model;
     this.snapshotMachine = new SnapshotMachine(model);
     this.rect = new Rectangle();
-    load(obj);
+    try {
+      load(obj);
+    } catch (JSONException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
   }
 
   public Page(SketchBook model, int pageNum) {
@@ -29,8 +36,28 @@ public class Page {
     this.rect = new Rectangle();
   }
 
-  private void load(JSONObject obj) {
-    // TODO
+  public void load(JSONObject obj) throws JSONException {
+    pageNum = obj.getInt("pageNum");
+    JSONArray pageArr = obj.getJSONArray("snapshots");
+    for (int i = 0; i < pageArr.length(); i++) {
+      Snapshot snap = new Snapshot(model, pageArr.getJSONObject(i));
+      snapshotMachine.push(snap);
+      bug("page " + pageNum + " / snap " + i);
+    }
+  }
+
+  public JSONObject save() throws JSONException {
+    JSONArray snaps = new JSONArray();
+    bug("Adding " + snapshotMachine.length() + " snapshots for page " + pageNum);
+    for (int i = 0; i < snapshotMachine.length(); i++) {
+      Snapshot snap = snapshotMachine.get(i);
+      JSONObject json = snap.getJSONRoot();
+      snaps.put(json);
+    }
+    JSONObject ret = new JSONObject();
+    ret.put("pageNum", pageNum);
+    ret.put("snapshots", snaps);
+    return ret;
   }
 
   public SnapshotMachine getSnapshotMachine() {
@@ -67,7 +94,7 @@ public class Page {
   public Rectangle getRectangle() {
     return rect;
   }
-  
+
   public String toString() {
     return "Page " + pageNum;
   }
