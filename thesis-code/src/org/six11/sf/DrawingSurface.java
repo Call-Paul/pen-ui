@@ -10,9 +10,7 @@ import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
-import java.awt.geom.GeneralPath;
 import java.awt.image.BufferedImage;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,13 +25,9 @@ import javax.media.opengl.GLCapabilities;
 import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
-import javax.media.opengl.Threading;
-import javax.media.opengl.awt.GLCanvas;
 import javax.media.opengl.awt.GLJPanel;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
-
-import jogamp.opengl.glu.nurbs.DisplayList;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
@@ -50,7 +44,6 @@ import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 
-import com.jogamp.opengl.util.FPSAnimator;
 import com.jogamp.opengl.util.awt.Screenshot;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
@@ -87,15 +80,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
 
   protected static final int UNDO_REDO_THRESHOLD = 40;
-  private static final Color PAUSE_COLOR = Color.YELLOW.darker();
   private static final double FS_SMOOTH_DAMPING = 0.25; // started out at 0.025
 
   private TextRenderer textRenderer18;
 
   protected GLU glu;
-
-  // pen listeners
-  private List<PenListener> penListeners;
 
   // flow selection variables.
   private List<Pt> fsRecent;
@@ -148,7 +137,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     //    animator.add(this);
     //    animator.start();
     setName("DrawingSurface");
-    penListeners = new ArrayList<PenListener>();
+    
     textRenderers = new HashMap<Integer, TextRenderer>();
     Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
       public void eventDispatched(AWTEvent ev) {
