@@ -692,7 +692,7 @@ public class SketchBook {
       surface.clearScribble();
       surface.display();
       editor.getGrid().clear();
-//      editor.getCutfilePane().clear();
+      //      editor.getCutfilePane().clear();
       actions.clear();
       redoActions.clear();
     } catch (Exception ex) {
@@ -1432,7 +1432,7 @@ public class SketchBook {
         if (!SketchBook.hasName(seg.getP2())) {
           getConstraints().addPoint(nextPointName(), seg.getP2());
         } else {
-         getConstraints().addPoint(seg.getP2());
+          getConstraints().addPoint(seg.getP2());
         }
       }
     }

@@ -186,7 +186,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         gl.glEndList();
         setPageThumbnail(drawable);
       }
-
+      
       if (requestStencilThumbnail) {
         setStencilThumbnail(drawable);
         requestStencilThumbnail = false;
@@ -352,7 +352,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
             gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
             renderContent(drawable, size);
             gl.glEndList();
-            if (snapIdx == page.getSnapshotMachine().length() - 1) {
+            if (snapIdx == page.getSnapshotMachine().getCurrentIdx()) {
               setPageThumbnail(drawable);
             }
           }
@@ -577,12 +577,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     });
 
-    //    f.addChangeListener(new ChangeListener() {
-    //      public void stateChanged(ChangeEvent arg0) {
-    //        bug("state: " + fsFSM.getState());
-    //      }
-    //    });
-    //    f.setDebugMode(true);
     this.fsFSM = f;
   }
 

@@ -38,12 +38,18 @@ public class Page {
 
   public void load(JSONObject obj) throws JSONException {
     pageNum = obj.getInt("pageNum");
+    int currentIdx = obj.getInt("snapshotCursor");
     JSONArray pageArr = obj.getJSONArray("snapshots");
     for (int i = 0; i < pageArr.length(); i++) {
-      Snapshot snap = new Snapshot(model, pageArr.getJSONObject(i));
-      snapshotMachine.push(snap);
-      bug("page " + pageNum + " / snap " + i);
+      try {
+        Snapshot snap = new Snapshot(model, pageArr.getJSONObject(i));
+        snapshotMachine.push(snap);
+        bug("Loaded from disk: page " + pageNum + " / snap " + i);
+      } catch (Exception ex) {
+        bug("Warning: was unable to load snapshot at snapshots[" + i + "]");
+      }
     }
+    snapshotMachine.setCurrentIdx(currentIdx);
   }
 
   public JSONObject save() throws JSONException {
@@ -56,10 +62,11 @@ public class Page {
     }
     JSONObject ret = new JSONObject();
     ret.put("pageNum", pageNum);
+    ret.put("snapshotCursor", getSnapshotMachine().getCurrentIdx());
     ret.put("snapshots", snaps);
     return ret;
   }
-  
+
   public boolean hasModelData() {
     return getSnapshotMachine().length() > 0;
   }
@@ -101,6 +108,10 @@ public class Page {
 
   public String toString() {
     return "Page " + pageNum;
+  }
+
+  public void clearThumb() {
+    setTinyThumb(null);
   }
 
 }

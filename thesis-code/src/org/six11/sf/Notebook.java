@@ -223,7 +223,6 @@ public class Notebook {
         if (ignoreTimeout || dur > AUTO_SAVE_TIMEOUT) {
           long start = System.currentTimeMillis();
           int chars = 0;
-          bug("Saving page " + page.getPageNumber() + "...");
           try {
             JSONObject obj = page.save();
             File pageFile = new File(notebookDir, "page-" + page.getPageNumber() + ".json");
@@ -236,7 +235,7 @@ public class Notebook {
             e.printStackTrace();
           }
           long elapsed = System.currentTimeMillis() - start;
-          bug("Wrote " + chars + " chars in " + elapsed + " ms");
+          bug("Wrote page " + page.getPageNumber() + ": " + chars + " chars in " + elapsed + " ms");
         }
       } 
     }

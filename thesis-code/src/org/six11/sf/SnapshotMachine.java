@@ -234,7 +234,6 @@ public class SnapshotMachine {
     if (stateCursor > 1) { // don't go below one
       stateCursor = stateCursor - 1; // decrement
       ret = state.get(stateCursor - 1);
-      bug((stateCursor - 1) + " / " + length());
     } else {
       bug("Unable to undo. Cursor: " + stateCursor + " / " + length());
     }
@@ -246,7 +245,6 @@ public class SnapshotMachine {
     if (stateCursor < state.size()) { // don't got beyond end
       ret = state.get(stateCursor);
       stateCursor = stateCursor + 1;
-      bug((stateCursor - 1) + " / " + length());
     } else {
       bug("Unable to redo. Cursor: " + stateCursor + " / " + length());
     }
@@ -271,7 +269,6 @@ public class SnapshotMachine {
 
   public void push(Snapshot snap) {
     setDirty();
-    bug("Push snapshot to index " + stateCursor);
     if (stateCursor < state.size()) {
       Snapshot old = state.remove(stateCursor);
       staleDisplayLists.add(old.getDisplayListID());
@@ -286,6 +283,10 @@ public class SnapshotMachine {
 
   public boolean isDirty() {
     return dirty;
+  }
+
+  public void setCurrentIdx(int currentIdx) {
+    stateCursor = currentIdx + 1;
   }
 
 }

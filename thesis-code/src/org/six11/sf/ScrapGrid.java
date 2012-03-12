@@ -125,12 +125,12 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     fsm.addTransition(new Transition(MOVE, DRAGGING, DRAGGING));
     fsm.addTransition(new Transition(UP, DRAGGING, IDLE));
 
-    // debugging
-    fsm.addChangeListener(new ChangeListener() {
-      public void stateChanged(ChangeEvent ev) {
-        bug("New state: " + fsm.getState());
-      }
-    });
+//    // debugging
+//    fsm.addChangeListener(new ChangeListener() {
+//      public void stateChanged(ChangeEvent ev) {
+//        bug("New state: " + fsm.getState());
+//      }
+//    });
   }
 
   protected void tap(Pt pt) {
