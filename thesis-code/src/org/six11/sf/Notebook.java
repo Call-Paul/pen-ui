@@ -22,7 +22,8 @@ public class Notebook {
   private File notebookDir;
   private Page currentPage;
   private Set<Page> pages;
-  private boolean shouldLoad;
+  private boolean shouldLoadDisk;
+  private boolean shouldLoadDLs;
 
   private static FilenameFilter pagesFilter = new FilenameFilter() {
     public boolean accept(File dir, String fileName) {
@@ -36,7 +37,8 @@ public class Notebook {
     this.model = model;
     this.notebookDir = notebookDir;
     this.pages = new HashSet<Page>();
-    this.shouldLoad = true;
+    this.shouldLoadDisk = true;
+    this.shouldLoadDLs = true;
     bug("Created notebook file in " + notebookDir.getAbsolutePath());
   }
 
@@ -125,7 +127,7 @@ public class Notebook {
   }
 
   public void loadFromDisk() {
-    shouldLoad = false;
+    shouldLoadDisk = false;
     bug("Ok trying to load from " + notebookDir.getAbsolutePath());
     File mainFile = getMainFile();
     File[] pageFiles = notebookDir.listFiles(pagesFilter);
@@ -201,8 +203,16 @@ public class Notebook {
     model.getEditor().getGrid().repaint();
   }
 
-  public boolean shouldLoad() {
-    return shouldLoad;
+  public boolean shouldLoadFromDisk() {
+    return shouldLoadDisk;
+  }
+  
+  public boolean shouldLoadDisplayLists() {
+    return shouldLoadDLs;
+  }
+  
+  public void setDisplayListsLoaded() {
+    shouldLoadDLs = false;
   }
 
   public void maybeSave(boolean ignoreTimeout) {

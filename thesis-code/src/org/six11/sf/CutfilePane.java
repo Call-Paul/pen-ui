@@ -44,7 +44,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   public static double CUTFILE_MAX_WIDTH_INCHES = 24.0;
   public static double CUTFILE_MAX_HEIGHT_INCHES = 16.0;
 
-  private boolean dropBorder;
   private SkruiFabEditor editor;
   private Material material;
   private boolean addMe;
@@ -61,17 +60,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
     g.setColor(getBackground());
-    Rectangle2D vizSize = getVisibleRect();
     g.fill(getVisibleRect());
-    if (dropBorder) {
-      float t = 1.5f;
-      float t2 = t / 2.0f;
-      g.setColor(Color.BLACK);
-      g.setStroke(Strokes.get(t));
-      Rectangle2D recDst = new Rectangle2D.Double(vizSize.getX() + t2, vizSize.getY() + t2,
-          vizSize.getWidth() - t, vizSize.getHeight() - t);
-      g.draw(recDst);
-    }
     g.setColor(Color.BLACK);
     FontMetrics fm = g.getFontMetrics();
     String str = "(Drag Stencils Here)";

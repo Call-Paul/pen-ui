@@ -137,7 +137,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     //    animator.add(this);
     //    animator.start();
     setName("DrawingSurface");
-    
+
     textRenderers = new HashMap<Integer, TextRenderer>();
     Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
       public void eventDispatched(AWTEvent ev) {
@@ -179,18 +179,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           gl.glNewList(displayList, GL2.GL_COMPILE_AND_EXECUTE);
         }
       }
-      gl.glClear(GL.GL_COLOR_BUFFER_BIT); // clear screen.
-
-      // draw border.
-
-      gl.glColor3fv(SketchRenderer.black, 0);
-      float thick = 1.5f;
-      float thickHalf = thick / 2f;
-      gl.glLineWidth(thick);
-      rect(gl, thickHalf, size.width - thick, thickHalf, size.height - thick);
-
-      // render scribble and model data
-      renderer.render(model, drawable, currentScribble, true, this);
+      renderContent(drawable, size);
 
       if (displayList > 0) {
         // when a display list was created, end the list and save a thumbnail for the current page
@@ -235,12 +224,43 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     long end = System.currentTimeMillis();
     long dur = end - start;
 
-    // show framerate
+    // show possibly helpful info
+    Page curPage = model.getNotebook().getCurrentPage();
+    int maxPages = model.getNotebook().getPages().size();
+    int snapIdx = curPage.getSnapshotMachine().getCurrentIdx() + 1;
+    int maxIdx = curPage.getSnapshotMachine().length();
+    String pageInfo = "Page " + (curPage.getPageNumber() + 1) + " / " + maxPages;
+    String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
     textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
     textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
+    textRenderer18.draw(pageInfo, size.width - 180, 80);
+    textRenderer18.draw(snapInfo, size.width - 180, 60);
     textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
     textRenderer18.draw("Pen Latency: " + (long) penLatency.getMean() + "ms", size.width - 180, 20);
     textRenderer18.endRendering();
+  }
+
+  /**
+   * Draws the border and content. This does not put up window dressing like the latency text. You
+   * can wrap calls to this method between open GL display list definition begin/end statements.
+   * 
+   * @param drawable
+   * @param size
+   */
+  private void renderContent(GLAutoDrawable drawable, Dimension size) {
+    GL2 gl = drawable.getGL().getGL2(); // get GL pipe handle
+
+    gl.glClear(GL.GL_COLOR_BUFFER_BIT); // clear screen.
+
+    // draw border.
+    gl.glColor3fv(SketchRenderer.black, 0);
+    float thick = 1.5f;
+    float thickHalf = thick / 2f;
+    gl.glLineWidth(thick);
+    rect(gl, thickHalf, size.width - thick, thickHalf, size.height - thick);
+
+    // render scribble and model data
+    renderer.render(model, drawable, currentScribble, true, this);
   }
 
   private void setStencilThumbnail(GLAutoDrawable drawable) {
@@ -258,9 +278,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   private void setPageThumbnail(GLAutoDrawable drawable) {
     BoundingBox bb = new BoundingBox();
-//    for (Segment seg : model.getGeometry()) {
-//      bb.addAll(seg.getPointList());
-//    }
+    //    for (Segment seg : model.getGeometry()) {
+    //      bb.addAll(seg.getPointList());
+    //    }
     bb.add(getVisibleRect());
     if (bb.isValid()) {
       BufferedImage bigImage = takeScreenShot(drawable, bb);
@@ -313,10 +333,38 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     TextRenderer textRenderer12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
     textRenderer12.setSmoothing(true);
     textRenderers.put(12, textRenderer12);
+
+    if (model.getNotebook().shouldLoadDisplayLists()) {
+      Page formerPage = model.getNotebook().getCurrentPage();
+      Dimension size = getSize();
+      bug("My size: " + size.width + " x " + size.height);
+      for (Page page : model.getNotebook().getPages()) {
+        model.getNotebook().setCurrentPage(page);
+        page.getSnapshotMachine().setSnapshotsEnabled(false);
+        for (int snapIdx = 0; snapIdx < page.getSnapshotMachine().length(); snapIdx++) {
+          Snapshot snap = page.getSnapshotMachine().get(snapIdx);
+          page.getSnapshotMachine().load(snap);
+          bug("Compile display list for page " + page.getPageNumber() + " snapshot " + snapIdx);
+          int snapDList = gl.glGenLists(1);
+          snap.setDisplayListID(snapDList);
+          gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
+          renderContent(drawable, size);
+          gl.glEndList();
+          if (snapIdx == page.getSnapshotMachine().length() - 1) {
+            setPageThumbnail(drawable);
+          }
+          bug("... done. Made display list " + snapDList);
+        }
+        page.getSnapshotMachine().setSnapshotsEnabled(true);
+      }
+      model.getNotebook().setCurrentPage(formerPage);
+    }
+
   }
 
   @Override
   public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    bug("reshape! new size: " + width + " x " + height);
     GL2 gl = drawable.getGL().getGL2();
     gl.glMatrixMode(GL2.GL_PROJECTION);
     gl.glLoadIdentity();
@@ -343,7 +391,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       public void actionPerformed(ActionEvent e) {
         fsFSM.addEvent(TICK);
         repaint();
-//        display();
+        //        display();
       }
     });
     FSM f = new FSM("Flow Selection FSM");
@@ -635,7 +683,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       pt.setDouble("fsStrength", s);
     }
     repaint();
-//    display();
+    //    display();
   }
 
   private void fsDeform(Pt recent) {
@@ -673,7 +721,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     }
     fsLastDeformPt = recent;
-//    display();
+    //    display();
     repaint();
   }
 
@@ -883,7 +931,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         hoverPt = ev.getPt().copyXYT();
         break;
     }
-//    display();
+    //    display();
     repaint();
   }
 
@@ -901,16 +949,16 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   public void setPreview(Snapshot snap) {
     this.previewSnapshot = snap;
-//    bug("Please show snapshot " + previewSnapshot.getID() + " (display list "
-//        + previewSnapshot.getDisplayListID());
-//    display();
+    //    bug("Please show snapshot " + previewSnapshot.getID() + " (display list "
+    //        + previewSnapshot.getDisplayListID());
+    //    display();
     repaint();
   }
 
   public void clearPreview() {
     previewSnapshot = null;
     bug("Stop showing preview.");
-//    display();
+    //    display();
     repaint();
   }
 
@@ -944,7 +992,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
    */
   public void setTextInput(String str) {
     this.textInput = str;
-//    display();
+    //    display();
     repaint();
   }
 

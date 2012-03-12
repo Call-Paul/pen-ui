@@ -52,8 +52,11 @@ public class SnapshotMachine {
 
   private boolean dirty;
 
+  private boolean snapsEnabled;
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
+    this.snapsEnabled = true;
     this.state = new ArrayList<Snapshot>();
     this.staleDisplayLists = new HashSet<Integer>();
     File debugOutput = new File("snapshots");
@@ -77,30 +80,34 @@ public class SnapshotMachine {
 
   public Snapshot save() {
     Snapshot ret = null;
-    if (model.getConstraints().getSolutionState() == State.Solved && snapshotRequested) {
+    if (snapsEnabled && model.getConstraints().getSolutionState() == State.Solved
+        && snapshotRequested) {
       snapshotRequested = false;
       ret = takeSnapshotImmediately();
     } else {
-      bug("Not saving snapshot because solution state is "
-          + model.getConstraints().getSolutionState() + " and snapRequested is "
-          + snapshotRequested);
+      bug("Not saving snapshot. snapsEnabled: " + snapsEnabled + ", solution state: "
+          + model.getConstraints().getSolutionState() + ", snapRequested: " + snapshotRequested);
     }
     return ret;
   }
 
   public Snapshot takeSnapshotImmediately() {
     Snapshot ret = new Snapshot(model);
-    bug("Made a snapshot!");
-    push(ret);
-    if (rootDir != null) {
-      File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
-      File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
-      try {
-        FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
-        FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
-      } catch (JSONException e) {
-        FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
+    if (snapsEnabled) {
+      bug("Made a snapshot!");
+      push(ret);
+      if (rootDir != null) {
+        File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
+        File bugFile = new File(rootDir, "bug-snapshot-" + ret.getID() + ".txt");
+        try {
+          FileUtil.writeStringToFile(snapFile, ret.getJSONRoot().toString(2), false);
+          FileUtil.writeStringToFile(bugFile, model.getMondoDebugString(), false);
+        } catch (JSONException e) {
+          FileUtil.writeStringToFile(snapFile, "Unable to print json object!", false);
+        }
       }
+    } else {
+      bug("Warning: you are calling takeSnapshotImmediately() while snapshots are disabled.");
     }
     return ret;
   }
@@ -113,6 +120,10 @@ public class SnapshotMachine {
     }
     staleDisplayLists.clear();
     return ret;
+  }
+
+  public void setSnapshotsEnabled(boolean val) {
+    this.snapsEnabled = val;
   }
 
   public void requestSnapshot(String reason) {
@@ -212,7 +223,7 @@ public class SnapshotMachine {
     dirtyTime = System.currentTimeMillis();
     dirty = true;
   }
-  
+
   public void clearDirty() {
     dirty = false;
   }
@@ -222,6 +233,9 @@ public class SnapshotMachine {
     if (stateCursor > 1) { // don't go below one
       stateCursor = stateCursor - 1; // decrement
       ret = state.get(stateCursor - 1);
+      bug((stateCursor - 1) + " / " + length());
+    } else {
+      bug("Unable to undo. Cursor: " + stateCursor + " / " + length());
     }
     return ret;
   }
@@ -231,12 +245,19 @@ public class SnapshotMachine {
     if (stateCursor < state.size()) { // don't got beyond end
       ret = state.get(stateCursor);
       stateCursor = stateCursor + 1;
+      bug((stateCursor - 1) + " / " + length());
+    } else {
+      bug("Unable to redo. Cursor: " + stateCursor + " / " + length());
     }
     return ret;
   }
 
   public Snapshot getCurrent() {
     return state.get(stateCursor - 1);
+  }
+
+  public int getCurrentIdx() {
+    return stateCursor - 1;
   }
 
   public boolean canRedo() {
@@ -249,14 +270,15 @@ public class SnapshotMachine {
 
   public void push(Snapshot snap) {
     setDirty();
-    state.add(stateCursor, snap); // add snapshot at cursor
-    stateCursor = stateCursor + 1; // increment cursor
-    for (int i = stateCursor; i < state.size(); i++) { // remove snapshots at & above cursor
-      Snapshot old = state.remove(i);
+    if (stateCursor < state.size()) {
+      bug("Displacing snapshot that was already at " + stateCursor);
+      Snapshot old = state.remove(stateCursor);
       staleDisplayLists.add(old.getDisplayListID());
     }
+    state.add(stateCursor, snap); // add snapshot at cursor
+    stateCursor = stateCursor + 1; // increment cursor
   }
-  
+
   public long getLastDirtyTime() {
     return dirtyTime;
   }
@@ -264,4 +286,5 @@ public class SnapshotMachine {
   public boolean isDirty() {
     return dirty;
   }
+
 }

@@ -1034,8 +1034,6 @@ public class SketchBook {
   public void addUserConstraint(UserConstraint uc) {
     if (uc != null) {
       userConstraints.add(uc);
-      bug("Adding user constraint: " + uc + " with " + uc.getConstraints().size()
-          + " basic constraints");
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }

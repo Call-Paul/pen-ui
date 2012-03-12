@@ -267,10 +267,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
       page.setCachedThumb(buf);
       int imgX = pageX;
       int imgY = pageY + vertPad;
-      Shape priorClip = g.getClip();
-      g.setClip(imgX, imgY, pageWidth, pageHeight);
       g.drawImage(buf, imgX, imgY, null);
-      g.setClip(priorClip);
     } else {
       String empty = "(blank page)";
       Rectangle2D strBox = g.getFontMetrics().getStringBounds(empty, g);

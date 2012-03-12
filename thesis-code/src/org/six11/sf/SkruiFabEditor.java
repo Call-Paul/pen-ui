@@ -115,6 +115,21 @@ public class SkruiFabEditor {
     model.setSurface(surface);
     grid = new ScrapGrid(this);
     cutfile = new CutfilePane(this);
+    
+    if (model.getNotebook().shouldLoadFromDisk()) {
+      bug("Notebook should load.");
+      model.getNotebook().loadFromDisk();
+      bug("Finished loading notebuch from disk.");
+    } else {
+      model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
+    }
+    Timer fileSaveTimer = new Timer();
+    TimerTask fileSaveTask = new TimerTask() {
+      public void run() {
+        model.getNotebook().maybeSave(false);
+      }
+    };
+    
     JPanel utilPanel = new JPanel();
     utilPanel.setLayout(new BorderLayout());
     utilPanel.add(grid, BorderLayout.CENTER);
@@ -134,18 +149,8 @@ public class SkruiFabEditor {
     af.add(fe);
     af.center();
     af.setVisible(true);
-    if (model.getNotebook().shouldLoad()) {
-      bug("Notebook should load.");
-      model.getNotebook().loadFromDisk();
-    } else {
-      model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
-    }
-    Timer fileSaveTimer = new Timer();
-    TimerTask fileSaveTask = new TimerTask() {
-      public void run() {
-        model.getNotebook().maybeSave(false);
-      }
-    };
+
+    bug("Starting file save task.");
     fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
     
   }
