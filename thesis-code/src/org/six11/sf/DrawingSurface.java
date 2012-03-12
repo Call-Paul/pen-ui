@@ -335,29 +335,32 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     textRenderers.put(12, textRenderer12);
 
     if (model.getNotebook().shouldLoadDisplayLists()) {
+      bug("*** Compiling display lists for all pages/snapshots. This will take a while.");
       Page formerPage = model.getNotebook().getCurrentPage();
       Dimension size = getSize();
       bug("My size: " + size.width + " x " + size.height);
       for (Page page : model.getNotebook().getPages()) {
-        model.getNotebook().setCurrentPage(page);
-        page.getSnapshotMachine().setSnapshotsEnabled(false);
-        for (int snapIdx = 0; snapIdx < page.getSnapshotMachine().length(); snapIdx++) {
-          Snapshot snap = page.getSnapshotMachine().get(snapIdx);
-          page.getSnapshotMachine().load(snap);
-          bug("Compile display list for page " + page.getPageNumber() + " snapshot " + snapIdx);
-          int snapDList = gl.glGenLists(1);
-          snap.setDisplayListID(snapDList);
-          gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
-          renderContent(drawable, size);
-          gl.glEndList();
-          if (snapIdx == page.getSnapshotMachine().length() - 1) {
-            setPageThumbnail(drawable);
+        if (page.hasModelData()) {
+          model.getNotebook().setCurrentPage(page);
+          page.getSnapshotMachine().setSnapshotsEnabled(false);
+          for (int snapIdx = 0; snapIdx < page.getSnapshotMachine().length(); snapIdx++) {
+            Snapshot snap = page.getSnapshotMachine().get(snapIdx);
+            page.getSnapshotMachine().load(snap);
+            bug("Compile display list for page " + page.getPageNumber() + " snapshot " + snapIdx);
+            int snapDList = gl.glGenLists(1);
+            snap.setDisplayListID(snapDList);
+            gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
+            renderContent(drawable, size);
+            gl.glEndList();
+            if (snapIdx == page.getSnapshotMachine().length() - 1) {
+              setPageThumbnail(drawable);
+            }
           }
-          bug("... done. Made display list " + snapDList);
+          page.getSnapshotMachine().setSnapshotsEnabled(true);
         }
-        page.getSnapshotMachine().setSnapshotsEnabled(true);
       }
       model.getNotebook().setCurrentPage(formerPage);
+      bug("*** Done compiling display lists. You may resume your life now.");
     }
 
   }

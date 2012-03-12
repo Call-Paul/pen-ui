@@ -136,7 +136,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   protected void tap(Pt pt) {
     bug("Tapping location: " + pt);
     Page target = getPageAt(pt);
-    if (target != null) {
+    if (target != editor.getModel().getNotebook().getCurrentPage() && target != null) {
       editor.getModel().getNotebook().setCurrentPage(target);
     }
   }
@@ -294,7 +294,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     }
     g.drawRect(pageX, pageY + vertPad, pageWidth, pageHeight);
     if (page == highlightPage) {
-      editor.getGlass().drawAddMeSign(g, pageX + 2, pageY + vertPad + 2, 24, ADD_ME_COLOR, Color.BLACK);
+      editor.getGlass().drawAddMeSign(g, pageX + 2, pageY + vertPad + 2, 24, ADD_ME_COLOR,
+          Color.BLACK);
     }
   }
 

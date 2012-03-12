@@ -54,6 +54,8 @@ public class SnapshotMachine {
 
   private boolean snapsEnabled;
 
+  private Snapshot lastLoaded;
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.snapsEnabled = true;
@@ -84,9 +86,9 @@ public class SnapshotMachine {
         && snapshotRequested) {
       snapshotRequested = false;
       ret = takeSnapshotImmediately();
-    } else {
-      bug("Not saving snapshot. snapsEnabled: " + snapsEnabled + ", solution state: "
-          + model.getConstraints().getSolutionState() + ", snapRequested: " + snapshotRequested);
+      //    } else {
+      //      bug("Not saving snapshot. snapsEnabled: " + snapsEnabled + ", solution state: "
+      //          + model.getConstraints().getSolutionState() + ", snapRequested: " + snapshotRequested);
     }
     return ret;
   }
@@ -213,10 +215,9 @@ public class SnapshotMachine {
   }
 
   public void load(Snapshot snap) {
-    setDirty();
-    bug("Loading " + snap);
+    lastLoaded = snap;
     snap.load();
-    bug("Loaded " + snap);
+    setDirty();
   }
 
   public void setDirty() {
@@ -270,8 +271,8 @@ public class SnapshotMachine {
 
   public void push(Snapshot snap) {
     setDirty();
+    bug("Push snapshot to index " + stateCursor);
     if (stateCursor < state.size()) {
-      bug("Displacing snapshot that was already at " + stateCursor);
       Snapshot old = state.remove(stateCursor);
       staleDisplayLists.add(old.getDisplayListID());
     }

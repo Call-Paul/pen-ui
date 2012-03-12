@@ -679,7 +679,6 @@ public class SketchBook {
   }
 
   public void clearAll() {
-    bug("Clear (most) everything!");
     try {
       clearInk();
       clearStructured();
@@ -900,7 +899,7 @@ public class SketchBook {
     if (selectUs != null) {
       selectedStencils.addAll(selectUs);
     }
-    if (!same) {
+    if (!same && getSnapshotMachine() != null) {
       getSnapshotMachine().requestSnapshot("Stencil selection changed");
     }
   }
@@ -1219,33 +1218,33 @@ public class SketchBook {
   }
 
   public SnapshotMachine getSnapshotMachine() {
-    return notebook.getCurrentPage().getSnapshotMachine();
+    SnapshotMachine ret = null;
+    if (notebook.getCurrentPage() != null) {
+      ret = notebook.getCurrentPage().getSnapshotMachine();
+    }
+    return ret;
   }
 
   public void undoPreview() {
-    bug("undo preview");
     Snapshot s = getSnapshotMachine().undo();
     if (s != null) {
-      bug("Valid undo");
-      //layers.setPreview(s.getPreview());
       surface.setPreview(s);
     }
   }
 
   public void redoPreview() {
-    bug("redo preview");
     Snapshot s = getSnapshotMachine().redo();
     if (s != null) {
-      bug("Valid redo.");
-      //      layers.setPreview(s.getPreview());
       surface.setPreview(s);
     }
   }
 
   public void undoRedoComplete() {
-    bug("finalizing redo/undo");
-    //    layers.clearPreview();
+    bug("finalizing redo/undo to snapshot " + getSnapshotMachine().getCurrentIdx());
     surface.clearPreview();
+    if (getSnapshotMachine() == null) {
+      bug("Snapshot machine is null");
+    }
     Snapshot s = getSnapshotMachine().getCurrent();
     loadingSnapshot = true;
     getSnapshotMachine().load(s);

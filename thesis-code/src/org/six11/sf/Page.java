@@ -59,6 +59,10 @@ public class Page {
     ret.put("snapshots", snaps);
     return ret;
   }
+  
+  public boolean hasModelData() {
+    return getSnapshotMachine().length() > 0;
+  }
 
   public SnapshotMachine getSnapshotMachine() {
     return snapshotMachine;
