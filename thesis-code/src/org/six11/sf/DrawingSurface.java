@@ -126,12 +126,19 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private Map<Integer, TextRenderer> textRenderers;
   private String textInput;
 
+  // most recent rendering data used to unproject screen coordinates into model coordinates.
+  float[] projmatrix = new float[16];
+  int[] viewport = new int[4];
+  float mvmatrix[] = new float[16];
+
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
     this.model = model;
     this.renderer = new SketchRenderer();
     this.penLatency = new Statistics();
     penLatency.setMaximumN(40);
+    
+       
     addGLEventListener(this);
     //    FPSAnimator animator = new FPSAnimator(this, 60);
     //    animator.add(this);
@@ -159,11 +166,86 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   @Override
+  public void init(GLAutoDrawable drawable) {
+    bug("gl init");
+    GL2 gl = drawable.getGL().getGL2();
+    glu = new GLU();
+    gl = drawable.getGL().getGL2();
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    gl.glOrtho(-1, 1, 1, -1, 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glClearColor(1f, 1f, 1f, 1f);
+    gl.glDisable(GL2.GL_DEPTH_TEST);
+    gl.glEnable(GL2.GL_BLEND);
+    gl.glEnable(GL2.GL_LINE_SMOOTH);
+    gl.glHint(GL2.GL_LINE_SMOOTH_HINT, GL2.GL_NICEST);
+    gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
+
+    renderer.init(drawable);
+    textRenderer18 = new TextRenderer(new Font("SansSerif", Font.BOLD, 18));
+    textRenderer18.setSmoothing(true);
+    textRenderers.put(18, textRenderer18);
+
+    TextRenderer textRenderer12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
+    textRenderer12.setSmoothing(true);
+    textRenderers.put(12, textRenderer12);
+
+    if (model.getNotebook().shouldLoadDisplayLists()) {
+      bug("*** Compiling display lists for all pages/snapshots. This will take a while.");
+      Page formerPage = model.getNotebook().getCurrentPage();
+      Dimension size = getSize();
+      bug("My size: " + size.width + " x " + size.height);
+      for (Page page : model.getNotebook().getPages()) {
+        if (page.hasModelData()) {
+          model.getNotebook().setCurrentPage(page);
+          page.getSnapshotMachine().setSnapshotsEnabled(false);
+          for (int snapIdx = 0; snapIdx < page.getSnapshotMachine().length(); snapIdx++) {
+            Snapshot snap = page.getSnapshotMachine().get(snapIdx);
+            page.getSnapshotMachine().load(snap);
+            bug("Compile display list for page " + page.getPageNumber() + " snapshot " + snapIdx);
+            int snapDList = gl.glGenLists(1);
+            snap.setDisplayListID(snapDList);
+            gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
+            renderContent(drawable, size);
+            gl.glEndList();
+            if (snapIdx == page.getSnapshotMachine().getCurrentIdx()) {
+              setPageThumbnail(drawable);
+            }
+          }
+          page.getSnapshotMachine().setSnapshotsEnabled(true);
+        }
+      }
+      model.getNotebook().setCurrentPage(formerPage);
+      bug("*** Done compiling display lists. You may resume your life now.");
+    }
+
+  }
+
+  @Override
+  public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
+    bug("reshape! new size: " + width + " x " + height);
+    GL2 gl = drawable.getGL().getGL2();
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    gl.glOrtho(x, x + width, y + height, y, 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
+  }
+
+  @Override
   public void display(GLAutoDrawable drawable) {
     long start = System.currentTimeMillis();
     GL2 gl = drawable.getGL().getGL2();
     Dimension size = getSize();
     int displayList = 0;
+    // do camera stuff first
+    Camera cam = model.getCamera();
+
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    float[] ortho = cam.getOrthoValues(size);
+    gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
 
     if (previewSnapshot != null) {
       gl.glCallList(previewSnapshot.getDisplayListID());
@@ -186,13 +268,19 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         gl.glEndList();
         setPageThumbnail(drawable);
       }
-      
+
       if (requestStencilThumbnail) {
         setStencilThumbnail(drawable);
         requestStencilThumbnail = false;
       }
     }
 
+    if (hoverPt != null) {
+      gl.glLineWidth(2f);
+      gl.glColor3fv(SketchRenderer.red, 0);
+      renderer.dot(hoverPt, 5);
+    }
+    
     if (fsFSM.getState().equals(SEARCH_DIR)) {
       float[] undoColor = SketchRenderer.lightGray;
       float[] redoColor = SketchRenderer.lightGray;
@@ -221,6 +309,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       renderer.arrow(redoStart, redoEnd);
     }
 
+    // store info for translating mouse coords to model coords
+    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
+    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
+    
     long end = System.currentTimeMillis();
     long dur = end - start;
 
@@ -233,6 +326,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
     textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
     textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
+    textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()), size.width - 180, 120);
+    textRenderer18.draw("Zoom: " + num(cam.getZoom()), size.width - 180, 100);
     textRenderer18.draw(pageInfo, size.width - 180, 80);
     textRenderer18.draw(snapInfo, size.width - 180, 60);
     textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
@@ -306,73 +401,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   @Override
   public void dispose(GLAutoDrawable drawable) {
     bug("gl dispose");
-  }
-
-  @Override
-  public void init(GLAutoDrawable drawable) {
-    bug("gl init");
-    GL2 gl = drawable.getGL().getGL2();
-    glu = new GLU();
-    gl = drawable.getGL().getGL2();
-    gl.glMatrixMode(GL2.GL_PROJECTION);
-    gl.glLoadIdentity();
-    gl.glOrtho(-1, 1, 1, -1, 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
-    gl.glClearColor(1f, 1f, 1f, 1f);
-    gl.glDisable(GL2.GL_DEPTH_TEST);
-    gl.glEnable(GL2.GL_BLEND);
-    gl.glEnable(GL2.GL_LINE_SMOOTH);
-    gl.glHint(GL2.GL_LINE_SMOOTH_HINT, GL2.GL_NICEST);
-    gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
-
-    renderer.init(drawable);
-    textRenderer18 = new TextRenderer(new Font("SansSerif", Font.BOLD, 18));
-    textRenderer18.setSmoothing(true);
-    textRenderers.put(18, textRenderer18);
-
-    TextRenderer textRenderer12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
-    textRenderer12.setSmoothing(true);
-    textRenderers.put(12, textRenderer12);
-
-    if (model.getNotebook().shouldLoadDisplayLists()) {
-      bug("*** Compiling display lists for all pages/snapshots. This will take a while.");
-      Page formerPage = model.getNotebook().getCurrentPage();
-      Dimension size = getSize();
-      bug("My size: " + size.width + " x " + size.height);
-      for (Page page : model.getNotebook().getPages()) {
-        if (page.hasModelData()) {
-          model.getNotebook().setCurrentPage(page);
-          page.getSnapshotMachine().setSnapshotsEnabled(false);
-          for (int snapIdx = 0; snapIdx < page.getSnapshotMachine().length(); snapIdx++) {
-            Snapshot snap = page.getSnapshotMachine().get(snapIdx);
-            page.getSnapshotMachine().load(snap);
-            bug("Compile display list for page " + page.getPageNumber() + " snapshot " + snapIdx);
-            int snapDList = gl.glGenLists(1);
-            snap.setDisplayListID(snapDList);
-            gl.glNewList(snapDList, GL2.GL_COMPILE_AND_EXECUTE);
-            renderContent(drawable, size);
-            gl.glEndList();
-            if (snapIdx == page.getSnapshotMachine().getCurrentIdx()) {
-              setPageThumbnail(drawable);
-            }
-          }
-          page.getSnapshotMachine().setSnapshotsEnabled(true);
-        }
-      }
-      model.getNotebook().setCurrentPage(formerPage);
-      bug("*** Done compiling display lists. You may resume your life now.");
-    }
-
-  }
-
-  @Override
-  public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
-    bug("reshape! new size: " + width + " x " + height);
-    GL2 gl = drawable.getGL().getGL2();
-    gl.glMatrixMode(GL2.GL_PROJECTION);
-    gl.glLoadIdentity();
-    gl.glOrtho(x, x + width, y + height, y, 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
   }
 
   protected TextRenderer getTextRenderer(int pointSize) {
@@ -791,15 +819,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   ////  ////  ////  ////  ////  ////  ////  ////
 
   protected float[] unproject(GL2 gl, float x, float y) {
-    int viewport[] = new int[4];
-    float mvmatrix[] = new float[16];
-    float projmatrix[] = new float[16];
     int realy = 0;// GL y coord pos
     float wcoord[] = new float[4];// wx, wy, wz
-    //    GL2 gl = getGL().getGL2();
-    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
-    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
-    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
     realy = viewport[3] - (int) y - 1; // have to invert y values because Java and OpenGL disagree which way is up.
     glu.gluUnProject((float) x, (float) realy, 0.0f, //
         mvmatrix, 0, projmatrix, 0, viewport, 0, wcoord, 0);
@@ -843,7 +864,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         int current = context.makeCurrent();
         if (current != GLContext.CONTEXT_NOT_CURRENT) {
           GL2 gl = context.getGL().getGL2();
-          float[] coords = unproject(gl, world.ix(), world.iy());
+          Camera cam = model.getCamera();
+          bug("you getting this?");
+          float[] coords = cam.unproject(world.ix(), world.iy(), getSize());// unproject(gl, world.ix(), world.iy());
           fsRecentPt = mkPt(coords, world.getTime());
         } else {
           bug("Could not make open gl context current. Pen Event will be ignored.");

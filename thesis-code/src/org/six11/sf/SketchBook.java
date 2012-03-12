@@ -92,10 +92,12 @@ public class SketchBook {
   boolean erasing;
   private boolean loadingSnapshot;
   private Notebook notebook;
+  private Camera camera;
 
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
+    this.camera = new Camera();
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
     this.selectedSegments = new HashSet<Segment>();
@@ -1544,6 +1546,10 @@ public class SketchBook {
 
   public Notebook getNotebook() {
     return notebook;
+  }
+
+  public Camera getCamera() {
+    return camera;
   }
 
 }

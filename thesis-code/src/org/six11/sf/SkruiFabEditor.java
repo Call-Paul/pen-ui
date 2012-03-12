@@ -56,6 +56,8 @@ public class SkruiFabEditor {
   private static final String ACTION_LOAD_FILE = "Load File";
   protected static final int FRAME_RATE = 30;
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
+  private static final String ACTION_ZOOM_IN = "Zoom In";
+  private static final String ACTION_ZOOM_OUT = "Zoom Out";
 
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
@@ -217,8 +219,25 @@ public class SkruiFabEditor {
             toggleVectors();
           }
         });
+    
+    actions.put(ACTION_ZOOM_IN,
+        new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
+          public void activate() {
+            model.getCamera().zoom(0.05f);
+            surface.repaint();
+          }
+        });
+
+    actions.put(ACTION_ZOOM_OUT,
+        new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
+          public void activate() {
+            model.getCamera().zoom(-0.05f);
+            surface.repaint();
+          }
+        });
 
   }
+
 
   private void registerKeyboardActions(JRootPane rp) {
     // 3. Register actions w/ key accelerators to the root pane.
@@ -229,7 +248,7 @@ public class SkruiFabEditor {
       }
     }
   }
-
+  
   protected void toggleVectors() {
     debugSolver = !debugSolver;
     surface.repaint();
