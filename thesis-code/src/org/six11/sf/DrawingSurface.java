@@ -12,8 +12,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,8 +90,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final double FS_SMOOTH_DAMPING = 0.25; // started out at 0.025
-  private static final long TAP_DUR_THRESH = 150;
-  private static final double TAP_DIST_THRESH = 50;
+  private static final long TAP_DUR_THRESH = 350;
+  private static final double TAP_DIST_THRESH = 7;
   private static final long TAP_TIMEOUT = 500;
 
   private TextRenderer textRenderer18;
@@ -495,26 +497,18 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(DRAG_BEGIN, DRAW, DRAGGING));
     f.addTransition(new Transition(UP, DRAGGING, IDLE));
 
-    f.addTransition(new Transition(START_ZOOM, DRAW, ZOOM));
-    f.addTransition(new Transition(START_PAN, DRAW, PAN));
+    f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM));
+    f.addTransition(new Transition(START_PAN, IDLE, PAN));
     f.addTransition(new Transition(UP, PAN, IDLE));
     f.addTransition(new Transition(UP, ZOOM, IDLE));
     f.addTransition(new Transition(MOVE, PAN, PAN) {
       public void doAfterTransition() {
         bug("pan...");
-        Vec change = new Vec(fsDown, fsRecentPt);
-        bug("by " + num(change));
-        Camera cam =model.getCamera();
-        cam.translate((float) -change.getX() / 100, (float) -change.getY() / 100);
       }
     });
     f.addTransition(new Transition(MOVE, ZOOM, ZOOM) {
       public void doAfterTransition() {
         bug("zoom...");
-        Vec change = new Vec(fsDown, fsRecentPt);
-        bug ("by " + num(change.getY()));
-        Camera cam =model.getCamera();
-        cam.zoom((float) (change.getY() / 1000));
       }
     });
     f.addTransition(new Transition(UP, DRAW, IDLE));
@@ -925,7 +919,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     switch (ev.getType()) {
       case Down:
         fsFSM.addEvent(DOWN);
-        fsDown = modelPt; // ev.getPt();
+        fsDown = modelPt.copyXYT(); // ev.getPt();
         fsDown.setDouble("tap_dist", 0);
         if (fsFSM.getState().equals(DRAW)) {
           model.retainVisibleGuides();
@@ -968,17 +962,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           double thisDist = fsDown.distance(modelPt);
           fsDown.setDouble("tap_dist", thisDist);
         }
-        if (!fsDown.hasAttribute("panzoom measure") && fsDown.getDouble("tap_dist") > TAP_DIST_THRESH) {
-          fsDown.setBoolean("panzoom measure", true);
-          int taps = countCurrentTaps(fsDown.getTime());
-          if (taps > 1) {
-            if (taps == 2) {
-              fsFSM.addEvent(START_PAN);
-            } else {
-              fsFSM.addEvent(START_ZOOM);
-            }
-          }
-        }
         dragPt = modelPt /* ev.getPt() */;
         hoverPt = null;
         Pt here = modelPt /* ev.getPt() */;
@@ -997,18 +980,25 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         break;
       case Idle:
         // examine fsDown["tap_dist"] and duration to detect a tap
+        boolean shouldZoomPan = false;
+        boolean wasTap = false;
         double tapDist = fsDown.getDouble("tap_dist");
         long tapDur = lastPenTime - fsDown.getTime();
         if (tapDist < TAP_DIST_THRESH && tapDur < TAP_DUR_THRESH) {
+          wasTap = true;
           addTap(fsDown.copyXYT());
-          countCurrentTaps(System.currentTimeMillis()); // TODO: this is just for debugging.
+          int howMany = countCurrentTaps(System.currentTimeMillis());
+          if (howMany >= 2) {
+            bug("Show the pan/zoom widget for a few seconds.");
+            shouldZoomPan = true;
+          }
         }
         boolean wasDrawing = fsFSM.getState().equals(DRAW);
         fsFSM.addEvent(UP);
         if (model.isDraggingGuide()) {
           model.setDraggingGuidePoint(null);
         } else {
-          if (wasDrawing) {
+          if (!wasTap && wasDrawing) {
             Sequence seq = model.endScribble(modelPt /* ev.getPt() */);
             if (seq != null) {
               model.addInk(new Ink(seq));
@@ -1016,6 +1006,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           }
           clearScribble();
         }
+        dragPt = null;
         break;
       case Enter:
         break;
@@ -1031,7 +1022,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   private void addTap(Pt tapPt) {
     taps.add(0, tapPt); // higher indices = older
-    bug("Now a total of " + taps.size() + " tap points!");
   }
 
   /**
@@ -1060,14 +1050,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           count = count + 1; // pair (i, i+1) is good
         } else {
           badIdx = i + 1;
-          bug("pair " + i + ", " + (i + 1) + " is not ok, but why? dist: " + num(dist) + ", dur: "
-              + dur);
-          if (dist >= TAP_DIST_THRESH) {
-            bug("points " + i + " and " + (i + 1) + " are too far apart: " + num(dist));
-          }
-          if (dur >= TAP_TIMEOUT) {
-            bug("points " + i + " and " + (i + 1) + " had too much time between them: " + dur);
-          }
           break; // indices 'count' and higher are no longer relevant.
         }
       }
@@ -1075,11 +1057,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     // clean up the taps list.
     if (badIdx >= 0) {
       while (taps.size() > badIdx) {
-        bug("Nuking expired tap data point at index " + badIdx);
         taps.remove(badIdx);
       }
     }
-    bug("countCurrentTaps returns " + count);
     return count;
   }
 

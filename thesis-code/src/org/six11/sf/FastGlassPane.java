@@ -292,6 +292,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   @Override
   public void mousePressed(MouseEvent ev) {
+    bug("down");
     dragging = true;
     dragPoint = ev.getPoint();
     editor.getModel().getConstraints().setPaused(true);
@@ -304,6 +305,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   @Override
   public void mouseReleased(MouseEvent ev) {
+    bug("up");
     dragging = false;
     editor.getModel().getConstraints().setPaused(false);
     MouseEventInfo mei = new MouseEventInfo(ev);
