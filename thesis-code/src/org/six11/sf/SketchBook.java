@@ -101,7 +101,7 @@ public class SketchBook {
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
     this.selectedSegments = new HashSet<Segment>();
-    this.cornerFinder = new CornerFinder();
+    this.cornerFinder = new CornerFinder(this);
     this.geometry = new HashSet<Segment>();
     this.guidePoints = new ArrayList<GuidePoint>();
     this.activeGuidePoints = new ArrayList<GuidePoint>();

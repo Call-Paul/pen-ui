@@ -29,9 +29,10 @@ public class CornerFinder {
   public static final double minPatchSize = 10;
   public static final double lineErrorThreshold = 1.5;
   public static final double ellipseErrorThreshold = 0.5; // TODO: change
+  private SketchBook model;
 
-  public CornerFinder() {
-
+  public CornerFinder(SketchBook model) {
+    this.model = model;
   }
 
   @SuppressWarnings("unchecked")
@@ -53,8 +54,9 @@ public class CornerFinder {
   private void assignCurvature(Sequence seq) {
     int n = seq.size();
     Pt[][] windows = new Pt[n][2];
+    double targetWindowSize = windowSize / model.getCamera().getZoom();
     for (int i = 0; i < n; i++) {
-      windows[i] = Functions.getCurvilinearWindow(seq, i, windowSize);
+      windows[i] = Functions.getCurvilinearWindow(seq, i, targetWindowSize);
     }
     for (int i = 0; i < n; i++) {
       Pt me = seq.get(i);
@@ -174,7 +176,8 @@ public class CornerFinder {
   private Segment identifySegment(Ink ink, int i, int j) {
     Segment ret = null;
     double segLength = ink.seq.getPathLength(i, j);
-    int numPatches = (int) ceil(segLength / minPatchSize);
+    double adjustedMinPatchSize = minPatchSize / model.getCamera().getZoom();
+    int numPatches = (int) ceil(segLength / adjustedMinPatchSize);
     double patchLength = segLength / (double) numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength)
         .getPoints();

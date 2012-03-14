@@ -409,7 +409,7 @@ public class SketchRenderer {
       float boxH = (int) textBox.getHeight();
       boxX = boxX - halfPad;
       boxY = boxY - halfPad;
-      boxW = boxW + pad;
+      boxW = boxW + pad; // TODO: do something.
       boxH = boxH + pad;
       gl.glLineWidth(1f);
       gl.glColor4fv(white, 0);
@@ -550,6 +550,7 @@ public class SketchRenderer {
       };
 
       if (def != null) {
+        float zoom = model.getCamera().getZoom();
         gl.glLineWidth(5);
         for (int i = 0; i < def.size() - 1; i++) {
           Pt a = def.get(i);
@@ -564,15 +565,14 @@ public class SketchRenderer {
 
         if (drawNodes) {
           gl.glLineWidth(1);
-
           for (int i = 0; i < def.size(); i++) {
             Pt pt = def.get(i);
             double str = pt.getDouble("fsStrength");
             if (str > 0) {
               gl.glColor4fv(black, 0);
-              dot(pt, 2);
+              dot(pt, 2 / zoom);
               gl.glColor4fv(white, 0);
-              fillDot(pt, 2);
+              fillDot(pt, 2 / zoom);
             }
           }
         }
