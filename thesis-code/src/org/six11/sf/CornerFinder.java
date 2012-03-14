@@ -46,8 +46,6 @@ public class CornerFinder {
     List<Segment> allSegs = (List<Segment>) ink.seq.getAttribute(SEGMENTS);
     if (allSegs != null) {
       ret.addAll(allSegs);
-    } else {
-      bug("Hmm.");
     }
     return ret;
   }

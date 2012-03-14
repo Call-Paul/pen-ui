@@ -58,6 +58,10 @@ public class SkruiFabEditor {
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
   private static final String ACTION_ZOOM_IN = "Zoom In";
   private static final String ACTION_ZOOM_OUT = "Zoom Out";
+  private static final String ACTION_PAN_LEFT = "Pan Left";
+  private static final String ACTION_PAN_RIGHT = "Pan Right";
+  private static final String ACTION_PAN_UP = "Pan Up";
+  private static final String ACTION_PAN_DOWN = "Pan Down";
 
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
@@ -232,6 +236,42 @@ public class SkruiFabEditor {
         new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
           public void activate() {
             model.getCamera().zoom(-0.05f);
+            surface.repaint();
+          }
+        });
+    
+    actions.put(ACTION_PAN_LEFT,
+        new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
+          public void activate() {
+            float z = model.getCamera().getZoom();
+            model.getCamera().translate(-10 / z, 0);
+            surface.repaint();
+          }
+        });
+    
+    actions.put(ACTION_PAN_RIGHT,
+        new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
+          public void activate() {
+            float z = model.getCamera().getZoom();
+            model.getCamera().translate(10 / z, 0);
+            surface.repaint();
+          }
+        });
+    
+    actions.put(ACTION_PAN_UP,
+        new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
+          public void activate() {
+            float z = model.getCamera().getZoom();
+            model.getCamera().translate(0, -10 / z);
+            surface.repaint();
+          }
+        });
+    
+    actions.put(ACTION_PAN_DOWN,
+        new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
+          public void activate() {
+            float z = model.getCamera().getZoom();
+            model.getCamera().translate(0, 10 / z);
             surface.repaint();
           }
         });

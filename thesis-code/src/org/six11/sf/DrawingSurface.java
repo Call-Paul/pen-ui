@@ -2,6 +2,7 @@ package org.six11.sf;
 
 import java.awt.AWTEvent;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
@@ -28,6 +29,8 @@ import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLJPanel;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
@@ -63,6 +66,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   public static final String DRAW = "draw";
   public static final String IDLE = "idle";
   public static final String DRAGGING = "dragging";
+  public static final String PAN = "pan";
+  public static final String ZOOM = "zoom";
 
   // events
   private static final String MOVE = "move";
@@ -70,6 +75,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private static final String UP = "up";
   private static final String DOWN = "down";
   private static final String TICK = "tick";
+  private static final String START_ZOOM = "start zoom";
+  private static final String START_PAN = "start pan";
   private static final String BUTTON_DOWN = "magic_button_down";
   private static final String BUTTON_UP = "magic_button_up";
   private static final String ARMED = "armed";
@@ -81,6 +88,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   protected static final int UNDO_REDO_THRESHOLD = 40;
   private static final double FS_SMOOTH_DAMPING = 0.25; // started out at 0.025
+  private static final long TAP_DUR_THRESH = 150;
+  private static final double TAP_DIST_THRESH = 50;
+  private static final long TAP_TIMEOUT = 500;
 
   private TextRenderer textRenderer18;
 
@@ -130,6 +140,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   float[] projmatrix = new float[16];
   int[] viewport = new int[4];
   float mvmatrix[] = new float[16];
+  private List<Pt> taps;
 
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
@@ -137,12 +148,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     this.renderer = new SketchRenderer();
     this.penLatency = new Statistics();
     penLatency.setMaximumN(40);
-    
-       
+    taps = new ArrayList<Pt>();
     addGLEventListener(this);
-    //    FPSAnimator animator = new FPSAnimator(this, 60);
-    //    animator.add(this);
-    //    animator.start();
     setName("DrawingSurface");
 
     textRenderers = new HashMap<Integer, TextRenderer>();
@@ -280,7 +287,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       gl.glColor3fv(SketchRenderer.red, 0);
       renderer.dot(hoverPt, 5);
     }
-    
+
     if (fsFSM.getState().equals(SEARCH_DIR)) {
       float[] undoColor = SketchRenderer.lightGray;
       float[] redoColor = SketchRenderer.lightGray;
@@ -313,7 +320,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
     gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
     gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
-    
+
     long end = System.currentTimeMillis();
     long dur = end - start;
 
@@ -326,7 +333,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
     textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
     textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
-    textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()), size.width - 180, 120);
+    textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()), size.width - 180,
+        120);
     textRenderer18.draw("Zoom: " + num(cam.getZoom()), size.width - 180, 100);
     textRenderer18.draw(pageInfo, size.width - 180, 80);
     textRenderer18.draw(snapInfo, size.width - 180, 60);
@@ -428,6 +436,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     FSM f = new FSM("Flow Selection FSM");
     f.addState(IDLE);
     f.addState(DRAW);
+    f.addState(PAN);
+    f.addState(ZOOM);
     f.addState(DRAGGING);
     f.addState(FLOW);
     f.addState(OP);
@@ -455,6 +465,18 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     });
 
+    f.setStateEntryCode(ZOOM, new Runnable() {
+      public void run() {
+        bug("zooming!");
+      }
+    });
+
+    f.setStateEntryCode(PAN, new Runnable() {
+      public void run() {
+        bug("panning starting from " + num(fsDown));
+      }
+    });
+
     f.setStateEntryCode(SEARCH_DIR, new Runnable() {
       public void run() {
         searchStart = fsDown.copyXYT();
@@ -473,6 +495,28 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(DRAG_BEGIN, DRAW, DRAGGING));
     f.addTransition(new Transition(UP, DRAGGING, IDLE));
 
+    f.addTransition(new Transition(START_ZOOM, DRAW, ZOOM));
+    f.addTransition(new Transition(START_PAN, DRAW, PAN));
+    f.addTransition(new Transition(UP, PAN, IDLE));
+    f.addTransition(new Transition(UP, ZOOM, IDLE));
+    f.addTransition(new Transition(MOVE, PAN, PAN) {
+      public void doAfterTransition() {
+        bug("pan...");
+        Vec change = new Vec(fsDown, fsRecentPt);
+        bug("by " + num(change));
+        Camera cam =model.getCamera();
+        cam.translate((float) -change.getX() / 100, (float) -change.getY() / 100);
+      }
+    });
+    f.addTransition(new Transition(MOVE, ZOOM, ZOOM) {
+      public void doAfterTransition() {
+        bug("zoom...");
+        Vec change = new Vec(fsDown, fsRecentPt);
+        bug ("by " + num(change.getY()));
+        Camera cam =model.getCamera();
+        cam.zoom((float) (change.getY() / 1000));
+      }
+    });
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
@@ -605,6 +649,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     });
 
+    //    f.addChangeListener(new ChangeListener() {
+    //      public void stateChanged(ChangeEvent ev) {
+    //        bug("state: " + fsFSM.getState());
+    //      }      
+    //    });
     this.fsFSM = f;
   }
 
@@ -854,48 +903,48 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     if (dur < 1000) {
       penLatency.addData(dur);
     }
-
+    Pt modelPt = null;
     final Pt world = ev.getPt();
     if (world == null) {
-
+      // world point can be null when this is an Idle event
     } else {
       GLContext context = getContext();
       if (context != null) {
         int current = context.makeCurrent();
         if (current != GLContext.CONTEXT_NOT_CURRENT) {
           GL2 gl = context.getGL().getGL2();
-          Camera cam = model.getCamera();
-          bug("you getting this?");
-          float[] coords = cam.unproject(world.ix(), world.iy(), getSize());// unproject(gl, world.ix(), world.iy());
-          fsRecentPt = mkPt(coords, world.getTime());
+          float[] coords = unproject(gl, world.ix(), world.iy());
+          modelPt = mkPt(coords, world.getTime());
+          fsRecentPt = modelPt;
         } else {
           bug("Could not make open gl context current. Pen Event will be ignored.");
         }
         context.release();
       }
     }
-
     switch (ev.getType()) {
       case Down:
         fsFSM.addEvent(DOWN);
-        fsDown = ev.getPt();
+        fsDown = modelPt; // ev.getPt();
+        fsDown.setDouble("tap_dist", 0);
         if (fsFSM.getState().equals(DRAW)) {
           model.retainVisibleGuides();
           hoverPt = null;
-          if (model.isPointOverSelection(ev.getPt())) {
+          if (model.isPointOverSelection(modelPt /* ev.getPt() */)) {
             fsFSM.addEvent(DRAG_BEGIN);
             model.setDraggingSelection(true);
           } else {
-            Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(ev.getPt(), true);
+            Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(
+                modelPt /* ev.getPt() */, true);
             if (nearbyGuidePoints.isEmpty()) {
-              prev = ev.getPt();
+              prev = modelPt /* ev.getPt() */;
               currentScribble = new ArrayList<Pt>();
               currentScribble.add(prev);
             } else {
               GuidePoint nearestGP = null;
               double nearestDist = Double.MAX_VALUE;
               for (GuidePoint gpt : nearbyGuidePoints) {
-                double d = gpt.getLocation().distance(ev.getPt());
+                double d = gpt.getLocation().distance(modelPt /* ev.getPt() */);
                 if (d < nearestDist) {
                   nearestDist = d;
                   nearestGP = gpt;
@@ -903,16 +952,36 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
               }
               model.setDraggingGuidePoint(nearestGP);
             }
-            model.startScribble(ev.getPt());
+            model.startScribble(modelPt /* ev.getPt() */);
             model.clearSelectedStencils();
           }
         }
         break;
       case Drag:
         fsFSM.addEvent(MOVE);
-        dragPt = ev.getPt();
+        // accumulate total stroke length in fsDown["tap_dist"], used to detect taps on idle.
+        if (dragPt != null) {
+          double thisDist = dragPt.distance(modelPt);
+          double prevDist = fsDown.getDouble("tap_dist");
+          fsDown.setDouble("tap_dist", prevDist + thisDist);
+        } else {
+          double thisDist = fsDown.distance(modelPt);
+          fsDown.setDouble("tap_dist", thisDist);
+        }
+        if (!fsDown.hasAttribute("panzoom measure") && fsDown.getDouble("tap_dist") > TAP_DIST_THRESH) {
+          fsDown.setBoolean("panzoom measure", true);
+          int taps = countCurrentTaps(fsDown.getTime());
+          if (taps > 1) {
+            if (taps == 2) {
+              fsFSM.addEvent(START_PAN);
+            } else {
+              fsFSM.addEvent(START_ZOOM);
+            }
+          }
+        }
+        dragPt = modelPt /* ev.getPt() */;
         hoverPt = null;
-        Pt here = ev.getPt();
+        Pt here = modelPt /* ev.getPt() */;
         if (model.isDraggingSelection()) {
           bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
         } else if (model.isDraggingGuide()) {
@@ -922,19 +991,25 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         } else if (fsFSM.getState().equals(DRAW) || fsFSM.getState().equals(FLOW)) {
           if (currentScribble != null) {
             currentScribble.add(here);
-            //            currentScribble.lineTo(here.getX(), here.getY());
           }
-          model.addScribble(ev.getPt());
+          model.addScribble(modelPt /* ev.getPt() */);
         }
         break;
       case Idle:
+        // examine fsDown["tap_dist"] and duration to detect a tap
+        double tapDist = fsDown.getDouble("tap_dist");
+        long tapDur = lastPenTime - fsDown.getTime();
+        if (tapDist < TAP_DIST_THRESH && tapDur < TAP_DUR_THRESH) {
+          addTap(fsDown.copyXYT());
+          countCurrentTaps(System.currentTimeMillis()); // TODO: this is just for debugging.
+        }
         boolean wasDrawing = fsFSM.getState().equals(DRAW);
         fsFSM.addEvent(UP);
         if (model.isDraggingGuide()) {
           model.setDraggingGuidePoint(null);
         } else {
           if (wasDrawing) {
-            Sequence seq = model.endScribble(ev.getPt());
+            Sequence seq = model.endScribble(modelPt /* ev.getPt() */);
             if (seq != null) {
               model.addInk(new Ink(seq));
             }
@@ -948,11 +1023,64 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         hoverPt = null;
         break;
       case Hover:
-        hoverPt = ev.getPt().copyXYT();
+        hoverPt = modelPt /* ev.getPt() */.copyXYT();
         break;
     }
-    //    display();
     repaint();
+  }
+
+  private void addTap(Pt tapPt) {
+    taps.add(0, tapPt); // higher indices = older
+    bug("Now a total of " + taps.size() + " tap points!");
+  }
+
+  /**
+   * Count the number of taps that the user has recently completed in the same general area. The
+   * definition of 'recently' and 'same general area' are defined by the constants TAP_TIMEOUT and
+   * TAP_DIST_THRESHOLD.
+   */
+  private int countCurrentTaps(long referenceTime) {
+    int count = 0;
+    if (taps.size() > 0) {
+      Pt pt = taps.get(0);
+      long dur = referenceTime - pt.getTime();
+      if (dur < TAP_TIMEOUT) {
+        count = count + 1; // first one is good
+      }
+    }
+    int badIdx = -1;
+    if (count > 0) {
+      // if the first one is recent, check the time/location of the rest.
+      for (int i = 0; i < taps.size() - 1; i++) {
+        Pt left = taps.get(i);
+        Pt right = taps.get(i + 1);
+        double dist = left.distance(right);
+        long dur = left.getTime() - right.getTime();
+        if (dist < TAP_DIST_THRESH && dur < TAP_TIMEOUT) {
+          count = count + 1; // pair (i, i+1) is good
+        } else {
+          badIdx = i + 1;
+          bug("pair " + i + ", " + (i + 1) + " is not ok, but why? dist: " + num(dist) + ", dur: "
+              + dur);
+          if (dist >= TAP_DIST_THRESH) {
+            bug("points " + i + " and " + (i + 1) + " are too far apart: " + num(dist));
+          }
+          if (dur >= TAP_TIMEOUT) {
+            bug("points " + i + " and " + (i + 1) + " had too much time between them: " + dur);
+          }
+          break; // indices 'count' and higher are no longer relevant.
+        }
+      }
+    }
+    // clean up the taps list.
+    if (badIdx >= 0) {
+      while (taps.size() > badIdx) {
+        bug("Nuking expired tap data point at index " + badIdx);
+        taps.remove(badIdx);
+      }
+    }
+    bug("countCurrentTaps returns " + count);
+    return count;
   }
 
   /**

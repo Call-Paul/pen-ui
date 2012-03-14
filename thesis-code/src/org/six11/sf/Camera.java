@@ -53,4 +53,9 @@ public class Camera {
     float retY = ortho[3] + (y * orthoH);
     return new float[] { 3, retY };
   }
+
+  public void translate(float x, float y) {
+    tx = tx + x;
+    ty = ty + y;
+  }
 }
