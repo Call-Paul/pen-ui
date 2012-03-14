@@ -66,14 +66,12 @@ public class Camera {
   public void translateBy(Dimension d, float x, float y) {
     tx = tx + x;
     ty = ty + y;
-    bug("translate by: " + num(x) + ", " + num(y) + " to " + num(tx) + ", " + num(ty));
     correct(d);
   }
 
   public void translateTo(Dimension d, float x, float y) {
     tx = x;
     ty = y;
-    bug("translate to: " + num(tx) + ", " + num(ty));
     correct(d);
   }
 

@@ -129,12 +129,12 @@ public class SkruiFabEditor {
     } else {
       model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
     }
-    Timer fileSaveTimer = new Timer();
-    TimerTask fileSaveTask = new TimerTask() {
-      public void run() {
-        model.getNotebook().maybeSave(false);
-      }
-    };
+//    Timer fileSaveTimer = new Timer();
+//    TimerTask fileSaveTask = new TimerTask() {
+//      public void run() {
+//        model.getNotebook().maybeSave(false);
+//      }
+//    };
     
     JPanel utilPanel = new JPanel();
     utilPanel.setLayout(new BorderLayout());
@@ -157,7 +157,7 @@ public class SkruiFabEditor {
     af.setVisible(true);
 
     bug("Starting file save task.");
-    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
+//    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
     
   }
 

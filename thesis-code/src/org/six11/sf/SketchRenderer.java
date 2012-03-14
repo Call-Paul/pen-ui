@@ -77,7 +77,7 @@ public class SketchRenderer {
   public static float[] peachy = new float[] {
       1f, 0.5f, 0.5f, 0.75f
   };
-  
+
   // pen settings (colors and thicknesses)
   //
   // thicknesses first
@@ -102,13 +102,17 @@ public class SketchRenderer {
     r[3] = c[3]; // leave alpha alone.
     return r;
   }
-  
+
   private static float[] makeAlphaColor(float[] color, float alpha) {
-    return new float[] { color[0], color[1], color[2], alpha };
+    return new float[] {
+        color[0], color[1], color[2], alpha
+    };
   }
 
-
   private static final Vec EAST = new Vec(1, 0);
+  private static final Vec WEST = new Vec(-1, 0);
+  private static final Vec NORTH = new Vec(0, 1);
+  private static final Vec SOUTH = new Vec(0, -1);
 
   private transient GL2 gl; // only valid during the render method
   private transient GLU glu; // only valid when rendering
@@ -139,14 +143,14 @@ public class SketchRenderer {
    */
   public void render(SketchBook model, GLAutoDrawable drawable, List<Pt> scribble,
       boolean drawDots, DrawingSurface drawingSurface) {
-    
+
     // retain variabels for this round of rendering
     this.drawable = drawable;
     this.gl = drawable.getGL().getGL2();
     this.glu = drawingSurface.glu;
     this.model = model;
     this.surface = drawingSurface;
-    
+
     // render things back-to-front
     renderStencils();
     renderGeometry();
@@ -729,7 +733,7 @@ public class SketchRenderer {
     }
     gl.glEnd();
   }
-  
+
   void fillRect(float x, float y, float w, float h) {
     gl.glBegin(GL2.GL_POLYGON);
     {
@@ -788,14 +792,52 @@ public class SketchRenderer {
     float w4 = w / 4;
     float w2 = w / 2;
     float h2 = h / 2;
+    float h3 = h / 3;
     float bot = pt.fy() - h2;
     float left = pt.fx() - w4;
     gl.glColor4fv(bloodRed, 0);
-    rect(left, bot, w2, h);
+    gl.glLineWidth(2f);
+    rect(left, bot, w2, h); // two boxes for pan and zoom
     rect(left + w2, bot, w2, h);
     ret[0] = new Rectangle2D.Float(left, bot, w2, h);
     ret[1] = new Rectangle2D.Float(left + w2, bot, w2, h);
+    Pt upC = pt.getTranslated(0, h3); // draw chevrons in pan box
+    Pt downC = pt.getTranslated(0, -h3);
+    Pt leftC = pt.getTranslated(-h3, 0);
+    Pt rightC = pt.getTranslated(h3, 0);
+    this.gl = gl;
+    float chevSize = h / 8;
+    chevron(upC, NORTH, chevSize, chevSize);
+    chevron(downC, SOUTH, chevSize, chevSize);
+    chevron(leftC, WEST, chevSize, chevSize);
+    chevron(rightC, EAST, chevSize, chevSize);
+    float r = h / 5;
+    Pt magCenter = pt.getTranslated(w2 + r/2, -r/2);
+    Vec handleVec = new Vec(-r, r).getVectorOfMagnitude(r);
+    Pt handleDot1 = magCenter.getTranslated(handleVec);
+    Pt handleDot2 = handleDot1.getTranslated(handleVec.getVectorOfMagnitude(r * 2));
+    dot(magCenter, r);
+    gl.glLineWidth(3f);
+    line(handleDot1, handleDot2);
     return ret;
+  }
+
+  private void chevron(Pt pt, Vec dir, float chevW, float chevH) {
+    float halfW = chevW / 2;
+    float halfH = chevH / 2;
+    Pt a = pt.getTranslated(dir, halfH);
+    Pt d = pt.getTranslated(dir.getFlip(), halfH);
+    Vec n = dir.getNormal();
+    Pt b = d.getTranslated(n, halfW);
+    Pt c = d.getTranslated(n.getFlip(), halfW);
+    gl.glBegin(GL2.GL_LINE_STRIP);
+    {
+      gl.glVertex2f(b.fx(), b.fy());
+      gl.glVertex2f(a.fx(), a.fy());
+      gl.glVertex2f(c.fx(), c.fy());
+    }
+    gl.glEnd();
+
   }
 
 }

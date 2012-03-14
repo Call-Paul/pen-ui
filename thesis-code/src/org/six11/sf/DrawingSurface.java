@@ -95,7 +95,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private static final double TAP_DIST_THRESH = 7;
   private static final long TAP_TIMEOUT = 500;
   private static final long PAN_ZOOM_WIDGET_TIMEOUT = 2500;
-  protected static final float ZOOM_SENSITIVITY = 0.03f; // larger == faster zoom, could get out of hand
+  protected static final float ZOOM_SENSITIVITY = 0.015f; // larger == faster zoom, could get out of hand
 
   // flow selection variables.
   private List<Pt> fsRecent;
@@ -549,10 +549,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         panZoomActivityPt = screenRecentPt; // screen coordinates
         if (panZoomBeginPt != null) {
           Vec change = new Vec(panZoomBeginPt, panZoomActivityPt);
-          bug(num(panZoomBeginPt) + " --> " + num(panZoomActivityPt) + " ==> " + num(change));
           float zoom = model.getCamera().getZoom();
           change = change.getScaled(1f / zoom);
-          bug("Scaled vec: " + num(change));
           float targetX = -(float) change.getX(); // get delta from pendown location
           float targetY = -(float) change.getY();
           model.getCamera().translateBy(getSize(), targetX, targetY);
@@ -982,10 +980,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         fsDown.setDouble("worldY", world.y);
         if (showPanZoomWidget && panZoomRects != null) {
           if (panZoomRects[0].contains(world)) {
-            bug("You're in the pan box!");
             fsFSM.addEvent(START_PAN);
           } else if (panZoomRects[1].contains(world)) {
-            bug("You're in the zoom box!");
             fsFSM.addEvent(START_ZOOM);
           }
         }
@@ -1058,11 +1054,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           addTap(tapPt);
           int howMany = countCurrentTaps(System.currentTimeMillis());
           if (howMany >= 2) {
-            bug("Show the pan/zoom widget for a few seconds.");
             showPanZoomWidget = true;
             showPanZoomWidgetRefreshTime = System.currentTimeMillis();
             panZoomWidgetPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
-            bug("panZoom point: " + num(panZoomWidgetPt));
             zoomPanTimer.restart();
           }
         }
