@@ -49,7 +49,7 @@ public class RightAngleUserConstraint extends UserConstraint {
     super(model, Type.RightAngle, json);
   }
 
-  public Pt[] getSpots() {
+  public Pt[] getSpots(double braceLen) {
     Pt[] ret = new Pt[3];
     OrientationConstraint c = getOrientationConstraint();
     Pt fulcrum = null;
@@ -81,7 +81,7 @@ public class RightAngleUserConstraint extends UserConstraint {
       Vec rightV = new Vec(fulcrum, right).getUnitVector();
       Vec diagonal = Vec.sum(leftV, rightV).getUnitVector();
       double root2 = Math.sqrt(2);
-      double braceLen = 16;
+      
       Pt braceCorner = fulcrum.getTranslated(diagonal, root2 * braceLen);
       Pt braceLeft = fulcrum.getTranslated(leftV, braceLen);
       Pt braceRight = fulcrum.getTranslated(rightV, braceLen);

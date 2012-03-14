@@ -286,11 +286,15 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
     gl.glMatrixMode(GL2.GL_MODELVIEW);
 
+    // store info for translating mouse coords to model coords
+    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
+    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
+    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
+
     if (previewSnapshot != null) {
       gl.glCallList(previewSnapshot.getDisplayListID());
     } else {
       // if we have been requested to make a snapshot, save this round to a display list.
-
       if (requestSnapshot) {
         Snapshot snap = model.getSnapshotMachine().save();
         if (snap != null) {
@@ -347,11 +351,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       Pt redoEnd = redoStart.getTranslated(40, 0);
       renderer.arrow(redoStart, redoEnd);
     }
-
-    // store info for translating mouse coords to model coords
-    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
-    gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
-    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
 
     // switch back to non-scaled, non-translated ortho mode to draw UI things
     gl.glMatrixMode(GL2.GL_PROJECTION);
@@ -926,6 +925,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     return wcoord;
   }
 
+  public float[] project(GL2 gl, float x, float y) {
+    float scoord[] = new float[4];// screen x, y, don't care about z and homo coord
+    glu.gluProject(x, y, 0.0f, //
+        mvmatrix, 0, projmatrix, 0, viewport, 0, scoord, 0);
+    return scoord;
+  }
+
   protected Pt mkPt(float[] coords, long time) {
     Pt ret = new Pt(coords[0], coords[1], time);
     return ret;
@@ -1199,4 +1205,5 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   public String getTextInput() {
     return textInput;
   }
+
 }

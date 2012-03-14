@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import java.awt.Font;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
@@ -266,6 +267,7 @@ public class SketchRenderer {
     gl.glLineWidth(1f);
     float[] c;
     float r;
+    float z = model.getCamera().getZoom();
     for (GuidePoint gpt : model.getGuidePoints()) {
       if (model.getActiveGuidePoints().contains(gpt)) {
         c = DOT_SELECTED_COLOR;
@@ -275,9 +277,9 @@ public class SketchRenderer {
         r = 3f;
       }
       gl.glColor3fv(c, 0);
-      fillDot(gpt.getLocation(), r);
+      fillDot(gpt.getLocation(), r / z);
       gl.glColor3fv(black, 0);
-      dot(gpt.getLocation(), r);
+      dot(gpt.getLocation(), r / z);
     }
   }
 
@@ -306,6 +308,7 @@ public class SketchRenderer {
     Set<Pt> spots = new HashSet<Pt>();
     float dist = (float) c.getDistance(surface.getHoverPoint());
     float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
+    float zoom = model.getCamera().getZoom();
     for (Constraint basicC : c.getConstraints()) {
       DistanceConstraint dc = (DistanceConstraint) basicC;
       if (dc.getValue() == null) {
@@ -317,22 +320,20 @@ public class SketchRenderer {
       if (dc.getValue() instanceof MultisourceNumericValue) {
         gl.glLineWidth(2f);
         gl.glColor4fv(color, 0);
-        acuteHash(mid, segDir, 24);
+        acuteHash(mid, segDir, 24 / zoom);
       } else {
         Vec segDirNorm = segDir.getNormal();
-        Pt textLocModel = mid.getTranslated(segDirNorm, 8);
-        float[] worldLoc = surface.unproject(gl, textLocModel.fx(), textLocModel.fy());
-        Pt textLocWindow = new Pt(worldLoc[0], drawable.getHeight() - worldLoc[1]);
+        Pt textLocModel = mid.getTranslated(segDirNorm, 8 / zoom);
         Material.Units units = model.getMasterUnits();
         double asUnits = Material.fromPixels(units, dc.getValue().getValue());
-        text("" + num(asUnits), textLocWindow, color);
+        text("" + num(asUnits), surface.getTextRenderer(18), textLocModel, color);
       }
     }
     c.setDistanceSpots(spots.toArray(new Pt[0]));
   }
 
   private void renderSameAngleConstraint(SameAngleUserConstraint c) {
-    Pt[][] spots = c.getSpots(16);
+    Pt[][] spots = c.getSpots(16 / model.getCamera().getZoom());
     float dist = (float) c.getDistance(surface.getHoverPoint());
     float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
     gl.glLineWidth(2f);
@@ -361,7 +362,7 @@ public class SketchRenderer {
   }
 
   private void renderRightAngleConstraint(RightAngleUserConstraint c) {
-    Pt[] spots = c.getSpots();
+    Pt[] spots = c.getSpots(16 / model.getCamera().getZoom());
     float dist = (float) c.getDistance(surface.getHoverPoint());
     float[] color = makeAlphaColor(CONSTRAINT_COLOR, getAlpha(dist, 10f, 50f, 0.15f));
     Pt left = spots[RightAngleUserConstraint.SPOT_LEFT];
@@ -385,28 +386,27 @@ public class SketchRenderer {
       if (killSpot != null) {
         gl.glLineWidth(6);
         gl.glColor3fv(ERASE_COLOR, 0);
-        cross(killSpot, 30f);
+        cross(killSpot, 30 / model.getCamera().getZoom());
       }
     }
   }
 
   private void renderTextInput() {
     if (surface.getTextInput() != null && model.getSelectedSegments().size() == 1) {
+      float zoom = model.getCamera().getZoom();
       String str = surface.getTextInput();
       Segment selSeg = Lists.getOne(model.getSelectedSegments());
       Vec segDir = new Vec(selSeg.getP1(), selSeg.getP2()).getUnitVector();
       Vec segDirNorm = segDir.getNormal();
       Pt mid = selSeg.getVisualMidpoint();
-      Pt textLocModel = mid.getTranslated(segDirNorm, 8);
-      float[] worldLoc = surface.unproject(gl, textLocModel.fx(), textLocModel.fy());
-      Pt textLocWindow = new Pt(worldLoc[0], drawable.getHeight() - worldLoc[1]);
-      Rectangle2D textBox = textBounds(str);
-      int halfPad = 4;
-      int pad = halfPad * 2;
-      int boxX = textLocWindow.ix();
-      int boxY = (int) (drawable.getHeight() - (textLocWindow.fy() + (float) textBox.getHeight()));
-      int boxW = (int) textBox.getWidth();
-      int boxH = (int) textBox.getHeight();
+      Pt textLocModel = mid.getTranslated(segDirNorm, 8 / zoom);
+      Rectangle2D textBox = surface.getTextRenderer(18).getBounds(str);
+      float halfPad = 4 / zoom;
+      float pad = halfPad * 2;
+      float boxX = textLocModel.ix();
+      float boxY = textLocModel.iy();
+      float boxW = (int) textBox.getWidth() / 2;
+      float boxH = (int) textBox.getHeight();
       boxX = boxX - halfPad;
       boxY = boxY - halfPad;
       boxW = boxW + pad;
@@ -416,7 +416,7 @@ public class SketchRenderer {
       fillRect(boxX, boxY, boxW, boxH);
       gl.glColor4fv(skyBlue, 0);
       rect(boxX, boxY, boxW, boxH);
-      text(str, textLocWindow, skyBlue);
+      text(str, surface.getTextRenderer(18), textLocModel.getTranslated(0, boxH/2), skyBlue);
     }
   }
 
@@ -460,6 +460,9 @@ public class SketchRenderer {
 
   private void renderGeometry() {
     Set<Pt> notLatched = new HashSet<Pt>();
+    float z = model.getCamera().getZoom();
+    float unlatchLength = 10 / z;
+    float latchedVertSideLen = 5 / z;
     for (Segment seg : model.getGeometry()) {
       if (model.getSelectedSegments().contains(seg)) {
         gl.glLineWidth(6.3f);
@@ -475,10 +478,10 @@ public class SketchRenderer {
       if (!seg.isSingular()) {
         if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
           notLatched.add(seg.getP1());
-          renderUnlatched(seg.getP1(), seg.getStartDir(), bloodRed, 10f, 6f);
+          renderUnlatched(seg.getP1(), seg.getStartDir(), bloodRed, unlatchLength, 6f);
         }
         if (!(model.findRelatedSegments(seg.getP2()).size() > 1)) {
-          renderUnlatched(seg.getP2(), seg.getEndDir(), bloodRed, 10f, 6f);
+          renderUnlatched(seg.getP2(), seg.getEndDir(), bloodRed, unlatchLength, 6f);
           notLatched.add(seg.getP2());
         }
       }
@@ -487,7 +490,7 @@ public class SketchRenderer {
     // render the latched points
     for (Pt pt : model.getConstraints().getPoints()) {
       if (!notLatched.contains(pt)) {
-        renderLatched(pt, LATCH_SPOT_COLOR, 5f, 1f);
+        renderLatched(pt, LATCH_SPOT_COLOR, latchedVertSideLen, 1f);
       }
     }
   }
@@ -758,17 +761,19 @@ public class SketchRenderer {
     gl.glEnd();
   }
 
-  void text(String str, Pt loc, float[] color) {
-    TextRenderer t12 = surface.getTextRenderer(12);
+  void text(String str, TextRenderer t12, Pt loc, float[] color) {
+    // the TextRenderer works with screen coordinates for some reason.
+    // We are given 'loc' in model coordinates. To transform it to screen coordinates use gluProject.
+    float[] screenCoords = surface.project(gl, loc.fx(), loc.fy());
+    Pt screenPt = new Pt(screenCoords[0], screenCoords[1]);
+
+//    TextRenderer t12 = surface.getTextRenderer(12);
+//    TextRenderer t12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
+    t12.setSmoothing(true);
     t12.beginRendering(drawable.getWidth(), drawable.getHeight());
     t12.setColor(color[0], color[1], color[2], color[3]);
-    t12.draw(str, loc.ix(), loc.iy());
+    t12.draw(str, screenPt.ix(), screenPt.iy());
     t12.endRendering();
-  }
-
-  Rectangle2D textBounds(String str) {
-    TextRenderer t12 = surface.getTextRenderer(12);
-    return t12.getBounds(str);
   }
 
   void arrow(Pt start, Pt tip) {
@@ -812,7 +817,7 @@ public class SketchRenderer {
     chevron(leftC, WEST, chevSize, chevSize);
     chevron(rightC, EAST, chevSize, chevSize);
     float r = h / 5;
-    Pt magCenter = pt.getTranslated(w2 + r/2, -r/2);
+    Pt magCenter = pt.getTranslated(w2 + r / 2, -r / 2);
     Vec handleVec = new Vec(-r, r).getVectorOfMagnitude(r);
     Pt handleDot1 = magCenter.getTranslated(handleVec);
     Pt handleDot2 = handleDot1.getTranslated(handleVec.getVectorOfMagnitude(r * 2));
