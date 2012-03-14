@@ -65,6 +65,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
   private Point prevLoc;
   private ActivityMode activity;
   private Component prevComponent;
+  private Point prevComponentPoint;
   private Component dragStartComponent;
   private Point dragPoint;
   private boolean gatherText;
@@ -256,10 +257,14 @@ public class FastGlassPane extends JComponent implements MouseListener {
         giveSelectionDrag(mei);
         break;
       case None:
-        givePenEvent(mei.component, PenEvent.buildDragEvent(this, new Pt(mei.componentPoint, time)));
+        Point p = mei.componentPoint != null ? mei.componentPoint : prevComponentPoint;
+        givePenEvent(mei.component, PenEvent.buildDragEvent(this, new Pt(p, time)));
         break;
     }
     prevComponent = mei.component;
+    if (mei.componentPoint != null) {
+      prevComponentPoint = mei.componentPoint;
+    }
   }
 
   private void giveSelectionDrag(MouseEventInfo mei) {
@@ -292,7 +297,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   @Override
   public void mousePressed(MouseEvent ev) {
-    bug("down");
     dragging = true;
     dragPoint = ev.getPoint();
     editor.getModel().getConstraints().setPaused(true);
@@ -305,7 +309,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   @Override
   public void mouseReleased(MouseEvent ev) {
-    bug("up");
     dragging = false;
     editor.getModel().getConstraints().setPaused(false);
     MouseEventInfo mei = new MouseEventInfo(ev);
@@ -325,7 +328,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
           Drag.Event dev = new Drag.Event(mei.componentPoint, activity);
           ((Drag.Listener) mei.component).dragDrop(dev);
         }
-        //        editor.getGrid().clearSelection();
         activity = ActivityMode.None;
         break;
       case None:

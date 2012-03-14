@@ -11,6 +11,7 @@ import java.awt.event.AWTEventListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.text.DateFormat;
 import java.util.ArrayList;
@@ -89,14 +90,12 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   public final static float DEFAULT_DRY_THICKNESS = 1.4f;
 
   protected static final int UNDO_REDO_THRESHOLD = 40;
-  private static final double FS_SMOOTH_DAMPING = 0.25; // started out at 0.025
+  private static final double FS_SMOOTH_DAMPING = 0.25;
   private static final long TAP_DUR_THRESH = 350;
   private static final double TAP_DIST_THRESH = 7;
   private static final long TAP_TIMEOUT = 500;
-
-  private TextRenderer textRenderer18;
-
-  protected GLU glu;
+  private static final long PAN_ZOOM_WIDGET_TIMEOUT = 2500;
+  protected static final float ZOOM_SENSITIVITY = 0.03f; // larger == faster zoom, could get out of hand
 
   // flow selection variables.
   private List<Pt> fsRecent;
@@ -122,7 +121,20 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private Snapshot previewSnapshot; // snapshot we are asked to preview (part of undo/redo scanning)
   private boolean requestSnapshot;
 
+  // pan/zoom vars
+  private boolean showPanZoomWidget; // should the pan/zoom widget be displayed?
+  private long showPanZoomWidgetRefreshTime; // time the widget was last started or refreshed due to use.
+  private Pt panZoomWidgetPt; // screen coordinate of pan/zoom widget, valid only when showPanZoomWidget is true
+  private Pt panZoomBeginPt; // screen coordinate of point the user began a pan/zoom drag
+  private Pt panZoomActivityPt; // screen coordinate of point the user is dragging during a pan/zoom
+  private Rectangle2D[] panZoomRects; // 0: rectangle for pan zone, 1: rect for zoom zone 
+  private Timer zoomPanTimer; // responsible for animating and turning off widget
+  private float panInitialX, panInitialY; // camera pan values at beginning of pan action
+  private float zoomInitialValue; // camera zoom at beginning of zoom action
+  //  protected int lastPanZoomFrame = -1;
+
   // recent pen activity vars
+  private Pt screenRecentPt; // screen coordinates of the last pen event that had a location (IDLE does not!)
   private Pt hoverPt;
   private Pt prev;
   private List<Pt> currentScribble;
@@ -133,7 +145,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   // flag to create and set a thumbnail of the currently selected stencil. given to the model.
   private boolean requestStencilThumbnail;
 
-  // the thing that knows how to render the model
+  // rendering-related vars
+  private TextRenderer textRenderer18;
+  protected GLU glu;
+  //  protected int frameCount;
   protected SketchRenderer renderer;
   private Map<Integer, TextRenderer> textRenderers;
   private String textInput;
@@ -151,6 +166,21 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     this.penLatency = new Statistics();
     penLatency.setMaximumN(40);
     taps = new ArrayList<Pt>();
+    zoomPanTimer = new Timer(16, new ActionListener() { // fires often in order to animate it
+          public void actionPerformed(ActionEvent ev) {
+            if (showPanZoomWidget) { // showing and expired ?
+              long dur = System.currentTimeMillis() - showPanZoomWidgetRefreshTime;
+              if (dur > PAN_ZOOM_WIDGET_TIMEOUT) {
+                showPanZoomWidget = false;
+                panZoomWidgetPt = null;
+                zoomPanTimer.stop();
+              }
+            }
+            repaint();
+          }
+        });
+    zoomPanTimer.setRepeats(true);
+
     addGLEventListener(this);
     setName("DrawingSurface");
 
@@ -323,6 +353,17 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
     gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
 
+    // switch back to non-scaled, non-translated ortho mode to draw UI things
+    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glLoadIdentity();
+    ortho = Camera.getOrthoValues(size, 1, 0, 0);
+    gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
+    gl.glMatrixMode(GL2.GL_MODELVIEW);
+
+    if (showPanZoomWidget) {
+      panZoomRects = renderer.panZoomWidget(gl, panZoomWidgetPt);
+    }
+
     long end = System.currentTimeMillis();
     long dur = end - start;
 
@@ -466,24 +507,27 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         fsTickTimer.restart();
       }
     });
-
-    f.setStateEntryCode(ZOOM, new Runnable() {
-      public void run() {
-        bug("zooming!");
-      }
-    });
-
-    f.setStateEntryCode(PAN, new Runnable() {
-      public void run() {
-        bug("panning starting from " + num(fsDown));
-      }
-    });
-
     f.setStateEntryCode(SEARCH_DIR, new Runnable() {
       public void run() {
         searchStart = fsDown.copyXYT();
       }
     });
+    f.addTransition(new Transition(START_PAN, IDLE, PAN) {
+      public void doAfterTransition() {
+        Camera cam = model.getCamera();
+        panInitialX = cam.getPanX();
+        panInitialY = cam.getPanY();
+        panZoomBeginPt = null; // new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldX")); // screen coordinates
+      }
+    });
+    f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM) {
+      public void doAfterTransition() {
+        panZoomBeginPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
+        Camera cam = model.getCamera();
+        zoomInitialValue = cam.getZoom();
+      }
+    });
+
     f.addTransition(new Transition(DOWN, IDLE, DRAW) {
       public void doBeforeTransition() {
         fsTransitionPt = fsRecentPt;
@@ -497,18 +541,32 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(DRAG_BEGIN, DRAW, DRAGGING));
     f.addTransition(new Transition(UP, DRAGGING, IDLE));
 
-    f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM));
-    f.addTransition(new Transition(START_PAN, IDLE, PAN));
     f.addTransition(new Transition(UP, PAN, IDLE));
     f.addTransition(new Transition(UP, ZOOM, IDLE));
     f.addTransition(new Transition(MOVE, PAN, PAN) {
       public void doAfterTransition() {
-        bug("pan...");
+        showPanZoomWidgetRefreshTime = System.currentTimeMillis();
+        panZoomActivityPt = screenRecentPt; // screen coordinates
+        if (panZoomBeginPt != null) {
+          Vec change = new Vec(panZoomBeginPt, panZoomActivityPt);
+          bug(num(panZoomBeginPt) + " --> " + num(panZoomActivityPt) + " ==> " + num(change));
+          float zoom = model.getCamera().getZoom();
+          change = change.getScaled(1f / zoom);
+          bug("Scaled vec: " + num(change));
+          float targetX = -(float) change.getX(); // get delta from pendown location
+          float targetY = -(float) change.getY();
+          model.getCamera().translateBy(getSize(), targetX, targetY);
+        }
+        panZoomBeginPt = panZoomActivityPt;
       }
     });
     f.addTransition(new Transition(MOVE, ZOOM, ZOOM) {
       public void doAfterTransition() {
-        bug("zoom...");
+        showPanZoomWidgetRefreshTime = System.currentTimeMillis();
+        panZoomActivityPt = screenRecentPt;
+        float changeY = panZoomBeginPt.fy() - panZoomActivityPt.fy();
+        float target = zoomInitialValue + (changeY * ZOOM_SENSITIVITY);
+        model.getCamera().zoomTo(getSize(), target);
       }
     });
     f.addTransition(new Transition(UP, DRAW, IDLE));
@@ -910,6 +968,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           float[] coords = unproject(gl, world.ix(), world.iy());
           modelPt = mkPt(coords, world.getTime());
           fsRecentPt = modelPt;
+          screenRecentPt = world.copyXYT();
         } else {
           bug("Could not make open gl context current. Pen Event will be ignored.");
         }
@@ -918,27 +977,37 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     }
     switch (ev.getType()) {
       case Down:
+        fsDown = modelPt.copyXYT();
+        fsDown.setDouble("worldX", world.x); // record world point here to avoid having to project it later
+        fsDown.setDouble("worldY", world.y);
+        if (showPanZoomWidget && panZoomRects != null) {
+          if (panZoomRects[0].contains(world)) {
+            bug("You're in the pan box!");
+            fsFSM.addEvent(START_PAN);
+          } else if (panZoomRects[1].contains(world)) {
+            bug("You're in the zoom box!");
+            fsFSM.addEvent(START_ZOOM);
+          }
+        }
         fsFSM.addEvent(DOWN);
-        fsDown = modelPt.copyXYT(); // ev.getPt();
         fsDown.setDouble("tap_dist", 0);
         if (fsFSM.getState().equals(DRAW)) {
           model.retainVisibleGuides();
           hoverPt = null;
-          if (model.isPointOverSelection(modelPt /* ev.getPt() */)) {
+          if (model.isPointOverSelection(modelPt)) {
             fsFSM.addEvent(DRAG_BEGIN);
             model.setDraggingSelection(true);
           } else {
-            Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(
-                modelPt /* ev.getPt() */, true);
+            Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(modelPt, true);
             if (nearbyGuidePoints.isEmpty()) {
-              prev = modelPt /* ev.getPt() */;
+              prev = modelPt;
               currentScribble = new ArrayList<Pt>();
               currentScribble.add(prev);
             } else {
               GuidePoint nearestGP = null;
               double nearestDist = Double.MAX_VALUE;
               for (GuidePoint gpt : nearbyGuidePoints) {
-                double d = gpt.getLocation().distance(modelPt /* ev.getPt() */);
+                double d = gpt.getLocation().distance(modelPt);
                 if (d < nearestDist) {
                   nearestDist = d;
                   nearestGP = gpt;
@@ -946,7 +1015,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
               }
               model.setDraggingGuidePoint(nearestGP);
             }
-            model.startScribble(modelPt /* ev.getPt() */);
+            model.startScribble(modelPt);
             model.clearSelectedStencils();
           }
         }
@@ -962,9 +1031,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           double thisDist = fsDown.distance(modelPt);
           fsDown.setDouble("tap_dist", thisDist);
         }
-        dragPt = modelPt /* ev.getPt() */;
+        dragPt = modelPt;
         hoverPt = null;
-        Pt here = modelPt /* ev.getPt() */;
+        Pt here = modelPt;
         if (model.isDraggingSelection()) {
           bug("You should never see this! Shouldn't send layers drag events when drag selection is true");
         } else if (model.isDraggingGuide()) {
@@ -975,22 +1044,26 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           if (currentScribble != null) {
             currentScribble.add(here);
           }
-          model.addScribble(modelPt /* ev.getPt() */);
+          model.addScribble(modelPt);
         }
         break;
       case Idle:
         // examine fsDown["tap_dist"] and duration to detect a tap
-        boolean shouldZoomPan = false;
         boolean wasTap = false;
         double tapDist = fsDown.getDouble("tap_dist");
         long tapDur = lastPenTime - fsDown.getTime();
         if (tapDist < TAP_DIST_THRESH && tapDur < TAP_DUR_THRESH) {
           wasTap = true;
-          addTap(fsDown.copyXYT());
+          Pt tapPt = fsDown.copyXYT();
+          addTap(tapPt);
           int howMany = countCurrentTaps(System.currentTimeMillis());
           if (howMany >= 2) {
             bug("Show the pan/zoom widget for a few seconds.");
-            shouldZoomPan = true;
+            showPanZoomWidget = true;
+            showPanZoomWidgetRefreshTime = System.currentTimeMillis();
+            panZoomWidgetPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
+            bug("panZoom point: " + num(panZoomWidgetPt));
+            zoomPanTimer.restart();
           }
         }
         boolean wasDrawing = fsFSM.getState().equals(DRAW);
@@ -999,7 +1072,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           model.setDraggingGuidePoint(null);
         } else {
           if (!wasTap && wasDrawing) {
-            Sequence seq = model.endScribble(modelPt /* ev.getPt() */);
+            Sequence seq = model.endScribble(modelPt);
             if (seq != null) {
               model.addInk(new Ink(seq));
             }
@@ -1014,7 +1087,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         hoverPt = null;
         break;
       case Hover:
-        hoverPt = modelPt /* ev.getPt() */.copyXYT();
+        hoverPt = modelPt.copyXYT();
         break;
     }
     repaint();

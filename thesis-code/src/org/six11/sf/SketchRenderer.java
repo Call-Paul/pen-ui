@@ -781,4 +781,21 @@ public class SketchRenderer {
     line(head2, tip);
   }
 
+  public Rectangle2D[] panZoomWidget(GL2 gl, Pt pt) {
+    Rectangle2D[] ret = new Rectangle2D[2];
+    float w = 104;
+    float h = 48;
+    float w4 = w / 4;
+    float w2 = w / 2;
+    float h2 = h / 2;
+    float bot = pt.fy() - h2;
+    float left = pt.fx() - w4;
+    gl.glColor4fv(bloodRed, 0);
+    rect(left, bot, w2, h);
+    rect(left + w2, bot, w2, h);
+    ret[0] = new Rectangle2D.Float(left, bot, w2, h);
+    ret[1] = new Rectangle2D.Float(left + w2, bot, w2, h);
+    return ret;
+  }
+
 }

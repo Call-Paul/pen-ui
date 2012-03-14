@@ -227,7 +227,7 @@ public class SkruiFabEditor {
     actions.put(ACTION_ZOOM_IN,
         new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
           public void activate() {
-            model.getCamera().zoom(0.05f);
+            model.getCamera().zoomBy(surface.getSize(), 0.05f);
             surface.repaint();
           }
         });
@@ -235,7 +235,7 @@ public class SkruiFabEditor {
     actions.put(ACTION_ZOOM_OUT,
         new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
           public void activate() {
-            model.getCamera().zoom(-0.05f);
+            model.getCamera().zoomBy(surface.getSize(), -0.05f);
             surface.repaint();
           }
         });
@@ -244,7 +244,7 @@ public class SkruiFabEditor {
         new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
           public void activate() {
             float z = model.getCamera().getZoom();
-            model.getCamera().translate(-10 / z, 0);
+            model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
             surface.repaint();
           }
         });
@@ -253,7 +253,7 @@ public class SkruiFabEditor {
         new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
           public void activate() {
             float z = model.getCamera().getZoom();
-            model.getCamera().translate(10 / z, 0);
+            model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
             surface.repaint();
           }
         });
@@ -262,7 +262,7 @@ public class SkruiFabEditor {
         new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
           public void activate() {
             float z = model.getCamera().getZoom();
-            model.getCamera().translate(0, -10 / z);
+            model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
             surface.repaint();
           }
         });
@@ -271,7 +271,7 @@ public class SkruiFabEditor {
         new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
           public void activate() {
             float z = model.getCamera().getZoom();
-            model.getCamera().translate(0, 10 / z);
+            model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
             surface.repaint();
           }
         });
