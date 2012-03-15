@@ -17,6 +17,9 @@
     <fileset dir="lib">
       <include name="*.jar"/>
     </fileset> 
+    <fileset dir="external">
+      <include name="*.jar"/>
+    </fileset> 
   </path>
 
   <taskdef classpathref="compile.classpath" resource="genjar.properties" />
@@ -81,6 +84,8 @@
       -injars      lib/jdom.jar(!META-INF/MANIFEST.MF)
       -injars      lib/six11utils.jar(!META-INF/MANIFEST.MF)
       -injars      lib/iText-2.1.4.jar(!META-INF/MANIFEST.MF)
+      -injars      external/jogl.all.jar(!META-INF/MANIFEST.MF)
+      -injars      external/gluegen-rt.jar(!META-INF/MANIFEST.MF)
       -injars      build/${shortName}-fat.jar <!-- my code. keep the manifest -->
       -outjars     build/${shortName}.jar
 <!--      -skipnonpubliclibraryclasses -->
@@ -93,6 +98,8 @@
       -dontwarn javax.**
       -dontnote com.lowagie.**
       -dontnote org.jdom.**
+      -dontwarn jogamp.**
+      -dontwarn com.jogamp.**
       
       -keep public class org.six11.sf.Main {
         public static void main(java.lang.String[]);

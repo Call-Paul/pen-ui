@@ -314,11 +314,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     }
 
-    if (hoverPt != null) {
-      gl.glLineWidth(2f);
-      gl.glColor3fv(SketchRenderer.red, 0);
-      renderer.dot(hoverPt, 5);
-    }
+//    if (hoverPt != null) {
+//      gl.glLineWidth(2f);
+//      gl.glColor3fv(SketchRenderer.red, 0);
+//      renderer.dot(hoverPt, 5);
+//    }
 
     // switch back to non-scaled, non-translated ortho mode to draw UI things
     gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
@@ -401,7 +401,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     rect(gl, thickHalf, size.width - thick, thickHalf, size.height - thick);
 
     // render scribble and model data
-    renderer.render(model, drawable, currentScribble, true, this);
+    renderer.render(model, drawable, currentScribble, false, this);
   }
 
   private void setStencilThumbnail(GLAutoDrawable drawable) {
