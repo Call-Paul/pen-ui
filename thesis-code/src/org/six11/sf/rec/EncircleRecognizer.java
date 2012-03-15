@@ -15,12 +15,24 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 public class EncircleRecognizer extends SketchRecognizer {
+
+  private static final double END_FRACTION = 0.2;
 
   public EncircleRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
   }
 
+  /**
+   * Examines the first and last END_FRACTION of the sequence and determines the shortest distance
+   * between them. So if your sequence loops around on itself it will return a small value. If it
+   * does not the ends are far away from each other.
+   * 
+   * @return
+   */
   private double getNearestEncircleDistShortSequence(Sequence seq) {
     double ret = Double.MAX_VALUE;
     double len = seq.length();
@@ -28,7 +40,7 @@ public class EncircleRecognizer extends SketchRecognizer {
     Collection<Pt> end = new HashSet<Pt>();
     double dist = 0;
     Pt prev = null;
-    for (int i = 0; (i < seq.size()) && (dist < (len * 0.2)); i++) {
+    for (int i = 0; (i < seq.size()) && (dist < (len * END_FRACTION)); i++) {
       Pt pt = seq.get(i);
       if (dist < (len * 0.2)) {
         start.add(pt);
@@ -40,7 +52,7 @@ public class EncircleRecognizer extends SketchRecognizer {
     }
     dist = 0;
     prev = null;
-    for (int i = seq.size() - 1; (i >= 0) && (dist < (len * 0.2)); i--) {
+    for (int i = seq.size() - 1; (i >= 0) && (dist < (len * END_FRACTION)); i--) {
       Pt pt = seq.get(i);
       if (dist < (len * 0.2)) {
         end.add(pt);
@@ -72,13 +84,13 @@ public class EncircleRecognizer extends SketchRecognizer {
 
   private int getNearestEncircleDistLongSequence(Sequence seq) {
     // start at the end and look for the point seq[i] that is closest to the first point seq[0].
-    // Only look at the last 20% of the sequence
+    // Only look at the last END_FRACTION (e.g. 20%) of the sequence
     Pt start = seq.getFirst();
     int cursor = seq.size() - 1;
     int bestIdx = cursor;
     double bestDist = Double.MAX_VALUE;
     double distToEnd = 0;
-    double stopDist = seq.length() * 0.2;
+    double stopDist = seq.length() * END_FRACTION;
     Pt prev = null;
     while (distToEnd < stopDist) {
       Pt here = seq.get(cursor);
@@ -108,11 +120,13 @@ public class EncircleRecognizer extends SketchRecognizer {
     Sequence seq = ink.getSequence();
     final Collection<Stencil> stencilsInside = new HashSet<Stencil>();
     double len = seq.length();
+    float zoom = model.getCamera().getZoom();
     // ---------------------------------------------------------------- Select Stencil
-    if (len > 200) {
+    float minLen = 200 / zoom; // minimum length for the stencil encircle gesture to be
+    if (len > minLen) {
       int bestIdx = getNearestEncircleDistLongSequence(seq);
       double bestDist = seq.get(bestIdx).distance(seq.get(0));
-      if (bestDist < 50) {
+      if (bestDist < (50 / zoom)) { // closest parts of ends have to be closer than this
         // TODO: should also check the relative sizes of these areas. Don't want 
         // to accidentally select something when you're really trying to create 
         // a surrounding stencil, or making a hole inside one.
@@ -128,8 +142,17 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
       }
     }
-    if ((len <= 200) && (ink.getSequence().getRoughDensity() <= 2.0)
-        && (getNearestEncircleDistShortSequence(seq) < 6.5)) {
+    // ----------------------------------------------------------------- Tiny circles (e.g. latch)
+    double tinyCircleDistTarget = 6.5 / zoom;
+    bug("len <= minLen: " + num(len) + " <= " + num(minLen) + ": " + (len <= minLen));
+    bug("roughDensity: " + num(ink.getSequence().getRoughDensity(zoom)) + " <= 2: "
+        + (ink.getSequence().getRoughDensity(zoom) <= 2.0));
+    bug("nearestCircDist: " + num(getNearestEncircleDistShortSequence(seq)) + " < "
+        + num(tinyCircleDistTarget) + ": "
+        + (getNearestEncircleDistShortSequence(seq) < tinyCircleDistTarget));
+    if ((len <= minLen) && (ink.getSequence().getRoughDensity(zoom) <= 2.0)
+        && (getNearestEncircleDistShortSequence(seq) < tinyCircleDistTarget)) {
+      bug("doing it.");
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
@@ -157,7 +180,8 @@ public class EncircleRecognizer extends SketchRecognizer {
       }
       if (!eraseGuide && (points.size() == 1)) {
         // ------------------------------------------------------------------ T-junction
-        Collection<Segment> segs = model.findSegments(area, 4);
+        double fuzzyFactor = 4 / zoom; // area around the segment
+        Collection<Segment> segs = model.findSegments(area, fuzzyFactor);
         Pt pt = Lists.getOne(points);
         Collection<Segment> tabu = model.findRelatedSegments(pt);
         segs.removeAll(tabu);
@@ -216,11 +240,7 @@ public class EncircleRecognizer extends SketchRecognizer {
     return new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_TO_T_MERGE) {
       @Override
       public void activate(SketchBook model) {
-        /*Set<Segment> babies = */model.splitSegment(seg, pt);
-//        bug("* Old:" + seg.typeIdStr());
-//        for (Segment babe : babies) {
-//          bug("* New: " + babe.typeIdStr());
-//        }
+        model.splitSegment(seg, pt);
       }
     };
   }

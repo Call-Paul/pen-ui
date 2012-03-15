@@ -320,6 +320,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       renderer.dot(hoverPt, 5);
     }
 
+    // switch back to non-scaled, non-translated ortho mode to draw UI things
+    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
+    gl.glLoadIdentity();
+    ortho = Camera.getOrthoValues(size, 1, 0, 0);
+    gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
+    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
+
     if (fsFSM.getState().equals(SEARCH_DIR)) {
       float[] undoColor = SketchRenderer.lightGray;
       float[] redoColor = SketchRenderer.lightGray;
@@ -347,13 +354,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       Pt redoEnd = redoStart.getTranslated(40, 0);
       renderer.arrow(redoStart, redoEnd);
     }
-
-    // switch back to non-scaled, non-translated ortho mode to draw UI things
-    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
-    gl.glLoadIdentity();
-    ortho = Camera.getOrthoValues(size, 1, 0, 0);
-    gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
-    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
 
     if (showPanZoomWidget) {
       panZoomRects = renderer.panZoomWidget(gl, panZoomWidgetPt);
@@ -664,11 +664,12 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
       public void doBeforeTransition() {
         if ((searchStart != null) && (dragPt != null)) {
+          float thresh = UNDO_REDO_THRESHOLD / model.getCamera().getZoom();
           double dx = dragPt.getX() - searchStart.getX();
-          if (dx < -UNDO_REDO_THRESHOLD) {
+          if (dx < -thresh) {
             searchStart = dragPt.copyXYT();
             model.undoPreview();
-          } else if (dx > UNDO_REDO_THRESHOLD) {
+          } else if (dx > thresh) {
             searchStart = dragPt.copyXYT();
             model.redoPreview();
           }

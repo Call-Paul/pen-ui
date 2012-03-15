@@ -133,7 +133,6 @@ public class SketchBook {
 
     inactivityTimer = new Timer(1300, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
-        bug("inactivity timer runs...");
         if (!getUnanalyzedInk().isEmpty()) {
           SketchBook.this.editor.go();
         }
@@ -219,7 +218,6 @@ public class SketchBook {
    * The 'scribble' is ink that is currently being drawn, or is the most recently completed stroke.
    */
   public Sequence startScribble(Pt pt) {
-    bug("stopping inactivity timer 2");
     inactivityTimer.stop();
     Sequence scrib = new Sequence();
     scrib.add(pt);
@@ -228,7 +226,6 @@ public class SketchBook {
   }
 
   public Sequence addScribble(Pt pt) {
-    bug("stopping inactivity timer 3");
     inactivityTimer.stop();
     Sequence scrib = Lists.getLast(scribbles);
     if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
@@ -278,10 +275,12 @@ public class SketchBook {
         // erasing when doing things like making fat dots.
         //
         // First establish if we are just now becoming eligible or not.
+        float zoom = getCamera().getZoom();
+        double eligibilityThresh = ERASE_ELIGIBILITY_DIST / zoom;
         boolean eligible = scrib.hasAttribute("erase_eligible");
         if (!eligible) {
           Pt first = scrib.getFirst();
-          eligible = first.distance(here) > ERASE_ELIGIBILITY_DIST;
+          eligible = first.distance(here) > eligibilityThresh;
           if (eligible) {
             scrib.setAttribute("erase_eligible", true);
           }
@@ -291,8 +290,9 @@ public class SketchBook {
         // a pseudo-corner.
         List<Pt> samples = (List<Pt>) scrib.getAttribute("samples");
         Pt recentSample = Lists.getLast(samples);
+        double sampleDistThresh = ERASE_SAMPLE_DIST_THRESHOLD / zoom;
         double sampleDist = recentSample.getDouble("erase_curvidist");
-        if ((newDist - sampleDist) > ERASE_SAMPLE_DIST_THRESHOLD) {
+        if ((newDist - sampleDist) > sampleDistThresh) {
           samples.add(here);
           // 2b: Pseudo-corner detection. Get recent samples and compare their 
           // headings with the current one. Big deviations indicate a corner
@@ -448,7 +448,6 @@ public class SketchBook {
   @SuppressWarnings("unchecked")
   public Sequence endScribble(Pt pt) {
     Sequence ret = null;
-    bug("starting inactivity timer");
     inactivityTimer.start();
     Sequence scrib = Lists.getLast(scribbles);
     if (scrib.hasAttribute("erase")) {
@@ -1146,7 +1145,6 @@ public class SketchBook {
     }
     retainedVisibleGuides.addAll(guidePoints);
     for (Guide g : retainedVisibleGuides) {
-      bug("Retaining hover point for " + g + " = " + surface.getHoverPoint());
       g.setFixedHover(surface.getHoverPoint());
     }
   }
@@ -1171,9 +1169,10 @@ public class SketchBook {
   public Collection<GuidePoint> findGuidePoints(Pt pt, boolean activeOnly) {
     Collection<GuidePoint> ret = new HashSet<GuidePoint>();
     Collection<GuidePoint> in = activeOnly ? activeGuidePoints : guidePoints;
+    double targetNearnessThreshold = DotReferenceGestureRecognizer.NEARNESS_THRESHOLD / getCamera().getZoom();
     if (activeOnly) {
       for (GuidePoint gpt : in) {
-        if (gpt.getLocation().distance(pt) < DotReferenceGestureRecognizer.NEARNESS_THRESHOLD) {
+        if (gpt.getLocation().distance(pt) < targetNearnessThreshold) {
           ret.add(gpt);
         }
       }

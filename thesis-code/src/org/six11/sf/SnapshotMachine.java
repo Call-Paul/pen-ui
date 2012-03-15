@@ -86,7 +86,6 @@ public class SnapshotMachine {
   public Snapshot takeSnapshotImmediately() {
     Snapshot ret = new Snapshot(model);
     if (snapsEnabled) {
-      bug("Made a snapshot!");
       push(ret);
       if (rootDir != null) {
         File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
@@ -119,7 +118,7 @@ public class SnapshotMachine {
   }
 
   public void requestSnapshot(String reason) {
-    bug("snapshot requested. reason: " + reason);
+//    bug("snapshot requested. reason: " + reason);
     this.snapshotRequested = true;
     model.getSurface().snapshot();
   }

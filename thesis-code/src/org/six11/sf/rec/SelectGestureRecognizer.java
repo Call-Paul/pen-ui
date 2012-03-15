@@ -2,6 +2,8 @@ package org.six11.sf.rec;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.toDegrees;
+import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
 
 import java.awt.geom.Area;
 import java.util.Collection;
@@ -20,6 +22,8 @@ import org.six11.util.pen.Vec;
 
 public class SelectGestureRecognizer extends SketchRecognizer {
 
+  public static final double FUZZY_AREA_SIZE = 3.5;
+
   public SelectGestureRecognizer(SketchBook model) {
     super(model, Type.SingleRaw);
   }
@@ -34,24 +38,20 @@ public class SelectGestureRecognizer extends SketchRecognizer {
   @Override
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-    Area totalArea = ShapeFactory.getFuzzyArea(ink.getSequence().getPoints(), 3.5);
-    //    DrawingBuffer db = model.getLayers().getLayer("select gesture");
-    //    db.clear();
-    //    DrawingBufferRoutines.fillShape(db, totalArea, new Color(255, 0, 0, 120), 0.5);
-    Collection<Segment> underneath = model.findSegments(totalArea, 3.5);
-    //    for (Segment under : underneath) {
-    //      DrawingBufferRoutines.fillShape(db, under.getFuzzyArea(3.5), new Color(0, 0, 255, 120), 0.5);
-    //    }
+    float zoom = model.getCamera().getZoom();
+    double targetFuzzy = FUZZY_AREA_SIZE / zoom;
+    Area totalArea = ShapeFactory.getFuzzyArea(ink.getSequence().getPoints(), targetFuzzy);
+    Collection<Segment> underneath = model.findSegments(totalArea, targetFuzzy);
     final Collection<Segment> selectUs = new HashSet<Segment>();
     final Collection<Segment> unselectUs = new HashSet<Segment>();
-    //    boolean selectedSomething = false;
     Vec inkVec = new Vec(ink.getSequence().getFirst(), ink.getSequence().getLast());
     for (Segment undy : underneath) {
       Statistics stats = new Statistics();
       for (Pt pt : ink.getSequence()) {
         List<Pt> segPoints = undy.asPolyline();
         Pt near = Functions.getNearestPointOnPolyline(pt, segPoints);
-        stats.addData(near.distance(pt));
+        double datum = near.distance(pt) * zoom;
+        stats.addData(datum); // unscaling here, rather than below with the inequalities
       }
       if ((stats.getMax() < 10.0) || ((stats.getMax() < 15.0) && (stats.getMean() < 5.0))) {
         double ang = 0;
@@ -67,10 +67,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
             selectUs.add(undy);
           }
         }
-        //        selectedSomething = true;
       }
-      //      bug("For " + undy + "...");
-      //      stats.printDebug();
     }
     if (!selectUs.isEmpty() || !unselectUs.isEmpty()) {
       ret = new RecognizedRawItem(true, RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {

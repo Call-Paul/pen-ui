@@ -157,12 +157,9 @@ public class FastGlassPane extends JComponent implements MouseListener {
   }
 
   protected void whackMouseTimer() {
-    bug("Whacking mouse timer. onscreen: " + onscreen + ", focused: " + focused);
     if (!timer.isRunning() && onscreen && focused) {
-      bug("Restarting timer.");
       timer.restart();
     } else if (timer.isRunning()) {
-      bug("Stopping timer.");
       timer.stop();
     }
   }

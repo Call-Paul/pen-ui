@@ -5,6 +5,7 @@ import static org.six11.util.Debug.num;
 
 import java.util.List;
 
+import org.six11.util.Debug;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;

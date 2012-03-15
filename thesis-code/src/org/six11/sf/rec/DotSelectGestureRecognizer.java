@@ -26,11 +26,12 @@ public class DotSelectGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
+    double targetNearnessThreshold = DotReferenceGestureRecognizer.NEARNESS_THRESHOLD / model.getCamera().getZoom();
     if ((segs != null) && (segs.size() == 1) && (segs.get(0).getType() == Segment.Type.Dot)) {
       final Segment dot = segs.get(0);
       Pt loc = dot.getP1();
       for (GuidePoint g : model.getGuidePoints()) {
-        if (g.getLocation().distance(loc) < DotReferenceGestureRecognizer.NEARNESS_THRESHOLD) {
+        if (g.getLocation().distance(loc) < targetNearnessThreshold) {
           ret = makeToggleItem(g);
         }
       }

@@ -87,7 +87,6 @@ public class Page {
   public void setTinyThumb(BufferedImage im) {
     this.tinyThumb = im;
     this.setCachedThumb(null);
-    bug("Totally set the tiny thumbnail.");
     model.getEditor().getGrid().repaint();
   }
 

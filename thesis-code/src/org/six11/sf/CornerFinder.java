@@ -184,15 +184,18 @@ public class CornerFinder {
     int b = patch.size() - 1;
     Line line = new Line(patch.get(a), patch.get(b));
     double lineError = Functions.getLineError(line, patch, a, b);
-    if (lineError < lineErrorThreshold) {
+    double zoom = (double) model.getCamera().getZoom();
+    double targetLineThreshold = lineErrorThreshold / zoom;
+    double targetEllipseThreshold = ellipseErrorThreshold / zoom;
+    if (lineError < targetLineThreshold) {
       ret = new Segment(new LineSegment(ink, patch, i == 0, j == (ink.seq.size() - 1)));
     } else {
       double closeness = line.getLength() / segLength;
       boolean closed = closeness < 0.1;
       double ellipseError = Functions.getEllipseError(patch);
-      if ((patch.size() > 3) && !closed && (ellipseError < ellipseErrorThreshold)) {
+      if ((patch.size() > 3) && !closed && (ellipseError < targetEllipseThreshold)) {
         ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == (ink.seq.size() - 1)));
-      } else if ((patch.size() > 3) && closed && (ellipseError < (ellipseErrorThreshold * 2.0))) {
+      } else if ((patch.size() > 3) && closed && (ellipseError < (targetEllipseThreshold * 2.0))) {
         EllipseSegment es = new EllipseSegment(ink, patch);
         double ex = es.getEllipse().getEccentricity();
         bug("Ellipse Eccentricity: " + ex);
@@ -218,8 +221,14 @@ public class CornerFinder {
     } else {
       ConvexHull hull = new ConvexHull(ink.seq.getPoints());
       Antipodal antipodes = new Antipodal(hull.getHull());
-      double density = ink.seq.size() / antipodes.getArea();
-      double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
+      float zoom = model.getCamera().getZoom();
+      double longLen = antipodes.getLongDimensionLength();
+      double shortLen = antipodes.getShortDimensionLength();
+      double longLenScaled = longLen * zoom;
+      double shortLenScaled = shortLen * zoom;
+      double area = longLenScaled * shortLenScaled;
+      double density = ink.seq.size() / area;
+      double areaPerAspect = area / antipodes.getAspectRatio();
       Certainty cert = Certainty.Unknown;
       if (areaPerAspect < 58) {
         cert = Certainty.Yes;

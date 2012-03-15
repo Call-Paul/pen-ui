@@ -34,36 +34,37 @@ public class EraseGestureRecognizer extends SketchRecognizer {
 
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
-    long elapsed = ink.getSequence().getLast().getTime() - ink.getSequence().getFirst().getTime();
-    if (elapsed > 500) {
-      double dx = ink.getSequence().getRoughDX();
-      double dy = ink.getSequence().getRoughDY();
-      if (Math.min(dx, dy) > 7.0) {
-        double area = ink.getSequence().getRoughArea();
-        double density = ink.getSequence().getRoughDensity();
-        if ((area > 100) && (density > 2.0)) {
-          ConvexHull hull = ink.getHull();
-          final Area hullArea = new Area(hull.getHullShape());
-          final Collection<Segment> doomed = model.pickDoomedSegments(hullArea);
-          final Collection<Ink> doomedInk = model.pickDoomedInk(hullArea, ink);
-          ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
-            public void activate(SketchBook model) {
-              if (doomedInk.size() > 0) {
-                for (Ink ink : doomedInk) {
-                  model.removeInk(ink);
-                }
-              } else {
-                for (Segment seg : doomed) {
-                  model.removeGeometry(seg);
-                }
-              }
-            }
-          };
-        }
-      } else {
-        bug("Rejecting Mark's favorite bug.");
-      }
-    }
+//    long elapsed = ink.getSequence().getLast().getTime() - ink.getSequence().getFirst().getTime();
+//    if (elapsed > 500) {
+//      float zoom = model.getCamera().getZoom();
+//      double dx = ink.getSequence().getRoughDX(zoom);
+//      double dy = ink.getSequence().getRoughDY(zoom);
+//      if (Math.min(dx, dy) > 7.0) {
+//        double area = ink.getSequence().getRoughArea(zoom);
+//        double density = ink.getSequence().getRoughDensity(zoom);
+//        if ((area > 100) && (density > 2.0)) {
+//          ConvexHull hull = ink.getHull();
+//          final Area hullArea = new Area(hull.getHullShape());
+//          final Collection<Segment> doomed = model.pickDoomedSegments(hullArea);
+//          final Collection<Ink> doomedInk = model.pickDoomedInk(hullArea, ink);
+//          ret = new RecognizedRawItem(true, RecognizedRawItem.SCRIBBLE_TO_ERASE) {
+//            public void activate(SketchBook model) {
+//              if (doomedInk.size() > 0) {
+//                for (Ink ink : doomedInk) {
+//                  model.removeInk(ink);
+//                }
+//              } else {
+//                for (Segment seg : doomed) {
+//                  model.removeGeometry(seg);
+//                }
+//              }
+//            }
+//          };
+//        }
+//      } else {
+//        bug("Rejecting Mark's favorite bug.");
+//      }
+//    }
     return ret;
   }
 

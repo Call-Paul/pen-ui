@@ -8,6 +8,7 @@ import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
+import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
@@ -29,6 +30,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
+    double targetNearnessThreshold = NEARNESS_THRESHOLD / (double) model.getCamera().getZoom();
     if ((segs != null) && (segs.size() == 1) && (segs.get(0).getType() == Segment.Type.Dot)) {
       Segment dot = segs.get(0);
       Pt loc = dot.getP1();
@@ -44,14 +46,14 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
       boolean ok = false;
       // cases 1 and 2
       for (Segment seg : model.getGeometry()) {
-        if (loc.distance(seg.getP1()) < NEARNESS_THRESHOLD) {
+        if (loc.distance(seg.getP1()) < targetNearnessThreshold) {
           ret = makeEndpointItem(seg, true);
           ok = true;
-        } else if (loc.distance(seg.getP2()) < NEARNESS_THRESHOLD) {
+        } else if (loc.distance(seg.getP2()) < targetNearnessThreshold) {
           ret = makeEndpointItem(seg, false);
           ok = true;
         } else {
-          if (seg.isPointOnPath(loc, NEARNESS_THRESHOLD)) {
+          if (seg.isPointOnPath(loc, targetNearnessThreshold)) {
             ret = makeNearItem(seg, loc);
             ok = true;
           }
@@ -71,7 +73,6 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
 
   private RecognizedRawItem makeNearItem(final Segment seg, Pt loc) {
     final Pt nearPt = seg.getNearestPoint(loc);
-
     RecognizedRawItem ret = new RecognizedRawItem(true, RecognizedRawItem.FAT_DOT_REFERENCE_POINT,
         RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT,
         RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE) {
