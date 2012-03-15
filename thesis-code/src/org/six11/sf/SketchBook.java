@@ -1233,6 +1233,7 @@ public class SketchBook {
 
   public void undoRedoComplete() {
     bug("finalizing redo/undo to snapshot " + getSnapshotMachine().getCurrentIdx());
+    surface.suspendRedraw(true);
     surface.clearPreview();
     if (getSnapshotMachine() == null) {
       bug("Snapshot machine is null");
@@ -1241,6 +1242,7 @@ public class SketchBook {
     loadingSnapshot = true;
     getSnapshotMachine().load(s);
     loadingSnapshot = false;
+    surface.suspendRedraw(false);
     surface.display();
   }
 

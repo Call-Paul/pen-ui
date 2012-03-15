@@ -142,7 +142,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   // rendering-related vars
   private TextRenderer textRenderer18;
   protected GLU glu;
-  //  protected int frameCount;
   protected SketchRenderer renderer;
   private Map<Integer, TextRenderer> textRenderers;
   private String textInput;
@@ -152,6 +151,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   int[] viewport = new int[4];
   float mvmatrix[] = new float[16];
   private List<Pt> taps;
+  private boolean suspendRedraw;
 
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
@@ -252,7 +252,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       model.getNotebook().setCurrentPage(formerPage);
       bug("*** Done compiling display lists. You may resume your life now.");
     }
-
   }
 
   @Override
@@ -267,6 +266,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   @Override
   public void display(GLAutoDrawable drawable) {
+    if (suspendRedraw) {
+      return;
+    }
     long start = System.currentTimeMillis();
     GL2 gl = drawable.getGL().getGL2();
     Dimension size = getSize();
@@ -1153,7 +1155,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     previewSnapshot = null;
     bug("Stop showing preview.");
     //    display();
-    repaint();
+    //    repaint();
   }
 
   public void snapshot() {
@@ -1197,6 +1199,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
    */
   public String getTextInput() {
     return textInput;
+  }
+
+  public void suspendRedraw(boolean suspendRedraw) {
+    this.suspendRedraw = suspendRedraw;
   }
 
 }
