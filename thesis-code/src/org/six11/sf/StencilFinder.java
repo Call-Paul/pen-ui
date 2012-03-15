@@ -69,9 +69,10 @@ public class StencilFinder {
       maybeAddStencil(cursor, ptPath, segPath);
     } else {
       ptPath.push(cursor);
+      // get all segments related to the cursor and explore the ones we're not on already.
       Collection<Segment> related = model.findRelatedSegments(cursor);
       related.removeAll(segPath);
-      List<Segment> relatedList = new ArrayList<Segment>(related);//.toArray(new Segment[related.size()]);
+      List<Segment> relatedList = new ArrayList<Segment>(related);
       for (Segment seg : relatedList) {
         segPath.push(seg);
         Pt nextCursor = seg.getPointOpposite(cursor);
@@ -80,6 +81,7 @@ public class StencilFinder {
         }
         segPath.pop();
       }
+     ptPath.pop();
     }
   }
 
