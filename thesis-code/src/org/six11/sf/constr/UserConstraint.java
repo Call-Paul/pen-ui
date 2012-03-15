@@ -1,5 +1,7 @@
 package org.six11.sf.constr;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,25 +9,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
-import org.six11.util.Debug;
-import org.six11.util.pen.DrawingBuffer;
 import org.six11.util.pen.Pt;
-import org.six11.util.solve.AngleConstraint;
 import org.six11.util.solve.Constraint;
-import org.six11.util.solve.DistanceConstraint;
-import org.six11.util.solve.LocationConstraint;
-import org.six11.util.solve.OrientationConstraint;
-import org.six11.util.solve.PointAsLineParamConstraint;
-import org.six11.util.solve.PointOnLineConstraint;
-
-import static org.six11.util.Debug.bug;
 
 /**
  * A UserConstraint is a place to retain references to several related constraints, and it usually

@@ -1,10 +1,8 @@
 package org.six11.sf.rec;
 
-import org.six11.sf.rec.RecognizerPrimitive.Certainty;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 import static java.lang.Math.log;
+
+import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
 public class EqualLength extends RecognizerConstraint {
 
@@ -24,9 +22,9 @@ public class EqualLength extends RecognizerConstraint {
     double logDenom = log(Math.max(a, b));
     double ratio = Math.min(a, b) / Math.max(a, b);
     double logRatio = (logNumer / logDenom);
-    if (ratio > 0.85 || diff < 20) {
+    if ((ratio > 0.85) || (diff < 20)) {
       ret = Certainty.Yes;
-    } else if (ratio > 0.6 || diff < 40) {
+    } else if ((ratio > 0.6) || (diff < 40)) {
       ret = Certainty.Maybe;
     }
     say(p, new String[] { "length0", "length1", "diff", "ratio", "logRatio"}, new double[] { a, b, diff, ratio, logRatio }, ret);

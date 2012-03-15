@@ -1,17 +1,14 @@
 package org.six11.sf;
 
-import java.awt.Color;
-import java.awt.Rectangle;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.util.List;
 
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class GuidePoint extends Guide {
 
@@ -49,7 +46,7 @@ public class GuidePoint extends Guide {
 
   public Pt getLocation() {
     Pt ret = null;
-    if (seg != null && param != null) {
+    if ((seg != null) && (param != null)) {
       if (Functions.eq(0.0, param.getX(), Functions.EQ_TOL)) {
         ret = seg.getP1(); /*seg.getP1().copyXYT();*/
       } else if (Functions.eq(1.0, param.getX(), Functions.EQ_TOL)) {
@@ -113,11 +110,11 @@ public class GuidePoint extends Guide {
       double closestDist = Double.MAX_VALUE;
       for (Segment s : segs) {
         bug("  " + s);
-        if (s.getP1() != null && s.getP1().distance(where) < closestDist) {
+        if ((s.getP1() != null) && (s.getP1().distance(where) < closestDist)) {
           closestDist = s.getP1().distance(where);
           closestPt = s.getP1();
         }
-        if (s.getP2() != null && s.getP2().distance(where) < closestDist) {
+        if ((s.getP2() != null) && (s.getP2().distance(where) < closestDist)) {
           closestDist = s.getP2().distance(where);
           closestPt = s.getP2();
         }

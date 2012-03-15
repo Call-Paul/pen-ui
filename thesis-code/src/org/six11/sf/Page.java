@@ -1,12 +1,13 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import static org.six11.util.Debug.bug;
 
 public class Page {
 

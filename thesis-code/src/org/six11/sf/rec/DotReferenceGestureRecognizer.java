@@ -2,22 +2,14 @@ package org.six11.sf.rec;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
-import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
-import org.six11.sf.SketchRecognizer.Type;
-import org.six11.util.data.Lists;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class DotReferenceGestureRecognizer extends SketchRecognizer {
 
@@ -37,7 +29,7 @@ public class DotReferenceGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
-    if (segs != null && segs.size() == 1 && segs.get(0).getType() == Segment.Type.Dot) {
+    if ((segs != null) && (segs.size() == 1) && (segs.get(0).getType() == Segment.Type.Dot)) {
       Segment dot = segs.get(0);
       Pt loc = dot.getP1();
 

@@ -12,8 +12,6 @@ import org.six11.util.pen.IntersectionData;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class EndCap {
   
@@ -169,7 +167,7 @@ public class EndCap {
    * Returns true if these two endcaps have the same ink and end (using getInk() and getEnd()).
    */
   public boolean same(EndCap other) {
-    return seg == other.getSegment() && end == other.getEnd();
+    return (seg == other.getSegment()) && (end == other.getEnd());
   }
 
   public String toString() {

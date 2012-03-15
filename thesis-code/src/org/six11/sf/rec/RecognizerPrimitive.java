@@ -5,8 +5,6 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 
-import static org.six11.util.Debug.bug;
-
 public class RecognizerPrimitive implements Comparable<RecognizerPrimitive> {
 
   private static int ID_COUNTER = 0;

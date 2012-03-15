@@ -1,5 +1,6 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.warn;
 
 import java.awt.AWTEvent;
@@ -24,12 +25,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.Ellipse2D;
-import java.lang.reflect.InvocationTargetException;
-// import java.util.Timer;
-// import java.util.TimerTask;
 
 import javax.swing.JComponent;
-import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
@@ -37,8 +34,6 @@ import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
-
-import static org.six11.util.Debug.bug;
 
 public class FastGlassPane extends JComponent implements MouseListener {
 
@@ -66,7 +61,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
   private ActivityMode activity;
   private Component prevComponent;
   private Point prevComponentPoint;
-  private Component dragStartComponent;
   private Point dragPoint;
   private boolean gatherText;
   private StringBuilder numberInput;
@@ -115,7 +109,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
     Toolkit.getDefaultToolkit().addAWTEventListener(new AWTEventListener() {
       public void eventDispatched(AWTEvent ev) {
         if (gatherText) {
-          if (ev.getID() == KeyEvent.KEY_TYPED && ev instanceof KeyEvent) {
+          if ((ev.getID() == KeyEvent.KEY_TYPED) && (ev instanceof KeyEvent)) {
             KeyEvent kev = (KeyEvent) ev;
             boolean ok = false;
             try {
@@ -127,7 +121,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
             }
             if (!ok) {
               bug("dealing with key event char is: " + kev.getKeyChar());
-              if (kev.getKeyChar() == '.' && !numberInput.toString().contains(".")) {
+              if ((kev.getKeyChar() == '.') && !numberInput.toString().contains(".")) {
                 numberInput.append('.');
                 ok = true;
               }
@@ -218,7 +212,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
     SwingUtilities.convertPointFromScreen(loc, container);
     boolean sameSpot = false;
     if (prevLoc != null) {
-      sameSpot = prevLoc.x == loc.x && prevLoc.y == loc.y;
+      sameSpot = (prevLoc.x == loc.x) && (prevLoc.y == loc.y);
     }
     prevLoc = loc;
     if (!sameSpot) {
@@ -304,7 +298,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
     givePenEvent(mei.component,
         PenEvent.buildDownEvent(this, new Pt(mei.componentPoint, ev.getWhen()), ev));
     prevComponent = mei.component;
-    dragStartComponent = mei.component;
   }
 
   @Override
@@ -332,7 +325,6 @@ public class FastGlassPane extends JComponent implements MouseListener {
         break;
       case None:
         givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
-        dragStartComponent = null;
         break;
 
     }

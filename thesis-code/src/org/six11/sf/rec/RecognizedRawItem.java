@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.sf.SketchBook;
-import static org.six11.util.Debug.bug;
 
 public abstract class RecognizedRawItem {
 

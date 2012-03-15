@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -12,8 +14,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.util.Debug;
 import org.six11.util.io.FileUtil;
-
-import static org.six11.util.Debug.bug;
 
 public class Notebook {
 
@@ -220,7 +220,7 @@ public class Notebook {
     for (Page page : pages) {
       if (page.getSnapshotMachine().isDirty()) {
         long dur = now - page.getSnapshotMachine().getLastDirtyTime();
-        if (ignoreTimeout || dur > AUTO_SAVE_TIMEOUT) {
+        if (ignoreTimeout || (dur > AUTO_SAVE_TIMEOUT)) {
           long start = System.currentTimeMillis();
           int chars = 0;
           try {

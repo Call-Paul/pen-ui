@@ -1,8 +1,6 @@
 package org.six11.sf;
 
-import org.six11.util.Debug;
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 import java.awt.Dimension;
 

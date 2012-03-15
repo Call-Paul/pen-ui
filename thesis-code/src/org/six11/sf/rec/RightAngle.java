@@ -1,7 +1,8 @@
 package org.six11.sf.rec;
 
-import org.six11.util.math.Interval;
 import static java.lang.Math.toRadians;
+
+import org.six11.util.math.Interval;
 
 public class RightAngle extends AngleConstraint {
 

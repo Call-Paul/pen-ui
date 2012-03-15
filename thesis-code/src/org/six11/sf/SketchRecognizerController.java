@@ -1,7 +1,6 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,8 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedRawItem;
@@ -93,7 +90,7 @@ public class SketchRecognizerController {
         double toThisPoint = pt.getDouble("path-length");
         if (toThisPoint > lengthThreshold) {
           double thisDist = start.distance(pt);
-          if (thisDist < endpointDistThreshold && thisDist < closestDist) {
+          if ((thisDist < endpointDistThreshold) && (thisDist < closestDist)) {
             closestPoint = pt;
             closestDist = thisDist;
           }
@@ -147,13 +144,13 @@ public class SketchRecognizerController {
     Set<RecognizerPrimitive> ret = new HashSet<RecognizerPrimitive>();
     ConvexHull hull = new ConvexHull(ink.seq.getPoints());
     Antipodal antipodes = new Antipodal(hull.getHull());
-    double density = (double) ink.seq.size() / antipodes.getArea();
+    double density = ink.seq.size() / antipodes.getArea();
     double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
     if (areaPerAspect < 58) {
       ret.add(RecognizerPrimitive.makeDot(ink, Certainty.Yes));
     } else if (areaPerAspect < 120) {
       ret.add(RecognizerPrimitive.makeDot(ink, Certainty.Maybe));
-    } else if (areaPerAspect / (0.3 + density) < 120) {
+    } else if ((areaPerAspect / (0.3 + density)) < 120) {
       ret.add(RecognizerPrimitive.makeDot(ink, Certainty.Maybe));
     } else {
       // no action
@@ -166,8 +163,9 @@ public class SketchRecognizerController {
    */
   private Collection<RecognizerPrimitive> extractLinesAndArcs(Ink ink) {
     Set<RecognizerPrimitive> ret = new HashSet<RecognizerPrimitive>();
+    @SuppressWarnings("unchecked")
     List<Integer> corners = (List<Integer>) ink.seq.getAttribute(CornerFinder.SEGMENT_JUNCTIONS);
-    for (int i = 0; i < corners.size() - 1; i++) {
+    for (int i = 0; i < (corners.size() - 1); i++) {
       int a = corners.get(i);
       int b = corners.get(i + 1);
       Pt ptA = ink.seq.get(a);
@@ -176,7 +174,7 @@ public class SketchRecognizerController {
       double curvilinearLength = ink.seq.getPathLength(a, b);
       double lineLenDivCurviLen = curvilinearLength / straightLength;
       boolean isShort = curvilinearLength < 30;
-      if (lineLenDivCurviLen < 1.07 || (isShort && lineLenDivCurviLen < 1.5)) {
+      if ((lineLenDivCurviLen < 1.07) || (isShort && (lineLenDivCurviLen < 1.5))) {
         ret.add(RecognizerPrimitive.makeLine(ink, a, b, Certainty.Yes));
         ret.add(RecognizerPrimitive.makeArc(ink, a, b, Certainty.Maybe));
       } else if (lineLenDivCurviLen < 1.27) {
@@ -191,13 +189,13 @@ public class SketchRecognizerController {
 
   private double updatePathLength(Sequence seq) {
     int cursor = seq.size() - 1;
-    while (cursor > 0 && !seq.get(cursor).hasAttribute("path-length")) {
+    while ((cursor > 0) && !seq.get(cursor).hasAttribute("path-length")) {
       cursor--;
     }
     if (cursor == 0) {
       seq.get(cursor).setDouble("path-length", 0);
     }
-    for (int i = cursor; i < seq.size() - 1; i++) {
+    for (int i = cursor; i < (seq.size() - 1); i++) {
       double dist = seq.get(i).distance(seq.get(i + 1));
       double v = seq.get(i).getDouble("path-length") + dist;
       seq.get(i + 1).setDouble("path-length", v);

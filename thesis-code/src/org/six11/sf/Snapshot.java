@@ -1,9 +1,5 @@
 package org.six11.sf;
 
-import static org.six11.util.Debug.bug;
-
-import java.awt.Image;
-import java.awt.image.BufferedImage;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -13,7 +9,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.constr.UserConstraint;
-import org.six11.util.Debug;
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.JsonIO;

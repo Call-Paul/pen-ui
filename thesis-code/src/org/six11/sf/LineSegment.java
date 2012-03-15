@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.six11.util.pen.Pt;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class LineSegment extends SegmentDelegate {
 

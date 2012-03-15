@@ -1,29 +1,21 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Stack;
-import java.util.prefs.Preferences;
-
-import javax.imageio.ImageIO;
-import javax.swing.SwingUtilities;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.util.Debug;
-import org.six11.util.data.Lists;
 import org.six11.util.io.FileUtil;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.ConstraintSolver.State;
 import org.six11.util.solve.VariableBank;
-import static org.six11.util.Debug.bug;
 
 public class SnapshotMachine {
 
@@ -54,8 +46,6 @@ public class SnapshotMachine {
 
   private boolean snapsEnabled;
 
-  private Snapshot lastLoaded;
-
   public SnapshotMachine(SketchBook model) {
     this.model = model;
     this.snapsEnabled = true;
@@ -82,7 +72,7 @@ public class SnapshotMachine {
 
   public Snapshot save() {
     Snapshot ret = null;
-    if (snapsEnabled && model.getConstraints().getSolutionState() == State.Solved
+    if (snapsEnabled && (model.getConstraints().getSolutionState() == State.Solved)
         && snapshotRequested) {
       snapshotRequested = false;
       ret = takeSnapshotImmediately();
@@ -215,7 +205,6 @@ public class SnapshotMachine {
   }
 
   public void load(Snapshot snap) {
-    lastLoaded = snap;
     snap.load();
     setDirty();
   }

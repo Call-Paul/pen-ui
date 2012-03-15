@@ -1,8 +1,9 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.num;
+
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
-import static org.six11.util.Debug.num;
 
 public class LineLengthConstraint extends RecognizerConstraint {
 

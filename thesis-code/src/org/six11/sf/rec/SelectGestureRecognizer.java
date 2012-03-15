@@ -1,31 +1,22 @@
 package org.six11.sf.rec;
 
-import java.awt.Color;
+import static java.lang.Math.abs;
+import static java.lang.Math.toDegrees;
+
 import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.abs;
-
-import javax.naming.OperationNotSupportedException;
 
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
-import org.six11.sf.SketchRecognizer.Type;
 import org.six11.util.data.Statistics;
-import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class SelectGestureRecognizer extends SketchRecognizer {
 
@@ -62,7 +53,7 @@ public class SelectGestureRecognizer extends SketchRecognizer {
         Pt near = Functions.getNearestPointOnPolyline(pt, segPoints);
         stats.addData(near.distance(pt));
       }
-      if (stats.getMax() < 10.0 || (stats.getMax() < 15.0 && stats.getMean() < 5.0)) {
+      if ((stats.getMax() < 10.0) || ((stats.getMax() < 15.0) && (stats.getMean() < 5.0))) {
         double ang = 0;
         if (undy.getType() == Segment.Type.Line) {
           ang = Math.min(abs(Functions.getSignedAngleBetween(undy.getStartDir(), inkVec)),

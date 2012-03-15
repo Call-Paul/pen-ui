@@ -1,8 +1,7 @@
 package org.six11.sf;
 
 import java.util.Collection;
-import java.util.Set;
-//
+
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedRawItem;
 import org.six11.sf.rec.RecognizerPrimitive;

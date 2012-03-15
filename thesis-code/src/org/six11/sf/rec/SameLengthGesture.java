@@ -1,5 +1,7 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.bug;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -21,8 +23,6 @@ import org.six11.util.solve.MultisourceNumericValue;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
-
-import static org.six11.util.Debug.bug;
 
 public class SameLengthGesture extends RecognizedItemTemplate {
 
@@ -60,12 +60,12 @@ public class SameLengthGesture extends RecognizedItemTemplate {
     // (so if line1 intersects more than one thing, nothing passes. it must intersect exactly one thing.)
     Set<Segment> segs1 = SegmentFilter.makeIntersectFilter(line1).filter(allSegs);
     Set<Segment> segs2 = SegmentFilter.makeIntersectFilter(line2).filter(allSegs);
-    if (segs1.size() == 1 && segs2.size() == 1) {
+    if ((segs1.size() == 1) && (segs2.size() == 1)) {
       // 2) use a filter that only selects lines whose midpoint is near line1 or line2's midpoint
       segs1 = SegmentFilter.makeMidpointFilter(line1, 0.3).filter(segs1);
       segs2 = SegmentFilter.makeMidpointFilter(line2, 0.3).filter(segs2);
     }
-    if (segs1.size() == 1 && segs2.size() == 1) {
+    if ((segs1.size() == 1) && (segs2.size() == 1)) {
       Segment[] seg1 = segs1.toArray(new Segment[1]);
       Segment[] seg2 = segs2.toArray(new Segment[1]);
       if (seg1[0] != seg2[0]) {

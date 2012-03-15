@@ -15,7 +15,7 @@ public class TypeConstraint extends RecognizerConstraint {
   @Override
   public Certainty check(RecognizerPrimitive... p) {
     Certainty cert = Certainty.No;
-    if (p.length == 1 && p[0].getType() == type) {
+    if ((p.length == 1) && (p[0].getType() == type)) {
       cert = Certainty.Yes;
     }
     return cert;

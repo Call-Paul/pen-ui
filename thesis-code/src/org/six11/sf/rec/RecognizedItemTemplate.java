@@ -1,5 +1,8 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,9 +20,6 @@ import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.ConvexHull;
-
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
 
 /**
  * This is the base class for recognizable entities like arrows and right-angle gestures. Subclass
@@ -237,7 +237,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
         Certainty result = evaluate(bindSlot, bindObj); // sees if the current slot binding works.
         say("3...");
         if (result != Certainty.No) {
-          if (slotIndex + 1 < slotNames.size()) {
+          if ((slotIndex + 1) < slotNames.size()) {
             // there are unexplored branches below here. go do the next one!
             fit(slotIndex + 1, bindSlot, bindObj, results);
           } else {
@@ -340,23 +340,6 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
       }
     }
     return ret;
-  }
-
-  private static String getBindingString(Stack<String> names, Stack<RecognizerPrimitive> vals) {
-    StringBuilder buf = new StringBuilder();
-    if (names.size() != vals.size()) {
-      buf.append("stacks have different sizes: " + names.size() + " != " + vals.size());
-    } else if (names.size() == 0) {
-      buf.append("<no bindings>");
-    } else {
-      for (int i = 0; i < names.size(); i++) {
-        buf.append(names.get(i) + "=" + vals.get(i));
-        if (i < names.size() - 1) {
-          buf.append(", ");
-        }
-      }
-    }
-    return buf.toString();
   }
 
   protected Area getTotalArea(RecognizerPrimitive[] p) {

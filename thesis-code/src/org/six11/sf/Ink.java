@@ -15,8 +15,6 @@ import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 
-import static org.six11.util.Debug.bug;
-
 /**
  * 
  * 
@@ -79,7 +77,7 @@ public class Ink implements HasFuzzyArea {
         numHits = numHits + 1;
       }
     }
-    return numHits / (double) seq.size();
+    return numHits / seq.size();
   }
 
   public Ink copy() {
@@ -119,7 +117,7 @@ public class Ink implements HasFuzzyArea {
     if (fuzzy == null) {
       fuzzy = new Area();
       List<Pt> pl = seq.getPoints();
-      for (int i = 0; i < pl.size() - 1; i++) {
+      for (int i = 0; i < (pl.size() - 1); i++) {
         Pt a = pl.get(i);
         Pt b = pl.get(i + 1);
         Shape s = ShapeFactory.getFuzzyRectangle(a, b, fuzzyFactor);

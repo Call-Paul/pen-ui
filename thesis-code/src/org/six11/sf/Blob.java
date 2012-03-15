@@ -2,6 +2,7 @@ package org.six11.sf;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
+import static org.six11.util.Debug.bug;
 
 import java.awt.Shape;
 import java.util.ArrayList;
@@ -15,9 +16,6 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.solve.JsonIO;
-
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
 
 public class Blob extends SegmentDelegate {
 
@@ -75,7 +73,7 @@ public class Blob extends SegmentDelegate {
     int closestIdx = idx;
     Pt prev = ctrl.get(idx--);
     minD = prev.distance(p0);
-    while (d < t && idx > 1) {
+    while ((d < t) && (idx > 1)) {
       Pt pi = ctrl.get(idx);
       double thisD = pi.distance(p0);
       if (thisD < minD) {
@@ -86,7 +84,7 @@ public class Blob extends SegmentDelegate {
       d = d + pi.distance(prev);
       prev = pi;
     }
-    boolean gap = closestIdx == ctrl.size() - 1;
+    boolean gap = closestIdx == (ctrl.size() - 1);
     if (!gap) {
       // there's an overlap. remove all points whose index is larger than closestIdx
       List<Pt> removed = new ArrayList<Pt>();
@@ -104,7 +102,7 @@ public class Blob extends SegmentDelegate {
 
   private double getRoughLength() {
     double roughLength = 0;
-    for (int i = 0; i < ctrl.size() - 1; i++) {
+    for (int i = 0; i < (ctrl.size() - 1); i++) {
       roughLength = roughLength + ctrl.get(i).distance(ctrl.get(i + 1));
     }
     return roughLength;

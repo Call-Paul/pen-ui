@@ -1,10 +1,12 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.util.gui.shape.ShapeFactory;
@@ -13,12 +15,6 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-
-import static java.lang.Math.atan2;
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class CircularArcSegment extends SegmentDelegate {
 
@@ -109,7 +105,7 @@ public class CircularArcSegment extends SegmentDelegate {
 
   @Override
   protected void doPara() {
-    if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
+    if ((paraP1Loc == null) || (paraP2Loc == null) || (paraPoints == null)
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
       paraP1Loc = p1.copyXYT();
       paraP2Loc = p2.copyXYT();

@@ -1,6 +1,7 @@
 package org.six11.sf.constr;
 
-import java.awt.Color;
+import static org.six11.util.Debug.bug;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -9,19 +10,12 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.SketchBook;
 import org.six11.util.data.Lists;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-import org.six11.util.solve.AngleConstraint;
-import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
-import org.six11.util.solve.OrientationConstraint;
 import org.six11.util.solve.PointOnLineConstraint;
-
-import static org.six11.util.Debug.bug;
 
 public class ColinearUserConstraint extends UserConstraint {
 
@@ -40,7 +34,7 @@ public class ColinearUserConstraint extends UserConstraint {
   @Override
   public double getDistance(Pt pt) {
     double ret = Double.MAX_VALUE;
-    if (pt != null && distanceSpots.size() == 2) {
+    if ((pt != null) && (distanceSpots.size() == 2)) {
       Line lineSeg = new Line(distanceSpots.get(0), distanceSpots.get(1));
       ret = Functions.getDistanceBetweenPointAndSegment(pt, lineSeg);
     }
@@ -68,7 +62,7 @@ public class ColinearUserConstraint extends UserConstraint {
       cs.removePoint(pt);
       pol.remove(pt);
     }
-    if (!doomed.isEmpty() && getConstrainedPoints().size() < 3) {
+    if (!doomed.isEmpty() && (getConstrainedPoints().size() < 3)) {
       bug("Colinear User Constraint no longer valid because it has "
           + getConstrainedPoints().size() + " points.");
       removeConstraint(pol);
@@ -78,7 +72,7 @@ public class ColinearUserConstraint extends UserConstraint {
   @Override
   public boolean isValid() {
     Collection<Pt> pts = getConstrainedPoints();
-    boolean ret = pts.size() > 2 && model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
+    boolean ret = (pts.size() > 2) && model.getConstraints().hasPoints(pts.toArray(new Pt[0]));
     if (!ret) {
       bug(this + " no longer valid!");
     }
@@ -89,7 +83,7 @@ public class ColinearUserConstraint extends UserConstraint {
     Set<Pt> pts = getConstrainedPoints();
     Pt[] ret = new Pt[2];
     Pt[] anti = getAntipodes(pts);
-    if (anti[0] != null && anti[1] != null) {
+    if ((anti[0] != null) && (anti[1] != null)) {
       Vec dir = new Vec(anti[0], anti[1]).getVectorOfMagnitude(30);
       Vec flip = dir.getFlip();
       ret[0] = anti[0].getTranslated(flip);

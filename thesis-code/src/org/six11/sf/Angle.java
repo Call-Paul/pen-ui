@@ -1,8 +1,9 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.num;
+
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.AngleConstraint;
-import static org.six11.util.Debug.num;
 
 public class Angle {
 

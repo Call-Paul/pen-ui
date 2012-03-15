@@ -10,13 +10,11 @@ import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.util.gui.shape.Circle;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
-import org.six11.util.pen.Vec;
 
 public class EllipseSegment extends SegmentDelegate {
 
@@ -57,9 +55,9 @@ public class EllipseSegment extends SegmentDelegate {
 
   public Shape asEllipse() {
     Shape ret = null;
-    if (cachedA == ellie.getMajorRadius() && cachedB == ellie.getMinorRadius()
-        && cachedX == ellie.getCentroid().x && cachedY == ellie.getCentroid().y
-        && cachedShape != null) {
+    if ((cachedA == ellie.getMajorRadius()) && (cachedB == ellie.getMinorRadius())
+        && (cachedX == ellie.getCentroid().x) && (cachedY == ellie.getCentroid().y)
+        && (cachedShape != null)) {
       ret = cachedShape;
     } else {
       double bigR = ellie.getMajorRadius();

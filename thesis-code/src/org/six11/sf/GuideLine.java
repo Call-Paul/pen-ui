@@ -1,22 +1,17 @@
 package org.six11.sf;
 
-import java.awt.Color;
-import java.awt.Rectangle;
-import java.util.List;
-
 import static java.lang.Math.ceil;
 import static java.lang.Math.toDegrees;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
+import java.util.List;
+
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class GuideLine extends Guide {
 
@@ -75,10 +70,10 @@ public class GuideLine extends Guide {
   public Segment adjust(Ink ink, int start, int end) {
     double segLength = ink.seq.getPathLength(start, end);
     int numPatches = (int) ceil(segLength / CornerFinder.minPatchSize);
-    double patchLength = segLength / (double) numPatches;
+    double patchLength = segLength / numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, start, end, patchLength)
         .getPoints();
-    Segment ret = new Segment(new LineSegment(ink, patch, start == 0, end == ink.seq.size() - 1));
+    Segment ret = new Segment(new LineSegment(ink, patch, start == 0, end == (ink.seq.size() - 1)));
     if (isDynamic()) {
       myLine = new Line(a, fixedHover);
     }

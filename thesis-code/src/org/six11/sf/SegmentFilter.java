@@ -1,5 +1,8 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,15 +15,12 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
-
 public abstract class SegmentFilter {
 
   public abstract Set<Segment> filter(Set<Segment> segments);
 
   public static boolean hasPoint(Pt target, Segment seg) {
-    return seg.getP1() == target || seg.getP2() == target;
+    return (seg.getP1() == target) || (seg.getP2() == target);
   }
 
   public static SegmentFilter makeSegmentTypeFilter(final Segment.Type... types) {
@@ -84,7 +84,7 @@ public abstract class SegmentFilter {
           Vec segEnd = s.getEndDir();
           double angleStart = Math.abs(Functions.getSignedAngleBetween(target, segStart));
           double angleEnd = Math.abs(Functions.getSignedAngleBetween(target, segEnd));
-          if (angleStart <= maxDeviation || angleEnd <= maxDeviation) {
+          if ((angleStart <= maxDeviation) || (angleEnd <= maxDeviation)) {
             ret.add(s);
           }
         }
@@ -125,7 +125,7 @@ public abstract class SegmentFilter {
       public Set<Segment> filter(Set<Segment> segments) {
         Set<Segment> ret = new HashSet<Segment>();
         for (Segment seg : segments) {
-          if (seg != reference
+          if ((seg != reference)
               && (hasPoint(reference.getP1(), seg) || hasPoint(reference.getP2(), seg))) {
             ret.add(seg);
           }

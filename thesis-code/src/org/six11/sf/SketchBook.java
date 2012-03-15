@@ -1,13 +1,13 @@
 package org.six11.sf;
 
+import static java.lang.Math.abs;
 import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
-import static java.lang.Math.abs;
 
-import java.awt.geom.Area;
-import java.awt.image.BufferedImage;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.Area;
+import java.awt.image.BufferedImage;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -133,6 +133,7 @@ public class SketchBook {
 
     inactivityTimer = new Timer(1300, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
+        bug("inactivity timer runs...");
         if (!getUnanalyzedInk().isEmpty()) {
           SketchBook.this.editor.go();
         }
@@ -173,7 +174,7 @@ public class SketchBook {
     for (RecognizedRawItem a : rawResults) {
       if (!doomed.contains(a)) {
         for (RecognizedRawItem b : rawResults) {
-          if (a != b && !doomed.contains(b) && a.trumps(b)) {
+          if ((a != b) && !doomed.contains(b) && a.trumps(b)) {
             bug(a + " trumps " + b);
             doomed.add(b);
           }
@@ -218,6 +219,7 @@ public class SketchBook {
    * The 'scribble' is ink that is currently being drawn, or is the most recently completed stroke.
    */
   public Sequence startScribble(Pt pt) {
+    bug("stopping inactivity timer 2");
     inactivityTimer.stop();
     Sequence scrib = new Sequence();
     scrib.add(pt);
@@ -226,6 +228,7 @@ public class SketchBook {
   }
 
   public Sequence addScribble(Pt pt) {
+    bug("stopping inactivity timer 3");
     inactivityTimer.stop();
     Sequence scrib = Lists.getLast(scribbles);
     if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
@@ -289,7 +292,7 @@ public class SketchBook {
         List<Pt> samples = (List<Pt>) scrib.getAttribute("samples");
         Pt recentSample = Lists.getLast(samples);
         double sampleDist = recentSample.getDouble("erase_curvidist");
-        if (newDist - sampleDist > ERASE_SAMPLE_DIST_THRESHOLD) {
+        if ((newDist - sampleDist) > ERASE_SAMPLE_DIST_THRESHOLD) {
           samples.add(here);
           // 2b: Pseudo-corner detection. Get recent samples and compare their 
           // headings with the current one. Big deviations indicate a corner
@@ -312,7 +315,7 @@ public class SketchBook {
               numCorners = numCorners + 1;
               eligible = scrib.hasAttribute("erase_eligible");
               scrib.setAttribute("erase_pseudocorners", numCorners);
-              if (numCorners > ERASE_PSEUDOCORNER_THRESH && eligible) {
+              if ((numCorners > ERASE_PSEUDOCORNER_THRESH) && eligible) {
                 // this could be an erase. But we don't want to erase if the gesture is 
                 // possibly just a quickly drawn circe (e.g. latching something).
                 if (!detectCircle(samples)) {
@@ -355,7 +358,7 @@ public class SketchBook {
     boolean ret = false;
     if (scribbles.size() > 0) {
       Sequence scrib = Lists.getLast(scribbles);
-      if (scrib != null && scrib.hasAttribute("erase")) {
+      if ((scrib != null) && scrib.hasAttribute("erase")) {
         ret = true;
       }
     }
@@ -365,7 +368,7 @@ public class SketchBook {
   public Pt getEraseSpot() {
     Pt ret = null;
     Sequence scrib = Lists.getLast(scribbles);
-    if (scrib != null && scrib.hasAttribute("erase_spot")) {
+    if ((scrib != null) && scrib.hasAttribute("erase_spot")) {
       ret = (Pt) scrib.getAttribute("erase_spot");
     }
     return ret;
@@ -445,8 +448,9 @@ public class SketchBook {
   @SuppressWarnings("unchecked")
   public Sequence endScribble(Pt pt) {
     Sequence ret = null;
+    bug("starting inactivity timer");
     inactivityTimer.start();
-    Sequence scrib = (Sequence) Lists.getLast(scribbles);
+    Sequence scrib = Lists.getLast(scribbles);
     if (scrib.hasAttribute("erase")) {
       scrib.setAttribute("erase_spot", null);
       eraseUnderPoints((List<Pt>) scrib.getAttribute("samples"));
@@ -465,7 +469,6 @@ public class SketchBook {
   }
 
   public List<Ink> getUnanalyzedInk() {
-    inactivityTimer.stop();
     List<Ink> ret = new ArrayList<Ink>();
     for (Ink stroke : ink) {
       if (!stroke.isAnalyzed()) {
@@ -474,19 +477,6 @@ public class SketchBook {
     }
     return ret;
   }
-
-  //  /**
-  //   * Returns a list of Ink that is contained (partly or wholly) in the target area.
-  //   */
-  //  public List<Ink> search(Area target) {
-  //    List<Ink> ret = new ArrayList<Ink>();
-  //    for (Ink eenk : ink) {
-  //      if (eenk.getOverlap(target) > 0.5) {
-  //        ret.add(eenk);
-  //      }
-  //    }
-  //    return ret;
-  //  }
 
   public void clearSelectedStencils() {
     setSelectedStencils(new HashSet<Stencil>());
@@ -597,7 +587,7 @@ public class SketchBook {
   }
 
   public boolean hasSegment(Pt blue, Pt green) {
-    return getConstraints().hasPoints(blue, green) && getSegment(blue, green) != null;
+    return getConstraints().hasPoints(blue, green) && (getSegment(blue, green) != null);
   }
 
   public boolean hasSegment(Segment s) {
@@ -653,7 +643,7 @@ public class SketchBook {
       Debug.stacktrace("Something wrong here...", 10);
     }
 
-    if (oldPt != null && newPt != null) {
+    if ((oldPt != null) && (newPt != null)) {
       if (!ConstraintSolver.hasName(newPt)) {
         ConstraintSolver.setName(newPt, nextPointName());
       }
@@ -901,14 +891,14 @@ public class SketchBook {
     if (selectUs != null) {
       selectedStencils.addAll(selectUs);
     }
-    if (!same && getSnapshotMachine() != null) {
+    if (!same && (getSnapshotMachine() != null)) {
       getSnapshotMachine().requestSnapshot("Stencil selection changed");
     }
   }
 
   public void setSelectedSegments(Collection<Segment> selectUs) {
     boolean same = Lists.areSetsEqual(selectUs, selectedSegments);
-    if (!lastInkWasSelection || selectUs == null) {
+    if (!lastInkWasSelection || (selectUs == null)) {
       selectedSegments.clear();
     }
     lastInkWasSelection = true;
@@ -1043,7 +1033,7 @@ public class SketchBook {
   }
 
   public void removeUserConstraint(UserConstraint uc) {
-    if (uc != null && userConstraints.contains(uc)) {
+    if ((uc != null) && userConstraints.contains(uc)) {
       for (Constraint c : uc.getConstraints()) {
         getConstraints().removeConstraint(c);
       }
@@ -1303,7 +1293,7 @@ public class SketchBook {
     //    bug("there are " + points.size() + " points in the polyline for " + seg.typeIdStr());
     Pt spot = Functions.getNearestPointOnSequence(nearPt, points);
     int splitIdx = -1;
-    for (int i = 0; i < points.size() - 1; i++) {
+    for (int i = 0; i < (points.size() - 1); i++) {
       Pt a = points.get(i);
       Pt b = points.get(i + 1);
       boolean inside = Functions.arePointsColinear(new Pt[] {
@@ -1532,7 +1522,7 @@ public class SketchBook {
   public Segment getSegment(Pt p) {
     Segment ret = null;
     for (Segment s : getGeometry()) {
-      if (s.isSingular() && s.getP1() == p) {
+      if (s.isSingular() && (s.getP1() == p)) {
         ret = s;
         break;
       }

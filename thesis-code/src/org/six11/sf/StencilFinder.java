@@ -9,12 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.Pt;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class StencilFinder {
 
@@ -69,24 +65,14 @@ public class StencilFinder {
    *          the list of paths taken so far
    */
   private void explore(Pt cursor, Stack<Pt> ptPath, Stack<Segment> segPath, int depth) {
-//    bug(Debug.spaces(depth) + "(" + depth + ") explore starting at " + SketchBook.n(cursor));
-//    bug(Debug.spaces(depth) + "-- point path: " + SketchBook.n(ptPath));
-//    bug(Debug.spaces(depth) + "-- seg path  : " + SketchBook.ns(segPath));
     if (ptPath.contains(cursor)) {
       maybeAddStencil(cursor, ptPath, segPath);
     } else {
-//      bug(Debug.spaces(depth) + "-- push point: " + SketchBook.n(cursor));
       ptPath.push(cursor);
-      // get all segments related to the cursor and explore the ones we're not on already.
       Collection<Segment> related = model.findRelatedSegments(cursor);
-      //      int before = related.size();
       related.removeAll(segPath);
       List<Segment> relatedList = new ArrayList<Segment>(related);//.toArray(new Segment[related.size()]);
-//      bug(Debug.spaces(depth) + "-- on deck: " + SketchBook.ns(relatedList));
-      //      int after = related.size();
-      //      bug("Excluding " + (before - after) + " paths starting from " + SketchBook.n(cursor));
       for (Segment seg : relatedList) {
-//        bug(Debug.spaces(depth) + "-- following segment " + seg.typeIdStr());
         segPath.push(seg);
         Pt nextCursor = seg.getPointOpposite(cursor);
         if (nextCursor != null) {
@@ -94,10 +80,7 @@ public class StencilFinder {
         }
         segPath.pop();
       }
-      Pt dead = ptPath.pop();
-//      bug(Debug.spaces(depth) + "-- popped point: " + SketchBook.n(dead));
     }
-//    bug(Debug.spaces(depth) + "-- leaving " + depth);
   }
 
   private void maybeAddStencil(Pt target, List<Pt> ptPath, List<Segment> segPath) {

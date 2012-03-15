@@ -3,6 +3,7 @@ package org.six11.sf;
 import static java.lang.Math.abs;
 import static java.lang.Math.ceil;
 import static java.lang.Math.toRadians;
+import static org.six11.util.Debug.bug;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,8 +18,6 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class CornerFinder {
   public static final double windowSize = 10;
@@ -60,7 +59,7 @@ public class CornerFinder {
     }
     for (int i = 0; i < n; i++) {
       Pt me = seq.get(i);
-      if (windows[i][0] != null && windows[i][1] != null) {
+      if ((windows[i][0] != null) && (windows[i][1] != null)) {
         Vec a = new Vec(windows[i][0], me);
         Vec b = new Vec(me, windows[i][1]);
         double curvature = Functions.getSignedAngleBetween(a, b);
@@ -124,7 +123,7 @@ public class CornerFinder {
         Pt here = seq.get(idx);
         if (prev != null) {
           double thisDist = here.distance(prev);
-          if (dist + thisDist > target) {
+          if ((dist + thisDist) > target) {
             // which is closer?
             if (abs(target - dist) < abs(target - (thisDist + dist))) {
               bounds[1] = idx - 1;
@@ -155,10 +154,10 @@ public class CornerFinder {
     List<Integer> juncts = (List<Integer>) ink.seq.getAttribute(SEGMENT_JUNCTIONS);
     List<Segment> segments = new ArrayList<Segment>();
     Dot dot = detectDot(ink);
-    if (dot.getCertainty() == Certainty.Yes || dot.getCertainty() == Certainty.Maybe) {
+    if ((dot.getCertainty() == Certainty.Yes) || (dot.getCertainty() == Certainty.Maybe)) {
       segments.add(new Segment(dot));
     } else {
-      for (int i = 0; i < juncts.size() - 1; i++) {
+      for (int i = 0; i < (juncts.size() - 1); i++) {
         Segment seg = identifySegment(ink, juncts.get(i), juncts.get(i + 1));
         // when we find a circle/ellipse/spline disallow other segments 
         // for this ink stroke. they are probably hooks.
@@ -178,7 +177,7 @@ public class CornerFinder {
     double segLength = ink.seq.getPathLength(i, j);
     double adjustedMinPatchSize = minPatchSize / model.getCamera().getZoom();
     int numPatches = (int) ceil(segLength / adjustedMinPatchSize);
-    double patchLength = segLength / (double) numPatches;
+    double patchLength = segLength / numPatches;
     List<Pt> patch = Functions.getCurvilinearNormalizedSequence(ink.seq, i, j, patchLength)
         .getPoints();
     int a = 0;
@@ -186,14 +185,14 @@ public class CornerFinder {
     Line line = new Line(patch.get(a), patch.get(b));
     double lineError = Functions.getLineError(line, patch, a, b);
     if (lineError < lineErrorThreshold) {
-      ret = new Segment(new LineSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
+      ret = new Segment(new LineSegment(ink, patch, i == 0, j == (ink.seq.size() - 1)));
     } else {
       double closeness = line.getLength() / segLength;
       boolean closed = closeness < 0.1;
       double ellipseError = Functions.getEllipseError(patch);
-      if (patch.size() > 3 && !closed && ellipseError < ellipseErrorThreshold) {
-        ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == ink.seq.size() - 1));
-      } else if (patch.size() > 3 && closed && ellipseError < ellipseErrorThreshold * 2.0) {
+      if ((patch.size() > 3) && !closed && (ellipseError < ellipseErrorThreshold)) {
+        ret = new Segment(new EllipseArcSegment(ink, patch, i == 0, j == (ink.seq.size() - 1)));
+      } else if ((patch.size() > 3) && closed && (ellipseError < (ellipseErrorThreshold * 2.0))) {
         EllipseSegment es = new EllipseSegment(ink, patch);
         double ex = es.getEllipse().getEccentricity();
         bug("Ellipse Eccentricity: " + ex);
@@ -205,7 +204,7 @@ public class CornerFinder {
       } else if (closed) {
         ret = new Segment(new Blob(ink, patch));
       } else {
-        ret = new Segment(new CurvySegment(ink, patch, i == 0, j == ink.seq.size() - 1));
+        ret = new Segment(new CurvySegment(ink, patch, i == 0, j == (ink.seq.size() - 1)));
       }
     }
     return ret;
@@ -219,14 +218,14 @@ public class CornerFinder {
     } else {
       ConvexHull hull = new ConvexHull(ink.seq.getPoints());
       Antipodal antipodes = new Antipodal(hull.getHull());
-      double density = (double) ink.seq.size() / antipodes.getArea();
+      double density = ink.seq.size() / antipodes.getArea();
       double areaPerAspect = antipodes.getArea() / antipodes.getAspectRatio();
       Certainty cert = Certainty.Unknown;
       if (areaPerAspect < 58) {
         cert = Certainty.Yes;
       } else if (areaPerAspect < 120) {
         cert = Certainty.Maybe;
-      } else if (areaPerAspect / (0.3 + density) < 120) {
+      } else if ((areaPerAspect / (0.3 + density)) < 120) {
         cert = Certainty.Maybe;
       } else {
         cert = Certainty.No;

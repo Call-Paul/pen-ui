@@ -1,6 +1,10 @@
 package org.six11.sf;
 
-import java.awt.Font;
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.PathIterator;
@@ -9,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.glu.GLU;
@@ -30,11 +35,6 @@ import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
 
 import com.jogamp.opengl.util.awt.TextRenderer;
-
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class SketchRenderer {
 
@@ -116,7 +116,6 @@ public class SketchRenderer {
   private static final Vec SOUTH = new Vec(0, -1);
 
   private transient GL2 gl; // only valid during the render method
-  private transient GLU glu; // only valid when rendering
   private transient SketchBook model; // also valid only when rendering
   private transient GLAutoDrawable drawable; // same
 
@@ -148,7 +147,6 @@ public class SketchRenderer {
     // retain variabels for this round of rendering
     this.drawable = drawable;
     this.gl = drawable.getGL().getGL2();
-    this.glu = drawingSurface.glu;
     this.model = model;
     this.surface = drawingSurface;
 
@@ -229,7 +227,7 @@ public class SketchRenderer {
         guideCirc = new Circle(g.getCenter(), toHover);
         g.setCircle(guideCirc);
       }
-      float alpha = (float) getAlpha(residual, 5, 30, 0.1);
+      float alpha = getAlpha(residual, 5, 30, 0.1);
       gl.glColor4f(lightGray[0], lightGray[1], lightGray[2], alpha);
       gl.glLineWidth(1f);
       gl.glLineStipple(3, (short) 0xAAAA);
@@ -370,7 +368,7 @@ public class SketchRenderer {
     Pt ful = spots[RightAngleUserConstraint.SPOT_FULCRUM];
     gl.glLineWidth(CONSTRAINT_LINE_THICKNESS);
     gl.glColor4fv(color, 0);
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       gl.glVertex2f(left.fx(), left.fy());
       gl.glVertex2f(ful.fx(), ful.fy());
@@ -392,7 +390,7 @@ public class SketchRenderer {
   }
 
   private void renderTextInput() {
-    if (surface.getTextInput() != null && model.getSelectedSegments().size() == 1) {
+    if ((surface.getTextInput() != null) && (model.getSelectedSegments().size() == 1)) {
       float zoom = model.getCamera().getZoom();
       String str = surface.getTextInput();
       Segment selSeg = Lists.getOne(model.getSelectedSegments());
@@ -440,7 +438,7 @@ public class SketchRenderer {
     if (scribble != null) {
       gl.glLineWidth(DEFAULT_WET_THICKNESS);
       gl.glColor3fv(DEFAULT_WET_COLOR, 0);
-      gl.glBegin(GL2.GL_LINE_STRIP);
+      gl.glBegin(GL.GL_LINE_STRIP);
       {
         for (Pt pt : scribble) {
           gl.glVertex2f(pt.fx(), pt.fy());
@@ -552,7 +550,7 @@ public class SketchRenderer {
       if (def != null) {
         float zoom = model.getCamera().getZoom();
         gl.glLineWidth(5);
-        for (int i = 0; i < def.size() - 1; i++) {
+        for (int i = 0; i < (def.size() - 1); i++) {
           Pt a = def.get(i);
           Pt b = def.get(i + 1);
           double aStr = a.getDouble("fsStrength");
@@ -635,7 +633,7 @@ public class SketchRenderer {
     gl.glRotated(-angle, 0, 0, 1);
     float halfLen = length / 2f;
     gl.glRotatef(45, 0, 0, 1);
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       gl.glVertex2f(-halfLen, 0);
       gl.glVertex2f(halfLen, 0);
@@ -647,9 +645,9 @@ public class SketchRenderer {
   void fillDot(Pt pt, float r) {
     int sides = 36; // this should depend on circumference. fewer size for small circles.
     float twoPi = 2 * (float) Math.PI;
-    float step = twoPi / (float) sides;
+    float step = twoPi / sides;
     float x = pt.fx(), y = pt.fy();
-    gl.glBegin(GL2.GL_TRIANGLE_FAN);
+    gl.glBegin(GL.GL_TRIANGLE_FAN);
     {
       gl.glVertex2f(pt.fx(), pt.fy());
       for (float theta = 0; theta < twoPi; theta = theta + step) {
@@ -664,9 +662,9 @@ public class SketchRenderer {
   void dot(Pt pt, float r) {
     int sides = 36; // this should depend on circumference. fewer size for small circles.
     float twoPi = 2 * (float) Math.PI;
-    float step = twoPi / (float) sides;
+    float step = twoPi / sides;
     float x = pt.fx(), y = pt.fy();
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       for (float theta = 0; theta < twoPi; theta = theta + step) {
         float px = x + (r * (float) cos(theta));
@@ -684,7 +682,7 @@ public class SketchRenderer {
   }
 
   void curve(List<Pt> points) {
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       for (Pt pt : points) {
         gl.glVertex2f(pt.fx(), pt.fy());
@@ -694,7 +692,7 @@ public class SketchRenderer {
   }
 
   void line(Pt p1, Pt p2) {
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       gl.glVertex2f(p1.fx(), p1.fy());
       gl.glVertex2f(p2.fx(), p2.fy());
@@ -707,7 +705,7 @@ public class SketchRenderer {
     if (bounds.intersectsLine(line)) {
       // find the two intersection points and connect them.
       Pt[] ix = Functions.getIntersectionPoints(bounds, line);
-      if (ix[0] != null && ix[1] != null) {
+      if ((ix[0] != null) && (ix[1] != null)) {
         line(ix[0], ix[1]);
       }
     }
@@ -716,7 +714,7 @@ public class SketchRenderer {
   void box(Pt pt, float side) { // TODO keep this private
     float cx = pt.fx(), cy = pt.fy();
     float f = side / 2f;
-    gl.glBegin(GL2.GL_LINE_LOOP);
+    gl.glBegin(GL.GL_LINE_LOOP);
     {
       gl.glVertex2f(cx - f, cy - f);
       gl.glVertex2f(cx + f, cy - f);
@@ -727,7 +725,7 @@ public class SketchRenderer {
   }
 
   void rect(float x, float y, float w, float h) {
-    gl.glBegin(GL2.GL_LINE_LOOP);
+    gl.glBegin(GL.GL_LINE_LOOP);
     {
       gl.glVertex2f(x + 0, y + 0);
       gl.glVertex2f(x + w, y + 0);
@@ -751,7 +749,7 @@ public class SketchRenderer {
   void cross(Pt pt, float length) {
     float cx = pt.fx(), cy = pt.fy();
     float f = length / 2f;
-    gl.glBegin(GL2.GL_LINES);
+    gl.glBegin(GL.GL_LINES);
     {
       gl.glVertex2f(cx - f, cy - f);
       gl.glVertex2f(cx + f, cy + f);
@@ -817,7 +815,7 @@ public class SketchRenderer {
     chevron(leftC, WEST, chevSize, chevSize);
     chevron(rightC, EAST, chevSize, chevSize);
     float r = h / 5;
-    Pt magCenter = pt.getTranslated(w2 + r / 2, -r / 2);
+    Pt magCenter = pt.getTranslated(w2 + (r / 2), -r / 2);
     Vec handleVec = new Vec(-r, r).getVectorOfMagnitude(r);
     Pt handleDot1 = magCenter.getTranslated(handleVec);
     Pt handleDot2 = handleDot1.getTranslated(handleVec.getVectorOfMagnitude(r * 2));
@@ -835,7 +833,7 @@ public class SketchRenderer {
     Vec n = dir.getNormal();
     Pt b = d.getTranslated(n, halfW);
     Pt c = d.getTranslated(n.getFlip(), halfW);
-    gl.glBegin(GL2.GL_LINE_STRIP);
+    gl.glBegin(GL.GL_LINE_STRIP);
     {
       gl.glVertex2f(b.fx(), b.fy());
       gl.glVertex2f(a.fx(), a.fy());

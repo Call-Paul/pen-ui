@@ -1,5 +1,7 @@
 package org.six11.sf.rec;
 
+import static java.lang.Math.toRadians;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +17,6 @@ import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-import static java.lang.Math.toRadians;
 
 public class RightAngleBrace extends RecognizedItemTemplate {
 
@@ -54,7 +55,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     RecognizedItem item = new RecognizedItem(this, slots, prims);
     RecognizerPrimitive line1 = search(slots, prims, "line1");
     RecognizerPrimitive line2 = search(slots, prims, "line2");
-    if (line1 != null && line2 != null) {
+    if ((line1 != null) && (line2 != null)) {
       Pt a = line1.getSubshape("p2");
       Pt b = line1.getSubshape("p1");
       Pt c = line2.getSubshape("p2");
@@ -99,7 +100,7 @@ public class RightAngleBrace extends RecognizedItemTemplate {
         }
       }
     }
-    if (good1 != null && good2 != null) {
+    if ((good1 != null) && (good2 != null)) {
       item.addTarget(RightAngleBrace.TARGET_A, good1);
       item.addTarget(RightAngleBrace.TARGET_B, good2);
       ret = Certainty.Yes;
@@ -130,13 +131,13 @@ public class RightAngleBrace extends RecognizedItemTemplate {
     // ... otherwise ....
     // same-length gesture with 2 strokes == win
     // otherwise just pick the right-angle brace because I don't know wtf is going on
-    if (nameA.equals(RightAngleBrace.NAME) && strokesA.size() == 1) {
+    if (nameA.equals(RightAngleBrace.NAME) && (strokesA.size() == 1)) {
       doomed.add(itemB);
-    } else if (nameB.equals(RightAngleBrace.NAME) && strokesB.size() == 1) {
+    } else if (nameB.equals(RightAngleBrace.NAME) && (strokesB.size() == 1)) {
       doomed.add(itemA);
-    } else if (nameA.equals(SameLengthGesture.NAME) && strokesA.size() == 2) {
+    } else if (nameA.equals(SameLengthGesture.NAME) && (strokesA.size() == 2)) {
       doomed.add(itemB);
-    } else if (nameB.equals(SameLengthGesture.NAME) && strokesB.size() == 2) {
+    } else if (nameB.equals(SameLengthGesture.NAME) && (strokesB.size() == 2)) {
       doomed.add(itemA);
     } else if (nameA.equals(RightAngleBrace.NAME)) {
       doomed.add(itemB);

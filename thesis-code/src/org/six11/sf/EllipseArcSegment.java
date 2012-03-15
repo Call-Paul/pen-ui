@@ -1,13 +1,12 @@
 package org.six11.sf;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import static org.six11.util.Debug.bug;
+
 import java.util.List;
 
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
-import static org.six11.util.Debug.bug;
 
 public class EllipseArcSegment extends SegmentDelegate {
 

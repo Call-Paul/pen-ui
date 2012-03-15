@@ -1,12 +1,13 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
 
 public abstract class RecognizerConstraint {
 
@@ -81,7 +82,7 @@ public abstract class RecognizerConstraint {
   }
   
   public static boolean ok(Certainty certainty) {
-    return (certainty == Certainty.Yes || certainty == Certainty.Maybe);
+    return ((certainty == Certainty.Yes) || (certainty == Certainty.Maybe));
   }
 
 

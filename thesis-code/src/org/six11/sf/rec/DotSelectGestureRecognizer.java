@@ -3,15 +3,12 @@ package org.six11.sf.rec;
 import java.util.Collection;
 import java.util.List;
 
-import org.six11.sf.Dot;
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
 import org.six11.sf.SketchRecognizer;
 import org.six11.util.pen.Pt;
-
-import static org.six11.util.Debug.bug;
 
 public class DotSelectGestureRecognizer extends SketchRecognizer {
 
@@ -29,7 +26,7 @@ public class DotSelectGestureRecognizer extends SketchRecognizer {
   public RecognizedRawItem applyRaw(Ink ink) throws UnsupportedOperationException {
     RecognizedRawItem ret = RecognizedRawItem.noop();
     List<Segment> segs = ink.getSegments();
-    if (segs != null && segs.size() == 1 && segs.get(0).getType() == Segment.Type.Dot) {
+    if ((segs != null) && (segs.size() == 1) && (segs.get(0).getType() == Segment.Type.Dot)) {
       final Segment dot = segs.get(0);
       Pt loc = dot.getP1();
       for (GuidePoint g : model.getGuidePoints()) {

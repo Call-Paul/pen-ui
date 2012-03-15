@@ -1,28 +1,23 @@
 package org.six11.sf;
 
-import java.awt.Shape;
-import java.awt.geom.PathIterator;
-import java.util.ArrayList;
-import java.util.List;
-
 import static java.lang.Math.ceil;
 import static java.lang.Math.cos;
 import static java.lang.Math.min;
 import static java.lang.Math.sin;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
-import org.json.JSONArray;
+import java.awt.Shape;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.util.Debug;
 import org.six11.util.gui.shape.Circle;
-import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class CircleSegment extends SegmentDelegate {
   private Circle circ;
@@ -80,7 +75,7 @@ public class CircleSegment extends SegmentDelegate {
 
   public List<Pt> getPointList() {
     List<Pt> ret = null;
-    if (cachedR == circ.getRadius() && cachedX == circ.x && cachedY == circ.y && cachedPL != null) {
+    if ((cachedR == circ.getRadius()) && (cachedX == circ.x) && (cachedY == circ.y) && (cachedPL != null)) {
 //      bug("Using cached circle pointlist");
       ret = cachedPL;
     } else {
@@ -91,7 +86,7 @@ public class CircleSegment extends SegmentDelegate {
       bug("Using " + numSteps + " steps with circle of circumference " + num(circumference));
       double step = (2.0 * Math.PI) / numSteps;
       for (int i = 0; i <= numSteps; i++) {
-        double ang = ((double) i) * step;
+        double ang = i * step;
         double x = circ.x + r + (r * cos(ang));
         double y = circ.y + r + (r * sin(ang));
         ret.add(new Pt(x, y));

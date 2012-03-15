@@ -1,16 +1,10 @@
 package org.six11.sf;
 
-import java.awt.Color;
-import java.awt.Rectangle;
+import static org.six11.util.Debug.num;
 
 import org.six11.util.gui.shape.Circle;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class GuideCircle extends Guide {
 

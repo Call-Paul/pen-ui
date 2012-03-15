@@ -2,15 +2,14 @@ package org.six11.sf;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
-import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -82,7 +81,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     this.alt = secondaryParaCoordinates;
     doPara();
     this.type = t;
-    if (p1 == null || p2 == null) {
+    if ((p1 == null) || (p2 == null)) {
       Debug.stacktrace("p1 or p2 is null for " + t + ": " + p1 + ", " + p2, 8);
     }
   }
@@ -133,7 +132,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public boolean isClosed() {
-    return (type == Segment.Type.Ellipse || type == Segment.Type.Blob || type == Segment.Type.Circle);
+    return ((type == Segment.Type.Ellipse) || (type == Segment.Type.Blob) || (type == Segment.Type.Circle));
   }
 
   public List<Pt> storeParaPointsForDeformation() {
@@ -154,7 +153,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public String toString() {
     StringBuilder buf = new StringBuilder();
     buf.append(getTypeChar());
-    if (SketchBook.n(getP1()) != null && SketchBook.n(getP2()) != null) {
+    if ((SketchBook.n(getP1()) != null) && (SketchBook.n(getP2()) != null)) {
       buf.append("[" + SketchBook.n(getP1()) + " to " + SketchBook.n(getP2()) + ", length: "
           + num(length()) + "]");
     } else {
@@ -235,7 +234,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public double ctrlPointLength() {
     doPara();
     double ret = 0;
-    for (int i = 0; i < paraPoints.size() - 1; i++) {
+    for (int i = 0; i < (paraPoints.size() - 1); i++) {
       ret += paraPoints.get(i).distance(paraPoints.get(i + 1));
     }
     return ret;
@@ -248,7 +247,7 @@ public class SegmentDelegate implements HasFuzzyArea {
    * should override this.
    */
   protected void doPara() {
-    if (paraP1Loc == null || paraP2Loc == null || paraPoints == null
+    if ((paraP1Loc == null) || (paraP2Loc == null) || (paraPoints == null)
         || !paraP1Loc.isSameLocation(p1) || !paraP2Loc.isSameLocation(p2)) {
       if (isClosed()) {
         bug("doing para for closed type: " + getType() + ". this is a bug");
@@ -326,7 +325,7 @@ public class SegmentDelegate implements HasFuzzyArea {
     doPara();
     if (cachedSpline == null) {
       double roughLength = 0;
-      for (int i = 0; i < paraPoints.size() - 1; i++) {
+      for (int i = 0; i < (paraPoints.size() - 1); i++) {
         roughLength = roughLength + paraPoints.get(i).distance(paraPoints.get(i + 1));
       }
       int numSteps = (int) ceil(min(roughLength / 100, 10));
@@ -350,7 +349,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public boolean isNear(Pt point, double dist) {
     boolean ret = false;
     Pt where = getNearestPoint(point);
-    if (where != null && where.distance(point) <= dist) {
+    if ((where != null) && (where.distance(point) <= dist)) {
       ret = true;
     }
     return ret;
@@ -369,11 +368,11 @@ public class SegmentDelegate implements HasFuzzyArea {
     List<Pt> pts = getPointList();
     double runningDist = 0;
     double foundAt = 0;
-    for (int i = 0; i < pts.size() - 1; i++) {
+    for (int i = 0; i < (pts.size() - 1); i++) {
       if (foundAt == 0) {
         double u = Functions.getPointSegmentParam(pt, pts.get(i), pts.get(i + 1));
-        if (u >= 0.0 && u <= 1.0) {
-          foundAt = runningDist + u * pts.get(i).distance(pts.get(i + 1));
+        if ((u >= 0.0) && (u <= 1.0)) {
+          foundAt = runningDist + (u * pts.get(i).distance(pts.get(i + 1)));
           bug("Found correct segment. runningDist= " + num(runningDist) + ", u=" + num(u)
               + ", foundAt=" + num(foundAt));
         }
@@ -390,14 +389,14 @@ public class SegmentDelegate implements HasFuzzyArea {
     if (type == Segment.Type.Line) {
       //      where = Functions.getNearestPointOnLine(pt, asLine(), true);
       where = Functions.getNearestPointWithinSegment(pt, asLine(), true);
-    } else if (type == Segment.Type.Curve || type == Segment.Type.EllipticalArc) {
+    } else if ((type == Segment.Type.Curve) || (type == Segment.Type.EllipticalArc)) {
       doPara();
       where = Functions.getNearestPointOnPolyline(pt, paraPoints);
     } else if (type == Segment.Type.Dot) {
       where = getP1().copyXYT();
       where.setDouble("r", 0);
-    } else if (type == Segment.Type.Circle || type == Segment.Type.Ellipse
-        || type == Segment.Type.Blob) {
+    } else if ((type == Segment.Type.Circle) || (type == Segment.Type.Ellipse)
+        || (type == Segment.Type.Blob)) {
       where = Functions.getNearestPointOnPolyline(pt, getPointList());
     } else {
       bug("getNearestPoint not implementd for type " + type);
@@ -459,7 +458,7 @@ public class SegmentDelegate implements HasFuzzyArea {
       Vec v;
       if (i == 0) {
         v = new Vec(pl.get(i), pl.get(i + 1));
-      } else if (i == pl.size() - 1) {
+      } else if (i == (pl.size() - 1)) {
         v = new Vec(pl.get(i - 1), pl.get(i));
       } else {
         v = new Vec(pl.get(i - 1), pl.get(i + 1));
@@ -501,7 +500,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   public Area getFuzzyAreaDumbMethod(double fuzzyFactor) {
     Area fuzzy = new Area();
     List<Pt> pl = getPointList();
-    for (int i = 0; i < pl.size() - 1; i++) {
+    for (int i = 0; i < (pl.size() - 1); i++) {
       Pt a = pl.get(i);
       Pt b = pl.get(i + 1);
       Shape s = ShapeFactory.getFuzzyRectangle(a, b, fuzzyFactor);
@@ -511,7 +510,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public boolean involves(Pt p) {
-    return p == getP1() || p == getP2();
+    return (p == getP1()) || (p == getP2());
   }
 
   public Pt[] getEndpointArray() {
@@ -557,9 +556,9 @@ public class SegmentDelegate implements HasFuzzyArea {
    */
   public Pt getPointOpposite(Pt input) {
     Pt ret = null;
-    if (getP1() == input && getP2() != input) {
+    if ((getP1() == input) && (getP2() != input)) {
       ret = getP2();
-    } else if (getP2() == input && getP1() != input) {
+    } else if ((getP2() == input) && (getP1() != input)) {
       ret = getP1();
     }
     return ret;

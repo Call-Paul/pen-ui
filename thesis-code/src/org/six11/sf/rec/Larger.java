@@ -2,8 +2,6 @@ package org.six11.sf.rec;
 
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
-import static org.six11.util.Debug.num;
-
 public class Larger extends RecognizerConstraint {
 
   public Larger(String name, String... sNames) {

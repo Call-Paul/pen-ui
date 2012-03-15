@@ -1,5 +1,8 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
@@ -16,9 +19,6 @@ import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Pt;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
 // import static org.six11.util.Debug.num;
 
 public class Material {
@@ -32,7 +32,6 @@ public class Material {
     Inch, Centimeter, Millimeter, Meter, Pixel,
   }
 
-  private Units units;
   private BoundingBox materialBB;
   private BoundingBox stencilBB;
   Set<Shape> unpositionedShapes;
@@ -41,7 +40,6 @@ public class Material {
   private BufferedImage small;
 
   public Material(Units units, double width, double height) {
-    this.units = units;
     this.unpositionedShapes = new HashSet<Shape>();
     this.materialBB = new BoundingBox();
     this.stencilBB = new BoundingBox();
@@ -57,7 +55,7 @@ public class Material {
 
   public BufferedImage getSmallImage(int w, int h) {
     BufferedImage ret = small;
-    if (small == null && big != null) {
+    if ((small == null) && (big != null)) {
       small = Scalr.resize(big, w, h);
       ret = small;
     }
@@ -133,7 +131,7 @@ public class Material {
     double maxY = 0;
     for (Shape s : unpositionedShapes) {
       BoundingBox sBB = new BoundingBox(s.getBounds2D());
-      if (cursorX + sBB.getWidth() > materialBB.getMaxX()) {
+      if ((cursorX + sBB.getWidth()) > materialBB.getMaxX()) {
         cursorX = 0;
         cursorY = maxY;
       }

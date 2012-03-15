@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -32,6 +30,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
+
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.sf.rec.RecognizerPrimitive;
@@ -88,9 +87,9 @@ public class SkruiFabEditor {
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
-    if (screenDim.width > 1600 && screenDim.height > 1000) {
+    if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
       af.setSize(1600, 1000);
-    } else if (screenDim.width > 1400 && screenDim.height > 800) {
+    } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
       af.setSize(1400, 800);
     } else {
       af.setSize(800, 600);
@@ -105,7 +104,7 @@ public class SkruiFabEditor {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
         if (!fixedFrameRate) {
-          if (numIterations > 30 || err < (numPoints * 2)) {
+          if ((numIterations > 30) || (err < (numPoints * 2))) {
             model.getConstraints().setFrameRate(0);
           } else {
             model.getConstraints().setFrameRate(FRAME_RATE);
@@ -275,9 +274,7 @@ public class SkruiFabEditor {
             surface.repaint();
           }
         });
-
   }
-
 
   private void registerKeyboardActions(JRootPane rp) {
     // 3. Register actions w/ key accelerators to the root pane.

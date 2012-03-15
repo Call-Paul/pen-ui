@@ -1,5 +1,7 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.bug;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -17,14 +19,12 @@ import org.six11.util.data.Lists;
 import org.six11.util.data.RankedList;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.Pt;
-import org.six11.util.solve.Constraint;
 import org.six11.util.solve.AngleConstraint;
+import org.six11.util.solve.Constraint;
 import org.six11.util.solve.MultisourceNumericValue;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
-
-import static org.six11.util.Debug.bug;
 
 public class SameAngleGesture extends RecognizedItemTemplate {
 
@@ -84,7 +84,7 @@ public class SameAngleGesture extends RecognizedItemTemplate {
       }
     }
     // if both pairs are found...
-    if (pair1.length == 2 && pair2.length == 2) {
+    if ((pair1.length == 2) && (pair2.length == 2)) {
       // make sure there are more than two segments involved, 
       // in case the user double-hashed the same angle
       Set<Segment> numberCheck = Lists.makeSet(pair1[0], pair1[1], pair2[0], pair2[1]);
@@ -138,7 +138,7 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     pairB[0] = item.getSegmentTarget(TARGET_B1);
     pairB[1] = item.getSegmentTarget(TARGET_B2);
     Angle angleB = getFulcrum(pairB);
-    if (angleA == null || angleB == null) {
+    if ((angleA == null) || (angleB == null)) {
       bug("Unable to form angle. Fail.");
       return;
     } else {

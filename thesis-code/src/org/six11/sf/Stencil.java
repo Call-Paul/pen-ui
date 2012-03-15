@@ -1,5 +1,7 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+
 import java.awt.Shape;
 import java.awt.geom.Area;
 import java.awt.geom.Path2D;
@@ -13,16 +15,12 @@ import java.util.Set;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.sf.Segment.Type;
 import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.VariableBank;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class Stencil {
   private List<Pt> path;
@@ -138,7 +136,7 @@ public class Stencil {
     List<Pt> turns = getTurnPath();
     Pt c = Functions.getMean(turns);
     double crossProd = 0;
-    for (int i = 0; i < turns.size() - 1; i++) {
+    for (int i = 0; i < (turns.size() - 1); i++) {
       Vec a = new Vec(c, turns.get(i));
       Vec b = new Vec(c, turns.get(i + 1));
       crossProd = crossProd + a.cross(b);
@@ -214,7 +212,7 @@ public class Stencil {
           Collections.reverse(nextPoints);
         }
         for (Pt np : nextPoints) {
-          if (allPoints.isEmpty() || allPoints.get(allPoints.size() - 1) != np) {
+          if (allPoints.isEmpty() || (allPoints.get(allPoints.size() - 1) != np)) {
             allPoints.add(np);
           }
         }
@@ -231,7 +229,7 @@ public class Stencil {
         Pt b = path.get((i + 1) % path.size());
         Debug.errorOnNull(model, "model");
         Segment s = model.getSegment(a, b);
-        if (s == null || !segs.contains(s)) {
+        if ((s == null) || !segs.contains(s)) {
           ret = false;
           break;
         }
@@ -280,7 +278,7 @@ public class Stencil {
   }
 
   public boolean isSuperset(Stencil other) {
-    return segs.size() > other.segs.size() && segs.containsAll(other.getSegs());
+    return (segs.size() > other.segs.size()) && segs.containsAll(other.getSegs());
   }
 
   public boolean surrounds(Stencil c) {

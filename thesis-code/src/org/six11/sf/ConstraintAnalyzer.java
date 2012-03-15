@@ -1,5 +1,8 @@
 package org.six11.sf;
 
+import static java.lang.Math.abs;
+import static java.lang.Math.toDegrees;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,11 +15,6 @@ import org.six11.sf.EndCap.Intersection;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-
-// import static org.six11.util.Debug.bug;
-// import static org.six11.util.Debug.num;
-import static java.lang.Math.toDegrees;
-import static java.lang.Math.abs;
 
 public class ConstraintAnalyzer {
 
@@ -51,8 +49,9 @@ public class ConstraintAnalyzer {
       groups.add(new EndCap.Group(ix));
     }
     if (autolatch) {
-      while (!merged(groups))
+      while (!merged(groups)) {
         ;
+      }
       for (EndCap.Group group : groups) {
         Pt spot = group.adjustMembers(); // note: spot does not have time data
         // latch points in this group together at the spot
@@ -73,7 +72,7 @@ public class ConstraintAnalyzer {
     EndCap.Group doomed = null;
     outer: for (EndCap.Group cursor : groups) {
       for (EndCap.Group g : groups) {
-        if (g != cursor && cursor.has(g)) {
+        if ((g != cursor) && cursor.has(g)) {
           cursor.merge(g);
           doomed = g;
           ret = false;
@@ -210,7 +209,7 @@ public class ConstraintAnalyzer {
     Pt p2 = null;
     p1 = segA.getP1() == junct ? segA.getP2() : segA.getP1();
     p2 = segB.getP1() == junct ? segB.getP2() : segB.getP1();
-    if (p1 != null && p2 != null) {
+    if ((p1 != null) && (p2 != null)) {
       Segment newLine = new Segment(new LineSegment(p1, p2));
       model.replace(segA, newLine);
       model.replace(segB, newLine);

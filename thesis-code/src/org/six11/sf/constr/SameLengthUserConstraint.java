@@ -1,26 +1,15 @@
 package org.six11.sf.constr;
 
-import static org.six11.util.Debug.num;
 import static org.six11.util.Debug.bug;
 
-import java.awt.Color;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.sf.Angle;
-import org.six11.sf.Ink;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
-import org.six11.sf.Material;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
-import org.six11.util.pen.Functions;
-import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
-import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.MultisourceNumericValue;
@@ -61,7 +50,7 @@ public class SameLengthUserConstraint extends UserConstraint {
    * @return true if the value is a MultisourceNumericValue
    */
   public boolean isMultiSource() {
-    return getConstraints().size() > 0 && (getValue() instanceof MultisourceNumericValue);
+    return (getConstraints().size() > 0) && (getValue() instanceof MultisourceNumericValue);
   }
 
   @Override
@@ -72,7 +61,7 @@ public class SameLengthUserConstraint extends UserConstraint {
       ret = false;
     } else if (getConstraints().size() == 1) {
       DistanceConstraint dc = getConstraints().toArray(new DistanceConstraint[1])[0];
-      ret = dc.getValue() instanceof NumericValue
+      ret = (dc.getValue() instanceof NumericValue)
           && !(dc.getValue() instanceof MultisourceNumericValue);
       bug("SLUC has one constraint. But is it valid? " + ret);
     } else {

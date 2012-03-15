@@ -13,16 +13,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.swing.JPanel;
 
 import org.six11.sf.Drag.Event;
 import org.six11.util.gui.BoundingBox;
-import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 

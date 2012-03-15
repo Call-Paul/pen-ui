@@ -1,12 +1,8 @@
 package org.six11.sf.rec;
 
-import static org.six11.util.Debug.num;
-import static org.six11.util.Debug.bug;
-
 import java.awt.geom.Area;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 import org.six11.sf.GuidePoint;
 import org.six11.sf.Ink;
@@ -32,9 +28,9 @@ public class EncircleRecognizer extends SketchRecognizer {
     Collection<Pt> end = new HashSet<Pt>();
     double dist = 0;
     Pt prev = null;
-    for (int i = 0; i < seq.size() && dist < (len * 0.2); i++) {
+    for (int i = 0; (i < seq.size()) && (dist < (len * 0.2)); i++) {
       Pt pt = seq.get(i);
-      if (dist < len * 0.2) {
+      if (dist < (len * 0.2)) {
         start.add(pt);
         if (prev != null) {
           dist = dist + prev.distance(pt);
@@ -44,9 +40,9 @@ public class EncircleRecognizer extends SketchRecognizer {
     }
     dist = 0;
     prev = null;
-    for (int i = seq.size() - 1; i >= 0 && dist < (len * 0.2); i--) {
+    for (int i = seq.size() - 1; (i >= 0) && (dist < (len * 0.2)); i--) {
       Pt pt = seq.get(i);
-      if (dist < len * 0.2) {
+      if (dist < (len * 0.2)) {
         end.add(pt);
         if (prev != null) {
           dist = dist + prev.distance(pt);
@@ -132,13 +128,13 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
       }
     }
-    if (len <= 200 && ink.getSequence().getRoughDensity() <= 2.0
-        && getNearestEncircleDistShortSequence(seq) < 6.5) {
+    if ((len <= 200) && (ink.getSequence().getRoughDensity() <= 2.0)
+        && (getNearestEncircleDistShortSequence(seq) < 6.5)) {
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
       boolean eraseGuide = false;
-      if (points.size() > 0 && guides.size() == 1) {
+      if ((points.size() > 0) && (guides.size() == 1)) {
         // one or more endpoints and exactly one guide point.
 
         // see if all the points are coincident with the single guide point.
@@ -159,20 +155,17 @@ public class EncircleRecognizer extends SketchRecognizer {
           eraseGuide = true;
         }
       }
-      if (!eraseGuide && points.size() == 1) {
+      if (!eraseGuide && (points.size() == 1)) {
         // ------------------------------------------------------------------ T-junction
         Collection<Segment> segs = model.findSegments(area, 4);
         Pt pt = Lists.getOne(points);
-//        int before = segs.size();
         Collection<Segment> tabu = model.findRelatedSegments(pt);
         segs.removeAll(tabu);
-        int after = segs.size();
-//        bug("Found " + segs.size() + " segments in that region (avoided " + (before - after) + " tabu segments)");
         if (!segs.isEmpty()) {
           ret = makeTJunction(Lists.getOne(segs), Lists.getOne(points));
         }
       }
-      if (!eraseGuide && points.size() > 1) {
+      if (!eraseGuide && (points.size() > 1)) {
         // ------------------------------------------------------------------ Merge points
         ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE,
             RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,

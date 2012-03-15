@@ -1,7 +1,6 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -9,17 +8,13 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.Shape;
 import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
@@ -136,7 +131,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   protected void tap(Pt pt) {
     bug("Tapping location: " + pt);
     Page target = getPageAt(pt);
-    if (target != editor.getModel().getNotebook().getCurrentPage() && target != null) {
+    if ((target != editor.getModel().getNotebook().getCurrentPage()) && (target != null)) {
       editor.getModel().getNotebook().setCurrentPage(target);
     }
   }
@@ -186,8 +181,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     int w = getWidth();
     int h = getHeight();
 
-    int innerWidth = w - 2 * sidePadding;
-    int pageHeight = (int) ((float) innerWidth * aspect);
+    int innerWidth = w - (2 * sidePadding);
+    int pageHeight = (int) (innerWidth * aspect);
 
     // draw the pages
     int pageNum = 0;
@@ -209,8 +204,8 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     g.fillRect(0, h - topBottom, w, topBottom);
     int cx = w / 2;
     int cy = topBottom / 2;
-    int bx = cx - buttonWidth / 2;
-    int by = cy - buttonHeight / 2;
+    int bx = cx - (buttonWidth / 2);
+    int by = cy - (buttonHeight / 2);
     g.setStroke(Strokes.THIN_STROKE);
     g.setColor(Color.WHITE);
     g.fillRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
@@ -218,10 +213,10 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     g.drawRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
     g.setStroke(Strokes.BOLD_STROKE);
     g.setColor(topColor);
-    drawChevron(g, new Pt(bx + buttonWidth / 2, by + buttonHeight / 2), new Vec(0, -1), chevW,
+    drawChevron(g, new Pt(bx + (buttonWidth / 2), by + (buttonHeight / 2)), new Vec(0, -1), chevW,
         chevH);
     cy = h - (topBottom / 2);
-    by = cy - buttonHeight / 2;
+    by = cy - (buttonHeight / 2);
     g.setStroke(Strokes.THIN_STROKE);
     g.setColor(Color.WHITE);
     g.fillRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
@@ -229,7 +224,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     g.drawRoundRect(bx, by, buttonWidth, buttonHeight, 16, 16);
     g.setStroke(Strokes.BOLD_STROKE);
     g.setColor(bottomColor);
-    drawChevron(g, new Pt(bx + buttonWidth / 2, by + buttonHeight / 2), new Vec(0, 1), chevW, chevH);
+    drawChevron(g, new Pt(bx + (buttonWidth / 2), by + (buttonHeight / 2)), new Vec(0, 1), chevW, chevH);
   }
 
   private void drawChevron(Graphics2D g, Pt pt, Vec dir, int chevW, int chevH) {
@@ -253,12 +248,12 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     page.setRectangle(pageX, pageY + vertPad, pageWidth, pageHeight);
     g.setColor(Color.WHITE);
     g.fillRect(pageX, pageY + vertPad, pageWidth, pageHeight);
-    if (page != null && page.getTinyThumb() != null) {
+    if ((page != null) && (page.getTinyThumb() != null)) {
       BufferedImage buf = page.getCachedThumb();
       if (buf == null) {
         bug("Cached image was null. Creating anew.");
         buf = Scalr.resize(page.getTinyThumb(), Math.max(pageWidth, pageHeight));
-      } else if (!(buf.getWidth() == pageWidth || buf.getHeight() == pageHeight)) {
+      } else if (!((buf.getWidth() == pageWidth) || (buf.getHeight() == pageHeight))) {
         bug("Cached image was the wrong size. created anew.");
         bug("It was: " + buf.getWidth() + " x " + buf.getHeight());
         buf = Scalr.resize(page.getTinyThumb(), Math.max(pageWidth, pageHeight));
@@ -350,7 +345,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
 
   private void hover(Pt pt) {
     // if we are hovering over the top/bottom areas, light them up and null out the hoverPage
-    if (pt.getY() < topBottom || pt.getY() > (getHeight() - topBottom)) {
+    if ((pt.getY() < topBottom) || (pt.getY() > (getHeight() - topBottom))) {
       hoverPage = null;
       glowTop = pt.getY() < topBottom;
       glowBottom = pt.getY() > (getHeight() - topBottom);
@@ -406,7 +401,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
         break;
       case DragPage:
         Page targetPage = getPageAt(ev.getPt());
-        if (dragPage != null && targetPage != null) {
+        if ((dragPage != null) && (targetPage != null)) {
           copy(dragPage, targetPage);
           editor.getModel().getNotebook().setCurrentPage(targetPage);
         }

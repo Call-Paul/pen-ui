@@ -1,27 +1,21 @@
 package org.six11.sf.constr;
 
-import java.awt.Color;
-import java.awt.geom.Arc2D;
+import static org.six11.util.Debug.bug;
+
 import java.util.HashSet;
 import java.util.Set;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Angle;
-import org.six11.sf.Material;
 import org.six11.sf.SketchBook;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
-import org.six11.util.solve.Constraint;
 import org.six11.util.solve.AngleConstraint;
+import org.six11.util.solve.Constraint;
 import org.six11.util.solve.MultisourceNumericValue;
-import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.MultisourceNumericValue.Source;
-// import org.six11.util.solve.OrientationConstraint;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
+import org.six11.util.solve.NumericValue;
 
 public class SameAngleUserConstraint extends UserConstraint {
   
@@ -87,7 +81,7 @@ public class SameAngleUserConstraint extends UserConstraint {
       ret = false;
     } else if (getConstraints().size() == 1) {
       AngleConstraint ac = getConstraints().toArray(new AngleConstraint[1])[0];
-      ret = ac.getValue() instanceof NumericValue
+      ret = (ac.getValue() instanceof NumericValue)
           && !(ac.getValue() instanceof MultisourceNumericValue);
       bug("SAUC has one constraint. But is it valid? " + ret);
     } else {
@@ -135,7 +129,7 @@ public class SameAngleUserConstraint extends UserConstraint {
    * @return true if the value is a MultisourceNumericValue
    */
   public boolean isMultiSource() {
-    return getConstraints().size() > 0 && (getValue() instanceof MultisourceNumericValue);
+    return (getConstraints().size() > 0) && (getValue() instanceof MultisourceNumericValue);
   }
 
   public NumericValue getValue() {

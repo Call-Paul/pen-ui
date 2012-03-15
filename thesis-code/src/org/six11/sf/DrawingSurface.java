@@ -1,8 +1,10 @@
 package org.six11.sf;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
 import java.awt.AWTEvent;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
@@ -13,10 +15,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,16 +30,15 @@ import javax.media.opengl.GLContext;
 import javax.media.opengl.GLEventListener;
 import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLJPanel;
+import javax.media.opengl.fixedfunc.GLMatrixFunc;
 import javax.media.opengl.glu.GLU;
 import javax.swing.Timer;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
 import org.six11.util.data.FSM;
-import org.six11.util.data.Lists;
 import org.six11.util.data.FSM.Transition;
+import org.six11.util.data.Lists;
 import org.six11.util.data.Statistics;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.shape.ShapeFactory;
@@ -52,9 +51,6 @@ import org.six11.util.pen.Vec;
 
 import com.jogamp.opengl.util.awt.Screenshot;
 import com.jogamp.opengl.util.awt.TextRenderer;
-
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
 
 public class DrawingSurface extends GLJPanel implements GLEventListener, PenListener, Drag.Listener {
 
@@ -129,9 +125,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private Pt panZoomActivityPt; // screen coordinate of point the user is dragging during a pan/zoom
   private Rectangle2D[] panZoomRects; // 0: rectangle for pan zone, 1: rect for zoom zone 
   private Timer zoomPanTimer; // responsible for animating and turning off widget
-  private float panInitialX, panInitialY; // camera pan values at beginning of pan action
   private float zoomInitialValue; // camera zoom at beginning of zoom action
-  //  protected int lastPanZoomFrame = -1;
 
   // recent pen activity vars
   private Pt screenRecentPt; // screen coordinates of the last pen event that had a location (IDLE does not!)
@@ -210,16 +204,16 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     GL2 gl = drawable.getGL().getGL2();
     glu = new GLU();
     gl = drawable.getGL().getGL2();
-    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
     gl.glLoadIdentity();
     gl.glOrtho(-1, 1, 1, -1, 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
     gl.glClearColor(1f, 1f, 1f, 1f);
-    gl.glDisable(GL2.GL_DEPTH_TEST);
-    gl.glEnable(GL2.GL_BLEND);
-    gl.glEnable(GL2.GL_LINE_SMOOTH);
-    gl.glHint(GL2.GL_LINE_SMOOTH_HINT, GL2.GL_NICEST);
-    gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
+    gl.glDisable(GL.GL_DEPTH_TEST);
+    gl.glEnable(GL.GL_BLEND);
+    gl.glEnable(GL.GL_LINE_SMOOTH);
+    gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
+    gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
 
     renderer.init(drawable);
     textRenderer18 = new TextRenderer(new Font("SansSerif", Font.BOLD, 18));
@@ -265,10 +259,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   public void reshape(GLAutoDrawable drawable, int x, int y, int width, int height) {
     bug("reshape! new size: " + width + " x " + height);
     GL2 gl = drawable.getGL().getGL2();
-    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
     gl.glLoadIdentity();
     gl.glOrtho(x, x + width, y + height, y, 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
   }
 
   @Override
@@ -280,16 +274,16 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     // do camera stuff first
     Camera cam = model.getCamera();
 
-    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
     gl.glLoadIdentity();
     float[] ortho = cam.getOrthoValues(size);
     gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
 
     // store info for translating mouse coords to model coords
-    gl.glGetFloatv(GL2.GL_PROJECTION_MATRIX, projmatrix, 0);
+    gl.glGetFloatv(GLMatrixFunc.GL_PROJECTION_MATRIX, projmatrix, 0);
     gl.glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
-    gl.glGetFloatv(GL2.GL_MODELVIEW_MATRIX, mvmatrix, 0);
+    gl.glGetFloatv(GLMatrixFunc.GL_MODELVIEW_MATRIX, mvmatrix, 0);
 
     if (previewSnapshot != null) {
       gl.glCallList(previewSnapshot.getDisplayListID());
@@ -353,11 +347,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     }
 
     // switch back to non-scaled, non-translated ortho mode to draw UI things
-    gl.glMatrixMode(GL2.GL_PROJECTION);
+    gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
     gl.glLoadIdentity();
     ortho = Camera.getOrthoValues(size, 1, 0, 0);
     gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
-    gl.glMatrixMode(GL2.GL_MODELVIEW);
+    gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
 
     if (showPanZoomWidget) {
       panZoomRects = renderer.panZoomWidget(gl, panZoomWidgetPt);
@@ -513,10 +507,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     });
     f.addTransition(new Transition(START_PAN, IDLE, PAN) {
       public void doAfterTransition() {
-        Camera cam = model.getCamera();
-        panInitialX = cam.getPanX();
-        panInitialY = cam.getPanY();
-        panZoomBeginPt = null; // new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldX")); // screen coordinates
+        // clear the way for the next round of panning. this lets
+        // us start from the new pen drag locations
+        panZoomBeginPt = null;
       }
     });
     f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM) {
@@ -668,7 +661,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR));
     f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
       public void doBeforeTransition() {
-        if (searchStart != null && dragPt != null) {
+        if ((searchStart != null) && (dragPt != null)) {
           double dx = dragPt.getX() - searchStart.getX();
           if (dx < -UNDO_REDO_THRESHOLD) {
             searchStart = dragPt.copyXYT();
@@ -755,7 +748,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     boolean paused = false;
     long now = System.currentTimeMillis();
     long then = fsTransitionPt.getTime();
-    if (now > then + fsPauseTimeout) {
+    if (now > (then + fsPauseTimeout)) {
       // pause is possible. take the approach of assuming there 
       // is a pause but using fsRecent to disprove it.
       paused = true;
@@ -810,7 +803,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   private void fsDeform(Pt recent) {
-    if (fsLastDeformPt != null && fsNearestSeg != null) {
+    if ((fsLastDeformPt != null) && (fsNearestSeg != null)) {
       Vec dir = new Vec(fsLastDeformPt, recent);
       double m = dir.mag();
       List<Pt> def = fsNearestSeg.getDeformedPoints();
@@ -861,7 +854,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private double fsFull(long elapsed) {
     // fully select P pixels per second
     double p = 70;
-    return ((double) elapsed * p) / 1000.0;
+    return (elapsed * p) / 1000.0;
   }
 
   public Segment getFlowSelectionSegment() {
@@ -920,7 +913,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     int realy = 0;// GL y coord pos
     float wcoord[] = new float[4];// wx, wy, wz
     realy = viewport[3] - (int) y - 1; // have to invert y values because Java and OpenGL disagree which way is up.
-    glu.gluUnProject((float) x, (float) realy, 0.0f, //
+    glu.gluUnProject(x, realy, 0.0f, //
         mvmatrix, 0, projmatrix, 0, viewport, 0, wcoord, 0);
     return wcoord;
   }
@@ -938,7 +931,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   protected void rect(GL2 gl, float minX, float width, float minY, float height) {
-    gl.glBegin(GL2.GL_LINE_LOOP);
+    gl.glBegin(GL.GL_LINE_LOOP);
     {
       gl.glVertex2f(minX, minY);
       gl.glVertex2f(minX, minY + height);
@@ -984,7 +977,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         fsDown = modelPt.copyXYT();
         fsDown.setDouble("worldX", world.x); // record world point here to avoid having to project it later
         fsDown.setDouble("worldY", world.y);
-        if (showPanZoomWidget && panZoomRects != null) {
+        if (showPanZoomWidget && (panZoomRects != null)) {
           if (panZoomRects[0].contains(world)) {
             fsFSM.addEvent(START_PAN);
           } else if (panZoomRects[1].contains(world)) {
@@ -1054,7 +1047,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         boolean wasTap = false;
         double tapDist = fsDown.getDouble("tap_dist");
         long tapDur = lastPenTime - fsDown.getTime();
-        if (tapDist < TAP_DIST_THRESH && tapDur < TAP_DUR_THRESH) {
+        if ((tapDist < TAP_DIST_THRESH) && (tapDur < TAP_DUR_THRESH)) {
           wasTap = true;
           Pt tapPt = fsDown.copyXYT();
           addTap(tapPt);
@@ -1114,12 +1107,12 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     int badIdx = -1;
     if (count > 0) {
       // if the first one is recent, check the time/location of the rest.
-      for (int i = 0; i < taps.size() - 1; i++) {
+      for (int i = 0; i < (taps.size() - 1); i++) {
         Pt left = taps.get(i);
         Pt right = taps.get(i + 1);
         double dist = left.distance(right);
         long dur = left.getTime() - right.getTime();
-        if (dist < TAP_DIST_THRESH && dur < TAP_TIMEOUT) {
+        if ((dist < TAP_DIST_THRESH) && (dur < TAP_TIMEOUT)) {
           count = count + 1; // pair (i, i+1) is good
         } else {
           badIdx = i + 1;

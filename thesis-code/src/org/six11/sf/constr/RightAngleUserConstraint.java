@@ -1,19 +1,8 @@
 package org.six11.sf.constr;
 
-import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
-
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.six11.sf.Ink;
 import org.six11.sf.SketchBook;
-import org.six11.util.pen.DrawingBuffer;
-import org.six11.util.pen.DrawingBufferRoutines;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.NumericValue;
@@ -74,7 +63,7 @@ public class RightAngleUserConstraint extends UserConstraint {
       right = c.lineB1;
     }
 
-    if (fulcrum == null || left == null || right == null) {
+    if ((fulcrum == null) || (left == null) || (right == null)) {
       // do nothing
     } else {
       Vec leftV = new Vec(fulcrum, left).getUnitVector();
