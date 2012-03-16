@@ -34,6 +34,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.pdf.DefaultFontMapper;
 import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfName;
 import com.lowagie.text.pdf.PdfTemplate;
 import com.lowagie.text.pdf.PdfWriter;
 
@@ -194,6 +195,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     try {
       FileOutputStream out = new FileOutputStream(file);
       PdfWriter writer = PdfWriter.getInstance(document, out);
+      writer.addViewerPreference(PdfName.PRINTSCALING, PdfName.NONE);
       document.open();
       DefaultFontMapper mapper = new DefaultFontMapper();
       PdfContentByte cb = writer.getDirectContent();
@@ -280,7 +282,6 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       material.addStencil(s.getShape(true));
     }
     material.layoutStencils();
-
     repaint();
   }
 

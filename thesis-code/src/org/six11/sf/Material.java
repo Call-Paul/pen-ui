@@ -25,8 +25,9 @@ import org.six11.util.pen.Pt;
 
 public class Material {
 
+  public static double EXPERIMENTAL_SCALE_FACTOR = 10d / 13.3d;
   public static double INCH_PER_PX = 1.0 / 72.0;
-  public static double CM_PER_PX = 1.0 / 37.795275591;
+  public static double CM_PER_PX = (1.0 / 37.795275591) / EXPERIMENTAL_SCALE_FACTOR;
   public static double M_PER_PX = 1.0 / 3779.527559055;
   public static double MM_PER_PX = 1.0 / 3.779527559;
   public static final Stroke HAIRLINE = Strokes.get(0.001f);
