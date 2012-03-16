@@ -120,7 +120,7 @@ public class SkruiFabEditor {
     model.setSurface(surface);
     grid = new ScrapGrid(this);
     cutfile = new CutfilePane(this);
-    
+
     if (model.getNotebook().shouldLoadFromDisk()) {
       bug("Notebook should load.");
       model.getNotebook().loadFromDisk();
@@ -128,13 +128,13 @@ public class SkruiFabEditor {
     } else {
       model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
     }
-//    Timer fileSaveTimer = new Timer();
-//    TimerTask fileSaveTask = new TimerTask() {
-//      public void run() {
-//        model.getNotebook().maybeSave(false);
-//      }
-//    };
-    
+    //    Timer fileSaveTimer = new Timer();
+    //    TimerTask fileSaveTask = new TimerTask() {
+    //      public void run() {
+    //        model.getNotebook().maybeSave(false);
+    //      }
+    //    };
+
     JPanel utilPanel = new JPanel();
     utilPanel.setLayout(new BorderLayout());
     utilPanel.add(grid, BorderLayout.CENTER);
@@ -156,8 +156,8 @@ public class SkruiFabEditor {
     af.setVisible(true);
 
     bug("Starting file save task.");
-//    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
-    
+    //    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
+
   }
 
   public JFrame getApplicationFrame() {
@@ -222,7 +222,7 @@ public class SkruiFabEditor {
             toggleVectors();
           }
         });
-    
+
     actions.put(ACTION_ZOOM_IN,
         new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
           public void activate() {
@@ -238,42 +238,38 @@ public class SkruiFabEditor {
             surface.repaint();
           }
         });
-    
-    actions.put(ACTION_PAN_LEFT,
-        new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
-          public void activate() {
-            float z = model.getCamera().getZoom();
-            model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
-            surface.repaint();
-          }
-        });
-    
-    actions.put(ACTION_PAN_RIGHT,
-        new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
-          public void activate() {
-            float z = model.getCamera().getZoom();
-            model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
-            surface.repaint();
-          }
-        });
-    
-    actions.put(ACTION_PAN_UP,
-        new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
-          public void activate() {
-            float z = model.getCamera().getZoom();
-            model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
-            surface.repaint();
-          }
-        });
-    
-    actions.put(ACTION_PAN_DOWN,
-        new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
-          public void activate() {
-            float z = model.getCamera().getZoom();
-            model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
-            surface.repaint();
-          }
-        });
+
+    actions.put(ACTION_PAN_LEFT, new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
+      public void activate() {
+        float z = model.getCamera().getZoom();
+        model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
+        surface.repaint();
+      }
+    });
+
+    actions.put(ACTION_PAN_RIGHT, new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
+      public void activate() {
+        float z = model.getCamera().getZoom();
+        model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
+        surface.repaint();
+      }
+    });
+
+    actions.put(ACTION_PAN_UP, new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
+      public void activate() {
+        float z = model.getCamera().getZoom();
+        model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
+        surface.repaint();
+      }
+    });
+
+    actions.put(ACTION_PAN_DOWN, new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
+      public void activate() {
+        float z = model.getCamera().getZoom();
+        model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
+        surface.repaint();
+      }
+    });
   }
 
   private void registerKeyboardActions(JRootPane rp) {
@@ -285,7 +281,7 @@ public class SkruiFabEditor {
       }
     }
   }
-  
+
   protected void toggleVectors() {
     debugSolver = !debugSolver;
     surface.repaint();
@@ -346,7 +342,6 @@ public class SkruiFabEditor {
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
     Collection<Segment> segs = new HashSet<Segment>();
-    //    goStopwatch.start("guide");
     if (unstruc.isEmpty()) {
       bug("No ink to work with...");
     } else {
@@ -389,7 +384,7 @@ public class SkruiFabEditor {
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
-    findStencils(segs);
+    findStencils();
     model.getConstraints().wakeUp();
     model.clearInk();
     surface.repaint();
@@ -397,10 +392,16 @@ public class SkruiFabEditor {
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
 
-  public void findStencils(Collection<Segment> segs) {
+  public void findStencils() {
     StencilFinder sf = new StencilFinder(model);
-    Set<Stencil> newStencils = sf.findStencils(segs);
-    model.mergeStencils(newStencils);
+    long allStStart = System.currentTimeMillis();
+    Set<Stencil> newStencils = sf.findStencils(model.getGeometry());
+    long allStEnd = System.currentTimeMillis();
+    long allStDur = allStEnd - allStStart;
+    bug("Finding all stencils from scratch took " + allStDur + " ms");
+    model.setStencils(newStencils);
+//    model.mergeStencils(newStencils);
+
   }
 
   /**

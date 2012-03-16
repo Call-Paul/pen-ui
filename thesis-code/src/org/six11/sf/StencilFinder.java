@@ -51,6 +51,9 @@ public class StencilFinder {
       }
     }
     stencils.removeAll(invaid);
+    Set<Stencil> ret = new HashSet<Stencil>();
+    StencilFinder.merge(stencils, ret);
+    stencils = ret;
     return stencils;
   }
 

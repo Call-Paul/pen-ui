@@ -519,30 +519,30 @@ public class SketchBook {
     }
 
     // remove stencils if it was made with the deleted one.
-    Set<Stencil> doomed = new HashSet<Stencil>();
-    Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
-    for (Stencil stencil : stencils) {
-      stencil.removeGeometry(seg);
-      boolean v = stencil.isValid();
-      if (!v) {
-        doomed.add(stencil);
-        childrenOfDoomed.addAll(stencil.getChildren());
-      }
-    }
-    // at this point, the doomed stencils should be given another chance. use the 
-    // segment list for each as input to the stencil finder.
-    Set<Segment> segsFromDoomed = new HashSet<Segment>();
-    for (Stencil sd : doomed) {
-      segsFromDoomed.addAll(sd.getSegs());
-    }
-    editor.findStencils(segsFromDoomed);
-
-    if (doomed.size() > 0) {
-      for (Stencil ds : doomed) {
-        stencils.remove(ds);
-      }
-    }
-    stencils.addAll(childrenOfDoomed);
+//    Set<Stencil> doomed = new HashSet<Stencil>();
+//    Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
+//    for (Stencil stencil : stencils) {
+//      stencil.removeGeometry(seg);
+//      boolean v = stencil.isValid();
+//      if (!v) {
+//        doomed.add(stencil);
+//        childrenOfDoomed.addAll(stencil.getChildren());
+//      }
+//    }
+//    // at this point, the doomed stencils should be given another chance. use the 
+//    // segment list for each as input to the stencil finder.
+//    Set<Segment> segsFromDoomed = new HashSet<Segment>();
+//    for (Stencil sd : doomed) {
+//      segsFromDoomed.addAll(sd.getSegs());
+//    }
+    editor.findStencils();
+//
+//    if (doomed.size() > 0) {
+//      for (Stencil ds : doomed) {
+//        stencils.remove(ds);
+//      }
+//    }
+//    stencils.addAll(childrenOfDoomed);
 
     // remove related constraints from the UserConstraints, and remove the 
     // UserConstraints when they are no longer useful.
@@ -806,43 +806,44 @@ public class SketchBook {
   }
 
   public void mergeStencils(Set<Stencil> newStencils) {
-    // add non-duplicate stencils first
-    for (Stencil nub : newStencils) {
-      boolean ok = true;
-      for (Stencil old : stencils) {
-        if (old.isSame(nub)) {
-          ok = false;
-          break;
-        }
-      }
-      if (ok) {
-        stencils.add(nub);
-      }
-    }
-
-    // then remove sub-stencils. boot those that are in a superset
-    Set<Stencil> doomed = new HashSet<Stencil>();
-    for (Stencil s1 : stencils) {
-      for (Stencil s2 : stencils) {
-        if (s1.isSuperset(s2)) {
-          doomed.add(s2);
-        }
-        if (s2.isSuperset(s1)) {
-          doomed.add(s1);
-        }
-      }
-    }
-    if (doomed.size() > 0) {
-      bug("removing stencils: " + num(doomed, " "));
-      stencils.removeAll(doomed);
-    }
-    Set<Stencil> done = new HashSet<Stencil>();
-    StencilFinder.merge(stencils, done);
-    HashSet<Stencil> parents = new HashSet<Stencil>();
-    for (Stencil sten : done) {
-      sten.removeInvalidChildren(parents);
-    }
-    stencils = done;
+//    
+//    // add non-duplicate stencils first
+//    for (Stencil nub : newStencils) {
+//      boolean ok = true;
+//      for (Stencil old : stencils) {
+//        if (old.isSame(nub)) {
+//          ok = false;
+//          break;
+//        }
+//      }
+//      if (ok) {
+//        stencils.add(nub);
+//      }
+//    }
+//
+//    // then remove sub-stencils. boot those that are in a superset
+//    Set<Stencil> doomed = new HashSet<Stencil>();
+//    for (Stencil s1 : stencils) {
+//      for (Stencil s2 : stencils) {
+//        if (s1.isSuperset(s2)) {
+//          doomed.add(s2);
+//        }
+//        if (s2.isSuperset(s1)) {
+//          doomed.add(s1);
+//        }
+//      }
+//    }
+//    if (doomed.size() > 0) {
+//      bug("removing stencils: " + num(doomed, " "));
+//      stencils.removeAll(doomed);
+//    }
+//    Set<Stencil> done = new HashSet<Stencil>();
+//    StencilFinder.merge(stencils, done);
+//    HashSet<Stencil> parents = new HashSet<Stencil>();
+//    for (Stencil sten : done) {
+//      sten.removeInvalidChildren(parents);
+//    }
+//    stencils = done;
   }
 
   /**
@@ -1362,7 +1363,7 @@ public class SketchBook {
         //        SafeAction action = getActionFactory().split(seg, ret);
         //        addAction(action);
         splitOldToNew(seg, ret);
-        editor.findStencils(ret);
+        editor.findStencils();
       }
     }
 
@@ -1541,6 +1542,12 @@ public class SketchBook {
 
   public Camera getCamera() {
     return camera;
+  }
+
+  public void setStencils(Set<Stencil> newStencils) {
+    stencils.clear();
+    stencils.addAll(newStencils);
+    selectedStencils.clear();
   }
 
 }

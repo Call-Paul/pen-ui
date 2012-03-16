@@ -225,7 +225,7 @@ public class EncircleRecognizer extends SketchRecognizer {
             }
             model.removeSingularSegments();
             model.getConstraintAnalyzer().mergeSegments(related);
-            model.getEditor().findStencils(related);
+            model.getEditor().findStencils();
           }
         };
       } else if (guides.size() > 0) {
