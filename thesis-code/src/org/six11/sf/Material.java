@@ -6,6 +6,7 @@ import static org.six11.util.Debug.num;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
+import java.awt.Stroke;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 import org.imgscalr.Scalr;
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.Strokes;
 import org.six11.util.gui.shape.ShapeFactory;
 import org.six11.util.pen.Pt;
 
@@ -27,6 +29,7 @@ public class Material {
   public static double CM_PER_PX = 1.0 / 37.795275591;
   public static double M_PER_PX = 1.0 / 3779.527559055;
   public static double MM_PER_PX = 1.0 / 3.779527559;
+  public static final Stroke HAIRLINE = Strokes.get(0.001f);
 
   public enum Units {
     Inch, Centimeter, Millimeter, Meter, Pixel,
@@ -152,7 +155,8 @@ public class Material {
   }
 
   public void drawStencils(Graphics2D g, Color color, String mode) {
-    g.setColor(Color.BLACK);
+    g.setColor(color);
+    g.setStroke(HAIRLINE);
     for (Map.Entry<Shape, Pt> shapeAndLoc : shapes.entrySet()) {
       Shape shape = shapeAndLoc.getKey();
       Pt where = shapeAndLoc.getValue();

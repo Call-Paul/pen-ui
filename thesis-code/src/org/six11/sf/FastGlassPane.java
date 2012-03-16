@@ -311,7 +311,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
         }
         editor.getModel().setDraggingSelection(false);
         activity = ActivityMode.None;
-        givePenEvent(editor.getModel().getSurface(), PenEvent.buildIdleEvent(this, ev));
+        givePenEvent(editor.getModel().getSurface(), PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint)));
         break;
       case DragPage:
         if (mei.component instanceof Drag.Listener) {
@@ -321,9 +321,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
         activity = ActivityMode.None;
         break;
       case None:
-        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, ev));
+        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint, ev.getWhen())));
         break;
-
     }
 
   }

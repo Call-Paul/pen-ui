@@ -125,6 +125,10 @@ public class Notebook {
     File mainFile = new File(notebookDir, SIMI_MAIN_FILE_NAME);
     return mainFile;
   }
+  
+  public File getMainFileDirectory() {
+    return notebookDir;
+  }
 
   public void loadFromDisk() {
     shouldLoadDisk = false;

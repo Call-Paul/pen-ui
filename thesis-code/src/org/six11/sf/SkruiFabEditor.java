@@ -34,6 +34,7 @@ import javax.swing.KeyStroke;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.sf.rec.RecognizerPrimitive;
+import org.six11.util.Debug;
 import org.six11.util.data.Lists;
 import org.six11.util.gui.ApplicationFrame;
 import org.six11.util.gui.Colors;
@@ -318,7 +319,14 @@ public class SkruiFabEditor {
   }
 
   public File getPdfOutputFile() throws IOException {
-    File outfile = new File("cutfile.pdf");
+    File outfile = null;
+    if (model.getNotebook().getMainFileDirectory() != null) {
+      outfile = FileUtil.makeIncrementalFile(model.getNotebook().getMainFileDirectory(), "cutfile-"
+          + Debug.nowFilenameFriendly(), ".pdf", 1);
+    } else {
+      outfile = new File("cutfile.pdf");
+    }
+
     if (!outfile.exists()) {
       boolean happened = outfile.createNewFile();
       if (!happened) {
@@ -400,7 +408,7 @@ public class SkruiFabEditor {
     long allStDur = allStEnd - allStStart;
     bug("Finding all stencils from scratch took " + allStDur + " ms");
     model.setStencils(newStencils);
-//    model.mergeStencils(newStencils);
+    //    model.mergeStencils(newStencils);
 
   }
 

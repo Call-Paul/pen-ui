@@ -44,9 +44,9 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private static final String MOVED_FAR = "moved far";
   private static final String UP = "up";
   protected static final double TAP_SLOP_DIST = 10;
-  private static final Color BUTTON_REGION_GLOW_COLOR = new Color(0.44f, 0.64f, 0.88f, 1f);
-  public static Color BUTTON_REGION_COLOR = new Color(0.35f, 0.35f, 0.35f, 0.7f);
-  public static Color ADD_ME_COLOR = new Color(0.57f, 0.78f, 0.57f);
+  public static final Color BUTTON_REGION_GLOW_COLOR = new Color(0.44f, 0.64f, 0.88f, 1f);
+  public static final Color BUTTON_REGION_COLOR = new Color(0.35f, 0.35f, 0.35f, 0.7f);
+  public static final Color ADD_ME_COLOR = new Color(0.57f, 0.78f, 0.57f);
 
   public static class GridCellContent {
     int pageNum;

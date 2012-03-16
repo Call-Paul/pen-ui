@@ -1,13 +1,17 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.RectangularShape;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,12 +23,15 @@ import javax.swing.JPanel;
 
 import org.six11.sf.Drag.Event;
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
+import org.six11.util.pen.Pt;
+import org.six11.util.solve.ConstraintSolver.Listener;
+import org.six11.util.solve.ConstraintSolver.State;
 
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
-import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.DefaultFontMapper;
 import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfTemplate;
@@ -43,6 +50,16 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   private SkruiFabEditor editor;
   private Material material;
   private boolean addMe;
+  private Rectangle clearRect;
+  private boolean hoverInClear;
+  private Rectangle pdfRect;
+  private boolean hoverInPdf;
+  private File recentFile;
+  private String message;
+
+  // when adding stencils sometimes the constraint solver has to wake up. use this listener to wait for it to
+  // calm down. this delays printing until the solver is happy.
+  private Listener lis;
 
   public CutfilePane(SkruiFabEditor editor) {
     this.editor = editor;
@@ -55,26 +72,62 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   public void paintComponent(Graphics g1) {
     Graphics2D g = (Graphics2D) g1;
-    g.setColor(getBackground());
-    g.fill(getVisibleRect());
-    g.setColor(Color.BLACK);
-    FontMetrics fm = g.getFontMetrics();
-    String str = "(Drag Stencils Here)";
-    Rectangle2D r = fm.getStringBounds(str, g);
-    int cx = getWidth() / 2;
-    int cy = getHeight() / 2;
-    int textX = (int) (cx - (r.getWidth() / 2));
-    int textY = (int) (cy + (r.getHeight() / 2));
-    g.drawString(str, textX, textY);
-    BufferedImage im = material.getSmallImage(getWidth(), getHeight());
-    if (im != null) {
+    int w = getWidth();
+    int h = getHeight();
+    BufferedImage im = material.getSmallImage(w, h);
+    if (message == null && im != null) {
       g.setColor(Color.LIGHT_GRAY);
       g.fill(new Rectangle2D.Double(0, 0, im.getWidth(), im.getHeight()));
       g.drawImage(im, 0, 0, null);
+    } else {
+      g.setColor(getBackground());
+      g.fill(getVisibleRect());
+      g.setColor(Color.BLACK);
+      FontMetrics fm = g.getFontMetrics();
+      String str = message == null ? "(Drag Stencils Here)" : message;
+      Rectangle2D r = fm.getStringBounds(str, g);
+      int cx = w / 2;
+      int cy = h / 2;
+      int textX = (int) (cx - (r.getWidth() / 2));
+      int textY = (int) (cy + (r.getHeight() / 2));
+      g.drawString(str, textX, textY);
     }
     if (addMe) {
       editor.getGlass().drawAddMeSign(g, 4, 4, 24, ScrapGrid.ADD_ME_COLOR, Color.BLACK);
     }
+    // draw clear button
+    clearRect = placeButton(g, "Clear", 40, 24, 0, hoverInClear);
+    if (material.countStencils() > 0) {
+      pdfRect = placeButton(g, "PDF", 40, 24, 1, hoverInPdf);
+    } else {
+      pdfRect = null;
+    }
+
+  }
+
+  public Rectangle placeButton(Graphics2D g, String str, int buttonW, int buttonH, int position,
+      boolean lightUp) {
+    int w = getWidth();
+    Rectangle2D strBounds = g.getFontMetrics().getStringBounds(str, g);
+    int buttonPad = 4;
+    //    int buttonW = (int) (2 * buttonPad + strBounds.getWidth());
+
+    //    int buttonH = (int) (2 * buttonPad + strBounds.getHeight());
+    int y = ((1 + position) * buttonPad) + (position * buttonH);
+    Rectangle buttonRect = new Rectangle(w - (buttonPad + buttonW), y, buttonW, buttonH);
+    int strX = (int) (buttonRect.getCenterX() - (strBounds.getWidth() / 2));
+    int strY = (int) (buttonRect.getCenterY() + (strBounds.getHeight() / 2) - buttonPad / 2);
+    g.setColor(Color.LIGHT_GRAY);
+    g.fill(buttonRect);
+    if (lightUp) {
+      g.setColor(ScrapGrid.BUTTON_REGION_GLOW_COLOR);
+    } else {
+      g.setColor(Color.GRAY);
+    }
+    g.setStroke(Strokes.THIN_STROKE);
+    g.draw(buttonRect);
+    g.drawString(str, strX, strY);
+    return buttonRect;
   }
 
   private BoundingBox getBoundingBox() {
@@ -82,7 +135,48 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   }
 
   public void handlePenEvent(PenEvent ev) {
+    switch (ev.getType()) {
+      case Down:
+        break;
+      case Drag:
+        break;
+      case Enter:
+        break;
+      case Exit:
+        hoverInClear = false;
+        repaint();
+        break;
+      case Flow:
+        break;
+      case Hover:
+        hoverInClear = whackBox(ev.getPt(), clearRect);
+        hoverInPdf = whackBox(ev.getPt(), pdfRect);
+        repaint();
+        break;
+      case Idle:
+        if (clearRect != null && clearRect.contains(ev.getPt())) {
+          clear();
+        }
+        if (pdfRect != null && pdfRect.contains(ev.getPt())) {
+          printRequested();
+        }
+        break;
+      case Tap:
+        break;
+    }
+  }
 
+  private boolean whackBox(Pt pt, Rectangle2D box) {
+    boolean ret = false;
+    if (box != null && box.contains(pt)) {
+      ret = true;
+    }
+    return ret;
+  }
+
+  private void clear() {
+    material.clear();
+    repaint();
   }
 
   /**
@@ -93,9 +187,9 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
    */
   public void print(File file) {
     BoundingBox bb = getBoundingBox();
-    int w = bb.getWidthInt();
-    int h = bb.getHeightInt();
-    Rectangle size = new Rectangle(w, h);
+    int w = bb.getWidthInt() + 4; // give a little padding because strokes sometimes are right up against the edge
+    int h = bb.getHeightInt() + 4;
+    com.lowagie.text.Rectangle size = new com.lowagie.text.Rectangle(w, h);
     Document document = new Document(size, 0, 0, 0, 0);
     try {
       FileOutputStream out = new FileOutputStream(file);
@@ -105,10 +199,10 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       PdfContentByte cb = writer.getDirectContent();
       PdfTemplate tp = cb.createTemplate(w, h);
       Graphics2D g2 = tp.createGraphics(w, h, mapper);
+      g2.translate(2, 2); // give a little offset so lines aren't off the edge
       g2.setColor(Color.BLUE);
       tp.setWidth(w);
       tp.setHeight(h);
-      g2.translate(-bb.getX(), -bb.getY());
       material.drawStencils(g2, Color.BLUE, "outline");
       g2.dispose();
       cb.addTemplate(tp, 0, 0);
@@ -139,15 +233,13 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
 
   @Override
   public void dragDrop(Event ev) {
-    bug("Cutfile got drop. re-implement this!");
     switch (ev.getMode()) {
       case DragPage:
         Page dragPage = editor.getGrid().getDragPage();
         if (dragPage != null) {
           bug("OK, dragpage is fine. setting it current.");
           editor.getModel().getNotebook().setCurrentPage(dragPage);
-          bug("Place " + editor.getModel().getStencils().size() + " stencils in the cutfile.");
-          addStencils(editor.getModel().getStencils());
+          addCurrentWhenChilledOut();
         }
         break;
       case DragSelection:
@@ -163,19 +255,45 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     repaint();
   }
 
+  private void addCurrentWhenChilledOut() {
+    if (editor.getModel().getConstraints().getSolutionState() == State.Solved) {
+      addStencils(editor.getModel().getStencils());
+    } else {
+      message = "Wait for constraint solver...";
+      lis = new Listener() {
+        public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+            int numConstraints) {
+          if (state == State.Solved) {
+            editor.getModel().getConstraints().removeListener(lis);
+            message = null;
+            bug("Place " + editor.getModel().getStencils().size() + " stencils in the cutfile.");
+            addStencils(editor.getModel().getStencils());
+          }
+        }
+      };
+      editor.getModel().getConstraints().addListener(lis);
+    }
+  }
+
   private void addStencils(Set<Stencil> selection) {
     for (Stencil s : selection) {
       material.addStencil(s.getShape(true));
     }
     material.layoutStencils();
+
+    repaint();
+  }
+
+  private void printRequested() {
     try {
       File file = editor.getPdfOutputFile();
-      print(editor.getPdfOutputFile());
+      print(file);
       bug("Printed to '" + file.getAbsolutePath() + "'");
+      recentFile = file;
+      Desktop.getDesktop().open(recentFile);
     } catch (IOException e) {
       e.printStackTrace();
     }
-    repaint();
   }
 
 }
