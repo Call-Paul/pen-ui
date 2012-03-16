@@ -117,13 +117,16 @@
 	        jar="${jar.output}"
 	        icon="icons/simi.icns"
 	        version="0.1"
+		vmoptions="-Djava.library.path=osx"
 	    	arguments=""
 	    	bundleid="org.six11.sf" 
-	    	jvmversion="1.6+"
-	  	/>
+	    	jvmversion="1.6+">
+      <resourcefileset dir="external" includes="osx/*.jnilib"/>
+  </jarbundler>
   </target>
 
-  <!-- ==================== Compile Target ================================== -->
+  <!-- ==================== Compile Target
+  ================================== -->
 
   <target name="compile"
 	  depends="prepare"

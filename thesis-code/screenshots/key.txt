@@ -101,3 +101,7 @@
 039: improved right-angle recognizer lets me make notches. (jessica kit triangle)
 
 040: new notebook view.
+
+041-044: zooming
+
+045: zooming to help make a 5-sided jessica kit piece

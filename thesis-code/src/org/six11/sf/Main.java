@@ -29,9 +29,12 @@ public class Main {
     if (args.hasFlag("no-debug-color")) {
       Debug.useColor = false;
     }
+    if (args.hasFlag("no-debug-time")) {
+      Debug.useTime = false;
+    }
     new Main().go();
   }
-  
+
   /**
    * Initialize variables, but does not show any GUI elements.
    */
@@ -52,7 +55,6 @@ public class Main {
     List<SkruiFabEditor> editors = (List<SkruiFabEditor>) vars.get("editors");
     editors.add(ed);
   }
-
 
   public String varStr(String key) {
     return (String) vars.get(key);
