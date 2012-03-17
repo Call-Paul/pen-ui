@@ -153,6 +153,7 @@ public class SketchRenderer {
     // render things back-to-front
     renderStencils();
     renderGeometry();
+    renderSelectionDimensions(18);
     renderFlowSelection();
     renderDerivedGuides();
     renderGuides();
@@ -160,7 +161,7 @@ public class SketchRenderer {
     renderUnanalyzed();
     renderScribble(scribble, drawDots);
     renderErase();
-    renderTextInput();
+    renderTextInput(18);
   }
 
   private void renderStencils() {
@@ -389,7 +390,7 @@ public class SketchRenderer {
     }
   }
 
-  private void renderTextInput() {
+  private void renderTextInput(int pointSize) {
     if ((surface.getTextInput() != null) && (model.getSelectedSegments().size() == 1)) {
       float zoom = model.getCamera().getZoom();
       String str = surface.getTextInput();
@@ -398,12 +399,12 @@ public class SketchRenderer {
       Vec segDirNorm = segDir.getNormal();
       Pt mid = selSeg.getVisualMidpoint();
       Pt textLocModel = mid.getTranslated(segDirNorm, 8 / zoom);
-      Rectangle2D textBox = surface.getTextRenderer(18).getBounds(str);
+      Rectangle2D textBox = surface.getTextRenderer(pointSize).getBounds(str);
       float halfPad = 4 / zoom;
       float pad = halfPad * 2;
       float boxX = textLocModel.ix();
       float boxY = textLocModel.iy();
-      float boxW = (int) textBox.getWidth() / 2;
+      float boxW = (int) textBox.getWidth();
       float boxH = (int) textBox.getHeight();
       boxX = boxX - halfPad;
       boxY = boxY - halfPad;
@@ -414,7 +415,8 @@ public class SketchRenderer {
       fillRect(boxX, boxY, boxW, boxH);
       gl.glColor4fv(skyBlue, 0);
       rect(boxX, boxY, boxW, boxH);
-      text(str, surface.getTextRenderer(18), textLocModel.getTranslated(0, boxH/2), skyBlue);
+      text(str, surface.getTextRenderer(pointSize), textLocModel.getTranslated(0, boxH / 2),
+          skyBlue);
     }
   }
 
@@ -534,6 +536,20 @@ public class SketchRenderer {
     line(pt, away);
   }
 
+  private void renderSelectionDimensions(int pointSize) {
+    float zoom = model.getCamera().getZoom();
+    for (Segment seg : model.getSelectedSegments()) {
+      if (seg.getType() == Segment.Type.Line) {
+        Vec segDir = seg.getStartDir();
+        Vec segDirNorm = segDir.getNormal();
+        Pt textLocModel = seg.getVisualMidpoint().getTranslated(segDirNorm, 8 / zoom);
+        Material.Units units = model.getMasterUnits();
+        double asUnits = Material.fromPixels(units, seg.length());
+        text("" + num(asUnits), surface.getTextRenderer(pointSize), textLocModel, skyBlue);
+      }
+    }
+  }
+
   private void renderFlowSelection() {
     Segment fsSeg = surface.getFlowSelectionSegment();
     if (fsSeg != null) {
@@ -543,6 +559,7 @@ public class SketchRenderer {
       if (state.equals(DrawingSurface.OP) || state.equals(DrawingSurface.SMOOTH)) {
         drawNodes = true;
       }
+      // base color is red. we will adjust the alpha value for each point so we can't just use the 'red' member.
       float[] color = new float[] {
           1, 0, 0, 0
       };
@@ -765,8 +782,8 @@ public class SketchRenderer {
     float[] screenCoords = surface.project(gl, loc.fx(), loc.fy());
     Pt screenPt = new Pt(screenCoords[0], screenCoords[1]);
 
-//    TextRenderer t12 = surface.getTextRenderer(12);
-//    TextRenderer t12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
+    //    TextRenderer t12 = surface.getTextRenderer(12);
+    //    TextRenderer t12 = new TextRenderer(new Font("SansSerif", Font.PLAIN, 12));
     t12.setSmoothing(true);
     t12.beginRendering(drawable.getWidth(), drawable.getHeight());
     t12.setColor(color[0], color[1], color[2], color[3]);

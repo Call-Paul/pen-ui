@@ -2,7 +2,7 @@ package org.six11.sf;
 
 import static java.lang.Math.abs;
 import static org.six11.util.Debug.bug;
-import static org.six11.util.Debug.num;
+//import static org.six11.util.Debug.num;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -251,7 +251,6 @@ public class SketchBook {
         scrib.setAttribute("samples", samples);
         scrib.setAttribute("erase_pseudocorners", 0);
       } else if (i > 0) {
-
         // 1. set curvilinear distance along the scribble. uses i and iPrev
         Pt prev = scrib.get(iPrev);
         Pt here = scrib.get(i);
@@ -379,6 +378,8 @@ public class SketchBook {
     final Area hullArea = new Area(hull.getHullShape());
     final Collection<Segment> doomed = pickDoomedSegments(hullArea);
     final Collection<Ink> doomedInk = pickDoomedInk(hullArea, null);
+    
+    int totalItemsUnder = doomed.size() + doomedInk.size(); // When I can erase constraints, include that as well.
 
     if (doomedInk.size() > 0) {
       for (Ink ink : doomedInk) {
@@ -390,6 +391,16 @@ public class SketchBook {
         removeGeometry(seg);
       }
     }
+    
+    bug("totalItemsUnder: " + totalItemsUnder);
+    // when the user erases nothing, treat it as a shortcut to clear the current selection.
+    if (totalItemsUnder == 0) {
+      bug("Clearing selected segments.");
+      clearSelectedSegments();
+    }
+    
+    
+    // TODO: I thought stencil finding was now done in one batch, not incrementally like this
     Set<Stencil> invaid = new HashSet<Stencil>();
     for (Stencil stencil : stencils) {
       if (!stencil.isValid()) {
@@ -482,7 +493,7 @@ public class SketchBook {
   }
 
   public void clearSelectedSegments() {
-    setSelectedSegments(new HashSet<Segment>());
+    setSelectedSegments(null);
   }
 
   public void addGeometry(Segment seg) {
@@ -898,6 +909,7 @@ public class SketchBook {
 
   public void setSelectedSegments(Collection<Segment> selectUs) {
     boolean same = Lists.areSetsEqual(selectUs, selectedSegments);
+    bug("Set selected segments: " + selectUs);
     if (!lastInkWasSelection || (selectUs == null)) {
       selectedSegments.clear();
     }
@@ -1234,6 +1246,7 @@ public class SketchBook {
   public void undoRedoComplete() {
     bug("finalizing redo/undo to snapshot " + getSnapshotMachine().getCurrentIdx());
     surface.suspendRedraw(true);
+    glass.setGatherText(false);
     surface.clearPreview();
     if (getSnapshotMachine() == null) {
       bug("Snapshot machine is null");
