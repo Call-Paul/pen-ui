@@ -408,7 +408,7 @@ public class SketchRenderer {
       float boxH = (int) textBox.getHeight();
       boxX = boxX - halfPad;
       boxY = boxY - halfPad;
-      boxW = boxW + pad; // TODO: do something.
+      boxW = boxW + pad;
       boxH = boxH + pad;
       gl.glLineWidth(1f);
       gl.glColor4fv(white, 0);
@@ -728,7 +728,7 @@ public class SketchRenderer {
     }
   }
 
-  void box(Pt pt, float side) { // TODO keep this private
+  void box(Pt pt, float side) {
     float cx = pt.fx(), cy = pt.fy();
     float f = side / 2f;
     gl.glBegin(GL.GL_LINE_LOOP);

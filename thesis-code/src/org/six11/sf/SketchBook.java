@@ -8,9 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -93,7 +90,8 @@ public class SketchBook {
   private boolean loadingSnapshot;
   private Notebook notebook;
   private Camera camera;
-
+//  private int numConstraintRuns;
+  
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
@@ -114,13 +112,17 @@ public class SketchBook {
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
+//    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
     this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
-    solver.setDebugOut(true);
-    try {
-      solver.setDebugOutWriter(new BufferedWriter(new FileWriter("solver.txt")));
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+//    this.solver.addListener(new Listener() {
+//      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+//          int numConstraints) {
+//        if (state == State.Solved) {
+//          numConstraintRuns = numConstraintRuns + 1;
+//          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+//        }
+//      }      
+//    });
     solver.runInBackground();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
