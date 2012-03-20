@@ -46,8 +46,11 @@ public class SnapshotMachine {
 
   private boolean snapsEnabled;
 
+  private List<String> reasons;
+
   public SnapshotMachine(SketchBook model) {
     this.model = model;
+    this.reasons = new ArrayList<String>(); // records reasons why snapshots are taken. cleared when snap is made.
     this.snapsEnabled = true;
     this.state = new ArrayList<Snapshot>();
     this.staleDisplayLists = new HashSet<Integer>();
@@ -86,6 +89,11 @@ public class SnapshotMachine {
   public Snapshot takeSnapshotImmediately() {
     Snapshot ret = new Snapshot(model);
     if (snapsEnabled) {
+      bug("Made snapshot for the following reasons:");
+      for (String r : reasons) {
+        bug("    :: " + r);
+      }
+      reasons.clear();
       push(ret);
       if (rootDir != null) {
         File snapFile = new File(rootDir, "snapshot-" + ret.getID() + ".txt");
@@ -114,11 +122,13 @@ public class SnapshotMachine {
   }
 
   public void setSnapshotsEnabled(boolean val) {
+    bug("Toggling snapshots to " + val);
     this.snapsEnabled = val;
   }
 
   public void requestSnapshot(String reason) {
-//    bug("snapshot requested. reason: " + reason);
+    reasons.add(reason);
+    bug("snapshot requested. reason: " + reason);
     this.snapshotRequested = true;
     model.getSurface().snapshot();
   }

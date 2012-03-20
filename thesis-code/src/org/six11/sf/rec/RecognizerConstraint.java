@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
 public abstract class RecognizerConstraint {
@@ -15,8 +16,10 @@ public abstract class RecognizerConstraint {
   private List<String> primarySlotNames;
   private String name;
   private boolean debugging;
+  protected SketchBook model;
 
-  public RecognizerConstraint(String name, String... sNames) {
+  public RecognizerConstraint(SketchBook model, String name, String... sNames) {
+    this.model = model;
     this.name = name;
     this.slotNames = new ArrayList<String>();
     this.primarySlotNames = new ArrayList<String>();

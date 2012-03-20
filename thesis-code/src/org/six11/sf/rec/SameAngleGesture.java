@@ -40,9 +40,9 @@ public class SameAngleGesture extends RecognizedItemTemplate {
     addPrimitive("line2", RecognizerPrimitive.Type.Line);
     Interval yesInterval = new Interval(0, 40);
     Interval maybeInterval = new Interval(0, 60);
-    addConstraint(new LineLengthConstraint("c1", yesInterval, maybeInterval, "line1"));
-    addConstraint(new LineLengthConstraint("c2", yesInterval, maybeInterval, "line2"));
-    addConstraint(new EqualLength("c3", "line1", "line2"));
+    addConstraint(new LineLengthConstraint(model, "c1", yesInterval, maybeInterval, "line1"));
+    addConstraint(new LineLengthConstraint(model, "c2", yesInterval, maybeInterval, "line2"));
+    addConstraint(new EqualLength(model, "c3", "line1", "line2"));
   }
 
   @Override

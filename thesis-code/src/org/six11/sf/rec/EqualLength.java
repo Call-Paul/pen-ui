@@ -2,12 +2,13 @@ package org.six11.sf.rec;
 
 import static java.lang.Math.log;
 
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
 public class EqualLength extends RecognizerConstraint {
 
-  public EqualLength(String name, String... sNames) {
-    super(name, sNames);
+  public EqualLength(SketchBook model, String name, String... sNames) {
+    super(model, name, sNames);
   }
 
   @Override

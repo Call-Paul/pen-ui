@@ -199,11 +199,15 @@ public class Notebook {
 
   public void setCurrentPage(Page target) {
     currentPage = target;
+    currentPage.getSnapshotMachine().setSnapshotsEnabled(false);
     model.clearAll();
+    currentPage.getSnapshotMachine().setSnapshotsEnabled(true);
     if (currentPage.getSnapshotMachine().length() == 0) {
+      bug("Taking napshot immediately because the current page has no snapshots in it.");
       currentPage.getSnapshotMachine().takeSnapshotImmediately();
     }
     model.undoRedoComplete();
+
     model.getEditor().getGrid().repaint();
   }
 

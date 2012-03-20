@@ -166,7 +166,7 @@ public abstract class RecognizedItemTemplate extends SketchRecognizer {
   protected void addPrimitive(String slotName, RecognizerPrimitive.Type type) {
     slotNames.add(slotName);
     slotTypes.add(type);
-    constraints.put(slotName, new TypeConstraint(slotName, type));
+    constraints.put(slotName, new TypeConstraint(model, slotName, type));
   }
 
   public Collection<RecognizedItem> applyTemplate(Collection<RecognizerPrimitive> in) {

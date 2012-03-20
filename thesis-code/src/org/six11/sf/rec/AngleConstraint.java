@@ -2,6 +2,7 @@ package org.six11.sf.rec;
 
 import static java.lang.Math.abs;
 
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.math.Interval;
 import org.six11.util.pen.Functions;
@@ -12,8 +13,8 @@ public class AngleConstraint extends RecognizerConstraint {
 
   private Interval yesRange, maybeRange;
   
-  public AngleConstraint(String name, Interval yesRange, Interval maybeRange, String... sNames) {
-    super(name, sNames);
+  public AngleConstraint(SketchBook model, String name, Interval yesRange, Interval maybeRange, String... sNames) {
+    super(model, name, sNames);
     this.yesRange = yesRange;
     this.maybeRange = maybeRange;
   }

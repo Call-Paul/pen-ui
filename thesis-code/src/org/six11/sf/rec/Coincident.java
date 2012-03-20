@@ -1,12 +1,16 @@
 package org.six11.sf.rec;
 
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
+
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.util.pen.Pt;
 
 public class Coincident extends RecognizerConstraint {
 
-  public Coincident(String name, String... sNames) {
-    super(name, sNames);
+  public Coincident(SketchBook model, String name, String... sNames) {
+    super(model, name, sNames);
   }
 
   public Certainty check(RecognizerPrimitive... p) {
@@ -54,6 +58,7 @@ public class Coincident extends RecognizerConstraint {
     Pt one = lineA.getSubshape(subslotA);
     Pt two = lineB.getSubshape(subslotB);
     double dist = one.distance(two);
+    bug("Distance: " + num(dist));
     Certainty ret = Certainty.No;
     if (dist < 30) {
       ret = Certainty.Maybe;

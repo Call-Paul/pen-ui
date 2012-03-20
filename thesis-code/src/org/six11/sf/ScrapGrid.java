@@ -132,6 +132,7 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
     bug("Tapping location: " + pt);
     Page target = getPageAt(pt);
     if ((target != editor.getModel().getNotebook().getCurrentPage()) && (target != null)) {
+      bug("Loading page " + target);
       editor.getModel().getNotebook().setCurrentPage(target);
     }
   }

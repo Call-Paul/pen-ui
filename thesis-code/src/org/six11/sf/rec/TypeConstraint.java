@@ -1,5 +1,6 @@
 package org.six11.sf.rec;
 
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 import org.six11.sf.rec.RecognizerPrimitive.Type;
 
@@ -7,8 +8,8 @@ public class TypeConstraint extends RecognizerConstraint {
 
   private Type type;
 
-  public TypeConstraint(String slotName, RecognizerPrimitive.Type type) {
-    super(slotName, slotName);
+  public TypeConstraint(SketchBook model, String slotName, RecognizerPrimitive.Type type) {
+    super(model, slotName, slotName);
     this.type = type;
   }
 

@@ -1,11 +1,12 @@
 package org.six11.sf.rec;
 
+import org.six11.sf.SketchBook;
 import org.six11.sf.rec.RecognizerPrimitive.Certainty;
 
 public class Larger extends RecognizerConstraint {
 
-  public Larger(String name, String... sNames) {
-    super(name, sNames);
+  public Larger(SketchBook model, String name, String... sNames) {
+    super(model, name, sNames);
   }
 
   public Certainty check(RecognizerPrimitive... p) {

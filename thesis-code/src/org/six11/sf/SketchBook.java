@@ -2,7 +2,7 @@ package org.six11.sf;
 
 import static java.lang.Math.abs;
 import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+// import static org.six11.util.Debug.num;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -90,8 +90,9 @@ public class SketchBook {
   private boolean loadingSnapshot;
   private Notebook notebook;
   private Camera camera;
-//  private int numConstraintRuns;
-  
+
+  //  private int numConstraintRuns;
+
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
@@ -112,17 +113,17 @@ public class SketchBook {
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
     this.solver = new ConstraintSolver();
-//    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+    //    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
     this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
-//    this.solver.addListener(new Listener() {
-//      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
-//          int numConstraints) {
-//        if (state == State.Solved) {
-//          numConstraintRuns = numConstraintRuns + 1;
-//          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
-//        }
-//      }      
-//    });
+    //    this.solver.addListener(new Listener() {
+    //      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+    //          int numConstraints) {
+    //        if (state == State.Solved) {
+    //          numConstraintRuns = numConstraintRuns + 1;
+    //          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+    //        }
+    //      }      
+    //    });
     solver.runInBackground();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
@@ -380,7 +381,7 @@ public class SketchBook {
     final Area hullArea = new Area(hull.getHullShape());
     final Collection<Segment> doomed = pickDoomedSegments(hullArea);
     final Collection<Ink> doomedInk = pickDoomedInk(hullArea, null);
-    
+
     int totalItemsUnder = doomed.size() + doomedInk.size(); // When I can erase constraints, include that as well.
 
     if (doomedInk.size() > 0) {
@@ -390,27 +391,28 @@ public class SketchBook {
     } else {
       for (Segment seg : doomed) {
         bug("Erase " + seg.typeIdPtStr());
-        removeGeometry(seg);
+        removeGeometry(seg); // this also does the stencil-find thing
       }
     }
-    
+
     bug("totalItemsUnder: " + totalItemsUnder);
     // when the user erases nothing, treat it as a shortcut to clear the current selection.
     if (totalItemsUnder == 0) {
       bug("Clearing selected segments.");
       clearSelectedSegments();
     }
-    
-    
-    // TODO: I thought stencil finding was now done in one batch, not incrementally like this
-    Set<Stencil> invaid = new HashSet<Stencil>();
-    for (Stencil stencil : stencils) {
-      if (!stencil.isValid()) {
-        invaid.add(stencil);
-      }
-      stencil.removeInvalidChildren(new HashSet<Stencil>());
-    }
-    stencils.removeAll(invaid);
+
+    //    
+    //    // TODO: I thought stencil finding was now done in one batch, not incrementally like this
+    //    Set<Stencil> invaid = new HashSet<Stencil>();
+    //    for (Stencil stencil : stencils) {
+    //      if (!stencil.isValid()) {
+    //        invaid.add(stencil);
+    //      }
+    //      stencil.removeInvalidChildren(new HashSet<Stencil>());
+    //    }
+    //    stencils.removeAll(invaid);
+    //    editor.findStencils();
   }
 
   public Collection<Segment> pickDoomedSegments(Area area) {
@@ -531,31 +533,8 @@ public class SketchBook {
       dead.addAll(solver.removePoint(seg.getP2()));
     }
 
-    // remove stencils if it was made with the deleted one.
-//    Set<Stencil> doomed = new HashSet<Stencil>();
-//    Set<Stencil> childrenOfDoomed = new HashSet<Stencil>(); // the new book by Frank Herbert
-//    for (Stencil stencil : stencils) {
-//      stencil.removeGeometry(seg);
-//      boolean v = stencil.isValid();
-//      if (!v) {
-//        doomed.add(stencil);
-//        childrenOfDoomed.addAll(stencil.getChildren());
-//      }
-//    }
-//    // at this point, the doomed stencils should be given another chance. use the 
-//    // segment list for each as input to the stencil finder.
-//    Set<Segment> segsFromDoomed = new HashSet<Segment>();
-//    for (Stencil sd : doomed) {
-//      segsFromDoomed.addAll(sd.getSegs());
-//    }
+    // find stencils. This rebuilds the set of stencils completely.
     editor.findStencils();
-//
-//    if (doomed.size() > 0) {
-//      for (Stencil ds : doomed) {
-//        stencils.remove(ds);
-//      }
-//    }
-//    stencils.addAll(childrenOfDoomed);
 
     // remove related constraints from the UserConstraints, and remove the 
     // UserConstraints when they are no longer useful.
@@ -570,6 +549,7 @@ public class SketchBook {
     for (UserConstraint uc : removeUs) {
       removeUserConstraint(uc);
     }
+    getSnapshotMachine().requestSnapshot("Removed geometry");
   }
 
   public Set<Segment> getGeometry() {
@@ -818,47 +798,6 @@ public class SketchBook {
     buf.append(Debug.spaces(4 * indent) + what);
   }
 
-  public void mergeStencils(Set<Stencil> newStencils) {
-//    
-//    // add non-duplicate stencils first
-//    for (Stencil nub : newStencils) {
-//      boolean ok = true;
-//      for (Stencil old : stencils) {
-//        if (old.isSame(nub)) {
-//          ok = false;
-//          break;
-//        }
-//      }
-//      if (ok) {
-//        stencils.add(nub);
-//      }
-//    }
-//
-//    // then remove sub-stencils. boot those that are in a superset
-//    Set<Stencil> doomed = new HashSet<Stencil>();
-//    for (Stencil s1 : stencils) {
-//      for (Stencil s2 : stencils) {
-//        if (s1.isSuperset(s2)) {
-//          doomed.add(s2);
-//        }
-//        if (s2.isSuperset(s1)) {
-//          doomed.add(s1);
-//        }
-//      }
-//    }
-//    if (doomed.size() > 0) {
-//      bug("removing stencils: " + num(doomed, " "));
-//      stencils.removeAll(doomed);
-//    }
-//    Set<Stencil> done = new HashSet<Stencil>();
-//    StencilFinder.merge(stencils, done);
-//    HashSet<Stencil> parents = new HashSet<Stencil>();
-//    for (Stencil sten : done) {
-//      sten.removeInvalidChildren(parents);
-//    }
-//    stencils = done;
-  }
-
   /**
    * Find a set of segments whose fuzzy areas (Segment.getFuzzyArea()) intersect the given Area.
    */
@@ -1037,13 +976,16 @@ public class SketchBook {
   }
 
   public void addUserConstraint(UserConstraint uc) {
-    if (uc != null) {
+    if (uc != null) { // TODO: this is sometimes being called with a null arg. why?
       userConstraints.add(uc);
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
     }
     getConstraints().wakeUp();
+    if (uc != null) {
+      getSnapshotMachine().requestSnapshot("Added user constraint " + uc.getType());
+    }
   }
 
   public void removeUserConstraint(UserConstraint uc) {
@@ -1054,6 +996,7 @@ public class SketchBook {
       userConstraints.remove(uc);
     }
     getConstraints().wakeUp();
+    getSnapshotMachine().requestSnapshot("Removed user constraint " + uc.getType());
   }
 
   public Collection<UserConstraint> getUserConstraints() {
@@ -1184,7 +1127,8 @@ public class SketchBook {
   public Collection<GuidePoint> findGuidePoints(Pt pt, boolean activeOnly) {
     Collection<GuidePoint> ret = new HashSet<GuidePoint>();
     Collection<GuidePoint> in = activeOnly ? activeGuidePoints : guidePoints;
-    double targetNearnessThreshold = DotReferenceGestureRecognizer.NEARNESS_THRESHOLD / getCamera().getZoom();
+    double targetNearnessThreshold = DotReferenceGestureRecognizer.NEARNESS_THRESHOLD
+        / getCamera().getZoom();
     if (activeOnly) {
       for (GuidePoint gpt : in) {
         if (gpt.getLocation().distance(pt) < targetNearnessThreshold) {
