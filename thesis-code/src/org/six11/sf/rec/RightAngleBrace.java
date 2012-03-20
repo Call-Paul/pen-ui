@@ -72,11 +72,12 @@ public class RightAngleBrace extends RecognizedItemTemplate {
 
   public Certainty checkContext(RecognizedItem item, Collection<RecognizerPrimitive> in) {
     Certainty ret = Certainty.No;
+    float zoom = model.getCamera().getZoom();
     Set<Segment> segs = model.getGeometry();
     Pt hotspot = item.getFeaturePoint(CORNER_D);
     segs = SegmentFilter.makeCohortFilter(in).filter(segs);
     segs = SegmentFilter.makeSegmentTypeFilter(Segment.Type.Line).filter(segs);
-    segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(segs);
+    segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30 / zoom).filter(segs);
     Interval adjacentSegAngleRange = new Interval(toRadians(50), toRadians(130));
     Set<Segment> avoid = new HashSet<Segment>();
     Segment good1 = null;

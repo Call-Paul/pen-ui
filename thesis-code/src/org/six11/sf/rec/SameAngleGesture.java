@@ -61,14 +61,14 @@ public class SameAngleGesture extends RecognizedItemTemplate {
 
     Set<Segment> allSegs = model.getGeometry();
     allSegs = SegmentFilter.makeCohortFilter(in).filter(allSegs); // remove current input from consideration
-
+    float zoom = model.getCamera().getZoom();
     Segment[] pair1 = new Segment[0];
     Segment[] pair2 = new Segment[0];
     // loop through all the hashes and try to identify two corners whose angle we will constrain.
     for (RecognizerPrimitive line : hashes) {
       if (line.getType() == RecognizerPrimitive.Type.Line) {
         Pt hotspot = line.getMid();
-        Set<Segment> segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30).filter(allSegs);
+        Set<Segment> segs = SegmentFilter.makeEndpointRadiusFilter(hotspot, 30 / zoom).filter(allSegs);
         // next see if segs has two (and only two) that share an endpoint ('corner') 
         // near the hotspot if we find two distinct corners, we are in business.
         if (segs.size() >= 2) {
