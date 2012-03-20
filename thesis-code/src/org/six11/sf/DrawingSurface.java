@@ -1050,7 +1050,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         boolean wasTap = false;
         double tapDist = fsDown.getDouble("tap_dist");
         long tapDur = lastPenTime - fsDown.getTime();
-        if ((tapDist < TAP_DIST_THRESH) && (tapDur < TAP_DUR_THRESH)) {
+        float zoom = model.getCamera().getZoom();
+        float targetDist = (float) (TAP_DIST_THRESH / zoom);
+        if ((tapDist < targetDist) && (tapDur < TAP_DUR_THRESH)) {
           wasTap = true;
           Pt tapPt = fsDown.copyXYT();
           addTap(tapPt);
