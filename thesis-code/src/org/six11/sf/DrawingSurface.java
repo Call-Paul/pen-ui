@@ -435,16 +435,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     Pt corner = new Pt(minX, maxY);
     int width = bb.getWidthInt();
     int height = bb.getHeightInt();
-    // float[] windowCorner = unproject(drawable.getGL().getGL2(), corner.fx(), corner.fy());
-//    float[] windowCorner = new float[] {
-//        corner.fx(), corner.fy()
-//    };
-
-    //    BufferedImage bigImage = Screenshot.readToBufferedImage((int) windowCorner[0], windowHeight
-    //        - (int) windowCorner[1], width, height, false);
     BufferedImage bigImage = Screenshot.readToBufferedImage(corner.ix(),
         windowHeight - corner.iy(), width, height, false);
-
     return bigImage;
   }
 
@@ -472,7 +464,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       public void actionPerformed(ActionEvent e) {
         fsFSM.addEvent(TICK);
         repaint();
-        //        display();
       }
     });
     FSM f = new FSM("Flow Selection FSM");
