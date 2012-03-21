@@ -314,11 +314,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     }
 
-//    if (hoverPt != null) {
-//      gl.glLineWidth(2f);
-//      gl.glColor3fv(SketchRenderer.red, 0);
-//      renderer.dot(hoverPt, 5);
-//    }
+    //    if (hoverPt != null) {
+    //      gl.glLineWidth(2f);
+    //      gl.glColor3fv(SketchRenderer.red, 0);
+    //      renderer.dot(hoverPt, 5);
+    //    }
 
     // switch back to non-scaled, non-translated ortho mode to draw UI things
     gl.glMatrixMode(GLMatrixFunc.GL_PROJECTION);
@@ -419,9 +419,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   private void setPageThumbnail(GLAutoDrawable drawable) {
     BoundingBox bb = new BoundingBox();
-    //    for (Segment seg : model.getGeometry()) {
-    //      bb.addAll(seg.getPointList());
-    //    }
     bb.add(getVisibleRect());
     if (bb.isValid()) {
       BufferedImage bigImage = takeScreenShot(drawable, bb);
@@ -438,9 +435,16 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     Pt corner = new Pt(minX, maxY);
     int width = bb.getWidthInt();
     int height = bb.getHeightInt();
-    float[] windowCorner = unproject(drawable.getGL().getGL2(), corner.fx(), corner.fy());
-    BufferedImage bigImage = Screenshot.readToBufferedImage((int) windowCorner[0], windowHeight
-        - (int) windowCorner[1], width, height, false);
+    // float[] windowCorner = unproject(drawable.getGL().getGL2(), corner.fx(), corner.fy());
+//    float[] windowCorner = new float[] {
+//        corner.fx(), corner.fy()
+//    };
+
+    //    BufferedImage bigImage = Screenshot.readToBufferedImage((int) windowCorner[0], windowHeight
+    //        - (int) windowCorner[1], width, height, false);
+    BufferedImage bigImage = Screenshot.readToBufferedImage(corner.ix(),
+        windowHeight - corner.iy(), width, height, false);
+
     return bigImage;
   }
 
