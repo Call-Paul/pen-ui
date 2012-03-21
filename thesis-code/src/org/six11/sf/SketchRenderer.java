@@ -155,7 +155,7 @@ public class SketchRenderer {
     renderGeometry();
     renderSelectionDimensions(18);
     renderFlowSelection();
-    renderDerivedGuides();
+//    renderDerivedGuides();
     renderGuides();
     renderConstraints();
     renderUnanalyzed();
