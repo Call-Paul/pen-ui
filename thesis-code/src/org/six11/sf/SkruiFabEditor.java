@@ -12,7 +12,12 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -23,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 import javax.swing.Action;
 import javax.swing.JComponent;
@@ -68,7 +75,6 @@ public class SkruiFabEditor {
   private static String ACTION_CLEAR = "Clear";
 
   private boolean useDebuggingColor = false;
-  private boolean useDebuggingPoints = false;
   private DrawingSurface surface;
   private SketchBook model;
   private Map<String, Action> actions;
@@ -88,17 +94,50 @@ public class SkruiFabEditor {
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
     Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
-    if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
-      af.setSize(1600, 1000);
-    } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
-      af.setSize(1400, 800);
-    } else {
-      af.setSize(800, 600);
+    boolean setSizeAndLocation = false;
+    Preferences prefs = Preferences.userNodeForPackage(SkruiFabEditor.class);
+
+    int screenX = prefs.getInt("screenX", 0);
+    int screenY = prefs.getInt("screenY", 0);
+    int frameWidth = prefs.getInt("frameWidth", 800);
+    int frameHeight = prefs.getInt("frameHeight", 600);
+    af.setSize(frameWidth, frameHeight);
+    af.setLocation(screenX, screenY);
+    setSizeAndLocation = true;
+    
+    if (!setSizeAndLocation) {
+      if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
+        af.setSize(1600, 1000);
+      } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
+        af.setSize(1400, 800);
+      } else {
+        af.setSize(800, 600);
+      }
+      af.center();
     }
     createActions();
     registerKeyboardActions(af.getRootPane());
     fastGlass = new FastGlassPane(this);
     af.getRootPane().setGlassPane(fastGlass);
+    af.addComponentListener(new ComponentAdapter() {
+      public void componentMoved(ComponentEvent ev) {
+        bug("moved. setting prefs.");
+        whackFramePrefs();
+      }
+
+      public void componentResized(ComponentEvent ev) {
+        bug("resized. setting prefs.");
+        whackFramePrefs();
+      }
+
+      private void whackFramePrefs() {
+        Preferences prefs = Preferences.userNodeForPackage(SkruiFabEditor.class);
+        prefs.put("screenX", "" + af.getLocationOnScreen().x);
+        prefs.put("screenY", "" + af.getLocationOnScreen().y);
+        prefs.put("frameWidth", "" + af.getWidth());
+        prefs.put("frameHeight", "" + af.getHeight());
+      }
+    });
     fastGlass.setVisible(true);
     model = new SketchBook(fastGlass, this);
     model.getConstraints().addListener(new ConstraintSolver.Listener() {
@@ -153,7 +192,7 @@ public class SkruiFabEditor {
     fe.addRule("utils", E, "layers", W);
 
     af.add(fe);
-    af.center();
+
     af.setVisible(true);
 
     bug("Starting file save task.");
@@ -314,8 +353,13 @@ public class SkruiFabEditor {
   }
 
   protected void debugColorToggle() {
+    bug("Toggle debug visuals");
     this.useDebuggingColor = !useDebuggingColor;
-    this.useDebuggingPoints = !useDebuggingPoints;
+    surface.repaint();
+  }
+
+  protected boolean isDebuggingVisual() {
+    return this.useDebuggingColor;
   }
 
   public File getPdfOutputFile() throws IOException {
@@ -342,11 +386,8 @@ public class SkruiFabEditor {
 
   @SuppressWarnings("unchecked")
   public void go() {
-
     bug("+---------------------------------------------------------------------------------------+");
-    bug("|                                                                                       |");
-    bug("|                                       ~ go ~                                          |");
-    bug("|                                                                                       |");
+    bug("|-------------------------------------- ~ go ~ -----------------------------------------|");
     bug("+---------------------------------------------------------------------------------------+");
     List<Ink> unstruc = model.getUnanalyzedInk();
     Collection<Segment> segs = new HashSet<Segment>();
@@ -399,6 +440,7 @@ public class SkruiFabEditor {
     surface.repaint();
     model.getConstraints().wakeUp();
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
+    model.sanityCheck();
   }
 
   private void removeHooks(Collection<Segment> segs) {
@@ -413,7 +455,6 @@ public class SkruiFabEditor {
     for (Map.Entry<Ink, Set<Segment>> entry : inkToSegs.entrySet()) {
       doomed.addAll(removeHooks(entry.getKey(), entry.getValue()));
     }
-    bug("Removing " + doomed.size() + " hooks.");
     segs.removeAll(doomed);
   }
 

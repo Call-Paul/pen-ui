@@ -58,12 +58,12 @@ public class Coincident extends RecognizerConstraint {
     Pt one = lineA.getSubshape(subslotA);
     Pt two = lineB.getSubshape(subslotB);
     double dist = one.distance(two);
-    bug("Distance: " + num(dist));
     Certainty ret = Certainty.No;
-    if (dist < 30) {
+    float zoom = model.getCamera().getZoom();
+    if (dist < 30 / zoom) {
       ret = Certainty.Maybe;
     }
-    if (dist < 20) {
+    if (dist < 20 / zoom) {
       ret = Certainty.Yes;
     }
     return ret;

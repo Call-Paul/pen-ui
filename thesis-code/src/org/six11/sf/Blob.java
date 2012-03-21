@@ -3,6 +3,7 @@ package org.six11.sf;
 import static java.lang.Math.ceil;
 import static java.lang.Math.min;
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Shape;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ public class Blob extends SegmentDelegate {
     this.p1 = ctrl.get(0);
     this.p2 = p1;
     this.type = Segment.Type.Blob;
+    bug("initted a blob with p1: " + num(p1) + " named " + SketchBook.n(p1));
   }
 
   private final void cleanOverlap() {
@@ -109,10 +111,13 @@ public class Blob extends SegmentDelegate {
   }
 
   public Sequence asSpline() {
-    double roughLength = getRoughLength();
-    int numSteps = (int) ceil(min(roughLength / 100, 10));
-    Sequence spline = Functions.makeClosedNaturalSpline(numSteps, ctrl);
-    return spline;
+    if (cachedSpline == null) {
+      double roughLength = getRoughLength();
+      int numSteps = (int) ceil(min(roughLength / 100, 10));
+      Sequence spline = Functions.makeClosedNaturalSpline(numSteps, ctrl);
+      cachedSpline = spline;
+    }
+    return cachedSpline;
   }
 
   public List<Pt> getPointList() {
@@ -136,6 +141,6 @@ public class Blob extends SegmentDelegate {
   }
 
   protected void doPara() {
-
+    cachedSpline = null;
   }
 }

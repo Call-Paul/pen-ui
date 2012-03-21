@@ -79,9 +79,6 @@ public class SnapshotMachine {
         && snapshotRequested) {
       snapshotRequested = false;
       ret = takeSnapshotImmediately();
-      //    } else {
-      //      bug("Not saving snapshot. snapsEnabled: " + snapsEnabled + ", solution state: "
-      //          + model.getConstraints().getSolutionState() + ", snapRequested: " + snapshotRequested);
     }
     return ret;
   }
@@ -89,10 +86,6 @@ public class SnapshotMachine {
   public Snapshot takeSnapshotImmediately() {
     Snapshot ret = new Snapshot(model);
     if (snapsEnabled) {
-      bug("Made snapshot for the following reasons:");
-      for (String r : reasons) {
-        bug("    :: " + r);
-      }
       reasons.clear();
       push(ret);
       if (rootDir != null) {
@@ -122,13 +115,11 @@ public class SnapshotMachine {
   }
 
   public void setSnapshotsEnabled(boolean val) {
-    bug("Toggling snapshots to " + val);
     this.snapsEnabled = val;
   }
 
   public void requestSnapshot(String reason) {
     reasons.add(reason);
-    bug("snapshot requested. reason: " + reason);
     this.snapshotRequested = true;
     model.getSurface().snapshot();
   }

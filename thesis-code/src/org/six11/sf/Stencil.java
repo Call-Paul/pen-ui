@@ -240,8 +240,6 @@ public class Stencil {
           break;
         }
       }
-    } else {
-      bug("Stencil " + this + " is singular so it is always valid.");
     }
     return ret;
   }

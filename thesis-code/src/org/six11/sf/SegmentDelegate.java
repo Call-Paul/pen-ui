@@ -52,7 +52,7 @@ public class SegmentDelegate implements HasFuzzyArea {
 
   protected boolean termA, termB;
   
-  private transient Sequence cachedSpline;
+  protected transient Sequence cachedSpline;
 
   protected SegmentDelegate() {
     // ensure subclass calls init();
@@ -273,7 +273,7 @@ public class SegmentDelegate implements HasFuzzyArea {
       paraPoints.set(0, p1);
       paraPoints.set(paraPoints.size() - 1, p2);
     } else if (isSingular()) {
-      bug("doPara() called for singular segment. this is bad. stacktrace follows.");
+      bug("doPara() called for singular segment " + getType() + ". this is bad. stacktrace follows.");
       Debug.stacktrace("you should not get here.", 8);
     }
   }

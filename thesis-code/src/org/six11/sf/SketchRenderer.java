@@ -19,6 +19,7 @@ import javax.media.opengl.GLAutoDrawable;
 import javax.media.opengl.glu.GLU;
 import javax.media.opengl.glu.GLUtessellator;
 
+import org.six11.sf.Segment.Type;
 import org.six11.sf.constr.ColinearUserConstraint;
 import org.six11.sf.constr.RightAngleUserConstraint;
 import org.six11.sf.constr.SameAngleUserConstraint;
@@ -37,6 +38,30 @@ import org.six11.util.solve.MultisourceNumericValue;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
 public class SketchRenderer {
+  
+  private static float[] brighter(float[] c) {
+    float[] r = new float[4];
+    r[0] = (float) Math.sqrt(c[0]);
+    r[1] = (float) Math.sqrt(c[1]);
+    r[2] = (float) Math.sqrt(c[2]);
+    r[3] = c[3]; // leave alpha alone.
+    return r;
+  }
+  
+  private static float[] darker(float[] c) {
+    float[] r = new float[4];
+    r[0] = c[0] * 0.6f;
+    r[1] = c[1] * 0.6f;
+    r[2] = c[2] * 0.6f;
+    r[3] = c[3]; // leave alpha alone.
+    return r;
+  }
+
+  private static float[] makeAlphaColor(float[] color, float alpha) {
+    return new float[] {
+        color[0], color[1], color[2], alpha
+    };
+  }
 
   // GL colors as float arrays
   public static float[] white = new float[] {
@@ -59,12 +84,24 @@ public class SketchRenderer {
       1f, 0f, 0f, 1f
   };
 
+  public static float[] yellow = new float[] {
+      1f, 0f, 1f, 1f
+  };
+
   public static float[] green = new float[] {
       0f, 1f, 0f, 1f
   };
 
+  public static float[] cyan = new float[] {
+      0f, 1f, 1f, 1f
+  };
+
   public static float[] blue = new float[] {
       0f, 0f, 1f, 1f
+  };
+
+  public static float[] magenta = new float[] {
+      1f, 0f, 1f, 1f
   };
 
   public static float[] skyBlue = new float[] {
@@ -78,7 +115,14 @@ public class SketchRenderer {
   public static float[] peachy = new float[] {
       1f, 0.5f, 0.5f, 0.75f
   };
-
+  
+  public static float[] darkRed = darker(red);
+  public static float[] darkGreen = darker(green);
+  public static float[] darkBlue = darker(blue);
+  public static float[] darkCyan = darker(cyan);
+  public static float[] darkMagenta = darker(magenta);
+  public static float[] darkYellow = darker(yellow);
+  
   // pen settings (colors and thicknesses)
   //
   // thicknesses first
@@ -95,25 +139,12 @@ public class SketchRenderer {
   public final static float[] SEGMENT_SELECTED_COLOR = brighter(skyBlue);
   public final static float[] DOT_SELECTED_COLOR = peachy;
 
-  private static float[] brighter(float[] c) {
-    float[] r = new float[4];
-    r[0] = (float) Math.sqrt(c[0]);
-    r[1] = (float) Math.sqrt(c[1]);
-    r[2] = (float) Math.sqrt(c[2]);
-    r[3] = c[3]; // leave alpha alone.
-    return r;
-  }
-
-  private static float[] makeAlphaColor(float[] color, float alpha) {
-    return new float[] {
-        color[0], color[1], color[2], alpha
-    };
-  }
-
   private static final Vec EAST = new Vec(1, 0);
   private static final Vec WEST = new Vec(-1, 0);
   private static final Vec NORTH = new Vec(0, 1);
   private static final Vec SOUTH = new Vec(0, -1);
+//  private static final Vec NORTH_EAST = new Vec(1, 1).getUnitVector();
+  private static final Vec SOUTH_EAST = new Vec(1, -1).getUnitVector();
 
   private transient GL2 gl; // only valid during the render method
   private transient SketchBook model; // also valid only when rendering
@@ -155,7 +186,7 @@ public class SketchRenderer {
     renderGeometry();
     renderSelectionDimensions(18);
     renderFlowSelection();
-//    renderDerivedGuides();
+    //    renderDerivedGuides();
     renderGuides();
     renderConstraints();
     renderUnanalyzed();
@@ -470,8 +501,17 @@ public class SketchRenderer {
         renderSegment(seg);
       } else {
         gl.glLineWidth(3.8f); // ensure pen settings ok because render unlatched changes it
-        gl.glColor3fv(black, 0);
+        float[] color = black;
+        if (model.getEditor().isDebuggingVisual()) {
+          color = getDebuggingColor(seg.getType());
+        }
+        gl.glColor3fv(color, 0);
         renderSegment(seg);
+        if (model.getEditor().isDebuggingVisual()) {
+          Pt mid = seg.getVisualMidpoint();
+          String label = seg.typeIdStr();
+          text(label, surface.getTextRenderer(12), mid.getTranslated(SOUTH_EAST, 12 / z), black);
+        }
       }
 
       // draw latchedness
@@ -489,10 +529,45 @@ public class SketchRenderer {
 
     // render the latched points
     for (Pt pt : model.getConstraints().getPoints()) {
+      if (model.getEditor().isDebuggingVisual()) {
+        text(SketchBook.n(pt), surface.getTextRenderer(12), pt.getTranslated(SOUTH_EAST, 12 / z), black);
+      }
       if (!notLatched.contains(pt)) {
         renderLatched(pt, LATCH_SPOT_COLOR, latchedVertSideLen, 1f);
       }
     }
+  }
+
+  private float[] getDebuggingColor(Type type) {
+    float[] ret = black;
+    switch(type) {
+      case Blob:
+        ret = darkCyan;
+        break;
+      case Circle:
+        ret = darkBlue;
+        break;
+      case CircularArc:
+        ret = darkBlue;
+        break;
+      case Curve:
+        ret = darkCyan;
+        break;
+      case Dot:
+        break;
+      case Ellipse:
+        ret = darkMagenta;
+        break;
+      case EllipticalArc:
+        ret = darkMagenta;
+        break;
+      case Line:
+        ret = darkGreen;
+        break;
+      case Unknown:
+        break;
+    }
+    return ret;
   }
 
   private void renderSegment(Segment seg) {

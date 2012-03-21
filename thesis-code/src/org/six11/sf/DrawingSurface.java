@@ -152,6 +152,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   float mvmatrix[] = new float[16];
   private List<Pt> taps;
   private boolean suspendRedraw;
+  private boolean panic;
 
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
@@ -390,7 +391,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
    */
   private void renderContent(GLAutoDrawable drawable, Dimension size) {
     GL2 gl = drawable.getGL().getGL2(); // get GL pipe handle
-
+    if (panic) {
+      gl.glClearColor(0.9f, 0.8f, 0.8f, 1f);
+    }
     gl.glClear(GL.GL_COLOR_BUFFER_BIT); // clear screen.
 
     // draw border.
@@ -454,7 +457,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     fsRecent = new ArrayList<Pt>();
     fsTimer = new Timer(fsPauseTimeout, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
-        bug("tick 1");
         fsCheck();
       }
     });
@@ -767,11 +769,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
       if (paused) {
         fsFSM.addEvent(PAUSE);
-      } else {
-        bug("checking for pause: moved too far (" + num(maxD) + ")");
       }
-    } else {
-      bug("checking for pause: not enough time has passed");
     }
     return paused;
   }
@@ -1201,6 +1199,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
 
   public void suspendRedraw(boolean suspendRedraw) {
     this.suspendRedraw = suspendRedraw;
+  }
+
+  public void setPanic(boolean v) {
+    panic = v;
   }
 
 }

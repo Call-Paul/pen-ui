@@ -144,19 +144,13 @@ public class EncircleRecognizer extends SketchRecognizer {
     }
     // ----------------------------------------------------------------- Tiny circles (e.g. latch)
     double tinyCircleDistTarget = 6.5 / zoom;
-    bug("len <= minLen: " + num(len) + " <= " + num(minLen) + ": " + (len <= minLen));
-    bug("roughDensity: " + num(ink.getSequence().getRoughDensity(zoom)) + " <= 2: "
-        + (ink.getSequence().getRoughDensity(zoom) <= 2.0));
-    bug("nearestCircDist: " + num(getNearestEncircleDistShortSequence(seq)) + " < "
-        + num(tinyCircleDistTarget) + ": "
-        + (getNearestEncircleDistShortSequence(seq) < tinyCircleDistTarget));
     if ((len <= minLen) && (ink.getSequence().getRoughDensity(zoom) <= 2.0)
         && (getNearestEncircleDistShortSequence(seq) < tinyCircleDistTarget)) {
-      bug("doing it.");
       Area area = new Area(seq);
       final Collection<Pt> points = model.findPoints(area);
       final Collection<GuidePoint> guides = model.findGuidePoints(area);
       boolean eraseGuide = false;
+      bug("num points, num guides: " + points.size() + ", " + guides.size());
       if ((points.size() > 0) && (guides.size() == 1)) {
         // one or more endpoints and exactly one guide point.
 
@@ -172,6 +166,7 @@ public class EncircleRecognizer extends SketchRecognizer {
         }
         if (ok) {
           // ---------------------------------------------------------------- Remove guide point
+          bug("Remove guide point.");
           // all endpoints are already at the guide point. In this case 
           // the gesture means the user wants to remove the guide point.
           ret = makeRemoveGuidePoint(singleGuide);
@@ -180,6 +175,7 @@ public class EncircleRecognizer extends SketchRecognizer {
       }
       if (!eraseGuide && (points.size() == 1)) {
         // ------------------------------------------------------------------ T-junction
+        bug("T-junction.");
         double fuzzyFactor = 4 / zoom; // area around the segment
         Collection<Segment> segs = model.findSegments(area, fuzzyFactor);
         Pt pt = Lists.getOne(points);
@@ -191,6 +187,7 @@ public class EncircleRecognizer extends SketchRecognizer {
       }
       if (!eraseGuide && (points.size() > 1)) {
         // ------------------------------------------------------------------ Merge points
+        bug("Merge points");
         ret = new RecognizedRawItem(true, RecognizedRawItem.ENCIRCLE_ENDPOINTS_TO_MERGE,
             RecognizedRawItem.ENCIRCLE_STENCIL_TO_SELECT,
             RecognizedRawItem.OVERTRACE_TO_SELECT_SEGMENT) {

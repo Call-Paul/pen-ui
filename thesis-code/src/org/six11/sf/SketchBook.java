@@ -45,6 +45,8 @@ import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.ConstraintSolver;
+import org.six11.util.solve.ConstraintSolver.Listener;
+import org.six11.util.solve.ConstraintSolver.State;
 import org.six11.util.solve.DistanceConstraint;
 import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
@@ -78,14 +80,14 @@ public class SketchBook {
   private BufferedImage draggingThumb;
   private FastGlassPane glass;
   private boolean lastInkWasSelection;
-  
+
   // guide related structures
   private List<GuidePoint> guidePoints;
   private List<GuidePoint> activeGuidePoints;
   private Set<Guide> derivedGuides;
   private Set<Guide> retainedVisibleGuides;
   private GuidePoint draggingGuidePoint;
-  
+
   private Material.Units masterUnits = Units.Centimeter;
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
@@ -95,6 +97,7 @@ public class SketchBook {
   private Notebook notebook;
   private Camera camera;
   private Ink mostRecentInk;
+  private Set<Pt> unpin;
 
   //  private int numConstraintRuns;
 
@@ -117,6 +120,7 @@ public class SketchBook {
     this.actions = new Stack<SafeAction>();
     this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
+
     this.solver = new ConstraintSolver();
     //    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
     this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
@@ -129,6 +133,18 @@ public class SketchBook {
     //        }
     //      }      
     //    });
+    this.unpin = new HashSet<Pt>();
+    solver.addListener(new Listener() {
+      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+          int numConstraints) {
+        if (state == State.Solved) {
+          for (Pt pt : unpin) {
+            Constraint.setPinned(pt, false);
+          }
+          unpin.clear();
+        }
+      }
+    });
     solver.runInBackground();
     this.recognizer = new SketchRecognizerController(this);
     addRecognizer(new EncircleRecognizer(this));
@@ -747,9 +763,14 @@ public class SketchBook {
     addBug(indent, buf, geometry.size() + " segments in 'geometry':\n");
     addBug(indent, buf, String.format(format, "seg-type", "id", "p1", "p2"));
     addBug(indent, buf, "--------------------------\n");
+    Set<Pt> segmentPoints = new HashSet<Pt>();
     for (Segment seg : geometry) {
       String p1 = (seg.getP1().hasAttribute("name")) ? seg.getP1().getString("name") : "<?>";
       String p2 = (seg.getP2().hasAttribute("name")) ? seg.getP2().getString("name") : "<?>";
+      segmentPoints.add(seg.getP1());
+      if (!seg.isSingular()) {
+        segmentPoints.add(seg.getP2());
+      }
       addBug(indent, buf, String.format(format, seg.getType() + "", seg.getId() + "", p1, p2));
     }
     buf.append("\n");
@@ -785,11 +806,61 @@ public class SketchBook {
       indent--;
     }
     indent--;
+    addBug(indent, buf, "Vertex agreement sanity check...\n");
+    indent++;
+    addBug(indent, buf, "Solver  : " + solver.getVars().getPoints().size() + "\n");
+    addBug(indent, buf, "Geometry: " + segmentPoints.size() + "\n");
+    boolean sToG = solver.getVars().getPoints().containsAll(segmentPoints);
+
+    addBug(indent, buf, "Does solver have all geometry points? " + sToG + "\n");
+    if (!sToG) {
+      indent++;
+      for (Pt pt : segmentPoints) {
+        if (!solver.getVars().getPoints().contains(pt)) {
+          addBug(indent, buf, "Solver does not have geometry point: " + SketchBook.n(pt) + "\n");
+        }
+      }
+      indent--;
+    }
+    boolean gToS = segmentPoints.containsAll(solver.getVars().getPoints());
+    addBug(indent, buf, "Does geometry have all solver points? " + gToS + "\n");
+    if (!gToS) {
+      indent++;
+      for (Pt pt : solver.getVars().getPoints()) {
+        if (!segmentPoints.contains(pt)) {
+          addBug(indent, buf, "Geometry does not have solver point: " + SketchBook.n(pt) + "\n");
+        }
+      }
+      indent--;
+    }
+    indent--;
+
     return buf.toString();
   }
 
   private void addBug(int indent, StringBuilder buf, String what) {
     buf.append(Debug.spaces(4 * indent) + what);
+  }
+
+  /**
+   * A sanity check to see if the constraint engine and the geometry list agree on which vertices
+   * the model contains. If they do not agree, it prints the mondo debug string and alerts you in
+   * the UI in strong terms.
+   */
+  void sanityCheck() {
+    Set<Pt> segmentPoints = new HashSet<Pt>();
+    for (Segment seg : geometry) {
+      segmentPoints.add(seg.getP1());
+      if (!seg.isSingular()) {
+        segmentPoints.add(seg.getP2());
+      }
+    }
+    boolean sToG = solver.getVars().getPoints().containsAll(segmentPoints);
+    boolean gToS = segmentPoints.containsAll(solver.getVars().getPoints());
+    if (!sToG || !gToS) {
+      System.out.println(getMondoDebugString());
+      surface.setPanic(true);
+    }
   }
 
   /**
@@ -1136,6 +1207,11 @@ public class SketchBook {
   public void setDraggingGuidePoint(GuidePoint dragMe) {
     if (dragMe != null) {
     } else {
+      if (draggingGuidePoint != null) {
+        bug("was dragging point: " + SketchBook.n(draggingGuidePoint.getLocation()));
+        Constraint.setPinned(draggingGuidePoint.getLocation(), true);
+        unpin.add(draggingGuidePoint.getLocation());
+      }
       getConstraints().wakeUp();
       if (draggingGuidePoint != null) {
         getSnapshotMachine().requestSnapshot("Done dragging a guide point");
@@ -1370,12 +1446,13 @@ public class SketchBook {
 
   public void addSegments(Collection<Segment> segs) {
     for (Segment seg : segs) {
+
+      if (!SketchBook.hasName(seg.getP1())) {
+        getConstraints().addPoint(nextPointName(), seg.getP1());
+      } else {
+        getConstraints().addPoint(seg.getP1());
+      }
       if (!seg.isSingular()) {
-        if (!SketchBook.hasName(seg.getP1())) {
-          getConstraints().addPoint(nextPointName(), seg.getP1());
-        } else {
-          getConstraints().addPoint(seg.getP1());
-        }
         if (!SketchBook.hasName(seg.getP2())) {
           getConstraints().addPoint(nextPointName(), seg.getP2());
         } else {
