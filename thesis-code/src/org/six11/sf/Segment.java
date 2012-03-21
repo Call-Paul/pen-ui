@@ -206,6 +206,10 @@ public class Segment implements HasFuzzyArea {
     return d.ink;
   }
 
+  public boolean isEndOfOriginalStroke() {
+    return d.isEndOfOriginalStroke();
+  }
+  
   /**
    * Calculate the parameter for the target point along the given line segment.
    * 

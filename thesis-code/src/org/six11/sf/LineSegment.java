@@ -11,7 +11,7 @@ public class LineSegment extends SegmentDelegate {
     List<Pt> simplePoints = new ArrayList<Pt>();
     simplePoints.add(points.get(0));
     simplePoints.add(points.get(points.size() - 1));
-    init(ink, simplePoints, Segment.Type.Line);
+    init(ink, simplePoints, Segment.Type.Line, termA, termB);
 //    super(ink, simplePoints, termA, termB);
 //    this.type = Segment.Type.Line;
   }
@@ -20,7 +20,7 @@ public class LineSegment extends SegmentDelegate {
     List<Pt> points = new ArrayList<Pt>();
     points.add(p1);
     points.add(p2);
-    init(null, points, Segment.Type.Line);
+    init(null, points, Segment.Type.Line, false, false);
   }
 
 }

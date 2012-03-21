@@ -39,7 +39,7 @@ public class CircularArcSegment extends SegmentDelegate {
     arcMidParameterization = Segment.calculateParameterForPoint(vMag, line, arc2);
     bug("center param: " + num(centerParameterization) + ", arcMid param: "
         + num(arcMidParameterization));
-    init(ink, surface, Segment.Type.CircularArc);
+    init(ink, surface, Segment.Type.CircularArc, termA, termB);
   }
 
   public CircularArcSegment(Pt p1, Pt p2, Vec centerParam, Vec arcMidParam) {
@@ -51,7 +51,7 @@ public class CircularArcSegment extends SegmentDelegate {
     Pt center = getCenter();
     Pt arcMid = getArcMid();
     List<Pt> surface = initArc(p1, arcMid, p2, center);
-    init(null, surface, Segment.Type.CircularArc);
+    init(null, surface, Segment.Type.CircularArc, false, false);
   }
 
   public JSONObject toJson() throws JSONException {

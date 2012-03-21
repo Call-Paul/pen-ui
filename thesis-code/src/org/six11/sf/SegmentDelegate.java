@@ -50,6 +50,8 @@ public class SegmentDelegate implements HasFuzzyArea {
   protected transient List<Pt> deformedPoints = null;
   protected transient Ink ink;
 
+  protected boolean termA, termB;
+  
   private transient Sequence cachedSpline;
 
   protected SegmentDelegate() {
@@ -61,15 +63,17 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public SegmentDelegate(Ink ink, List<Pt> points, Segment.Type t) {
-    init(ink, points, t);
+    init(ink, points, t, false, false);
   }
 
-  protected final void init(Ink ink, List<Pt> points, Segment.Type t) {
+  protected final void init(Ink ink, List<Pt> points, Segment.Type t, boolean termA, boolean termB) {
     this.ink = ink;
     this.p1 = points.get(0);
     this.p2 = points.get(points.size() - 1);
     calculateParameters(points);
     this.type = t;
+    this.termA = termA;
+    this.termB = termB;
   }
 
   protected final void init(Ink ink, Pt p1, Pt p2, double[] primaryParaCoordinates,
@@ -641,6 +645,10 @@ public class SegmentDelegate implements HasFuzzyArea {
       bug("ok am I singular? " + isSingular() + ". type: " + getType());
     }
     Debug.errorOnNull(seg, "seg");
+  }
+
+  public boolean isEndOfOriginalStroke() {
+    return termA || termB;
   }
 
 }

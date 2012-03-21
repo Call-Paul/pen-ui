@@ -385,6 +385,7 @@ public class SkruiFabEditor {
       }
       stroke.setAnalyzed(true);
     }
+    removeHooks(segs);
     model.addSegments(segs);
     model.getConstraintAnalyzer().analyze(segs, true);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
@@ -400,16 +401,41 @@ public class SkruiFabEditor {
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
   }
 
+  private void removeHooks(Collection<Segment> segs) {
+    Map<Ink, Set<Segment>> inkToSegs = new HashMap<Ink, Set<Segment>>(); // backwards lookup here
+    for (Segment s : segs) {
+      if (!inkToSegs.containsKey(s.getInk())) {
+        inkToSegs.put(s.getInk(), new HashSet<Segment>());
+      }
+      inkToSegs.get(s.getInk()).add(s);
+    }
+    Set<Segment> doomed = new HashSet<Segment>();
+    for (Map.Entry<Ink, Set<Segment>> entry : inkToSegs.entrySet()) {
+      doomed.addAll(removeHooks(entry.getKey(), entry.getValue()));
+    }
+    bug("Removing " + doomed.size() + " hooks.");
+    segs.removeAll(doomed);
+  }
+
+  private Set<Segment> removeHooks(Ink ink, Set<Segment> segs) {
+    double longest = 0;
+    for (Segment seg : segs) {
+      longest = Math.max(longest, seg.length());
+    }
+    double target = longest / 10.0;
+    Set<Segment> doomed = new HashSet<Segment>();
+    for (Segment seg : segs) {
+      if (seg.isEndOfOriginalStroke() && seg.length() < target) {
+        doomed.add(seg);
+      }
+    }
+    return doomed;
+  }
+
   public void findStencils() {
     StencilFinder sf = new StencilFinder(model);
-    long allStStart = System.currentTimeMillis();
     Set<Stencil> newStencils = sf.findStencils(model.getGeometry());
-    long allStEnd = System.currentTimeMillis();
-    long allStDur = allStEnd - allStStart;
-    bug("Finding all stencils from scratch took " + allStDur + " ms");
     model.setStencils(newStencils);
-    //    model.mergeStencils(newStencils);
-
   }
 
   /**

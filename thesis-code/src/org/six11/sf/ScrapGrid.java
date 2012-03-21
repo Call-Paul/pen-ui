@@ -412,7 +412,6 @@ public class ScrapGrid extends JComponent implements PenListener, Drag.Listener 
   private void copy(Page src, Page dest) {
     Snapshot topSnap = src.getSnapshotMachine().getCurrent();
     dest.getSnapshotMachine().push(topSnap);
-    //    dest.setCachedThumb(Images.deepCopy(src.getCachedThumb()));
     dest.setTinyThumb(Images.deepCopy(src.getTinyThumb()));
   }
 

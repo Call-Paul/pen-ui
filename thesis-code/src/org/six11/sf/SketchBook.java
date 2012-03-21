@@ -90,6 +90,7 @@ public class SketchBook {
   private boolean loadingSnapshot;
   private Notebook notebook;
   private Camera camera;
+  private Ink mostRecentInk;
 
   //  private int numConstraintRuns;
 
@@ -166,8 +167,8 @@ public class SketchBook {
   }
 
   public void addInk(Ink newInk) {
-
-    cornerFinder.findCorners(newInk);
+    mostRecentInk = newInk;
+    cornerFinder.findCorners(newInk); // sets newInk.seq SEGMENTS attribute
     // this is the part where encircle gestures should be found since they have precedence
     Collection<RecognizedRawItem> rawResults = recognizer.analyzeSingleRaw(newInk);
 
@@ -192,28 +193,15 @@ public class SketchBook {
     if (!didSomething) {
       newInk.setGuides(retainedVisibleGuides);
       ink.add(newInk);
-      //      DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-      //      Sequence scrib = newInk.getSequence();
-      //      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
-      //          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
       lastInkWasSelection = false;
     } else {
       getSnapshotMachine().requestSnapshot("raw ink caused a change");
     }
-    //    layers.repaint();
-    //    editor.requestRedrawGL();
     editor.getDrawingSurface().repaint();
   }
 
   public void removeInk(Ink oldInk) {
     ink.remove(oldInk);
-    //    DrawingBuffer buf = layers.getLayer(GraphicDebug.DB_UNSTRUCTURED_INK);
-    //    buf.clear();
-    //    for (Ink eenk : ink) {
-    //      Sequence scrib = eenk.getSequence();
-    //      DrawingBufferRoutines.drawShape(buf, scrib.getPoints(),
-    //          DrawingBufferLayers.DEFAULT_DRY_COLOR, DrawingBufferLayers.DEFAULT_DRY_THICKNESS);
-    //    }
     surface.display();
   }
 
@@ -231,8 +219,7 @@ public class SketchBook {
   public Sequence addScribble(Pt pt) {
     inactivityTimer.stop();
     Sequence scrib = Lists.getLast(scribbles);
-    if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in
-      // scribble
+    if (!scrib.getLast().isSameLocation(pt)) { // Avoid duplicate point in scribble
       scrib.add(pt);
       if (!erasing) {
         analyzeForErase(scrib);
@@ -389,8 +376,27 @@ public class SketchBook {
         removeInk(ink);
       }
     } else {
+      // see if the user is erasing one of the most recently added
+      // segments, and if so, erase all from the same batch.
+      boolean eraseAllRelated = false;
+      if (mostRecentInk != null) { // first see if any of the doomed segments was part of the most recent batch
+        for (Segment seg : doomed) {
+          if (seg.getInk() == mostRecentInk) {
+            eraseAllRelated = true;
+            break;
+          }
+        }
+        if (eraseAllRelated) { // if so, remove all its bretheren.
+          for (Segment s : geometry) {
+            if (s.getInk() == mostRecentInk) {
+              doomed.add(s);
+            }
+          }
+        }
+      }
       for (Segment seg : doomed) {
         bug("Erase " + seg.typeIdPtStr());
+        bug("Does it have ink? " + seg.getInk());
         removeGeometry(seg); // this also does the stencil-find thing
       }
     }
@@ -401,18 +407,6 @@ public class SketchBook {
       bug("Clearing selected segments.");
       clearSelectedSegments();
     }
-
-    //    
-    //    // TODO: I thought stencil finding was now done in one batch, not incrementally like this
-    //    Set<Stencil> invaid = new HashSet<Stencil>();
-    //    for (Stencil stencil : stencils) {
-    //      if (!stencil.isValid()) {
-    //        invaid.add(stencil);
-    //      }
-    //      stencil.removeInvalidChildren(new HashSet<Stencil>());
-    //    }
-    //    stencils.removeAll(invaid);
-    //    editor.findStencils();
   }
 
   public Collection<Segment> pickDoomedSegments(Area area) {
@@ -476,10 +470,6 @@ public class SketchBook {
 
   public void setSurface(DrawingSurface surface) {
     this.surface = surface;
-  }
-
-  public CornerFinder getCornerFinder() {
-    return cornerFinder;
   }
 
   public List<Ink> getUnanalyzedInk() {
