@@ -65,7 +65,7 @@ public class SketchBook {
   private Set<Stencil> selectedStencils;
   private Set<Segment> selectedSegments;
   private Set<Segment> geometry;
-  private List<GuidePoint> guidePoints;
+
   private ConstraintAnalyzer constraintAnalyzer;
   private ConstraintSolver solver;
   private CornerFinder cornerFinder;
@@ -78,10 +78,14 @@ public class SketchBook {
   private BufferedImage draggingThumb;
   private FastGlassPane glass;
   private boolean lastInkWasSelection;
+  
+  // guide related structures
+  private List<GuidePoint> guidePoints;
   private List<GuidePoint> activeGuidePoints;
   private Set<Guide> derivedGuides;
   private Set<Guide> retainedVisibleGuides;
   private GuidePoint draggingGuidePoint;
+  
   private Material.Units masterUnits = Units.Centimeter;
   private Stack<SafeAction> actions;
   private Stack<SafeAction> redoActions;
