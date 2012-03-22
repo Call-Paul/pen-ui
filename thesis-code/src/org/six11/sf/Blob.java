@@ -131,6 +131,7 @@ public class Blob extends SegmentDelegate {
 
   public void calculateParameters(List<Pt> points) {
     this.ctrl = points;
+    doPara();
   }
 
   public List<Pt> storeParaPointsForDeformation() {

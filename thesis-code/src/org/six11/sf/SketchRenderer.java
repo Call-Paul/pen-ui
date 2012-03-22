@@ -144,6 +144,7 @@ public class SketchRenderer {
   private static final Vec NORTH = new Vec(0, 1);
   private static final Vec SOUTH = new Vec(0, -1);
 //  private static final Vec NORTH_EAST = new Vec(1, 1).getUnitVector();
+  private static final Vec NORTH_WEST = new Vec(-1, 1).getUnitVector();
   private static final Vec SOUTH_EAST = new Vec(1, -1).getUnitVector();
 
   private transient GL2 gl; // only valid during the render method
@@ -510,12 +511,13 @@ public class SketchRenderer {
         if (model.getEditor().isDebuggingVisual()) {
           Pt mid = seg.getVisualMidpoint();
           String label = seg.typeIdStr();
-          text(label, surface.getTextRenderer(12), mid.getTranslated(SOUTH_EAST, 12 / z), black);
+          text(label, surface.getTextRenderer(12), mid.getTranslated(NORTH_WEST, 12 / z), black);
         }
       }
 
       // draw latchedness
-      if (!seg.isSingular()) {
+//      if (!seg.isSingular()) {
+      if (!seg.isClosed()) {
         if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
           notLatched.add(seg.getP1());
           renderUnlatched(seg.getP1(), seg.getStartDir(), bloodRed, unlatchLength, 6f);

@@ -15,6 +15,8 @@ import org.six11.util.pen.Functions;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.RotatedEllipse;
 import org.six11.util.pen.Sequence;
+import org.six11.util.pen.Vec;
+import org.six11.util.solve.VariableBank;
 
 public class EllipseSegment extends SegmentDelegate {
 
@@ -29,26 +31,43 @@ public class EllipseSegment extends SegmentDelegate {
   public EllipseSegment(Ink ink, List<Pt> points) {
     this.ellie = Functions.createEllipse(points, false);
     this.ink = ink;
-    this.p1 = points.get(0);
-    this.p2 = p1;
+    Pt center = ellie.getCentroid();
+    Vec axisBoldAsLove = ellie.getAxisA();
+    this.p1 = center.getTranslated(axisBoldAsLove);
+    this.p2 = center;
     this.type = Segment.Type.Ellipse;
   }
   
   public EllipseSegment(SketchBook model, JSONObject json) throws JSONException {
     this.type = Segment.Type.Ellipse;
-    double ex = json.getDouble("ex");
-    double ey = json.getDouble("ey");
+    String pt1Name = json.optString("p1");
+    if (pt1Name == null) {
+      bug("pt1Name is null while loading circle segment");
+    }
+    String pt2Name = json.optString("p2");
+    if (pt2Name == null) {
+      bug("pt2Name is null while loading circle segment");
+    }
+    VariableBank bank = model.getConstraints().getVars();
+    this.p1 = bank.getPointWithName(pt1Name);
+    this.p2 = bank.getPointWithName(pt2Name);
     double a = json.getDouble("a");
     double b = json.getDouble("b");
-    Pt c = new Pt(ex, ey);
     double rot = json.getDouble("rot");
-    double p1x = json.getDouble("p1x");
-    double p1y = json.getDouble("p1y");
-    this.ellie = new RotatedEllipse(c, a, b, rot);
-    this.p1 = new Pt(p1x, p1y);
-    this.p2 = p1;
+    this.ellie = new RotatedEllipse(p2, a, b, rot);
   }
 
+  public JSONObject toJson() throws JSONException {
+    JSONObject ret = new JSONObject();    
+    ret.put("type", type);
+    ret.put("p1", SketchBook.n(p1));
+    ret.put("p2", SketchBook.n(p2));
+    ret.put("a", ellie.getParamA());
+    ret.put("b", ellie.getParamB());
+    ret.put("rot", ellie.getRotation());
+    return ret;
+  }
+  
   public boolean hasEndCaps() {
     return false;
   }
@@ -107,18 +126,7 @@ public class EllipseSegment extends SegmentDelegate {
     bug("eeeeeeee elipse does not need to do this!");
   }
   
-  public JSONObject toJson() throws JSONException {
-    JSONObject ret = new JSONObject();    
-    ret.put("type", type);
-    ret.put("ex", ellie.getCentroid().x);
-    ret.put("ey", ellie.getCentroid().y);
-    ret.put("a", ellie.getParamA());
-    ret.put("b", ellie.getParamB());
-    ret.put("rot", ellie.getRotation());
-    ret.put("p1x", p1.x);
-    ret.put("p1y", p1.y);
-    return ret;
-  }
+
   
   @Override
   public Pt getVisualMidpoint() {

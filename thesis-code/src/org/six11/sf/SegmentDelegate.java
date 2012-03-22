@@ -91,6 +91,7 @@ public class SegmentDelegate implements HasFuzzyArea {
   }
 
   public void calculateParameters(List<Pt> points) {
+    bug("Calculating params for " + type);
     if (points == null) {
       bug("Warning: points input is null for " + bugStr());
     }

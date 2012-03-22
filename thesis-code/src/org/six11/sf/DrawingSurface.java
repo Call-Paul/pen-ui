@@ -799,6 +799,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   private void fsDeform(Pt recent) {
+    bug("fsDeform");
     if ((fsLastDeformPt != null) && (fsNearestSeg != null)) {
       Vec dir = new Vec(fsLastDeformPt, recent);
       double m = dir.mag();
@@ -831,6 +832,10 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       } else {
         bug("Def was null");
       }
+    } else {
+      bug("Something was null.");
+      bug("  :: fsLastDeformPt: " + fsLastDeformPt);
+      bug("  :: fsNearestSeg: " + fsNearestSeg);
     }
     fsLastDeformPt = recent;
     //    display();
