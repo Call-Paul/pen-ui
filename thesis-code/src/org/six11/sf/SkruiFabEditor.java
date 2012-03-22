@@ -93,28 +93,27 @@ public class SkruiFabEditor {
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
-    Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
-    boolean setSizeAndLocation = false;
+//    Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
+//    boolean setSizeAndLocation = false;
     Preferences prefs = Preferences.userNodeForPackage(SkruiFabEditor.class);
-
     int screenX = prefs.getInt("screenX", 0);
     int screenY = prefs.getInt("screenY", 0);
     int frameWidth = prefs.getInt("frameWidth", 800);
     int frameHeight = prefs.getInt("frameHeight", 600);
     af.setSize(frameWidth, frameHeight);
     af.setLocation(screenX, screenY);
-    setSizeAndLocation = true;
+//    setSizeAndLocation = true;
     
-    if (!setSizeAndLocation) {
-      if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
-        af.setSize(1600, 1000);
-      } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
-        af.setSize(1400, 800);
-      } else {
-        af.setSize(800, 600);
-      }
-      af.center();
-    }
+//    if (!setSizeAndLocation) {
+//      if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
+//        af.setSize(1600, 1000);
+//      } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
+//        af.setSize(1400, 800);
+//      } else {
+//        af.setSize(800, 600);
+//      }
+//      af.center();
+//    }
     createActions();
     registerKeyboardActions(af.getRootPane());
     fastGlass = new FastGlassPane(this);

@@ -123,4 +123,8 @@ public class CircleSegment extends SegmentDelegate {
   public void calculateParameters(List<Pt> points) {
     bug("eeeeeeee circle does not need to do this!");
   }
+  
+  public Pt getVisualMidpoint() {
+    return p1;
+  }
 }

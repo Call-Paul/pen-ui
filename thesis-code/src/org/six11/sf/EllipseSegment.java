@@ -119,4 +119,9 @@ public class EllipseSegment extends SegmentDelegate {
     ret.put("p1y", p1.y);
     return ret;
   }
+  
+  @Override
+  public Pt getVisualMidpoint() {
+    return p1;
+  }
 }
