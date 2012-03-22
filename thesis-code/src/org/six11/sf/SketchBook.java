@@ -1046,6 +1046,8 @@ public class SketchBook {
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
+    } else {
+      bug("addUserConstraint() called with null argument");
     }
     getConstraints().wakeUp();
     if (uc != null) {

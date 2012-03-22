@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -184,6 +185,16 @@ public abstract class UserConstraint {
     }
     if (n.equals(Type.SameAngle.toString())) {
       ret = Type.SameAngle;
+    }
+    return ret;
+  }
+  
+  public Set<Pt> getRelatedPoints() {
+    Set<Pt> ret = new HashSet<Pt>();
+    for (Constraint c : getConstraints()) {
+      for (Pt pt : c.getRelatedPoints()) {
+        ret.add(pt);
+      }
     }
     return ret;
   }

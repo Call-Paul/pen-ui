@@ -1,21 +1,22 @@
 package org.six11.sf;
 
-import java.awt.geom.Area;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.six11.util.gui.shape.Circle;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.IntersectionData;
 import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
+//import static org.six11.util.Debug.bug;
+//import static org.six11.util.Debug.num;
+
 public class EndCap {
   
-  private static double endcapLengthMultiplier = 1.0 / 40.0;
+  private static double endcapLengthMultiplier = 1.0 / 10.0;
 
   public static class Group {
     Set<EndCap.Intersection> intersections = new HashSet<EndCap.Intersection>();
@@ -84,10 +85,11 @@ public class EndCap {
   private SegmentDelegate seg;
   private Pt pt;
   private Vec dir;
-  private Area area;
+//  private Area area;
   private Path2D shape;
   private Rectangle2D bounds;
   private Line line;
+  Line lineSegment;
   private WhichEnd end;
   private double halfLength;
 
@@ -98,34 +100,37 @@ public class EndCap {
     this.dir = (end == WhichEnd.Start ? seg.getStartDir() : seg.getEndDir()).getFlip();
     double dist = seg.getP1().distance(seg.getP2());
     double rad = dist * endcapLengthMultiplier;
-    this.area = new Area();
-    area.add(new Area(new Circle(pt, rad)));
-    area.add(makeTriangle(pt, dir, rad, rad * 6));
+//    this.area = new Area();
+//    area.add(new Area(new Circle(pt, rad)));
+//    area.add(makeTriangle(pt, dir, rad, rad * 6));
     halfLength = rad * 6;
-    this.shape = new Path2D.Double();
-    shape.append(area.getPathIterator(null), false);
-    this.bounds = area.getBounds2D();
+//    this.shape = new Path2D.Double();
+//    shape.append(area.getPathIterator(null), false);
+//    this.bounds = area.getBounds2D();
     this.line = new Line(pt, dir);
+    Pt segStart = pt.getTranslated(dir, rad);
+    Pt segEnd = pt.getTranslated(dir.getFlip(), rad);
+    this.lineSegment = new Line(segStart, segEnd);
   }
 
   public double getHalfLength() {
     return halfLength;
   }
   
-  private Area makeTriangle(Pt end, Vec dir, double halfHeight, double width) {
-    Vec norm1 = dir.getNormal().getVectorOfMagnitude(halfHeight);
-    Vec norm2 = norm1.getFlip();
-    Pt p1 = norm1.add(end);
-    Pt p2 = norm2.add(end);
-    Pt p3 = dir.getVectorOfMagnitude(width).add(end);
-    Path2D retPath = new Path2D.Double();
-    retPath.moveTo(p1.getX(), p1.getY());
-    retPath.lineTo(p2.getX(), p2.getY());
-    retPath.lineTo(p3.getX(), p3.getY());
-    retPath.closePath();
-    Area ret = new Area(retPath);
-    return ret;
-  }
+//  private Area makeTriangle(Pt end, Vec dir, double halfHeight, double width) {
+//    Vec norm1 = dir.getNormal().getVectorOfMagnitude(halfHeight);
+//    Vec norm2 = norm1.getFlip();
+//    Pt p1 = norm1.add(end);
+//    Pt p2 = norm2.add(end);
+//    Pt p3 = dir.getVectorOfMagnitude(width).add(end);
+//    Path2D retPath = new Path2D.Double();
+//    retPath.moveTo(p1.getX(), p1.getY());
+//    retPath.lineTo(p2.getX(), p2.getY());
+//    retPath.lineTo(p3.getX(), p3.getY());
+//    retPath.closePath();
+//    Area ret = new Area(retPath);
+//    return ret;
+//  }
 
   public SegmentDelegate getSegment() {
     return seg;
@@ -139,9 +144,9 @@ public class EndCap {
     return dir;
   }
 
-  public Area getArea() {
-    return area;
-  }
+//  public Area getArea() {
+//    return area;
+//  }
 
   public Path2D getShape() {
     return shape;
@@ -177,18 +182,10 @@ public class EndCap {
   public EndCap.Intersection intersectInCap(EndCap c2) {
     EndCap.Intersection ret = new EndCap.Intersection(this, c2);
     // to be efficient do the low-overhead checks first: 
-    if (!same(c2) && // avoid self-comparison
-        getBounds().intersects(c2.getBounds())) { // check bounding rectangles
-      Area mutableArea = new Area(getArea());
-      mutableArea.intersect(c2.getArea());
-      if (!mutableArea.isEmpty()) { // check if cap regions overlap
-        IntersectionData id = intersect(c2);
-        if (!id.isParallel()) {
-          Pt x = id.getIntersection(); // check if segments intersect in overlap
-          if (mutableArea.contains(x)) {
-            ret.setResult(true, x);
-          }
-        }
+    if (!same(c2)) {
+      IntersectionData id = Functions.getIntersectionData(lineSegment, c2.lineSegment);
+      if (id.intersectsInSegments()) {
+        ret.setResult(true, id.getIntersection());
       }
     }
     return ret;

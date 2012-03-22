@@ -427,12 +427,12 @@ public class SkruiFabEditor {
     }
     removeHooks(segs);
     model.addSegments(segs);
-    model.getConstraintAnalyzer().analyze(segs, true);
     Collection<RecognizedItem> items = model.getRecognizer().analyzeRecent();
     items = filterRecognizedItems(items);
     for (RecognizedItem item : items) {
       item.getTemplate().create(item, model);
     }
+    model.getConstraintAnalyzer().analyze(segs, true);
     findStencils();
     model.getConstraints().wakeUp();
     model.clearInk();

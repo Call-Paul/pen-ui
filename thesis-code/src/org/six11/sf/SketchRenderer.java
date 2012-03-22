@@ -99,6 +99,10 @@ public class SketchRenderer {
   public static float[] blue = new float[] {
       0f, 0f, 1f, 1f
   };
+  
+  public static float[] clearBlue = new float[] {
+    0.2f, 0.2f, 1f, 0.4f
+};
 
   public static float[] magenta = new float[] {
       1f, 0f, 1f, 1f
@@ -524,6 +528,13 @@ public class SketchRenderer {
           Pt mid = seg.getVisualMidpoint();
           String label = seg.typeIdStr();
           text(label, surface.getTextRenderer(12), mid.getTranslated(NORTH_WEST, 12 / z), black);
+          gl.glColor4fv(clearBlue, 0);
+          if (!seg.isClosed()) {
+          for (EndCap ec : seg.getEndCaps()) {
+            line(ec.lineSegment.getStart(), ec.lineSegment.getEnd());  
+          }
+          
+          }
         }
       }
 
