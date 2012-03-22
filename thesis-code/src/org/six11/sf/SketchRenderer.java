@@ -38,7 +38,7 @@ import org.six11.util.solve.MultisourceNumericValue;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
 public class SketchRenderer {
-  
+
   private static float[] brighter(float[] c) {
     float[] r = new float[4];
     r[0] = (float) Math.sqrt(c[0]);
@@ -47,7 +47,7 @@ public class SketchRenderer {
     r[3] = c[3]; // leave alpha alone.
     return r;
   }
-  
+
   private static float[] darker(float[] c) {
     float[] r = new float[4];
     r[0] = c[0] * 0.6f;
@@ -115,14 +115,14 @@ public class SketchRenderer {
   public static float[] peachy = new float[] {
       1f, 0.5f, 0.5f, 0.75f
   };
-  
+
   public static float[] darkRed = darker(red);
   public static float[] darkGreen = darker(green);
   public static float[] darkBlue = darker(blue);
   public static float[] darkCyan = darker(cyan);
   public static float[] darkMagenta = darker(magenta);
   public static float[] darkYellow = darker(yellow);
-  
+
   // pen settings (colors and thicknesses)
   //
   // thicknesses first
@@ -143,7 +143,7 @@ public class SketchRenderer {
   private static final Vec WEST = new Vec(-1, 0);
   private static final Vec NORTH = new Vec(0, 1);
   private static final Vec SOUTH = new Vec(0, -1);
-//  private static final Vec NORTH_EAST = new Vec(1, 1).getUnitVector();
+  //  private static final Vec NORTH_EAST = new Vec(1, 1).getUnitVector();
   private static final Vec NORTH_WEST = new Vec(-1, 1).getUnitVector();
   private static final Vec SOUTH_EAST = new Vec(1, -1).getUnitVector();
 
@@ -153,6 +153,9 @@ public class SketchRenderer {
 
   private DrawingSurface surface;
   private TessCallback tessCallback;
+
+  private boolean showCrosshair;
+  float[] crosshairs = new float[2];
 
   public void init(GLAutoDrawable drawable) {
     this.drawable = drawable;
@@ -183,6 +186,7 @@ public class SketchRenderer {
     this.surface = drawingSurface;
 
     // render things back-to-front
+    renderCrosshair();
     renderStencils();
     renderGeometry();
     renderSelectionDimensions(18);
@@ -194,6 +198,14 @@ public class SketchRenderer {
     renderScribble(scribble, drawDots);
     renderErase();
     renderTextInput(18);
+  }
+
+  private void renderCrosshair() {
+    if (showCrosshair) {
+      gl.glColor3fv(red, 0);
+      gl.glLineWidth(1);
+      plus(crosshairs[0], crosshairs[1], 10);
+    }
   }
 
   private void renderStencils() {
@@ -516,7 +528,7 @@ public class SketchRenderer {
       }
 
       // draw latchedness
-//      if (!seg.isSingular()) {
+      //      if (!seg.isSingular()) {
       if (!seg.isClosed()) {
         if (!(model.findRelatedSegments(seg.getP1()).size() > 1)) {
           notLatched.add(seg.getP1());
@@ -532,7 +544,8 @@ public class SketchRenderer {
     // render the latched points
     for (Pt pt : model.getConstraints().getPoints()) {
       if (model.getEditor().isDebuggingVisual()) {
-        text(SketchBook.n(pt), surface.getTextRenderer(12), pt.getTranslated(SOUTH_EAST, 12 / z), black);
+        text(SketchBook.n(pt), surface.getTextRenderer(12), pt.getTranslated(SOUTH_EAST, 12 / z),
+            black);
       }
       if (!notLatched.contains(pt)) {
         renderLatched(pt, LATCH_SPOT_COLOR, latchedVertSideLen, 1f);
@@ -542,7 +555,7 @@ public class SketchRenderer {
 
   private float[] getDebuggingColor(Type type) {
     float[] ret = black;
-    switch(type) {
+    switch (type) {
       case Blob:
         ret = darkCyan;
         break;
@@ -805,6 +818,18 @@ public class SketchRenderer {
     }
   }
 
+
+  private void plus(float x, float y, float radius) {
+    gl.glBegin(GL2.GL_LINES);
+    {
+      gl.glVertex2d(x, y - radius);
+      gl.glVertex2d(x, y + radius);
+      gl.glVertex2d(x + radius, y);
+      gl.glVertex2d(x - radius, y);
+    }
+    gl.glEnd();
+  }
+  
   void box(Pt pt, float side) {
     float cx = pt.fx(), cy = pt.fy();
     float f = side / 2f;
@@ -935,6 +960,17 @@ public class SketchRenderer {
     }
     gl.glEnd();
 
+  }
+
+  public void setCameraCrosshair(float x, float y) {
+    showCrosshair = true;
+    crosshairs[0] = x;
+    crosshairs[1] = y;
+    bug("Set crosshair: " + num(crosshairs[0]) + ", " + num(crosshairs[1]));
+  }
+
+  public void clearCameraCrosshair() {
+    showCrosshair = false;
   }
 
 }

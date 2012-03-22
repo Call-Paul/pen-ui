@@ -512,10 +512,12 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     });
     f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM) {
-      public void doAfterTransition() {
+      public void doBeforeTransition() {
         panZoomBeginPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
         Camera cam = model.getCamera();
         zoomInitialValue = cam.getZoom();
+//        float[] crosshair = unproject(panZoomBeginPt.fx(), panZoomBeginPt.fy());
+//        renderer.setCameraCrosshair(crosshair[0], crosshair[1]);
       }
     });
 
@@ -533,7 +535,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(UP, DRAGGING, IDLE));
 
     f.addTransition(new Transition(UP, PAN, IDLE));
-    f.addTransition(new Transition(UP, ZOOM, IDLE));
+    f.addTransition(new Transition(UP, ZOOM, IDLE) {
+      public void doAfterTransition() {
+        renderer.clearCameraCrosshair();
+      }
+    });
     f.addTransition(new Transition(MOVE, PAN, PAN) {
       public void doAfterTransition() {
         showPanZoomWidgetRefreshTime = System.currentTimeMillis();
@@ -550,14 +556,25 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
     });
     f.addTransition(new Transition(MOVE, ZOOM, ZOOM) {
+      public void doBeforeTransition() {
+      }
+      
       public void doAfterTransition() {
         showPanZoomWidgetRefreshTime = System.currentTimeMillis();
-        panZoomActivityPt = screenRecentPt;
+        panZoomActivityPt = screenRecentPt;  
         float changeY = panZoomBeginPt.fy() - panZoomActivityPt.fy();
+//        float[] crosshair = renderer.crosshairs;
+//        float[] worldScreenCenter = model.getCamera().getScreenCenter(getSize());
+//        float[] center = unproject(worldScreenCenter[0], worldScreenCenter[1]);
+//        float dx = center[0] - crosshair[0];
+//        float dy = center[1] - crosshair[1];
+//        bug("dx, dy: " + num(dx) + ", " + num(dy));
         float target = zoomInitialValue + (changeY * ZOOM_SENSITIVITY);
-        model.getCamera().zoomTo(getSize(), target);
+        model.getCamera().zoomTo(getSize(), target /*, dx, dy */);
+
       }
     });
+    
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {
@@ -910,6 +927,28 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   ////
   ////  ////  ////  ////  ////  ////  ////  ////
 
+  /**
+   * Model coordinates to world coordinates.
+   */
+  protected float[] unproject(float x, float y) {
+    float[] coords = new float[2];
+    GLContext context = getContext();
+    if (context != null) {
+      int current = context.makeCurrent();
+      if (current != GLContext.CONTEXT_NOT_CURRENT) {
+        GL2 gl = context.getGL().getGL2();
+        coords = unproject(gl, x, y);
+      } else {
+        bug("Could not make open gl context current. unproject request will fail");
+      }
+      context.release();
+    }
+    return coords;
+  }
+
+  /**
+   * Model coordinates to world coordinates.
+   */
   protected float[] unproject(GL2 gl, float x, float y) {
     int realy = 0;// GL y coord pos
     float wcoord[] = new float[4];// wx, wy, wz
@@ -919,6 +958,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     return wcoord;
   }
 
+  /**
+   * World coordinates to model coordinates;
+   */
   public float[] project(GL2 gl, float x, float y) {
     float scoord[] = new float[4];// screen x, y, don't care about z and homo coord
     glu.gluProject(x, y, 0.0f, //

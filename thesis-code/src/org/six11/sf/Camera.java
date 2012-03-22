@@ -1,6 +1,7 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 import java.awt.Dimension;
 
@@ -14,6 +15,13 @@ public class Camera {
     correct(d);
   }
 
+  public void zoomTo(Dimension d, float amt, float dx, float dy) {
+    tx = tx - dx;
+    ty = ty - dy;
+    zoom = Math.max(1, amt);
+    correct(d);
+  }
+
   public void zoomTo(Dimension d, float amt) {
     zoom = Math.max(1, amt);
     correct(d);
@@ -21,6 +29,17 @@ public class Camera {
 
   public float getZoom() {
     return zoom;
+  }
+  
+  public float[] getScreenCenter(Dimension d) {
+    float[] ortho = getOrthoValues(d);
+    float width = ortho[1] - ortho[0];
+    float height = ortho[2] - ortho[3];
+    float[] ret = new float[2];
+    ret[0] = width / 2f;
+    ret[1] = height / 2f;
+    bug("screen center: " + num(ret[0]) + ", " + num(ret[1]));
+    return ret;
   }
 
   /**
@@ -77,22 +96,18 @@ public class Camera {
     float[] ortho = getOrthoValues(d);
     if (ortho[0] < -0.01) {
       float dx = -ortho[0];
-      bug("left is past the edge. moving tx by " + dx);
       tx = tx + dx;
       correct(d);
     } else if (ortho[1] > d.width) {
       float dx = d.width - ortho[1];
-      bug("right is past the edge. moving tx by " + dx);
       tx = tx + dx;
       correct(d);
     } else if (ortho[2] > d.height) {
       float dy = d.height - ortho[2];
-      bug("top is past the edge. moving ty by " + dy);
       ty = ty + dy;
       correct(d);
     } else if (ortho[3] < -0.01) {
       float dy = -ortho[3];
-      bug("bottom is past the edge. moving ty by " + dy);
       ty = ty + dy;
       correct(d);
     }
