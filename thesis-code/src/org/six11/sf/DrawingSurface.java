@@ -372,13 +372,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
     textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
     textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
+    textRenderer18.draw("Solver Step: " + model.getLastSolverStep(), size.width - 180, 140);
     textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()), size.width - 180,
         120);
     textRenderer18.draw("Zoom: " + num(cam.getZoom()), size.width - 180, 100);
     textRenderer18.draw(pageInfo, size.width - 180, 80);
     textRenderer18.draw(snapInfo, size.width - 180, 60);
     textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
-    textRenderer18.draw("Pen Latency: " + (long) penLatency.getMean() + "ms", size.width - 180, 20);
     textRenderer18.endRendering();
   }
 
@@ -516,8 +516,8 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         panZoomBeginPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
         Camera cam = model.getCamera();
         zoomInitialValue = cam.getZoom();
-//        float[] crosshair = unproject(panZoomBeginPt.fx(), panZoomBeginPt.fy());
-//        renderer.setCameraCrosshair(crosshair[0], crosshair[1]);
+        float[] modelCoords = unproject(panZoomWidgetPt.fx(), panZoomWidgetPt.fy());
+        renderer.setCameraCrosshair(modelCoords[0], modelCoords[1]);
       }
     });
 
@@ -557,24 +557,30 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     });
     f.addTransition(new Transition(MOVE, ZOOM, ZOOM) {
       public void doBeforeTransition() {
-      }
-      
-      public void doAfterTransition() {
-        showPanZoomWidgetRefreshTime = System.currentTimeMillis();
-        panZoomActivityPt = screenRecentPt;  
-        float changeY = panZoomBeginPt.fy() - panZoomActivityPt.fy();
-//        float[] crosshair = renderer.crosshairs;
-//        float[] worldScreenCenter = model.getCamera().getScreenCenter(getSize());
-//        float[] center = unproject(worldScreenCenter[0], worldScreenCenter[1]);
-//        float dx = center[0] - crosshair[0];
-//        float dy = center[1] - crosshair[1];
-//        bug("dx, dy: " + num(dx) + ", " + num(dy));
-        float target = zoomInitialValue + (changeY * ZOOM_SENSITIVITY);
-        model.getCamera().zoomTo(getSize(), target /*, dx, dy */);
 
       }
+
+      public void doAfterTransition() {
+        showPanZoomWidgetRefreshTime = System.currentTimeMillis();
+        panZoomActivityPt = screenRecentPt;
+        float changeY = panZoomBeginPt.fy() - panZoomActivityPt.fy();
+        float targetZoom = zoomInitialValue + (changeY * ZOOM_SENSITIVITY);
+        float[] crosshair = renderer.crosshairs;
+        float[] oldScreen = model.getCamera().getOrthoValues(getSize());
+        float xFrac = (crosshair[0] - oldScreen[0]) / (oldScreen[1] - oldScreen[0]);
+        float yFrac = (crosshair[1] - oldScreen[3]) / (oldScreen[2] - oldScreen[3]);
+        float[] newScreen = Camera.getOrthoValues(getSize(), targetZoom, model.getCamera()
+            .getPanX(), model.getCamera().getPanY());
+        float newX = newScreen[0] + (xFrac * (newScreen[1] - newScreen[0]));
+        float newY = newScreen[3] + (yFrac * (newScreen[2] - newScreen[3]));
+        float dx = newX - crosshair[0];
+        float dy = newY - crosshair[1];
+//        bug("dx, dy: " + num(dx) + ", " + num(dy));
+
+        model.getCamera().zoomTo(getSize(), targetZoom, dx, dy);
+      }
     });
-    
+
     f.addTransition(new Transition(UP, DRAW, IDLE));
     f.addTransition(new Transition(PAUSE, DRAW, FLOW) {
       public void doAfterTransition() {

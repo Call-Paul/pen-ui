@@ -11,8 +11,8 @@ import org.six11.util.pen.Line;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 
-//import static org.six11.util.Debug.bug;
-//import static org.six11.util.Debug.num;
+import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 
 public class EndCap {
   
@@ -181,11 +181,38 @@ public class EndCap {
 
   public EndCap.Intersection intersectInCap(EndCap c2) {
     EndCap.Intersection ret = new EndCap.Intersection(this, c2);
-    // to be efficient do the low-overhead checks first: 
     if (!same(c2)) {
       IntersectionData id = Functions.getIntersectionData(lineSegment, c2.lineSegment);
       if (id.intersectsInSegments()) {
-        ret.setResult(true, id.getIntersection());
+        // The two segments we are comparing might have very different scales. If we just accepted
+        // all cases where the endcaps intersect, we would have problems. For example, it would
+        // be difficult to place a notch near the end of a long segment. 
+        
+        // So to handle this, we essentially scale the longer line to be the same length as 
+        // the other. Since we already have the intersection data, we check to see if the
+        // intersection parameters are 
+        
+        double l1 = lineSegment.getLength();
+        double l2 = c2.lineSegment.getLength();
+        double[] l1Range = new double[] { 0, 1 };
+        double[] l2Range = new double[] { 0, 1 };
+        if (l1 > l2) {
+          double scale = l2 / l1;
+          double half = scale / 2;
+          l1Range[0] = 0.5 - half;
+          l1Range[1] = 0.5 + half;
+        } else {
+          double scale = l1 / l2;
+          double half = scale / 2;
+          l2Range[0] = 0.5 - half;
+          l2Range[1] = 0.5 + half;
+        }
+        double r1 = id.getLineOneParam();
+        double r2 = id.getLineTwoParam();
+        boolean ok1 = (r1 > l1Range[0] && r1 < l1Range[1]);
+        boolean ok2 = (r2 > l2Range[0] && r2 < l2Range[1]);
+        boolean retVal = ok1 && ok2;
+        ret.setResult(retVal, id.getIntersection());
       }
     }
     return ret;

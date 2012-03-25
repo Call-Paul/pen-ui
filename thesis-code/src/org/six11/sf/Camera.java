@@ -5,32 +5,40 @@ import static org.six11.util.Debug.num;
 
 import java.awt.Dimension;
 
+import org.six11.util.Debug;
+
 public class Camera {
+
+  public static final int LEFT = 0;
+  public static final int RIGHT = 1;
+  public static final int TOP = 2;
+  public static final int BOTTOM = 3;
+
   float zoom = 1.0f;
   float tx = 0f;
   float ty = 0f;
 
   public void zoomBy(Dimension d, float amt) {
-    zoom = Math.max(1, zoom + amt);
+    zoom = amt;
     correct(d);
   }
 
   public void zoomTo(Dimension d, float amt, float dx, float dy) {
     tx = tx - dx;
     ty = ty - dy;
-    zoom = Math.max(1, amt);
+    zoom = amt;
     correct(d);
   }
 
   public void zoomTo(Dimension d, float amt) {
-    zoom = Math.max(1, amt);
+    zoom = amt;
     correct(d);
   }
 
   public float getZoom() {
     return zoom;
   }
-  
+
   public float[] getScreenCenter(Dimension d) {
     float[] ortho = getOrthoValues(d);
     float width = ortho[1] - ortho[0];
@@ -93,22 +101,59 @@ public class Camera {
   }
 
   private void correct(Dimension d) {
+    float minZoom = 0.9f;
+    if (zoom < minZoom) {
+      zoom = minZoom;
+    }
     float[] ortho = getOrthoValues(d);
-    if (ortho[0] < -0.01) {
-      float dx = -ortho[0];
-      tx = tx + dx;
+    
+    float edgeW = Math.abs((d.width / minZoom) - d.width); // in case minZoom changes to >= 1
+    float edgeH = Math.abs((d.height / minZoom) - d.height); // ditto
+    float minLeft = -(edgeW + 1);
+    float maxRight = d.width + edgeW + 1;
+    float maxTop = d.height + edgeH + 1;
+    float minBot = -(edgeH + 1);
+//    bug("d: " + d.width + ", " + d.height);
+//    bug("edgeW: " + num(edgeW));
+//    bug("edgeH: " + num(edgeH));
+//    bug("l r t b: " + num(ortho));
+//    bug("thresholds: " + num(minLeft) + " " + num(maxRight) + " " + num(maxTop) + " " + num(minBot));
+//
+//    try {
+//      Debug.detectNaN(ortho[LEFT]);
+//      Debug.detectNaN(ortho[RIGHT]);
+//      Debug.detectNaN(ortho[TOP]);
+//      Debug.detectNaN(ortho[BOTTOM]);
+//      Debug.detectNaN(edgeW);
+//      Debug.detectNaN(edgeH);
+//      Debug.detectNaN(minLeft);
+//      Debug.detectNaN(maxRight);
+//      Debug.detectNaN(maxTop);
+//      Debug.detectNaN(minBot);
+//    } catch (Exception ex) {
+//      ex.printStackTrace();
+//      System.exit(0);
+//    }
+    // nudge things to the correct spot
+    if (ortho[LEFT] < minLeft) {
+      float diff = minLeft - ortho[LEFT];
+//      bug("nudge right " + num(diff));
+      tx = tx + diff;
       correct(d);
-    } else if (ortho[1] > d.width) {
-      float dx = d.width - ortho[1];
-      tx = tx + dx;
+    } else if (ortho[RIGHT] > maxRight) {
+      float diff = maxRight - ortho[RIGHT];
+//      bug("nudge left " + num(diff));
+      tx = tx + diff;
       correct(d);
-    } else if (ortho[2] > d.height) {
-      float dy = d.height - ortho[2];
-      ty = ty + dy;
+    } else if (ortho[TOP] > maxTop) {
+      float diff = maxTop - ortho[TOP];
+//      bug("nudge down " + num(diff));
+      ty = ty + diff;
       correct(d);
-    } else if (ortho[3] < -0.01) {
-      float dy = -ortho[3];
-      ty = ty + dy;
+    } else if (ortho[BOTTOM] < minBot) {
+      float diff = minBot - ortho[BOTTOM];
+//      bug("nudge up " + num(diff));
+      ty = ty + diff;
       correct(d);
     }
   }

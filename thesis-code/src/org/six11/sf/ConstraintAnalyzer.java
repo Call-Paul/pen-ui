@@ -38,7 +38,6 @@ public class ConstraintAnalyzer {
           EndCap.Intersection ix = c1.intersectInCap(c2);
           if (ix.intersects) {
             success.add(ix);
-            //            DrawingBufferRoutines.dot(bugBuf, ix.pt, 4, 0.4, Color.BLACK, Color.BLUE);
           }
           examined.add(ix);
         }

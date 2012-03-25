@@ -8,6 +8,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -99,7 +100,8 @@ public class SketchBook {
   private Ink mostRecentInk;
   private Set<Pt> unpin;
 
-  //  private int numConstraintRuns;
+//  private int numConstraintRuns;
+  private int lastSolverStep;
 
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
@@ -122,17 +124,21 @@ public class SketchBook {
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
 
     this.solver = new ConstraintSolver();
-    //    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
     this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
-    //    this.solver.addListener(new Listener() {
-    //      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
-    //          int numConstraints) {
-    //        if (state == State.Solved) {
-    //          numConstraintRuns = numConstraintRuns + 1;
-    //          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
-    //        }
-    //      }      
-    //    });
+    // Uncomment the following when you are very serious about debugging the solver.
+//    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+//    this.solver.addListener(new Listener() {
+//      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+//          int numConstraints) {
+//        if (state == State.Solved) {
+//          numConstraintRuns = numConstraintRuns + 1;
+//          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+//          lastSolverStep = 0;
+//        } else {
+//          lastSolverStep = numIterations;
+//        }
+//      }
+//    });
     this.unpin = new HashSet<Pt>();
     solver.addListener(new Listener() {
       public void constraintStepDone(State state, int numIterations, double err, int numPoints,
@@ -1580,6 +1586,10 @@ public class SketchBook {
     stencils.clear();
     stencils.addAll(newStencils);
     selectedStencils.clear();
+  }
+
+  public int getLastSolverStep() {
+    return lastSolverStep;
   }
 
 }

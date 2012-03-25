@@ -190,7 +190,6 @@ public class SketchRenderer {
     this.surface = drawingSurface;
 
     // render things back-to-front
-    renderCrosshair();
     renderStencils();
     renderGeometry();
     renderSelectionDimensions(18);
@@ -202,10 +201,12 @@ public class SketchRenderer {
     renderScribble(scribble, drawDots);
     renderErase();
     renderTextInput(18);
+    renderCrosshair();
   }
 
   private void renderCrosshair() {
     if (showCrosshair) {
+//      bug("Putting crosshair at " + num(crosshairs));
       gl.glColor3fv(red, 0);
       gl.glLineWidth(1);
       plus(crosshairs[0], crosshairs[1], 10);

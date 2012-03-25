@@ -61,7 +61,7 @@ public class SkruiFabEditor {
 
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static final String ACTION_LOAD_FILE = "Load File";
-  protected static final int FRAME_RATE = 30;
+  protected static final int FRAME_RATE = 60;
   private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
   private static final String ACTION_ZOOM_IN = "Zoom In";
   private static final String ACTION_ZOOM_OUT = "Zoom Out";
@@ -143,8 +143,11 @@ public class SkruiFabEditor {
       public void constraintStepDone(final ConstraintSolver.State state, int numIterations,
           double err, int numPoints, int numConstraints) {
         if (!fixedFrameRate) {
-          if ((numIterations > 30) || (err < (numPoints * 2))) {
-            model.getConstraints().setFrameRate(0);
+          if (numIterations > 30) {
+            int curFR = model.getConstraints().getFrameRate();
+            model.getConstraints().setFrameRate(curFR + 1);
+          } else if (numIterations > 300) {
+            model.getConstraints().setFrameRate(0); // full blast
           } else {
             model.getConstraints().setFrameRate(FRAME_RATE);
           }
@@ -254,61 +257,61 @@ public class SkruiFabEditor {
             loadSnapshot();
           }
         });
-
-    actions.put(ACTION_TOGGLE_VECTORS,
-        new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
-          public void activate() {
-            toggleVectors();
-          }
-        });
-
-    actions.put(ACTION_ZOOM_IN,
-        new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
-          public void activate() {
-            model.getCamera().zoomBy(surface.getSize(), 0.05f);
-            surface.repaint();
-          }
-        });
-
-    actions.put(ACTION_ZOOM_OUT,
-        new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
-          public void activate() {
-            model.getCamera().zoomBy(surface.getSize(), -0.05f);
-            surface.repaint();
-          }
-        });
-
-    actions.put(ACTION_PAN_LEFT, new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
-      public void activate() {
-        float z = model.getCamera().getZoom();
-        model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
-        surface.repaint();
-      }
-    });
-
-    actions.put(ACTION_PAN_RIGHT, new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
-      public void activate() {
-        float z = model.getCamera().getZoom();
-        model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
-        surface.repaint();
-      }
-    });
-
-    actions.put(ACTION_PAN_UP, new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
-      public void activate() {
-        float z = model.getCamera().getZoom();
-        model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
-        surface.repaint();
-      }
-    });
-
-    actions.put(ACTION_PAN_DOWN, new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
-      public void activate() {
-        float z = model.getCamera().getZoom();
-        model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
-        surface.repaint();
-      }
-    });
+//
+//    actions.put(ACTION_TOGGLE_VECTORS,
+//        new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
+//          public void activate() {
+//            toggleVectors();
+//          }
+//        });
+//
+//    actions.put(ACTION_ZOOM_IN,
+//        new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
+//          public void activate() {
+//            model.getCamera().zoomBy(surface.getSize(), 0.05f);
+//            surface.repaint();
+//          }
+//        });
+//
+//    actions.put(ACTION_ZOOM_OUT,
+//        new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
+//          public void activate() {
+//            model.getCamera().zoomBy(surface.getSize(), -0.05f);
+//            surface.repaint();
+//          }
+//        });
+//
+//    actions.put(ACTION_PAN_LEFT, new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
+//      public void activate() {
+//        float z = model.getCamera().getZoom();
+//        model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
+//        surface.repaint();
+//      }
+//    });
+//
+//    actions.put(ACTION_PAN_RIGHT, new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
+//      public void activate() {
+//        float z = model.getCamera().getZoom();
+//        model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
+//        surface.repaint();
+//      }
+//    });
+//
+//    actions.put(ACTION_PAN_UP, new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
+//      public void activate() {
+//        float z = model.getCamera().getZoom();
+//        model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
+//        surface.repaint();
+//      }
+//    });
+//
+//    actions.put(ACTION_PAN_DOWN, new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
+//      public void activate() {
+//        float z = model.getCamera().getZoom();
+//        model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
+//        surface.repaint();
+//      }
+//    });
   }
 
   private void registerKeyboardActions(JRootPane rp) {
