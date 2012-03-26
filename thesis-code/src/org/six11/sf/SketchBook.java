@@ -102,6 +102,7 @@ public class SketchBook {
 
 //  private int numConstraintRuns;
   private int lastSolverStep;
+  public boolean showHelpfulInfo;
 
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;

@@ -363,23 +363,25 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     long end = System.currentTimeMillis();
     long dur = end - start;
 
-    // show possibly helpful info
-    Page curPage = model.getNotebook().getCurrentPage();
-    int maxPages = model.getNotebook().getPages().size();
-    int snapIdx = curPage.getSnapshotMachine().getCurrentIdx() + 1;
-    int maxIdx = curPage.getSnapshotMachine().length();
-    String pageInfo = "Page " + (curPage.getPageNumber() + 1) + " / " + maxPages;
-    String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
-    textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
-    textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
-    textRenderer18.draw("Solver Step: " + model.getLastSolverStep(), size.width - 180, 140);
-    textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()), size.width - 180,
-        120);
-    textRenderer18.draw("Zoom: " + num(cam.getZoom()), size.width - 180, 100);
-    textRenderer18.draw(pageInfo, size.width - 180, 80);
-    textRenderer18.draw(snapInfo, size.width - 180, 60);
-    textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
-    textRenderer18.endRendering();
+    if (model.showHelpfulInfo) {
+      // show possibly helpful info
+      Page curPage = model.getNotebook().getCurrentPage();
+      int maxPages = model.getNotebook().getPages().size();
+      int snapIdx = curPage.getSnapshotMachine().getCurrentIdx() + 1;
+      int maxIdx = curPage.getSnapshotMachine().length();
+      String pageInfo = "Page " + (curPage.getPageNumber() + 1) + " / " + maxPages;
+      String snapInfo = "Snap " + snapIdx + " / " + maxIdx;
+      textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
+      textRenderer18.setColor(0.4f, 0.4f, 0.4f, 0.4f);
+      textRenderer18.draw("Solver Step: " + model.getLastSolverStep(), size.width - 180, 140);
+      textRenderer18.draw("Pan: " + num(cam.getPanX()) + ", " + num(cam.getPanY()),
+          size.width - 180, 120);
+      textRenderer18.draw("Zoom: " + num(cam.getZoom()), size.width - 180, 100);
+      textRenderer18.draw(pageInfo, size.width - 180, 80);
+      textRenderer18.draw(snapInfo, size.width - 180, 60);
+      textRenderer18.draw("Render: " + dur + "ms", size.width - 180, 40);
+      textRenderer18.endRendering();
+    }
   }
 
   /**
@@ -575,7 +577,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         float newY = newScreen[3] + (yFrac * (newScreen[2] - newScreen[3]));
         float dx = newX - crosshair[0];
         float dy = newY - crosshair[1];
-//        bug("dx, dy: " + num(dx) + ", " + num(dy));
+        //        bug("dx, dy: " + num(dx) + ", " + num(dy));
 
         model.getCamera().zoomTo(getSize(), targetZoom, dx, dy);
       }

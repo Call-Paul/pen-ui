@@ -69,6 +69,7 @@ public class SkruiFabEditor {
   private static final String ACTION_PAN_RIGHT = "Pan Right";
   private static final String ACTION_PAN_UP = "Pan Up";
   private static final String ACTION_PAN_DOWN = "Pan Down";
+  private static final String ACTION_TOGGLE_INFO = "Toggle Helpful Info";
 
   private static String ACTION_PRINT = "Print";
   private static String ACTION_DEBUG_STATE = "DebugState";
@@ -257,6 +258,15 @@ public class SkruiFabEditor {
             loadSnapshot();
           }
         });
+    
+    
+  actions.put(ACTION_TOGGLE_INFO,
+      new NamedAction("Toggle Info", KeyStroke.getKeyStroke(KeyEvent.VK_H, 0)) {
+        public void activate() {
+          model.showHelpfulInfo = !model.showHelpfulInfo;
+          surface.repaint();
+        }
+      });
 //
 //    actions.put(ACTION_TOGGLE_VECTORS,
 //        new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
