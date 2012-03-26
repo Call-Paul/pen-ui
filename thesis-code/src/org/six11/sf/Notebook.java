@@ -207,8 +207,8 @@ public class Notebook {
       currentPage.getSnapshotMachine().takeSnapshotImmediately();
     }
     model.undoRedoComplete();
-
     model.getEditor().getGrid().repaint();
+    model.getEditor().getGlass().repaint();
   }
 
   public boolean shouldLoadFromDisk() {
