@@ -5,6 +5,7 @@ import static org.six11.util.Debug.num;
 
 import java.awt.AWTEvent;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Shape;
@@ -32,6 +33,7 @@ import javax.media.opengl.GLProfile;
 import javax.media.opengl.awt.GLJPanel;
 import javax.media.opengl.fixedfunc.GLMatrixFunc;
 import javax.media.opengl.glu.GLU;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import org.imgscalr.Scalr;
@@ -48,6 +50,8 @@ import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Sequence;
 import org.six11.util.pen.Vec;
+import org.six11.util.solve.ConstraintSolver.Listener;
+import org.six11.util.solve.ConstraintSolver.State;
 
 import com.jogamp.opengl.util.awt.Screenshot;
 import com.jogamp.opengl.util.awt.TextRenderer;
@@ -153,12 +157,22 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private List<Pt> taps;
   private boolean suspendRedraw;
   private boolean panic;
+  //  private static Cursor workingCursor = Cursor.getPredefinedCursor(Cursor.HAND_CURSOR);
+  //  private static Cursor solvedCursor = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+  //  private Cursor currentCursor = solvedCursor;
+  private State lastSolverState = State.Solved;
 
   public DrawingSurface(SketchBook model) {
     super(new GLCapabilities(GLProfile.getDefault()));
     this.model = model;
     this.renderer = new SketchRenderer();
     this.penLatency = new Statistics();
+    model.getConstraints().addListener(new Listener() {
+      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+          int numConstraints) {
+        lastSolverState = state;
+      }
+    });
     penLatency.setMaximumN(40);
     taps = new ArrayList<Pt>();
     zoomPanTimer = new Timer(16, new ActionListener() { // fires often in order to animate it
@@ -356,6 +370,27 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       renderer.arrow(redoStart, redoEnd);
     }
 
+    boolean drawDot = true;
+    float[] solverDot = SketchRenderer.black;
+    switch (lastSolverState) {
+      case Solved:
+        solverDot = SketchRenderer.darkGreen;
+        drawDot = false;
+        break;
+      case Unsatisfied:
+        solverDot = SketchRenderer.darkYellow;
+        break;
+      case Working:
+        solverDot = SketchRenderer.darkRed;
+        break;
+    }
+    if (drawDot) {
+      gl.glColor4fv(solverDot, 0);
+      renderer.fillDot(new Pt(40, 40), 10);
+      gl.glColor4fv(SketchRenderer.black, 0);
+      gl.glLineWidth(1);
+      renderer.dot(new Pt(40, 40), 10);
+    }
     if (showPanZoomWidget) {
       panZoomRects = renderer.panZoomWidget(gl, panZoomWidgetPt);
     }
