@@ -346,6 +346,19 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     ortho = Camera.getOrthoValues(size, 1, 0, 0);
     gl.glOrtho(ortho[0], ortho[1], ortho[2], ortho[3], 0, 1);
     gl.glMatrixMode(GLMatrixFunc.GL_MODELVIEW);
+    
+    List<TimedMessage> messages = model.getCurrentMessages();
+    if (messages.size() > 0) {
+      textRenderer18.beginRendering(drawable.getWidth(), drawable.getHeight());
+      textRenderer18.setColor(Color.red.darker());
+      int yCursor = 24;
+      int yStep = 24;
+      for (TimedMessage tm : messages) {
+        textRenderer18.draw(tm.getMsg(), 24, yCursor);
+        yCursor = yCursor + yStep;
+      }
+      textRenderer18.endRendering();
+    }
 
     if (fsFSM.getState().equals(SEARCH_DIR)) {
       float[] undoColor = SketchRenderer.lightGray;

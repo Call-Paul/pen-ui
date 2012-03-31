@@ -8,7 +8,10 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Area;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +41,7 @@ import org.six11.util.data.RankedList;
 import org.six11.util.data.Statistics;
 import org.six11.util.gui.shape.Areas;
 import org.six11.util.gui.shape.ShapeFactory;
+import org.six11.util.io.FileUtil;
 import org.six11.util.pen.ConvexHull;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -100,13 +104,17 @@ public class SketchBook implements RecognitionListener {
   private Ink mostRecentInk;
   private Set<Pt> unpin;
 
-//  private int numConstraintRuns;
+  //  private int numConstraintRuns;
   private int lastSolverStep;
   public boolean showHelpfulInfo;
+  private boolean loggingRecognitionEvents;
+  private BufferedWriter recognitionEventFileWriter;
+  private List<TimedMessage> messages;
 
   public SketchBook(FastGlassPane glass, SkruiFabEditor editor) {
     this.glass = glass;
     this.editor = editor;
+    this.messages = new ArrayList<TimedMessage>();
     this.camera = new Camera();
     this.scribbles = new ArrayList<Sequence>();
     this.selectedStencils = new HashSet<Stencil>();
@@ -127,19 +135,19 @@ public class SketchBook implements RecognitionListener {
     this.solver = new ConstraintSolver();
     this.solver.setFrameRate(SkruiFabEditor.FRAME_RATE);
     // Uncomment the following when you are very serious about debugging the solver.
-//    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
-//    this.solver.addListener(new Listener() {
-//      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
-//          int numConstraints) {
-//        if (state == State.Solved) {
-//          numConstraintRuns = numConstraintRuns + 1;
-//          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
-//          lastSolverStep = 0;
-//        } else {
-//          lastSolverStep = numIterations;
-//        }
-//      }
-//    });
+    //    this.solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+    //    this.solver.addListener(new Listener() {
+    //      public void constraintStepDone(State state, int numIterations, double err, int numPoints,
+    //          int numConstraints) {
+    //        if (state == State.Solved) {
+    //          numConstraintRuns = numConstraintRuns + 1;
+    //          solver.setFileDebug(new File("constraint-solver-" + numConstraintRuns + ".txt"));
+    //          lastSolverStep = 0;
+    //        } else {
+    //          lastSolverStep = numIterations;
+    //        }
+    //      }
+    //    });
     this.unpin = new HashSet<Pt>();
     solver.addListener(new Listener() {
       public void constraintStepDone(State state, int numIterations, double err, int numPoints,
@@ -1603,10 +1611,66 @@ public class SketchBook implements RecognitionListener {
   public int getLastSolverStep() {
     return lastSolverStep;
   }
+  
+  public void setLogRecognitionEvents(boolean onOrOff) {
+    loggingRecognitionEvents = onOrOff;
+    TimedMessage msg = new TimedMessage(0, "?");
+    if (loggingRecognitionEvents) {
+      File dir = getNotebook().getMainFileDirectory();
+      File recLogFile = FileUtil.makeIncrementalFile(dir, "recognition-log", ".txt", 0);
+      msg = new TimedMessage(5000, "Logging to " + recLogFile.getAbsolutePath());
+      try {
+        recognitionEventFileWriter = new BufferedWriter(new FileWriter(recLogFile));
+      } catch (IOException e) {
+        msg = new TimedMessage(5000, "Unable to create recognition log file.");
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    } else {
+      if (recognitionEventFileWriter != null) {
+        try {
+          recognitionEventFileWriter.close();
+          msg = new TimedMessage(5000, "Stopped logging recognition events.");
+        } catch (IOException e) {
+          msg = new TimedMessage(5000, "Couldn't stop logging recognition events! Ahhhhh!");
+          e.printStackTrace();
+        }
+      }
+    }
+    addTimedMessage(msg);
+  }
+
+  private void addTimedMessage(TimedMessage msg) {
+    messages.add(msg);
+    surface.repaint();
+  }
 
   @Override
   public void somethingRecognized(What what) {
-    bug("Recognized something: " + what);
+    if (loggingRecognitionEvents && recognitionEventFileWriter != null) {
+      try {
+        recognitionEventFileWriter.append(System.currentTimeMillis() + "\t" + what.toString() + "\n");
+        recognitionEventFileWriter.flush();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public void toggleLogRecognitionEvents() {
+    setLogRecognitionEvents(!loggingRecognitionEvents);
+  }
+  
+  public List<TimedMessage> getCurrentMessages() {
+    Set<TimedMessage> doomed = new HashSet<TimedMessage>();
+    for (TimedMessage tm : messages) {
+      if (!tm.isValid()) {
+        doomed.add(tm);
+      }
+    }
+    messages.removeAll(doomed);
+    return messages;
   }
 
 }

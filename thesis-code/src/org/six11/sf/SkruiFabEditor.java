@@ -235,6 +235,13 @@ public class SkruiFabEditor {
             surface.repaint();
           }
         });
+    
+    actions.put(ACTION_TOGGLE_INFO,
+        new NamedAction("Toggle Log File", KeyStroke.getKeyStroke(KeyEvent.VK_SEMICOLON, 0)) {
+          public void activate() {
+            model.toggleLogRecognitionEvents();
+          }
+        });
   }
 
   private void registerKeyboardActions(JRootPane rp) {
