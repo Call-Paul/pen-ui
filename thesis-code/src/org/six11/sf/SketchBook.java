@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.prefs.Preferences;
 
 import javax.swing.Timer;
 
@@ -179,6 +180,7 @@ public class SketchBook implements RecognitionListener {
     });
     inactivityTimer.setRepeats(false);
     notebook = Notebook.loadLast(this);
+    
   }
 
   public SkruiFabEditor getEditor() {
@@ -1611,33 +1613,41 @@ public class SketchBook implements RecognitionListener {
   public int getLastSolverStep() {
     return lastSolverStep;
   }
-  
+
   public void setLogRecognitionEvents(boolean onOrOff) {
     loggingRecognitionEvents = onOrOff;
-    TimedMessage msg = new TimedMessage(0, "?");
+    Preferences prefs = Preferences.userNodeForPackage(Main.class);
+    prefs.putBoolean("autoLog", onOrOff);
     if (loggingRecognitionEvents) {
       File dir = getNotebook().getMainFileDirectory();
       File recLogFile = FileUtil.makeIncrementalFile(dir, "recognition-log", ".txt", 0);
-      msg = new TimedMessage(5000, "Logging to " + recLogFile.getAbsolutePath());
+      addTimedMessage(new TimedMessage(5000, "Turn this off by tapping the ; key (semicolon)"));
+      addTimedMessage(new TimedMessage(5000, "Logging to " + recLogFile.getAbsolutePath()));
       try {
         recognitionEventFileWriter = new BufferedWriter(new FileWriter(recLogFile));
+        boolean videoWatched = prefs.getBoolean("videoWatched", false);
+        int numUses = prefs.getInt("numUses", 0);
+        recognitionEventFileWriter.append("# Number of times program has started: " + numUses
+            + "\n");
+        recognitionEventFileWriter.append("# Video watched via UI: " + videoWatched + "\n");
+        recognitionEventFileWriter.append("#\n");
+        recognitionEventFileWriter.append("# Time stamp\tEvent type\n");
       } catch (IOException e) {
-        msg = new TimedMessage(5000, "Unable to create recognition log file.");
-        // TODO Auto-generated catch block
+        addTimedMessage(new TimedMessage(5000, "Unable to create recognition log file."));
         e.printStackTrace();
       }
     } else {
       if (recognitionEventFileWriter != null) {
         try {
           recognitionEventFileWriter.close();
-          msg = new TimedMessage(5000, "Stopped logging recognition events.");
+          addTimedMessage(new TimedMessage(5000, "Stopped logging recognition events."));
         } catch (IOException e) {
-          msg = new TimedMessage(5000, "Couldn't stop logging recognition events! Ahhhhh!");
+          addTimedMessage(new TimedMessage(5000,
+              "Couldn't stop logging recognition events! Ahhhhh!"));
           e.printStackTrace();
         }
       }
     }
-    addTimedMessage(msg);
   }
 
   private void addTimedMessage(TimedMessage msg) {
@@ -1649,7 +1659,8 @@ public class SketchBook implements RecognitionListener {
   public void somethingRecognized(What what) {
     if (loggingRecognitionEvents && recognitionEventFileWriter != null) {
       try {
-        recognitionEventFileWriter.append(System.currentTimeMillis() + "\t" + what.toString() + "\n");
+        recognitionEventFileWriter.append(System.currentTimeMillis() + "\t" + what.toString()
+            + "\n");
         recognitionEventFileWriter.flush();
       } catch (IOException e) {
         // TODO Auto-generated catch block
@@ -1661,7 +1672,7 @@ public class SketchBook implements RecognitionListener {
   public void toggleLogRecognitionEvents() {
     setLogRecognitionEvents(!loggingRecognitionEvents);
   }
-  
+
   public List<TimedMessage> getCurrentMessages() {
     Set<TimedMessage> doomed = new HashSet<TimedMessage>();
     for (TimedMessage tm : messages) {
