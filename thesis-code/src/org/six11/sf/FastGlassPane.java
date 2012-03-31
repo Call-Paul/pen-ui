@@ -7,6 +7,7 @@ import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -25,15 +26,20 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.geom.Ellipse2D;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JComponent;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.six11.util.gui.Cursors;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
 import org.six11.util.pen.Pt;
+import org.six11.util.pen.Vec;
+import org.six11.util.solve.ConstraintSolver.State;
 
 public class FastGlassPane extends JComponent implements MouseListener {
 
@@ -52,6 +58,10 @@ public class FastGlassPane extends JComponent implements MouseListener {
     DragPage
   };
 
+  public enum CursorMode {
+    MovePoint, DrawAny, Draw, Solving, StandardPointer, Undo, Redo, Pan, Zoom
+  }
+
   SkruiFabEditor editor;
   private boolean dragging;
   //  private Timer timer;
@@ -67,9 +77,29 @@ public class FastGlassPane extends JComponent implements MouseListener {
   protected boolean onscreen;
   protected boolean focused;
 
+  protected Map<CursorMode, Cursor> cursors;
+  protected CursorMode currentCursor;
+
   public FastGlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
     this.activity = ActivityMode.None;
+    this.cursors = new HashMap<CursorMode, Cursor>();
+    cursors.put(CursorMode.MovePoint, Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    cursors.put(CursorMode.Draw,
+        Cursors.createDotCursor(4, "Drawing Cursor", Color.black, Color.gray));
+    cursors.put(CursorMode.Solving,
+        Cursors.createDotCursor(4, "Solving Cursor", Color.red.darker().darker(), Color.red));
+    cursors.put(CursorMode.Undo,
+        Cursors.createArrowCursor(new Vec(-20, 0), "Undo Cursor", Color.black));
+    cursors.put(CursorMode.Redo,
+        Cursors.createArrowCursor(new Vec(20, 0), "Redo Cursor", Color.black));
+    cursors.put(CursorMode.StandardPointer, Cursor.getDefaultCursor());
+    cursors.put(CursorMode.Pan, Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+    cursors.put(CursorMode.Zoom,
+        Cursors.createMagnifyingGlassCursor(6, 10, "Zoom Cursor", Color.black, Color.white));
+    // set current cursor to draw
+    currentCursor = CursorMode.Draw;
+    setCursor(cursors.get(currentCursor));
     timer = new Timer(10, new ActionListener() {
       public void actionPerformed(ActionEvent ev) {
         PointerInfo info = MouseInfo.getPointerInfo();
@@ -156,6 +186,27 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }, eventMask);
   }
 
+  public void setCursorMode(CursorMode mode) {
+    currentCursor = mode;
+    if (currentCursor == CursorMode.DrawAny) {
+      whackDrawAny();
+    } else {
+      setCursor(cursors.get(currentCursor));
+    }
+  }
+
+  public void whackDrawAny() {
+    if (prevComponent == editor.getDrawingSurface() && currentCursor == CursorMode.DrawAny) {
+      if (editor.getModel().getConstraints().getSolutionState() == State.Solved) {
+        setCursor(cursors.get(CursorMode.Draw));
+      } else {
+        setCursor(cursors.get(CursorMode.Solving));
+      }
+    } else if (prevComponent != editor.getDrawingSurface()) {
+      setCursor(cursors.get(CursorMode.StandardPointer));
+    }
+  }
+
   protected void whackMouseTimer() {
     if (!timer.isRunning() && onscreen && focused) {
       timer.restart();
@@ -235,6 +286,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
       givePenEvent(mei.component, PenEvent.buildHoverEvent(this, new Pt(mei.componentPoint, now)));
     }
     prevComponent = mei.component;
+    whackDrawAny();
   }
 
   private void secretMouseDrag(Point loc, long time) {
@@ -280,6 +332,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   @Override
   public void mouseEntered(MouseEvent ev) {
+
   }
 
   @Override
@@ -311,7 +364,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
         }
         editor.getModel().setDraggingSelection(false);
         activity = ActivityMode.None;
-        givePenEvent(editor.getModel().getSurface(), PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint)));
+        givePenEvent(editor.getModel().getSurface(),
+            PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint)));
         break;
       case DragPage:
         if (mei.component instanceof Drag.Listener) {
@@ -321,7 +375,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
         activity = ActivityMode.None;
         break;
       case None:
-        givePenEvent(mei.component, PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint, ev.getWhen())));
+        givePenEvent(mei.component,
+            PenEvent.buildIdleEvent(this, new Pt(mei.componentPoint, ev.getWhen())));
         break;
     }
 
@@ -359,7 +414,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }
   }
 
-  public void drawAddMeSign(Graphics2D g, float circX, float circY, float circD, Color fill, Color linework) {
+  public void drawAddMeSign(Graphics2D g, float circX, float circY, float circD, Color fill,
+      Color linework) {
     Ellipse2D circ = new Ellipse2D.Float(circX, circY, circD, circD);
     g.setColor(fill);
     g.fill(circ);

@@ -38,6 +38,7 @@ import javax.swing.Timer;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
+import org.six11.sf.FastGlassPane.CursorMode;
 import org.six11.sf.RecognitionListener.What;
 import org.six11.util.data.FSM;
 import org.six11.util.data.FSM.Transition;
@@ -163,7 +164,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   //  private Cursor currentCursor = solvedCursor;
   private State lastSolverState = State.Solved;
 
-  public DrawingSurface(SketchBook model) {
+  public DrawingSurface(final SketchBook model) {
     super(new GLCapabilities(GLProfile.get(GLProfile.GL2)));
     this.model = model;
     this.renderer = new SketchRenderer();
@@ -171,6 +172,9 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     model.getConstraints().addListener(new Listener() {
       public void constraintStepDone(State state, int numIterations, double err, int numPoints,
           int numConstraints) {
+        if (state != lastSolverState) {
+          model.getEditor().getGlass().whackDrawAny();
+        }
         lastSolverState = state;
       }
     });
@@ -547,12 +551,14 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         // clear the way for the next round of panning. this lets
         // us start from the new pen drag locations
         model.somethingRecognized(What.Pan);
+        model.getEditor().getGlass().setCursorMode(CursorMode.Pan);
         panZoomBeginPt = null;
       }
     });
     f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM) {
       public void doBeforeTransition() {
         model.somethingRecognized(What.Zoom);
+        model.getEditor().getGlass().setCursorMode(CursorMode.Zoom);
         panZoomBeginPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
         Camera cam = model.getCamera();
         zoomInitialValue = cam.getZoom();
@@ -737,9 +743,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           if (dx < -thresh) {
             searchStart = dragPt.copyXYT();
             model.undoPreview();
+            model.getEditor().getGlass().setCursorMode(CursorMode.Undo);
           } else if (dx > thresh) {
             searchStart = dragPt.copyXYT();
             model.redoPreview();
+            model.getEditor().getGlass().setCursorMode(CursorMode.Redo);
           }
         }
       }
@@ -1179,6 +1187,12 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         break;
       case Hover:
         hoverPt = modelPt.copyXYT();
+        Collection<GuidePoint> nearbyGuidePoints = model.findGuidePoints(modelPt, true);
+        if (nearbyGuidePoints.size() == 0) {
+          model.getEditor().getGlass().setCursorMode(FastGlassPane.CursorMode.DrawAny);
+        } else {
+          model.getEditor().getGlass().setCursorMode(FastGlassPane.CursorMode.MovePoint);
+        }
         break;
     }
     repaint();
