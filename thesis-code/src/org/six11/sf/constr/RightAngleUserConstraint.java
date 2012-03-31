@@ -3,6 +3,7 @@ package org.six11.sf.constr;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.SketchBook;
+import org.six11.sf.RecognitionListener.What;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.NumericValue;
@@ -111,6 +112,10 @@ public class RightAngleUserConstraint extends UserConstraint {
         removeConstraint(c);
       }
     }
+  }
+  
+  public What getRecognitionListenerWhat() {
+    return What.RightAngle;
   }
 
 }

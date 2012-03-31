@@ -144,6 +144,7 @@ public class ConstraintAnalyzer {
           Pt junct = entry.getKey();
           Segment segA = pair.get(0);
           Segment segB = pair.get(1);
+          
           if (segA.getP1() == junct) {
             dirA = segA.getStartDir();
           } else {

@@ -1,6 +1,7 @@
 package org.six11.sf;
 
 import static org.six11.util.Debug.bug;
+import static org.six11.util.Debug.num;
 import static org.six11.util.layout.FrontEnd.E;
 import static org.six11.util.layout.FrontEnd.N;
 import static org.six11.util.layout.FrontEnd.ROOT;
@@ -10,14 +11,9 @@ import static org.six11.util.layout.FrontEnd.W;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -28,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import javax.swing.Action;
@@ -38,6 +33,7 @@ import javax.swing.JPanel;
 import javax.swing.JRootPane;
 import javax.swing.KeyStroke;
 
+import org.six11.sf.RecognitionListener.What;
 import org.six11.sf.rec.RecognizedItem;
 import org.six11.sf.rec.RecognizedItemTemplate;
 import org.six11.sf.rec.RecognizerPrimitive;
@@ -62,13 +58,6 @@ public class SkruiFabEditor {
   private static final String ACTION_DEBUG_COLOR = "DebugColor";
   private static final String ACTION_LOAD_FILE = "Load File";
   protected static final int FRAME_RATE = 60;
-  private static final String ACTION_TOGGLE_VECTORS = "Toggle Vectors";
-  private static final String ACTION_ZOOM_IN = "Zoom In";
-  private static final String ACTION_ZOOM_OUT = "Zoom Out";
-  private static final String ACTION_PAN_LEFT = "Pan Left";
-  private static final String ACTION_PAN_RIGHT = "Pan Right";
-  private static final String ACTION_PAN_UP = "Pan Up";
-  private static final String ACTION_PAN_DOWN = "Pan Down";
   private static final String ACTION_TOGGLE_INFO = "Toggle Helpful Info";
 
   private static String ACTION_PRINT = "Print";
@@ -94,8 +83,7 @@ public class SkruiFabEditor {
     colors.set("selected stencil", new Color(0.8f, 0.5f, 0.5f, 0.5f));
     af = new ApplicationFrame("Sketch It, Make It (started " + m.varStr("dateString") + " at "
         + m.varStr("timeString") + ")");
-    //    Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
-    //    boolean setSizeAndLocation = false;
+
     Preferences prefs = Preferences.userNodeForPackage(SkruiFabEditor.class);
     int screenX = prefs.getInt("screenX", 0);
     int screenY = prefs.getInt("screenY", 0);
@@ -103,18 +91,7 @@ public class SkruiFabEditor {
     int frameHeight = prefs.getInt("frameHeight", 600);
     af.setSize(frameWidth, frameHeight);
     af.setLocation(screenX, screenY);
-    //    setSizeAndLocation = true;
 
-    //    if (!setSizeAndLocation) {
-    //      if ((screenDim.width > 1600) && (screenDim.height > 1000)) {
-    //        af.setSize(1600, 1000);
-    //      } else if ((screenDim.width > 1400) && (screenDim.height > 800)) {
-    //        af.setSize(1400, 800);
-    //      } else {
-    //        af.setSize(800, 600);
-    //      }
-    //      af.center();
-    //    }
     createActions();
     registerKeyboardActions(af.getRootPane());
     fastGlass = new FastGlassPane(this);
@@ -171,12 +148,6 @@ public class SkruiFabEditor {
     } else {
       model.getSnapshotMachine().requestSnapshot("Initial blank state"); // initial blank state
     }
-    //    Timer fileSaveTimer = new Timer();
-    //    TimerTask fileSaveTask = new TimerTask() {
-    //      public void run() {
-    //        model.getNotebook().maybeSave(false);
-    //      }
-    //    };
 
     JPanel utilPanel = new JPanel();
     utilPanel.setLayout(new BorderLayout());
@@ -199,8 +170,6 @@ public class SkruiFabEditor {
     af.setVisible(true);
 
     bug("Starting file save task.");
-    //    fileSaveTimer.schedule(fileSaveTask, Notebook.AUTO_SAVE_TIMEOUT, Notebook.AUTO_SAVE_TIMEOUT);
-
   }
 
   public JFrame getApplicationFrame() {
@@ -258,70 +227,14 @@ public class SkruiFabEditor {
             loadSnapshot();
           }
         });
-    
-    
-  actions.put(ACTION_TOGGLE_INFO,
-      new NamedAction("Toggle Info", KeyStroke.getKeyStroke(KeyEvent.VK_H, 0)) {
-        public void activate() {
-          model.showHelpfulInfo = !model.showHelpfulInfo;
-          surface.repaint();
-        }
-      });
-//
-//    actions.put(ACTION_TOGGLE_VECTORS,
-//        new NamedAction("Toggle Vectors", KeyStroke.getKeyStroke(KeyEvent.VK_V, 0)) {
-//          public void activate() {
-//            toggleVectors();
-//          }
-//        });
-//
-//    actions.put(ACTION_ZOOM_IN,
-//        new NamedAction("Zoom In", KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, 0)) {
-//          public void activate() {
-//            model.getCamera().zoomBy(surface.getSize(), 0.05f);
-//            surface.repaint();
-//          }
-//        });
-//
-//    actions.put(ACTION_ZOOM_OUT,
-//        new NamedAction("Zoom Out", KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, 0)) {
-//          public void activate() {
-//            model.getCamera().zoomBy(surface.getSize(), -0.05f);
-//            surface.repaint();
-//          }
-//        });
-//
-//    actions.put(ACTION_PAN_LEFT, new NamedAction("Pan Left", KeyStroke.getKeyStroke("LEFT")) {
-//      public void activate() {
-//        float z = model.getCamera().getZoom();
-//        model.getCamera().translateBy(surface.getSize(), -10 / z, 0);
-//        surface.repaint();
-//      }
-//    });
-//
-//    actions.put(ACTION_PAN_RIGHT, new NamedAction("Pan Right", KeyStroke.getKeyStroke("RIGHT")) {
-//      public void activate() {
-//        float z = model.getCamera().getZoom();
-//        model.getCamera().translateBy(surface.getSize(), 10 / z, 0);
-//        surface.repaint();
-//      }
-//    });
-//
-//    actions.put(ACTION_PAN_UP, new NamedAction("Pan Up", KeyStroke.getKeyStroke("UP")) {
-//      public void activate() {
-//        float z = model.getCamera().getZoom();
-//        model.getCamera().translateBy(surface.getSize(), 0, -10 / z);
-//        surface.repaint();
-//      }
-//    });
-//
-//    actions.put(ACTION_PAN_DOWN, new NamedAction("Pan Down", KeyStroke.getKeyStroke("DOWN")) {
-//      public void activate() {
-//        float z = model.getCamera().getZoom();
-//        model.getCamera().translateBy(surface.getSize(), 0, 10 / z);
-//        surface.repaint();
-//      }
-//    });
+
+    actions.put(ACTION_TOGGLE_INFO,
+        new NamedAction("Toggle Info", KeyStroke.getKeyStroke(KeyEvent.VK_H, 0)) {
+          public void activate() {
+            model.showHelpfulInfo = !model.showHelpfulInfo;
+            surface.repaint();
+          }
+        });
   }
 
   private void registerKeyboardActions(JRootPane rp) {
@@ -398,6 +311,7 @@ public class SkruiFabEditor {
 
   @SuppressWarnings("unchecked")
   public void go() {
+    Set<Segment> before = new HashSet<Segment>(model.getGeometry());
     bug("+---------------------------------------------------------------------------------------+");
     bug("|-------------------------------------- ~ go ~ -----------------------------------------|");
     bug("+---------------------------------------------------------------------------------------+");
@@ -452,7 +366,45 @@ public class SkruiFabEditor {
     surface.repaint();
     model.getConstraints().wakeUp();
     model.getSnapshotMachine().requestSnapshot("End of 'go'");
+    Set<Segment> after = new HashSet<Segment>(model.getGeometry());
+    after.removeAll(before); // 'after' now contains refs to segments that were added this time.
+    for (Segment seg : after) { // inform the recognition listener what happened.
+      model.somethingRecognized(getRecLisWhat(seg));
+    }
     /* model.sanityCheck(); // keep this around! */
+  }
+
+  private What getRecLisWhat(Segment seg) {
+    What ret = What.Unknown;
+    switch (seg.getType()) {
+      case Blob:
+        ret = What.BlogSeg;
+        break;
+      case Circle:
+        ret = What.CircleSeg;
+        break;
+      case CircularArc:
+        ret = What.CircleArc;
+        break;
+      case Curve:
+        ret = What.CurveSeg;
+        break;
+      case Dot:
+        ret = What.Unknown;
+        break;
+      case Ellipse:
+        ret = What.EllipseSeg;
+        break;
+      case EllipticalArc:
+        ret = What.ArcSeg;
+        break;
+      case Line:
+        ret = What.LineSeg;
+        break;
+      case Unknown:
+        break;
+    }
+    return ret;
   }
 
   private void removeHooks(Collection<Segment> segs) {

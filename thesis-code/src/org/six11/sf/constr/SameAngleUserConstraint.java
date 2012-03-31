@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Angle;
 import org.six11.sf.SketchBook;
+import org.six11.sf.RecognitionListener.What;
 import org.six11.util.pen.Pt;
 import org.six11.util.pen.Vec;
 import org.six11.util.solve.AngleConstraint;
@@ -191,6 +192,10 @@ public class SameAngleUserConstraint extends UserConstraint {
             angle.getPtB()));
       }
     };
+  }
+  
+  public What getRecognitionListenerWhat() {
+    return What.SameAngle;
   }
 
 }

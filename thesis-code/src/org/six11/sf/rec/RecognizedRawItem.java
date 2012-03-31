@@ -5,13 +5,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.six11.sf.SketchBook;
+import org.six11.sf.RecognitionListener.What;
 
 public abstract class RecognizedRawItem {
 
   public static final String NO_OP = "No Operation";
   public static final String ENCIRCLE_STENCIL_TO_SELECT = "Encircle Stencil Selection";
   public static final String ENCIRCLE_ENDPOINTS_TO_MERGE = "Encircle Endpoints to Merge";
-  public static final String SCRIBBLE_TO_ERASE = "Scribble to Erase";
   public static final String FAT_DOT_REFERENCE_POINT = "Fat Dot Reference Point";
   public static final String FAT_DOT_SELECT = "Fat Dot Selection";
   public static final String OVERTRACE_TO_SELECT_SEGMENT = "Overtrace to Select Segment";
@@ -61,5 +61,25 @@ public abstract class RecognizedRawItem {
       public void activate(SketchBook model) {
       }
     };
+  }
+
+  public What getRecognitionListenerWhat() {
+    What ret = What.Unknown;
+    if (ENCIRCLE_STENCIL_TO_SELECT.equals(name)) {
+      ret = What.SelectStencil;
+    } else if (ENCIRCLE_ENDPOINTS_TO_MERGE.equals(name)) {
+      ret = What.EndpointLatch;
+    } else if (FAT_DOT_REFERENCE_POINT.equals(name)) {
+      ret = What.DotCreate;
+    } else if (FAT_DOT_SELECT.equals(name)) {
+      ret = What.DotSelect;
+    } else if (OVERTRACE_TO_SELECT_SEGMENT.equals(name)) {
+      ret = What.SelectSegment;
+    } else if (ENCIRCLE_GUIDE_POINT_TO_DELETE.equals(name)) {
+      ret = What.DotDelete;
+    } else if (ENCIRCLE_TO_T_MERGE.equals(name)) {
+      ret = What.TJunctLatch;
+    }
+    return ret;
   }
 }

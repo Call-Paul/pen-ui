@@ -38,6 +38,7 @@ import javax.swing.Timer;
 
 import org.imgscalr.Scalr;
 import org.six11.sf.Drag.Event;
+import org.six11.sf.RecognitionListener.What;
 import org.six11.util.data.FSM;
 import org.six11.util.data.FSM.Transition;
 import org.six11.util.data.Lists;
@@ -163,7 +164,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   private State lastSolverState = State.Solved;
 
   public DrawingSurface(SketchBook model) {
-    super(new GLCapabilities(GLProfile.getDefault()));
+    super(new GLCapabilities(GLProfile.get(GLProfile.GL2)));
     this.model = model;
     this.renderer = new SketchRenderer();
     this.penLatency = new Statistics();
@@ -545,11 +546,13 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       public void doAfterTransition() {
         // clear the way for the next round of panning. this lets
         // us start from the new pen drag locations
+        model.somethingRecognized(What.Pan);
         panZoomBeginPt = null;
       }
     });
     f.addTransition(new Transition(START_ZOOM, IDLE, ZOOM) {
       public void doBeforeTransition() {
+        model.somethingRecognized(What.Zoom);
         panZoomBeginPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));
         Camera cam = model.getCamera();
         zoomInitialValue = cam.getZoom();
@@ -623,6 +626,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       public void doAfterTransition() {
         fsRecent.clear();
         fsInitSelection();
+        model.somethingRecognized(What.FSHeat);
       }
     });
     f.addTransition(new Transition(TICK, FLOW, FLOW) {
@@ -633,6 +637,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     f.addTransition(new Transition(UP, FLOW, IDLE));
     f.addTransition(new Transition(MOVE, FLOW, OP) {
       public void doBeforeTransition() {
+
         addFsRecent(fsRecentPt);
       }
 
@@ -645,6 +650,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       }
 
       public void doAfterTransition() {
+        model.somethingRecognized(What.FSMove);
         fsRecent.clear();
         fsTransitionPt = fsRecentPt;
       }
@@ -685,6 +691,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
     });
     f.addTransition(new Transition(PAUSE, OP, SMOOTH) {
       public void doAfterTransition() {
+        model.somethingRecognized(What.FSSmooth);
         fsRecent.clear();
       }
     });
@@ -717,7 +724,11 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
         model.getEditor().go();
       }
     });
-    f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR));
+    f.addTransition(new Transition(MOVE, ARMED, SEARCH_DIR) {
+      public void doBeforeTransition() {
+        model.somethingRecognized(What.UndoRedoStart);
+      }
+    });
     f.addTransition(new Transition(MOVE, SEARCH_DIR, SEARCH_DIR) {
       public void doBeforeTransition() {
         if ((searchStart != null) && (dragPt != null)) {
@@ -859,7 +870,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
   }
 
   private void fsDeform(Pt recent) {
-    bug("fsDeform");
     if ((fsLastDeformPt != null) && (fsNearestSeg != null)) {
       Vec dir = new Vec(fsLastDeformPt, recent);
       double m = dir.mag();
@@ -898,7 +908,6 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
       bug("  :: fsNearestSeg: " + fsNearestSeg);
     }
     fsLastDeformPt = recent;
-    //    display();
     repaint();
   }
 
@@ -1141,6 +1150,7 @@ public class DrawingSurface extends GLJPanel implements GLEventListener, PenList
           addTap(tapPt);
           int howMany = countCurrentTaps(System.currentTimeMillis());
           if (howMany >= 2) {
+            model.somethingRecognized(What.PanZoomShowWidget);
             showPanZoomWidget = true;
             showPanZoomWidgetRefreshTime = System.currentTimeMillis();
             panZoomWidgetPt = new Pt(fsDown.getDouble("worldX"), fsDown.getDouble("worldY"));

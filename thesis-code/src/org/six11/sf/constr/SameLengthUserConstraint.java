@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.Segment;
 import org.six11.sf.SketchBook;
+import org.six11.sf.RecognitionListener.What;
 import org.six11.util.pen.Pt;
 import org.six11.util.solve.Constraint;
 import org.six11.util.solve.DistanceConstraint;
@@ -131,6 +132,14 @@ public class SameLengthUserConstraint extends UserConstraint {
       ret.put("multi", true);
     } else {
       ret.put("multi", false);
+    }
+    return ret;
+  }
+  
+  public What getRecognitionListenerWhat() {
+    What ret = What.SameLengthSpecific;
+    if (isMultiSource()) {
+      ret = What.SameLengthVague;
     }
     return ret;
   }

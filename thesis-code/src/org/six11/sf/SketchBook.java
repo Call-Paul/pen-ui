@@ -53,7 +53,7 @@ import org.six11.util.solve.NumericValue;
 import org.six11.util.solve.VariableBank;
 import org.six11.util.solve.VariableBank.ConstraintFilter;
 
-public class SketchBook {
+public class SketchBook implements RecognitionListener {
 
   private static final String POINT_NAME = "name";
   private static final double ERASE_SAMPLE_DIST_THRESHOLD = 20;
@@ -215,6 +215,7 @@ public class SketchBook {
     boolean didSomething = false;
     for (RecognizedRawItem item : rawResults) {
       item.activate(this);
+      somethingRecognized(item.getRecognitionListenerWhat());
       didSomething = true;
     }
     if (!didSomething) {
@@ -433,6 +434,9 @@ public class SketchBook {
     if (totalItemsUnder == 0) {
       bug("Clearing selected segments.");
       clearSelectedSegments();
+      somethingRecognized(What.SelectNone);
+    } else {
+      somethingRecognized(What.Erase);
     }
   }
 
@@ -1044,6 +1048,7 @@ public class SketchBook {
         sluc.setValue(new NumericValue(len));
         getConstraints().wakeUp();
       }
+      somethingRecognized(uc.getRecognitionListenerWhat());
     }
   }
 
@@ -1053,6 +1058,8 @@ public class SketchBook {
       for (Constraint c : uc.getConstraints()) {
         getConstraints().addConstraint(c);
       }
+      // inform recognition listener.
+      somethingRecognized(uc.getRecognitionListenerWhat());
     } else {
       bug("addUserConstraint() called with null argument");
     }
@@ -1218,6 +1225,7 @@ public class SketchBook {
     } else {
       if (draggingGuidePoint != null) {
         bug("was dragging point: " + SketchBook.n(draggingGuidePoint.getLocation()));
+        somethingRecognized(What.DotMove);
         Constraint.setPinned(draggingGuidePoint.getLocation(), true);
         unpin.add(draggingGuidePoint.getLocation());
       }
@@ -1258,6 +1266,7 @@ public class SketchBook {
     Snapshot s = getSnapshotMachine().undo();
     if (s != null) {
       surface.setPreview(s);
+      somethingRecognized(What.Undo);
     }
   }
 
@@ -1265,6 +1274,7 @@ public class SketchBook {
     Snapshot s = getSnapshotMachine().redo();
     if (s != null) {
       surface.setPreview(s);
+      somethingRecognized(What.Redo);
     }
   }
 
@@ -1282,6 +1292,7 @@ public class SketchBook {
     loadingSnapshot = false;
     surface.suspendRedraw(false);
     surface.display();
+    somethingRecognized(What.UndoRedoDone);
   }
 
   public void removeSingularSegments() {
@@ -1591,6 +1602,11 @@ public class SketchBook {
 
   public int getLastSolverStep() {
     return lastSolverStep;
+  }
+
+  @Override
+  public void somethingRecognized(What what) {
+    bug("Recognized something: " + what);
   }
 
 }

@@ -9,6 +9,7 @@ import java.util.Set;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.six11.sf.SketchBook;
+import org.six11.sf.RecognitionListener.What;
 import org.six11.util.data.Lists;
 import org.six11.util.pen.Functions;
 import org.six11.util.pen.Line;
@@ -134,4 +135,7 @@ public class ColinearUserConstraint extends UserConstraint {
     return best;
   }
 
+  public What getRecognitionListenerWhat() {
+    return What.Colinear;
+  }
 }
