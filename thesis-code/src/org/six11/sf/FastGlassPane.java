@@ -25,14 +25,20 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JComponent;
+import javax.swing.JDialog;
+import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
+import org.six11.util.gui.Components;
 import org.six11.util.gui.Cursors;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
@@ -79,6 +85,7 @@ public class FastGlassPane extends JComponent implements MouseListener {
 
   protected Map<CursorMode, Cursor> cursors;
   protected CursorMode currentCursor;
+  private JDialog modalLayer;
 
   public FastGlassPane(final SkruiFabEditor editor) {
     this.editor = editor;
@@ -215,7 +222,8 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }
   }
 
-  public void paintComponent(Graphics g) {
+  public void paintComponent(Graphics g1) {
+    Graphics2D g = (Graphics2D) g1;
     Image thumb = null;
     if (activity == ActivityMode.DragSelection) {
       thumb = editor.getModel().getDraggingThumb();
@@ -224,6 +232,11 @@ public class FastGlassPane extends JComponent implements MouseListener {
     }
     if (thumb != null) {
       g.drawImage(thumb, dragPoint.x, dragPoint.y, null);
+    }
+    
+    if (modalLayer != null && modalLayer.isShowing()) {
+      g.setColor(new Color(0, 0, 0, 0.5f));
+      g.fill(getVisibleRect());
     }
   }
 
@@ -435,6 +448,26 @@ public class FastGlassPane extends JComponent implements MouseListener {
     int botY = (int) (centerY + halfLen);
     g.drawLine(midX, topY, midX, botY);
     g.drawLine(topX, midY, botX, midY);
+  }
+
+  public void showModalLayer(JComponent dialogContent, int w, int h) {
+    modalLayer = new JDialog(editor.getApplicationFrame());
+    modalLayer.addWindowListener(new WindowAdapter() {
+      @Override
+      public void windowClosed(WindowEvent arg0) {
+        editor.getApplicationFrame().repaint();
+      }
+    });
+    modalLayer.add(dialogContent);
+    modalLayer.setSize(w, h);
+    Components.centerComponent(modalLayer);
+    modalLayer.setVisible(true);
+    editor.getApplicationFrame().repaint();
+  }
+  
+  public void clearModalLayer() {
+    this.modalLayer = null;
+    editor.getApplicationFrame().repaint();
   }
 
 }

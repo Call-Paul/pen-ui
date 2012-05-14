@@ -4,6 +4,7 @@ import static org.six11.util.Debug.bug;
 import static org.six11.util.Debug.num;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
@@ -19,10 +20,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Set;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import org.six11.sf.Drag.Event;
 import org.six11.util.gui.BoundingBox;
+import org.six11.util.gui.Components;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
@@ -98,7 +101,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     }
     // draw clear button
     clearRect = placeButton(g, "Clear", 40, 24, 0, hoverInClear);
-    
+
     // if there are stencils, draw the 'Make' button
     if (material.countStencils() > 0) {
       makeRect = placeButton(g, "Make", 40, 24, 1, hoverInMake);
@@ -170,10 +173,30 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   }
 
   private void chooseMakeType() {
+    JPanel choiceBox = new ChoiceBox();
+    editor.getGlass().showModalLayer(choiceBox, 600, 400);
     // printRequested();
     printPonoko();
   }
-  
+
+  private class ChoiceBox extends JPanel {
+    ChoiceBox() {
+      // put three buttons with images here:
+      // 1. PDF output just like I've always done
+      // 2. Ponoko: creates SVG and ships off to Ponoko
+      // 3. Lasersaur: will hook up to mondolasercuttersaurus
+    }
+
+    public void paintComponent(Graphics g1) {
+      Graphics2D g = (Graphics2D) g1;
+      g.setColor(Color.WHITE);
+      g.fill(getVisibleRect());
+      g.setColor(Color.BLACK);
+      g.draw(getVisibleRect());
+    }
+
+  }
+
   private boolean whackBox(Pt pt, Rectangle2D box) {
     boolean ret = false;
     if (box != null && box.contains(pt)) {
@@ -291,7 +314,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     material.layoutStencils();
     repaint();
   }
-  
+
   private void printPonoko() {
     String svg = material.drawStencilsSVG();
   }
