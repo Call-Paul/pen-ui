@@ -12,6 +12,7 @@ import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +26,7 @@ import org.six11.util.pen.Pt;
 
 public class Material {
 
-//  public static double EXPERIMENTAL_SCALE_FACTOR = 10d / 13.3d;
+  //  public static double EXPERIMENTAL_SCALE_FACTOR = 10d / 13.3d;
   // source: http://home.mchsi.com/~gweidner/measure-conversions.pdf
   public static double INCH_PER_PX = 0.01384;
   public static double CM_PER_PX = 0.03515;
@@ -200,5 +201,58 @@ public class Material {
 
   public BoundingBox getCutBoundingBox() {
     return stencilBB;
+  }
+
+  public String drawStencilsSVG() {
+
+    bug("Building SVG...");
+    StringBuilder allPathStr = new StringBuilder();
+    StringBuilder pathStr = new StringBuilder();
+    double maxX = 0;
+    double maxY = 0;
+    for (Map.Entry<Shape, Pt> shapeAndLoc : shapes.entrySet()) {
+      Shape shape = shapeAndLoc.getKey();
+      Pt where = shapeAndLoc.getValue();
+      Rectangle2D shapeBounds = shape.getBounds2D();
+      double dx = where.getX() - shapeBounds.getMinX();
+      double dy = where.getY() - shapeBounds.getMinY();
+      
+      pathStr.setLength(0);
+      // TODO: should use a flattening iterator because laser cutters are only so accurate.
+      List<Pt> pathPoints = ShapeFactory.makePointList(shape.getPathIterator(null));
+      boolean first = true;
+      for (Pt pt : pathPoints) {
+        if (first) {
+          pathStr.append("M ");
+          first = false;
+        } else {
+          pathStr.append("L ");
+        }
+        double thisX = dx + pt.x;
+        double thisY = dy + pt.y;
+        pathStr.append(thisX + " " + thisY + " ");
+        maxX = Math.max(thisX, maxX);
+        maxY = Math.max(thisY, maxY);
+      }
+      allPathStr.append("      <path d=\"" + pathStr + " z\"\n");
+      allPathStr.append("            fill=\"none\" stroke=\"red\" stroke-width=\"1\" />\n");
+    }
+
+    StringBuilder returnBuf = new StringBuilder();
+    double widthToCM = fromPixels(Units.Centimeter, maxX);
+    double heightToCM = fromPixels(Units.Centimeter, maxY);
+    returnBuf.append("<?xml version=\"1.0\" standalone=\"no\"?>\n");
+    returnBuf.append("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 20010904//EN\"\n");
+    returnBuf.append("  \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd\">\n");
+    returnBuf.append("<svg width=\"" + widthToCM + "cm\" height=\"" + heightToCM
+        + "cm\" viewBox=\"0 0 " + (maxX + 1) + " " + (maxY + 1) + "\"\n");
+    returnBuf.append("     xmlns=\"http://www.w3.org/2000/svg\">\n");
+    returnBuf.append("  <title>SIMI Cutfile</title>\n");
+    returnBuf.append("  <desc>A cutfile designed with Sketch It, Make It</desc>\n");
+    returnBuf.append(allPathStr.toString());
+    returnBuf.append("</svg>\n");
+
+    System.out.println(returnBuf.toString());
+    return returnBuf.toString();
   }
 }

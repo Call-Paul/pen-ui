@@ -53,8 +53,8 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   private boolean addMe;
   private Rectangle clearRect;
   private boolean hoverInClear;
-  private Rectangle pdfRect;
-  private boolean hoverInPdf;
+  private Rectangle makeRect;
+  private boolean hoverInMake;
   private File recentFile;
   private String message;
 
@@ -98,10 +98,12 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     }
     // draw clear button
     clearRect = placeButton(g, "Clear", 40, 24, 0, hoverInClear);
+    
+    // if there are stencils, draw the 'Make' button
     if (material.countStencils() > 0) {
-      pdfRect = placeButton(g, "PDF", 40, 24, 1, hoverInPdf);
+      makeRect = placeButton(g, "Make", 40, 24, 1, hoverInMake);
     } else {
-      pdfRect = null;
+      makeRect = null;
     }
 
   }
@@ -151,15 +153,15 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
         break;
       case Hover:
         hoverInClear = whackBox(ev.getPt(), clearRect);
-        hoverInPdf = whackBox(ev.getPt(), pdfRect);
+        hoverInMake = whackBox(ev.getPt(), makeRect);
         repaint();
         break;
       case Idle:
         if (clearRect != null && clearRect.contains(ev.getPt())) {
           clear();
         }
-        if (pdfRect != null && pdfRect.contains(ev.getPt())) {
-          printRequested();
+        if (makeRect != null && makeRect.contains(ev.getPt())) {
+          chooseMakeType();
         }
         break;
       case Tap:
@@ -167,6 +169,11 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     }
   }
 
+  private void chooseMakeType() {
+    // printRequested();
+    printPonoko();
+  }
+  
   private boolean whackBox(Pt pt, Rectangle2D box) {
     boolean ret = false;
     if (box != null && box.contains(pt)) {
@@ -283,6 +290,10 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
     }
     material.layoutStencils();
     repaint();
+  }
+  
+  private void printPonoko() {
+    material.drawStencilsSVG();
   }
 
   private void printRequested() {

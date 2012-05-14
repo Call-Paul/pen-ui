@@ -95,8 +95,8 @@ public class SketchBook implements RecognitionListener {
   private GuidePoint draggingGuidePoint;
 
   private Material.Units masterUnits = Units.Centimeter;
-  private Stack<SafeAction> actions;
-  private Stack<SafeAction> redoActions;
+//  private Stack<SafeAction> actions;
+//  private Stack<SafeAction> redoActions;
   private Timer inactivityTimer;
   boolean erasing;
   private boolean loadingSnapshot;
@@ -129,8 +129,8 @@ public class SketchBook implements RecognitionListener {
     this.stencils = new HashSet<Stencil>();
     this.userConstraints = new HashSet<UserConstraint>();
     this.ink = new ArrayList<Ink>();
-    this.actions = new Stack<SafeAction>();
-    this.redoActions = new Stack<SafeAction>();
+//    this.actions = new Stack<SafeAction>();
+//    this.redoActions = new Stack<SafeAction>();
     this.constraintAnalyzer = new ConstraintAnalyzer(this);
 
     this.solver = new ConstraintSolver();
@@ -708,12 +708,11 @@ public class SketchBook implements RecognitionListener {
       surface.display();
       editor.getGrid().clear();
       //      editor.getCutfilePane().clear();
-      actions.clear();
-      redoActions.clear();
+//      actions.clear();
+//      redoActions.clear();
     } catch (Exception ex) {
       ex.printStackTrace();
     }
-
   }
 
   private void clearStructured() {
