@@ -293,7 +293,7 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
   }
   
   private void printPonoko() {
-    material.drawStencilsSVG();
+    String svg = material.drawStencilsSVG();
   }
 
   private void printRequested() {

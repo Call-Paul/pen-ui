@@ -235,7 +235,7 @@ public class Material {
         maxY = Math.max(thisY, maxY);
       }
       allPathStr.append("      <path d=\"" + pathStr + " z\"\n");
-      allPathStr.append("            fill=\"none\" stroke=\"red\" stroke-width=\"1\" />\n");
+      allPathStr.append("            fill=\"none\" stroke=\"blue\" stroke-width=\"0.01\" />\n");
     }
 
     StringBuilder returnBuf = new StringBuilder();
