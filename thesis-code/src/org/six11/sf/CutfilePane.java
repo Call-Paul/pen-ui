@@ -10,6 +10,7 @@ import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridLayout;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RectangularShape;
@@ -20,12 +21,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Set;
 
+import javax.swing.AbstractButton;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import org.six11.sf.Drag.Event;
 import org.six11.util.gui.BoundingBox;
 import org.six11.util.gui.Components;
+import org.six11.util.gui.Images;
 import org.six11.util.gui.Strokes;
 import org.six11.util.pen.PenEvent;
 import org.six11.util.pen.PenListener;
@@ -185,6 +190,21 @@ public class CutfilePane extends JPanel implements PenListener, Drag.Listener {
       // 1. PDF output just like I've always done
       // 2. Ponoko: creates SVG and ships off to Ponoko
       // 3. Lasersaur: will hook up to mondolasercuttersaurus
+      JButton pdfButton = makeButton("Create a PDF vector file", "/pdf-icon.png");
+      JButton ponokoButton = makeButton("Send to Ponoko", "/ponoko-icon.png");
+      JButton lasersaurButton = makeButton("Send to Lasersaur", "/lasersaur-icon.png");
+      setLayout(new GridLayout(1, 0));
+      add(pdfButton);
+      add(ponokoButton);
+      add(lasersaurButton);
+    }
+    
+    private JButton makeButton(String textLabel, String iconLocation) {
+      ImageIcon imgIcon = Images.createImageIcon(iconLocation, "");
+      JButton ret = new JButton(textLabel, imgIcon);
+      ret.setVerticalTextPosition(AbstractButton.BOTTOM);
+      ret.setHorizontalTextPosition(AbstractButton.CENTER);
+      return ret;
     }
 
     public void paintComponent(Graphics g1) {
