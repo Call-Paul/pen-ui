@@ -107,3 +107,6 @@
 045: zooming to help make a 5-sided jessica kit piece
 
 046: making a sample cut to determine proper material thickness (.27 to .3 cm)
+
+047: added options to let user decide how to make it: local PDF, or 
+     send to Ponoko or Lasersaur
